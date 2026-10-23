@@ -42965,6 +42965,9 @@ var FERMENTATION_SPICE_KNOWN_IDS = {
   "Umbrella Bait": 2987,
   "Crimson Baitfish": 2988,
   "Refined Salt": 666,
+  "Truffle Seasoning": 3101,
+  Salt: 665,
+  "Pickled Cabbage": 2941,
   "Salt Lick": 667,
   "Honey Treat": 668,
   "Spice Base": 669,
@@ -42993,6 +42996,50 @@ var FERMENTATION_STATIC_RECIPES = {
   },
   "Pickled Pepper": {
     outputName: "Pickled Pepper",
+    baseAmount: 1
+  },
+  "Pickled Cabbage": {
+    outputName: "Pickled Cabbage",
+    baseAmount: 1
+  },
+  "Pickled Cabbage to Broccoli": {
+    outputName: "Pickled Broccoli",
+    baseAmount: 1
+  },
+  "Greenhouse Glow: Pickled Cabbage": {
+    outputName: "Greenhouse Glow",
+    baseAmount: 1
+  },
+  "Greenhouse Glow: Pickled Radish": {
+    outputName: "Greenhouse Glow",
+    baseAmount: 1
+  },
+  "Greenhouse Glow: Pickled Pepper": {
+    outputName: "Greenhouse Glow",
+    baseAmount: 1
+  },
+  "Greenhouse Goodie: Pickled Cabbage": {
+    outputName: "Greenhouse Goodie",
+    baseAmount: 1
+  },
+  "Greenhouse Goodie: Pickled Tomato": {
+    outputName: "Greenhouse Goodie",
+    baseAmount: 1
+  },
+  "Salt from Seaweed": {
+    outputName: "Salt",
+    baseAmount: 15
+  },
+  "Salt from Old Bottle": {
+    outputName: "Salt",
+    baseAmount: 9
+  },
+  "Salt from Crab": {
+    outputName: "Salt",
+    baseAmount: 3
+  },
+  "Salt from Bones": {
+    outputName: "Salt",
     baseAmount: 1
   },
   "Greenhouse Glow: Pickled Tomato": {
@@ -43039,6 +43086,10 @@ var SPICE_STATIC_RECIPES = {
   },
   "Honey Treat": {
     outputName: "Honey Treat",
+    baseAmount: 5
+  },
+  "Truffle Seasoning": {
+    outputName: "Truffle Seasoning",
     baseAmount: 5
   },
   "Spice Base": {
@@ -54920,14 +54971,15 @@ function computeBaitFigures(baitName) {
   const totalCost = fishCost + (veg ? veg.cost : 0);
   const agingSaltCostMult = typeof getActiveAgingSaltCostMult === "function" ? getActiveAgingSaltCostMult() : 1;
   const fishEffectiveSalt = fish.salt * agingSaltCostMult;
-  const bacalhauBonus = typeof isBoostActive === "function" && isBoostActive("skill_bacalhau") ? 1 : 0;
+  const bacalhauBonus = isSkillActive("skill_bacalhau") ? getSkillRankValue("skill_bacalhau", 1) || 0 : 0;
   const astrolabeMult = typeof getActiveFermentationSpiceExpectedMult === "function" ? getActiveFermentationSpiceExpectedMult() : 1;
-  const outputAgedBoosted = rec.outputAged * astrolabeMult + bacalhauBonus;
-  const outputPrimeBoosted = rec.outputPrime * astrolabeMult + bacalhauBonus;
+  const agerMult = getActiveAgerMult();
+  const outputAgedBoosted = rec.outputAged * agerMult * astrolabeMult + bacalhauBonus;
+  const outputPrimeBoosted = rec.outputPrime * agerMult * astrolabeMult + bacalhauBonus;
   const outputSelected = isPrime ? outputPrimeBoosted : outputAgedBoosted;
   const expectedOutput = outputAgedBoosted + (outputPrimeBoosted - outputAgedBoosted) * (primeChancePct / 100);
-  const unitCostExpected = totalCost / expectedOutput;
-  const unitCostSelected = totalCost / outputSelected;
+  const unitCostExpected = totalCost * agerMult / expectedOutput;
+  const unitCostSelected = totalCost * agerMult / outputSelected;
   const m = marketItems.find((x) => (x.name || "").toLowerCase() === baitName.toLowerCase());
   const sellFlower = m ? m.flowerPrice || 0 : 0;
   const netSell = sellFlower * (1 - feePercent / 100);
