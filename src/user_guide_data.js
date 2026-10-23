@@ -206,14 +206,32 @@ export const USER_GUIDES = [
     id: "experiencecalc",
     label: "Experience Calc",
     title: "Experience Calculator",
-    intro: "Plan my cooking and see the total EXP and FLOWER cost before I cook anything, and watch my Bumpkin level move.",
+    intro: "Plan my cooking and see the total EXP and FLOWER cost before I cook anything, and watch my Bumpkin level move. Nothing is spent in the game; it is only a plan.",
     steps: [
-      "Collect or Buy decides how ingredient costs are counted: made on my farm or bought at marketplace price.",
+      "Collect or Buy decides how ingredient costs are counted: Collect means I make the ingredients on my farm, Buy means I pay marketplace price.",
+      "Skills opens my cooking, fishing and bees skills that change food EXP. I tap a skill to switch it on, then press Save Changes. After a sync my real skills are already on.",
+      "Boost opens every boost that changes EXP, such as VIP Access, Golden Spatula or Pan. I tap each boost I own to switch it on, then press Save Changes. The EXP shown on every dish updates at once, and the old value is crossed out.",
       "Faction Pet adds the EXP boost from my faction pet. Manual Faction Bonus EXP lets me enter a bonus by hand.",
       "The Bumpkin bar shows my level, my EXP and how much is left to the next level. It moves live as I add dishes.",
-      "Buildings and Fish groups the dishes. I tap a building, such as Fire Pit, Kitchen, Bakery or Deli, and type how many of each dish I plan to cook. After a sync it fills from my inventory.",
-      "The result box shows Total EXP added and Total cost, and the list shows the EXP of each building.",
-      "The boosts I picked on the Boost page, my skills and my VIP are added automatically."
+      "Buildings and Fish groups the dishes. I tap a building, such as Fire Pit, Kitchen, Bakery, Deli or Smoothie Shack, to see its dishes.",
+      "The circled box on the right of each dish is the count box. I tap it and type how many of that dish I plan to cook. 0 means not cooking it. After a sync it fills from my inventory.",
+      "The result box shows Total EXP added and Total cost, and the list shows the EXP of each building. A Projected Level box above it shows the level I will reach."
+    ]
+  },
+  {
+    id: "resourcecalc",
+    label: "Resource Calculators",
+    title: "Resource Calculators",
+    intro: "Shows the profit or loss of my wood, stone, iron, gold, crimstone and oil, plus crops, fruits, greenhouse and honey, using my own skills, boosts, nodes and market prices. It only calculates; nothing is changed in the game.",
+    steps: [
+      "Calculators lists Crops, Fruit, Greenhouse, Resources and Honey. I tap the one I want, here Resources Calculator. Each one works the same way.",
+      "I tick the box of every resource I want to include, such as Wood and Stone. Nothing is calculated until at least one box is ticked.",
+      "Per Restock Mode counts one full restock of tools. 24Hrs Mode counts everything I can do in one day. I pick the one I want to compare.",
+      "Skills opens the Trees and Mining skills that affect my resources. I tap a skill to switch it on, then press Save Changes. These are the same skills as in Skill Tree.",
+      "Boost opens the boosts that affect the ticked resources. I tap each boost I own, then press Save Changes. It stays empty until a resource is ticked.",
+      "Nodes is where I set my nodes. I type how many Trees, Stone or other nodes I have in each box, then press Save Changes. If a count is 0, the result is 0.",
+      "Under Details I read the total yield of each resource, then Gross, Tool Cost, Shrine Cost, Restock Cost and Net. Net in green is profit, in red is loss.",
+      "Computation opens the full working for each resource: yield per node, recovery time, tool uses, costs and the boosts applied, so I can see how the number was made."
     ]
   },
   {
