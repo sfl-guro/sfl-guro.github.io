@@ -1,0 +1,17 @@
+import {
+  renderBeginnerPanel
+} from "./chunk.ALBC5VX4.js";
+import "./chunk.LPEVZJ4B.js";
+import "./chunk.VR6FV3KR.js";
+import "./chunk.AS3VMXOQ.js";
+
+// src/pages/beginnerguide.js
+function mount(root, api) {
+  renderBeginnerPanel();
+}
+function unmount() {
+}
+export {
+  mount,
+  unmount
+};
