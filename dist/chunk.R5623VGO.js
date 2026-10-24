@@ -211,13 +211,13 @@ var PAGES = [{
   path: "/userguide",
   label: "User Guide",
   root: "pageUserGuide",
-  load: () => import("./userguide.URWQXWMG.js")
+  load: () => import("./userguide.QDPNTWIJ.js")
 }, {
   id: "profile",
   path: "/profile",
   label: "Profile",
   root: "pageProfile",
-  load: () => import("./profile.5KPQM2FZ.js")
+  load: () => import("./profile.7SPAZORN.js")
 }];
 var DEFAULT_PAGE_ID = "growing";
 function pageById(id) {

@@ -102,6 +102,51 @@ function computeInventory() {
     ready: true
   };
 }
+var WHALE_ITEMS = ["Foreman Beaver", "Kuebiko", "Quarry", "Golden Sheep", "Golden Egg", "Golden Cow", "Crimstone Spikes Hair", "Ascended Idol"];
+function toNum(v) {
+  const n = typeof v === "string" ? parseFloat(v) : Number(v);
+  return isFinite(n) ? n : 0;
+}
+function lookupAmount(map, name) {
+  if (!map || typeof map !== "object") return 0;
+  const lower = name.toLowerCase();
+  const key = Object.keys(map).find((k) => k.toLowerCase() === lower);
+  return key == null ? 0 : toNum(map[key]);
+}
+function ownsWhaleItem(g) {
+  const equipped = g && g.bumpkin && g.bumpkin.equipped && typeof g.bumpkin.equipped === "object" ? Object.values(g.bumpkin.equipped).map((v) => String(v).toLowerCase()) : [];
+  return WHALE_ITEMS.some((name) => lookupAmount(g.inventory, name) > 0 || lookupAmount(g.wardrobe, name) > 0 || equipped.indexOf(name.toLowerCase()) !== -1);
+}
+function computeChainHistory() {
+  let g = null;
+  try {
+    g = A.calc.profileGetG();
+  } catch (e) {
+    g = null;
+  }
+  if (!g) return {
+    ready: false,
+    deposit: 0,
+    withdraw: 0,
+    balance: 0,
+    type: null
+  };
+  const activity = g.farmActivity && typeof g.farmActivity === "object" ? g.farmActivity : {};
+  const deposit = toNum(activity["FLOWER Deposited"]);
+  const withdraw = toNum(activity["FLOWER Withdrawn"]);
+  const whale = ownsWhaleItem(g);
+  let type = "Neutral";
+  if (whale) type = "Whale";
+  else if (withdraw > 0 && withdraw >= deposit * 1.8) type = "Extractor";
+  else if (deposit > withdraw) type = "Investor";
+  return {
+    ready: true,
+    deposit,
+    withdraw,
+    balance: toNum(g.balance),
+    type
+  };
+}
 function goalProgress(net, price) {
   if (!(price > 0)) return {
     pct: 0,
@@ -117,9 +162,11 @@ function goalProgress(net, price) {
 }
 function evaluateGoals() {
   const inv = computeInventory();
+  const chain = computeChainHistory();
+  const total = inv.net + chain.balance;
   const goals = loadGoals().map((g) => {
     const price = sftPrice(g.name);
-    const prog = goalProgress(inv.net, price);
+    const prog = goalProgress(total, price);
     return Object.assign({}, g, {
       price,
       pct: prog.pct,
@@ -129,6 +176,8 @@ function evaluateGoals() {
   });
   return {
     inv,
+    chain,
+    total,
     goals
   };
 }
@@ -145,6 +194,7 @@ function takeNewlyReachedGoals() {
 }
 export {
   bindApi,
+  computeChainHistory,
   computeInventory,
   evaluateGoals,
   goalProgress,

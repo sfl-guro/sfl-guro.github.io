@@ -75,13 +75,19 @@ function render() {
   if (!rootEl) return;
   const keep = rootEl.querySelector("#pfSearchInput");
   const hadFocus = keep && document.activeElement === keep;
-  const { inv, goals } = evaluateGoals();
+  const { inv, chain, total, goals } = evaluateGoals();
   const invRows = inv.rows.length ? inv.rows.map(inventoryRowHtml).join("") : `<div class="pf-empty">${inv.ready ? "No tradable resources found" : "Sync a Farm ID to see your inventory"}</div>`;
   const priceRows = goals.length ? goals.map(goalPriceRowHtml).join("") : `<div class="pf-empty">No SFT added yet</div>`;
-  const cards = goals.length ? goals.map((g) => goalTileHtml(g, inv.net)).join("") : `<div class="pf-empty">Add an SFT to track your goal</div>`;
+  const cards = goals.length ? goals.map((g) => goalTileHtml(g, total)).join("") : `<div class="pf-empty">Add an SFT to track your goal</div>`;
   rootEl.innerHTML = `<div class="pf-wrap">
     <div class="pf-side">
-    <div class="pf-value guro-frame"><span class="pf-value-label">Net Inventory Value</span><span class="pf-value-num">${money(inv.net)}${FLOWER_ICON}</span></div>
+    <div class="pf-value guro-frame">
+      <div class="pf-title">On Chain History</div>
+      <div class="pf-value-row"><span class="pf-value-label">Net Inventory Value</span><span class="pf-value-num">${money(inv.net)}${FLOWER_ICON}</span></div>
+      <div class="pf-value-row"><span class="pf-value-label">Deposit</span><span class="pf-value-num">${money(chain.deposit)}${FLOWER_ICON}</span></div>
+      <div class="pf-value-row"><span class="pf-value-label">Withdraw</span><span class="pf-value-num">${money(chain.withdraw)}${FLOWER_ICON}</span></div>
+      <div class="pf-value-row"><span class="pf-value-label">Player Type</span>${chain.type ? `<span class="pf-badge pf-badge-${chain.type.toLowerCase()} guro-frame">${chain.type}</span>` : `<span class="pf-value-num">\u2014</span>`}</div>
+    </div>
     <div class="pf-box guro-frame">
       <div class="pf-title">Inventory</div>
       <div class="pf-list">${invRows}</div>
@@ -190,7 +196,7 @@ async function mount(root, api) {
   FLOWER_ICON = api.calc.FLOWER_ICON;
   escapeHtml = api.calc.escapeHtml;
   getIcon = api.ui.getIcon;
-  const goals = await import("./sft_goals.FWX65JU3.js");
+  const goals = await import("./sft_goals.DH5PQBTP.js");
   goals.bindApi(api);
   loadGoals = goals.loadGoals;
   saveGoals = goals.saveGoals;
