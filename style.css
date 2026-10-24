@@ -15106,3 +15106,23 @@ html body .guro-grow-content .section-badge.is-boost-label{ display:flex !import
 html body .hive-list{ margin-left:0; margin-right:0; }
 html body .hive-row{ padding-left:0 !important; padding-right:0 !important; gap:4px; }
 html body .hive-main{ gap:4px; }
+
+.dig-inv-grid{ display:block; }
+@media (min-width:1024px){
+  .dig-inv-grid{ display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); column-gap:24px; }
+}
+
+.rc-values .rc-val-wide{ grid-column:1 / -1; }
+
+.rc-sculpt-head{ display:flex; align-items:center; gap:6px; }
+.rc-sculpt-icon{ display:inline-flex; width:22px; height:22px; align-items:center; justify-content:center; }
+.rc-sculpt-icon img{ max-width:22px; max-height:22px; image-rendering:pixelated; }
+.rc-sculpt-name{ flex:1 1 auto; min-width:0; font-size:13px; font-weight:800; }
+.rc-sculpt-level{ flex:0 0 auto; font-size:12px; font-weight:800; color:var(--ink-soft); }
+.rc-lvl-row{ display:grid; grid-template-columns:repeat(7, minmax(0, 1fr)); gap:4px; }
+.rc-lvl{ padding:8px 0; font-size:12px; justify-content:center; text-align:center; }
+.rc-perks{ display:flex; flex-direction:column; gap:6px; }
+.rc-perk-row{ box-sizing:border-box; display:flex; align-items:center; gap:8px; padding:6px 8px; background:var(--surface, #fff); color:var(--ink); opacity:.7; }
+.rc-perk-row.is-on{ opacity:1; background:var(--wheat-dim, #e8c98a); }
+.rc-perk-lv{ flex:0 0 auto; font-family:var(--pixel-font); font-size:9px; color:var(--ink-soft); }
+.rc-perk-text{ flex:1 1 auto; min-width:0; font-size:12px; line-height:1.3; }

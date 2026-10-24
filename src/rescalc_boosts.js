@@ -33,6 +33,8 @@ function effectParts(b, ctx) {
   if (b.tierEffects) add("Yield", keyed(b.tierEffects, ctx.tier)); else if (b.resourceEffects) add("Yield", keyed(b.resourceEffects, ctx.name)); else if (b.yieldAdd) add("Yield", `${signed(b.yieldAdd)} yield`);
   if (b.yieldAddAll) add("Yield", `${signed(b.yieldAddAll)} yield`);
   if (b.yieldMult) add("Yield", `×${b.yieldMult} yield`);
+  if (b.saltYieldAdd) add("Yield", `${signed(b.saltYieldAdd)} yield`);
+  if (b.saltRechargeTimeMult) add("Time", `×${b.saltRechargeTimeMult} time`);
   if (b.harvestAdd) add("Yield", `+${n2(b.harvestAdd)} harvest`);
   if (b.honeyYieldAdd) add("Yield", `${signed(b.honeyYieldAdd)} honey`);
   if (b.flowerExtraChance) add("Yield", `+${n2(b.flowerExtraChance)} flowers`);
@@ -40,7 +42,7 @@ function effectParts(b, ctx) {
   if (b.timeMult) add("Time", `×${b.timeMult} time`);
   if (b.speedAdd) add("Time", `${signed(b.speedAdd)} speed`);
   if (b.flowerTimeMult) add("Time", `×${b.flowerTimeMult} flower time`);
-  if (b.freeCost) add("Cost", "free seeds");
+  if (b.freeCost) add("Cost", b.scope === "saltGlobal" ? "free rake" : "free seeds");
   if (b.coinCostMultAll) add("Cost", `×${b.coinCostMultAll} cost`);
   if (b.toolCostMult) add("Cost", `×${b.toolCostMult} tool cost`);
   if (b.coinCostMult) add("Cost", `×${b.coinCostMult} tool cost`);

@@ -15,12 +15,18 @@ import {
   BOOSTS,
   COIN_ICON,
   CROPS_GLOBAL_EXCLUDED_FROM_GREENHOUSE,
+  FARM_LEVEL_NODES,
   FLOWER_ICON,
   FLOWER_VARIETIES,
   GEM_ICON,
   IMAGE_ICONS,
+  LAVA_PIT_RECIPES,
+  OBSIDIAN_WEEKLY_PURCHASE_CAP,
+  OBSIDIAN_WEEKLY_SELL_CAP,
   RESOURCE_DATA,
   RESOURCE_NODE_TIERS,
+  SCULPTURE_EFFECTS_LIST,
+  SCULPTURE_LEVELS,
   SEASON_EMOJI,
   SEASON_ORDER,
   coinsToFlower,
@@ -29,13 +35,18 @@ import {
   computeBoostedGreenhouseStats,
   computeBoostedStock,
   computeHiveEconomics,
+  computeLavaPitFigures,
+  computeObsidianWeeklyProfit,
   computeResourceFigures,
   computeRestockCost24hDetailedIndividual,
+  computeSaltFarmFigures,
   discardSkillBoostDrafts,
   draftToggleBoost,
   escapeHtml,
+  farmLevelMaxNodes,
   farmPanelGetMarketPriceFlower,
   feePercent,
+  findTool,
   flowerPerGem,
   fmt,
   formatDuration,
@@ -44,6 +55,7 @@ import {
   getBoostIcon,
   getBoostIconAnyFallback,
   getBoostIconSkillFallback,
+  getBoostedToolRecipe,
   getCropCostCoins,
   getCropSeasons,
   getEffectiveYieldAdd,
@@ -57,29 +69,35 @@ import {
   getInstantRegrowChance,
   getInstantRegrowSources,
   getItemCostByName,
+  getMaterialMode,
   getMaterialUnitCostCoins,
   getNodeCount,
   getNodeTierCounts,
   getPlotCount,
   getRestockGemCostIndividual,
+  hasFreeSaltRakeCost,
   hasManualMaterialMode,
   invalidateCostCache,
   isBoostActive,
   isBoostDraftActive,
   isBoostDraftDirty,
   isFlowerVarietySeasonLocked,
+  isSculpturePerkOn,
   isSeasonLocked,
   isSkillActive,
   isSkillDraftDirty,
   isTieredResource,
   loadBaseCropsIfNeeded,
   loadBaseHoneyIfNeeded,
+  loadBaseSaltMarketIfNeeded,
   previewSeason,
   renderAscensionBar,
   renderBoostPanel,
   renderHoneyList,
   renderLibraryLists,
   renderSkillPanel,
+  saltFarmLevel,
+  saltSculptureLevel,
   selectedHoneyFlower,
   selectedSwarmCrop,
   setAutoMaterialModes,
@@ -90,6 +108,9 @@ import {
   setNodeCount,
   setNodeTierQty,
   setPlotCount,
+  setSaltFarmLevel,
+  setSculptureLevel,
+  setSculpturePerk,
   setSelectedHoneyFlower,
   setSelectedSwarmCrop,
   setSkillCategory,
@@ -98,7 +119,7 @@ import {
   toast,
   updateCalcSummary,
   updateSkillSaveBarState
-} from "./chunk.UJ7OA4Z2.js";
+} from "./chunk.CMHF3RBB.js";
 import "./chunk.LPEVZJ4B.js";
 import "./chunk.VR6FV3KR.js";
 import "./chunk.AS3VMXOQ.js";
@@ -134,6 +155,8 @@ function effectParts(b, ctx) {
   else if (b.yieldAdd) add("Yield", `${signed(b.yieldAdd)} yield`);
   if (b.yieldAddAll) add("Yield", `${signed(b.yieldAddAll)} yield`);
   if (b.yieldMult) add("Yield", `\xD7${b.yieldMult} yield`);
+  if (b.saltYieldAdd) add("Yield", `${signed(b.saltYieldAdd)} yield`);
+  if (b.saltRechargeTimeMult) add("Time", `\xD7${b.saltRechargeTimeMult} time`);
   if (b.harvestAdd) add("Yield", `+${n2(b.harvestAdd)} harvest`);
   if (b.honeyYieldAdd) add("Yield", `${signed(b.honeyYieldAdd)} honey`);
   if (b.flowerExtraChance) add("Yield", `+${n2(b.flowerExtraChance)} flowers`);
@@ -141,7 +164,7 @@ function effectParts(b, ctx) {
   if (b.timeMult) add("Time", `\xD7${b.timeMult} time`);
   if (b.speedAdd) add("Time", `${signed(b.speedAdd)} speed`);
   if (b.flowerTimeMult) add("Time", `\xD7${b.flowerTimeMult} flower time`);
-  if (b.freeCost) add("Cost", "free seeds");
+  if (b.freeCost) add("Cost", b.scope === "saltGlobal" ? "free rake" : "free seeds");
   if (b.coinCostMultAll) add("Cost", `\xD7${b.coinCostMultAll} cost`);
   if (b.toolCostMult) add("Cost", `\xD7${b.toolCostMult} tool cost`);
   if (b.coinCostMult) add("Cost", `\xD7${b.coinCostMult} tool cost`);
@@ -255,6 +278,10 @@ function restockSeedIconsHtml(season) {
 }
 function toolRestockShareCount() {
   return Math.max(1, Object.keys(BASE_STOCK_TOOLS).filter((n) => (BASE_STOCK_TOOLS[n] || 0) > 0).length);
+}
+function toolRestockIconsHtml() {
+  const names = Object.keys(BASE_STOCK_TOOLS).filter((n) => (BASE_STOCK_TOOLS[n] || 0) > 0);
+  return `(${names.map((n) => `<span class="rc-share-icon">${getIcon(n)}</span>`).join("")})`;
 }
 
 // src/rescalc_crops.js
@@ -3148,12 +3175,12 @@ function valuesHtml4(rows) {
 function modeNoteHtml4(rows) {
   const total = state4.selected.reduce((s, n) => s + nodeCountOf(n), 0);
   const warn = state4.selected.length && total <= 0 ? `<div class="rc-note is-warn">The selected resources have 0 nodes, so every result is 0. Open Nodes above and enter your nodes.</div>` : "";
-  const text = state4.mode === "restock" ? `Per Restock Mode: the tool stock is used up and 1 restock is shared by all ${toolRestockShareCount()} tools, selected or not.` : `24Hrs Mode: the nodes are harvested all day and every restock needed is shared by all ${toolRestockShareCount()} tools, selected or not.`;
+  const text = state4.mode === "restock" ? `Per Restock Mode: the tool stock is used up and 1 restock is shared by all ${toolRestockShareCount()} tools ${toolRestockIconsHtml()}, selected or not.` : `24Hrs Mode: the nodes are harvested all day and every restock needed is shared by all ${toolRestockShareCount()} tools ${toolRestockIconsHtml()}, selected or not.`;
   return `<div class="rc-details-row"><button type="button" class="rc-linktext" data-rc-details aria-expanded="${detailsOpen4 ? "true" : "false"}">Details</button></div>${detailsOpen4 ? `<div class="rc-note">${text}</div>` : ""}${warn}`;
 }
 function pickerHtml4() {
-  return `<section class="rc-block guro-frame" aria-label="Resources Calculator">
-    <div class="rc-block-title">Resources Calculator</div>
+  return `<section class="rc-block guro-frame" aria-label="Mining Calculator">
+    <div class="rc-block-title">Mining Calculator</div>
     <div class="rc-crops" id="rcCrops">${cropCellsHtml4()}</div>
   </section>`;
 }
@@ -3776,20 +3803,52 @@ function resourcesCalculatorCanLeave() {
   return true;
 }
 
-// src/rescalc_honey.js
-var MAX_ROWS = 40;
+// src/rescalc_salt.js
+var STORE_KEY5 = "guro_rc_salt_v1";
+var MAX_CUSTOM_CYCLES5 = 1e5;
+var RAKE_TOOL_ID = "default_salt_rake";
+var RAKE_MODE_KEY = "ToolLib_" + RAKE_TOOL_ID;
+var MODES5 = [{
+  id: "restock",
+  label: "Per Restock Mode"
+}, {
+  id: "24h",
+  label: "24Hrs Mode"
+}];
 var host5 = null;
+var api5 = null;
+var state5 = null;
 var popup5 = null;
 var overlayEl5 = null;
 var promptEl5 = null;
 var restoreFns5 = [];
-var hivesDraft = null;
+var nodesDraft5 = null;
 var listening5 = false;
 var detailsOpen5 = false;
-var openMenu = null;
-var savedSkillCategory5 = null;
 function esc6(s) {
   return escapeHtml(String(s));
+}
+function loadState5() {
+  const base = {
+    mode: "restock",
+    cycles: 0
+  };
+  try {
+    const raw = JSON.parse(localStorage.getItem(STORE_KEY5) || "null");
+    if (raw && typeof raw === "object") {
+      if (raw.mode === "24h" || raw.mode === "restock") base.mode = raw.mode;
+      const v = Math.floor(Number(raw.cycles));
+      if (isFinite(v) && v > 0) base.cycles = Math.min(v, MAX_CUSTOM_CYCLES5);
+    }
+  } catch (e) {
+  }
+  return base;
+}
+function saveState5() {
+  try {
+    localStorage.setItem(STORE_KEY5, JSON.stringify(state5));
+  } catch (e) {
+  }
 }
 function n26(n) {
   if (!isFinite(n)) return "\u2014";
@@ -3813,16 +3872,21 @@ function signed6(n, f) {
   if (n < 0 && r !== "0") return "-" + r;
   return r;
 }
+function flowerSigned5(n) {
+  return `${signed6(n, fl5)}${FLOWER_ICON}`;
+}
 function flowerHtml5(n) {
   return `${fl5(n)}${FLOWER_ICON}`;
 }
-function flowerNameIcon(name) {
-  const v = FLOWER_VARIETIES[name];
-  if (IMAGE_ICONS[name]) return getIcon(name);
-  return `<span class="rc-dd-emoji">${v ? v.icon : ""}</span>`;
+function gemHtml5(n) {
+  return `${n26(n)}${GEM_ICON}`;
 }
-function swarmIcon() {
-  return `<img src="${BEE_SWARM_ICON}" alt="Bee Swarm">`;
+function ratioInfo5() {
+  const fpg = flowerPerGem();
+  return {
+    free: !(fpg > 0),
+    gemsPerFlower: fpg > 0 ? 1 / fpg : 0
+  };
 }
 function syncGemRatio5() {
   try {
@@ -3834,8 +3898,1499 @@ function syncGemRatio5() {
   } catch (e) {
   }
 }
-function getEcon() {
+function rakeBoosts() {
+  return BOOSTS.filter((b) => b.category === "tools" && b.scope === "tool" && b.target === "Salt Rake" && isBoostActive(b.id));
+}
+function rakeRecipe() {
+  const item = findTool(RAKE_TOOL_ID);
+  if (!item) return null;
+  const boosted = getBoostedToolRecipe(item);
+  return {
+    item,
+    coinCost: boosted.coinCost,
+    materials: boosted.materials.map((m) => ({
+      name: m.name,
+      qty: m.qty,
+      mode: getMaterialMode(RAKE_MODE_KEY, m.name)
+    }))
+  };
+}
+function compute5(mode, share) {
+  const fig = computeSaltFarmFigures();
+  const eff = fig.eff;
+  const sb = fig.seaBlessed;
+  const nodes = fig.nodeCount;
+  const sell = farmPanelGetMarketPriceFlower("Salt") || fig.sellFlower || 0;
+  const feeRate = (feePercent || 0) / 100;
+  const regrowChance = sb.active ? sb.offspring : 0;
+  const avgHarvests = sb.harvestMult;
+  const freeRake = hasFreeSaltRakeCost();
+  const toolUse = freeRake ? 0 : nodes * avgHarvests;
+  const baseYieldCycle = nodes * fig.yieldPerCharge;
+  const yieldCycle = baseYieldCycle * avgHarvests;
+  const toolUnit = coinsToFlower(fig.rakeCoinCost);
+  const shrine = getActiveShrineDailyCost(fig.activeBoosts);
+  const stockBase = BASE_STOCK_TOOLS["Salt Rake"] || 0;
+  const stockQty = stockBase ? computeBoostedStock(stockBase, "tool", "Salt Rake") : 0;
+  const gemPerRestock = getRestockGemCostIndividual("tool");
+  const fullRestockFlower = gemsToFlower(gemPerRestock);
+  const recipe = rakeRecipe();
+  const grossCycle = yieldCycle * sell;
+  const costCycle = toolUnit * toolUse;
+  const shrineCycle = shrine.total * fig.timeSec / 86400;
+  const out = {
+    nodes,
+    timeSec: fig.timeSec,
+    yieldCharge: fig.yieldPerCharge,
+    yieldBonus: fig.saltYieldBonus,
+    storedChargeCap: fig.storedChargeCap,
+    regrowChance,
+    regrowRank: sb.rank,
+    regrowMaxRank: sb.maxRank,
+    regrowTargets: sb.targets,
+    avgHarvests,
+    extraNodesCycle: nodes * (avgHarvests - 1),
+    extraYieldCycle: yieldCycle - baseYieldCycle,
+    toolUse,
+    yieldCycle,
+    sell,
+    toolUnit,
+    grossCycle,
+    costCycle,
+    shrineCycle,
+    feeRate,
+    gemPerRestock,
+    fullRestockFlower,
+    stockQty,
+    recipe,
+    manualRake: !!(recipe && recipe.item.manualPrice != null && !recipe.item.locked),
+    freeTool: freeRake,
+    eff,
+    activeBoosts: fig.activeBoosts.concat(rakeBoosts()),
+    shareCount: share,
+    mode
+  };
+  const customCycles = state5.cycles > 0 ? state5.cycles : 0;
+  let cycles = 0;
+  let toolUses = 0;
+  let totalTimeSec = 0;
+  let restockQty = 0;
+  let restockGems = 0;
+  let restockCost = 0;
+  let shrineTotal = 0;
+  if (nodes > 0 && yieldCycle > 0) {
+    if (mode === "restock") {
+      if (toolUse > 0) {
+        toolUses = stockQty;
+        cycles = stockQty / toolUse;
+        restockQty = stockQty > 0 ? 1 : 0;
+      } else {
+        cycles = 1;
+      }
+      totalTimeSec = cycles * fig.timeSec;
+      shrineTotal = shrine.total * totalTimeSec / 86400;
+      restockGems = restockQty ? gemPerRestock / Math.max(1, share) : 0;
+      restockCost = restockQty ? fullRestockFlower / Math.max(1, share) : 0;
+    } else {
+      cycles = customCycles > 0 ? customCycles : Math.round(86400 / fig.timeSec);
+      toolUses = toolUse * cycles;
+      totalTimeSec = customCycles > 0 ? cycles * fig.timeSec : 86400;
+      shrineTotal = shrine.total * totalTimeSec / 86400;
+      restockQty = stockQty > 0 && toolUses > 0 ? Math.ceil(toolUses / stockQty - 1e-9) : 0;
+      restockGems = restockQty * gemPerRestock / Math.max(1, share);
+      restockCost = gemsToFlower(restockGems);
+    }
+  }
+  const totalYield = yieldCycle * cycles;
+  const gross = totalYield * sell;
+  const fee = gross * feeRate;
+  const costTotal = toolUnit * toolUses;
+  out.cycles = cycles;
+  out.cyclesCustom = mode === "24h" && customCycles > 0;
+  out.extraNodes = out.extraNodesCycle * cycles;
+  out.extraYield = out.extraYieldCycle * cycles;
+  out.toolUses = toolUses;
+  out.totalTimeSec = totalTimeSec;
+  out.totalYield = totalYield;
+  out.gross = gross;
+  out.fee = fee;
+  out.cost = costTotal;
+  out.shrine = shrineTotal;
+  out.restock = restockCost;
+  out.restockQty = restockQty;
+  out.restockGems = restockGems;
+  out.net = gross - fee - costTotal - shrineTotal - restockCost;
+  out.restockCycle = cycles > 0 ? restockCost / cycles : 0;
+  out.netCycle = grossCycle * (1 - feeRate) - costCycle - shrineCycle - out.restockCycle;
+  return out;
+}
+function computeRow() {
   syncGemRatio5();
+  invalidateCostCache();
+  return compute5(state5.mode, toolRestockShareCount());
+}
+function pickerHtml5() {
+  return `<section class="rc-block guro-frame" aria-label="Salt Calculator">
+    <div class="rc-block-title">Salt Calculator</div>
+    <div class="rc-crops" id="rcCrops"><div class="rc-crop guro-frame is-on"><span class="rc-crop-icon">${getIcon("Salt")}</span><span class="rc-crop-name">Salt</span></div></div>
+  </section>`;
+}
+function valueBoxHtml5(label, html, extra) {
+  return `<div class="rc-val guro-frame${extra ? " " + extra : ""}"><span class="rc-val-label">${label}</span><span class="rc-val-num">${html}</span></div>`;
+}
+function tilesHtml5(r) {
+  const good = r.net >= 0;
+  return `<div class="rc-tiles-wrap guro-frame"><div class="rc-tiles"><div class="rc-tile guro-frame ${good ? "is-profit" : "is-loss"}"><span class="rc-tile-icon">${getIcon("Salt")}</span><span class="rc-tile-yield">${signed6(r.totalYield, n26)}</span><span class="rc-tile-net">${fl5(r.gross)}${FLOWER_ICON}</span></div></div></div>`;
+}
+function valuesHtml5(r) {
+  const feeBox = (feePercent || 0) > 0 ? valueBoxHtml5("Market Fee", flowerHtml5(r.fee)) : "";
+  return `<div class="rc-values">
+    ${valueBoxHtml5("Gross", flowerHtml5(r.gross))}
+    ${valueBoxHtml5("Tool Cost", flowerHtml5(r.cost))}
+    ${valueBoxHtml5("Shrine Cost", flowerHtml5(r.shrine))}
+    ${valueBoxHtml5("Restock Cost", flowerHtml5(r.restock))}
+    ${feeBox}
+  </div>
+  <div class="rc-net-row">
+    ${valueBoxHtml5("Net", `<span class="${r.net >= 0 ? "is-profit" : "is-loss"}">${signed6(r.net, fl5)}${FLOWER_ICON}</span>`, "rc-val-net")}
+    <button type="button" class="rc-linktext" data-rc-open="computation">Computation</button>
+  </div>`;
+}
+function modeNoteHtml5(r) {
+  const warn = r.nodes <= 0 ? `<div class="rc-note is-warn">You have 0 Salt nodes, so every result is 0. Open Nodes above and enter your nodes.</div>` : "";
+  const text = state5.mode === "restock" ? `Per Restock Mode: the Salt Rake stock is used up and 1 restock is shared by all ${toolRestockShareCount()} tools ${toolRestockIconsHtml()}, selected or not.` : `24Hrs Mode: the nodes are harvested all day and every restock needed is shared by all ${toolRestockShareCount()} tools ${toolRestockIconsHtml()}, selected or not.`;
+  return `<div class="rc-details-row"><button type="button" class="rc-linktext" data-rc-details aria-expanded="${detailsOpen5 ? "true" : "false"}">Details</button></div>${detailsOpen5 ? `<div class="rc-note">${text}</div>` : ""}${warn}`;
+}
+function resultsHtml5() {
+  const r = computeRow();
+  return `<section class="rc-block guro-frame" aria-label="Salt results">
+    <div class="rc-modes" role="group" aria-label="Calculation mode">${MODES5.map((m) => `<button type="button" class="rc-mode guro-frame${state5.mode === m.id ? " is-on" : ""}" data-rc-mode="${m.id}" aria-pressed="${state5.mode === m.id ? "true" : "false"}">${m.label}</button>`).join("")}</div>
+    <div class="rc-tools">
+      <button type="button" class="rc-tool guro-frame" data-rc-open="skills">Skills</button>
+      <button type="button" class="rc-tool guro-frame" data-rc-open="boost">Boost</button>
+      <button type="button" class="rc-tool guro-frame" data-rc-open="nodes">Nodes</button>
+    </div>
+    ${modeNoteHtml5(r)}
+    <div id="rcResults">${tilesHtml5(r)}${valuesHtml5(r)}</div>
+  </section>`;
+}
+function render5() {
+  if (!host5) return;
+  const scroller = document.scrollingElement;
+  const y = scroller ? scroller.scrollTop : 0;
+  host5.innerHTML = pickerHtml5() + resultsHtml5();
+  if (scroller) scroller.scrollTop = y;
+}
+function refreshResults5() {
+  if (!host5) return;
+  const blocks = host5.querySelectorAll(".rc-block");
+  if (!blocks[1]) {
+    render5();
+    return;
+  }
+  const tmp = document.createElement("div");
+  tmp.innerHTML = resultsHtml5();
+  blocks[1].replaceWith(tmp.firstElementChild);
+  if (popup5 === "computation") renderOverlayBody5();
+}
+function kv5(label, html, cls) {
+  return `<div class="rc-kv${cls ? " " + cls : ""}"><span class="rc-kv-label">${label}</span><span class="rc-kv-val">${html}</span></div>`;
+}
+function matPrice2(name) {
+  return farmPanelGetMarketPriceFlower(name) || 0;
+}
+function matRowHtml2(name, qty, price, badge) {
+  return `<div class="rc-mat-row"><span class="rc-mat-main">${getIcon(name)}<span class="rc-mat-name">${esc6(name)}</span><span class="rc-mat-qty">\xD7${n26(qty)}</span><span class="rc-mat-val">(${flowerHtml5(qty * price)})</span></span><span class="rc-badge">${badge}</span></div>`;
+}
+function appliedBoostHtml5(r) {
+  const groups = {
+    yield: [],
+    time: [],
+    cost: [],
+    regrow: []
+  };
+  const list = r.activeBoosts.slice();
+  const artist = BOOSTS.find((b) => b.id === "artist_discount");
+  if (artist && isBoostActive(artist.id) && !list.includes(artist)) list.push(artist);
+  const row = (b, text) => `<div class="rc-boost-row">${getBoostIconAnyFallback(b.name)}<span class="rc-boost-name">${esc6(b.name)}</span><span class="rc-boost-eff">${esc6(text)}</span></div>`;
+  list.forEach((b) => {
+    if (b.id === "skill_sea_blessed") {
+      groups.regrow.push(row(b, `${n26(r.regrowChance * 100)}% instant regrow`));
+      return;
+    }
+    if (b.saltYieldAdd) groups.yield.push(row(b, `+${n26(b.saltYieldAdd)} yield`));
+    if (b.saltRechargeTimeMult) groups.time.push(row(b, `\xD7${b.saltRechargeTimeMult} time`));
+    const cost = [];
+    if (b.freeCost) cost.push("free tool");
+    if (b.toolCostMult) cost.push(`\xD7${b.toolCostMult} tool cost`);
+    if (b.coinCostMult) cost.push(`\xD7${b.coinCostMult} tool cost`);
+    if (cost.length) groups.cost.push(row(b, cost.join(", ")));
+  });
+  const section = (label, items) => items.length ? `<div class="rc-boost-group"><div class="rc-boost-label">${label}</div>${items.join("")}</div>` : "";
+  const body = section("Yield Boost", groups.yield) + section("Time Boost", groups.time) + section("Tool Boost", groups.cost) + section("Instant Regrow", groups.regrow);
+  return `<div class="rc-group"><div class="rc-comp-sub">Applied Boost</div>${body || `<div class="rc-boost-none">No boost applied</div>`}</div>`;
+}
+function sculptureHtml(r) {
+  const total = SCULPTURE_LEVELS.length;
+  const level = saltSculptureLevel;
+  const chips = [0, 1, 2, 3, 4, 5, 6].map((n) => `<button type="button" class="rc-lvl es-mode-btn es-toolcfg-tbtn${level === n ? " active" : ""}" data-rc-sculpt-level="${n}" aria-pressed="${level === n ? "true" : "false"}">${n}</button>`).join("");
+  const perks = SCULPTURE_EFFECTS_LIST.map((text, i) => {
+    const lv = i + 1;
+    const on = isSculpturePerkOn(lv);
+    return `<div class="rc-perk-row guro-frame${on ? " is-on" : ""}"><span class="rc-perk-lv">Lv.${lv}</span><span class="rc-perk-text">${esc6(text)}</span><button type="button" class="es-mode-btn es-toolcfg-tbtn${on ? " active" : ""}" data-rc-perk="${lv}" aria-pressed="${on ? "true" : "false"}">${on ? "On" : "Off"}</button></div>`;
+  }).join("");
+  return `<div class="rc-group"><div class="rc-comp-sub">Sculpture</div>
+    <div class="rc-sculpt-head"><span class="rc-sculpt-icon">${getIcon("Salt Sculpture")}</span><span class="rc-sculpt-name">Salt Sculpture</span><span class="rc-sculpt-level">Level ${n26(level)}/${total}</span></div>
+    <div class="rc-lvl-row">${chips}</div>
+    <div class="rc-perks">${perks}</div>
+    <div class="rc-boost-none">Tap a level to set it, then switch each perk On or Off.</div>
+  </div>`;
+}
+function toolCostConfigHtml3(r) {
+  if (r.freeTool) return `<div class="rc-group"><div class="rc-comp-sub">Tool Cost Config</div><div class="rc-boost-none">Free tool</div></div>`;
+  if (!r.recipe || r.manualRake) return `<div class="rc-group"><div class="rc-comp-sub">Tool Cost Config</div><div class="rc-tool-cfg"><div class="rc-tool-name">${getIcon("Salt Rake")}<span>Salt Rake</span></div><div class="rc-tool-mat"><span class="rc-tool-mat-item"><span class="rc-tool-mat-qty">${fl5(r.toolUnit)}</span>${FLOWER_ICON}</span></div></div></div>`;
+  const btn = (m, mode, label) => `<button type="button" class="es-mode-btn es-toolcfg-tbtn${m.mode === mode ? " active" : ""}" data-rc-mat="${esc6(m.name)}" data-rc-mode="${mode}">${label}</button>`;
+  const rows = r.recipe.materials.map((m) => {
+    const tog = m.name.toLowerCase() === "oil" ? `<span class="es-toolcfg-free">Always Collect</span>` : `<span class="es-toolcfg-tog">${btn(m, "collect", "Collect")}${btn(m, "buy", "Buy")}</span>`;
+    return `<div class="rc-tool-mat"><span class="rc-tool-mat-item"><span class="rc-tool-mat-qty">${n26(m.qty)}</span>${getIcon(m.name)}</span>${tog}</div>`;
+  }).join("");
+  const coinRow = r.recipe.coinCost > 0 ? `<div class="rc-tool-mat"><span class="rc-tool-mat-item"><span class="rc-tool-mat-qty">${n26(r.recipe.coinCost)}</span>${COIN_ICON}</span></div>` : "";
+  const disc = r.eff.rakeCostMult < 1 ? `<div class="rc-boost-none">Sculpture Lv.4 rake discount \xD7${r.eff.rakeCostMult} applied to the total.</div>` : "";
+  return `<div class="rc-group"><div class="rc-comp-sub">Tool Cost Config</div>
+    <div class="rc-tool-cfg"><div class="rc-tool-name">${getIcon("Salt Rake")}<span>Salt Rake</span></div>${coinRow}${rows}</div>${disc}</div>`;
+}
+function materialsHtml2(r) {
+  const modeBadge = r.mode === "restock" ? "Per Restock" : "24hr";
+  const mats = r.recipe ? r.recipe.materials.filter((m) => m.qty > 0) : [];
+  const matRows = !mats.length || r.toolUse <= 0 ? `<div class="rc-boost-none">No material used</div>` : mats.map((m) => {
+    const p = matPrice2(m.name);
+    return matRowHtml2(m.name, m.qty * r.toolUse, p, "1 cycle") + matRowHtml2(m.name, m.qty * r.toolUses, p, modeBadge);
+  }).join("");
+  const yieldRows = matRowHtml2("Salt", r.yieldCycle, r.sell, "1 cycle") + matRowHtml2("Salt", r.totalYield, r.sell, modeBadge);
+  return `<div class="rc-mat-section rc-group"><div class="rc-boost-label">Material Used</div>${matRows}</div>
+    <div class="rc-mat-section rc-group"><div class="rc-boost-label">Salt Yield</div>${yieldRows}</div>`;
+}
+function totalCycleHtml5(r) {
+  if (r.mode !== "24h") return n26(r.cycles);
+  return `<span class="rc-cycle-val"><span>${n26(r.cycles)}${r.cyclesCustom ? ` <span class="rc-kv-sub">Custom</span>` : ""}</span><button type="button" class="rc-edit-link" data-rc-edit-cycle="Salt">Edit</button></span>`;
+}
+function computationCardHtml5(r) {
+  const ratio = ratioInfo5();
+  const modeLabel = r.mode === "restock" ? "Per Restock Mode" : "24Hrs Mode";
+  const qtyLabel = r.mode === "restock" ? `\xD7${r.restockQty} Restock` : `\xD7${n26(r.restockQty)} Restock${r.restockQty === 1 ? "" : "s"}`;
+  const ratioLine = ratio.free ? `Free gems` : `1${FLOWER_ICON} : ${n26(ratio.gemsPerFlower)}${GEM_ICON}`;
+  const shareLine = r.shareCount > 1 ? `<div class="rc-kv rc-kv-wide"><span class="rc-kv-label">Your share of ${r.mode === "restock" ? "1 restock" : "each restock"}</span><span class="rc-kv-val">1/${r.shareCount} = ${flowerHtml5(r.restock)}</span></div>` : "";
+  const yieldNote = r.yieldBonus ? `<span class="rc-kv-sub">${n26(r.yieldCharge - r.yieldBonus)} + ${n26(r.yieldBonus)}</span>` : "";
+  return `<article class="rc-comp-card guro-frame">
+    <header class="rc-comp-head"><span class="rc-comp-icon">${getIcon("Salt")}</span><span class="rc-comp-name">Salt</span><span class="rc-comp-nodes">${getIcon("Salt")} ${n26(r.nodes)}</span></header>
+    <div class="rc-group"><div class="rc-kv-grid">
+      ${kv5("Yield / Charge", `${signed6(r.yieldCharge, n26)}${getIcon("Salt")}${yieldNote}`, "rc-kv-wide")}
+      ${kv5("Recovery Time", esc6(formatDuration(r.timeSec)), "rc-kv-wide")}
+      ${kv5("Max Stored Charges", `${n26(r.storedChargeCap)} / node`, "rc-kv-wide")}
+      ${r.regrowChance > 0 ? kv5("Instant Regrow Chance", `${n26(r.regrowChance * 100)}%`) : ""}
+      ${r.regrowChance > 0 ? kv5("Avg Harvests / Node", `\xD7${n26(r.avgHarvests)}`) : ""}
+      ${r.regrowChance > 0 ? kv5("Extra Nodes / Cycle", `${signed6(r.extraNodesCycle, n26)}${getIcon("Salt")}`) : ""}
+      ${r.regrowChance > 0 ? kv5("Extra Yield / Cycle", `${signed6(r.extraYieldCycle, n26)}${getIcon("Salt")}`) : ""}
+      ${kv5("Rakes / Cycle", `${n26(r.toolUse)}${getIcon("Salt Rake")}`)}
+      ${kv5("Yield / Cycle", `${signed6(r.yieldCycle, n26)}${getIcon("Salt")}`)}
+      ${kv5("Market Price / Unit", flowerSigned5(r.sell))}
+      ${kv5("Gross / Cycle", flowerSigned5(r.grossCycle))}
+      ${kv5("Tool Cost / Tool", flowerHtml5(r.toolUnit))}
+      ${kv5("Tool Cost / Cycle", flowerHtml5(r.costCycle))}
+      ${kv5("Shrine / Cycle", flowerHtml5(r.shrineCycle))}
+      ${kv5("Restock / Cycle", flowerHtml5(r.restockCycle))}
+      ${kv5("Net / Cycle", `<span class="${r.netCycle >= 0 ? "is-profit" : "is-loss"}">${signed6(r.netCycle, fl5)}${FLOWER_ICON}</span>`, "rc-kv-wide")}
+    </div></div>
+    <div class="rc-group"><div class="rc-comp-sub">${modeLabel}</div>
+    <div class="rc-kv-grid">
+      ${kv5("Total Cycle", totalCycleHtml5(r))}
+      ${kv5("Rakes Used", `${n26(r.toolUses)}${getIcon("Salt Rake")}`)}
+      ${kv5("Total Yield", `${signed6(r.totalYield, n26)}${getIcon("Salt")}`)}
+      ${r.regrowChance > 0 ? kv5("Extra Nodes", `${signed6(r.extraNodes, n26)}${getIcon("Salt")}`) : ""}
+      ${r.regrowChance > 0 ? kv5("Extra Yield", `${signed6(r.extraYield, n26)}${getIcon("Salt")}`) : ""}
+      ${kv5("Total Gross", flowerSigned5(r.gross))}
+      ${kv5("Total Tool Cost", flowerHtml5(r.cost))}
+      ${kv5("Total Shrine Cost", flowerHtml5(r.shrine))}
+      ${kv5("Total Restock Cost", flowerHtml5(r.restock))}
+      ${kv5("Restock Quantity", qtyLabel)}
+      ${kv5("Cost / Restock", `${gemHtml5(r.gemPerRestock)}<span class="rc-kv-sub">${ratioLine}</span>`)}
+      ${kv5("Gems Used", `${gemHtml5(r.restockGems)} = ${flowerHtml5(r.restock)}`, "rc-kv-wide")}
+      ${shareLine}
+      ${r.feeRate > 0 ? kv5("Market Fee", flowerHtml5(r.fee)) : ""}
+      ${kv5("Total Net", `<span class="${r.net >= 0 ? "is-profit" : "is-loss"}">${signed6(r.net, fl5)}${FLOWER_ICON}</span>`, "rc-kv-wide rc-kv-net")}
+    </div></div>
+    ${sculptureHtml(r)}
+    ${appliedBoostHtml5(r)}
+    ${toolCostConfigHtml3(r)}
+    ${materialsHtml2(r)}
+  </article>`;
+}
+function computationBodyHtml5() {
+  return computationCardHtml5(computeRow());
+}
+function boostBodyHtml5() {
+  const boosts = BOOSTS.filter((b) => b.source !== "skill" && !b.hiddenFromOwnPanel && (b.category === "salt" && b.scope === "saltGlobal" || b.category === "tools" && b.scope === "tool" && b.target === "Salt Rake"));
+  const html = boostsBySubjectHtml({
+    subjects: [{
+      name: "Salt",
+      icon: getIcon("Salt")
+    }],
+    boosts,
+    appliesTo: () => true,
+    unit: "nodes",
+    noteSkip: /Salt|Rake|AOE|expected/i,
+    allLabel: "Boost for Salt"
+  });
+  return `<div class="rc-pop-hint">Boosts that affect Salt. Tap a boost to switch it on or off, then press Save.</div>${html || `<div class="rc-empty">No boosts found.</div>`}`;
+}
+function currentNodeValue2() {
+  return getNodeCount("Salt") || 0;
+}
+function nodeValue2() {
+  if (nodesDraft5 && Object.prototype.hasOwnProperty.call(nodesDraft5, "nodes")) return nodesDraft5.nodes;
+  return currentNodeValue2();
+}
+function levelValue() {
+  if (nodesDraft5 && Object.prototype.hasOwnProperty.call(nodesDraft5, "level")) return nodesDraft5.level;
+  return saltFarmLevel;
+}
+function nodesBodyHtml5() {
+  const maxLevel = FARM_LEVEL_NODES.length;
+  const level = Math.max(1, Math.min(maxLevel, Math.floor(Number(levelValue())) || 1));
+  const cap = FARM_LEVEL_NODES[level - 1];
+  return `<div class="rc-pop-hint">Enter your Salt Farm level and how many Salt nodes you have, then press Save. A level ${level} farm holds up to ${cap} node${cap === 1 ? "" : "s"}.</div>
+    <label class="rc-node-row guro-frame"><span class="rc-node-icon">${getIcon("Salt")}</span><span class="rc-node-text"><span class="rc-node-name">Salt Farm Level</span><span class="rc-node-used">1 to ${maxLevel}</span></span><input type="number" min="1" max="${maxLevel}" step="1" inputmode="numeric" data-rc-salt-level value="${level}"></label>
+    <label class="rc-node-row guro-frame"><span class="rc-node-icon">${getIcon("Salt")}</span><span class="rc-node-text"><span class="rc-node-name">Salt Node</span><span class="rc-node-used">Used by: Salt</span></span><input type="number" min="0" max="${cap}" step="1" inputmode="numeric" data-rc-salt-nodes value="${nodeValue2()}"></label>`;
+}
+function popupTitle5() {
+  if (popup5 === "skills") return "Salt Skills";
+  if (popup5 === "boost") return "Salt Boosts";
+  if (popup5 === "nodes") return "Salt Nodes";
+  return "Computation";
+}
+function popupBodyHtml5() {
+  if (popup5 === "boost") return boostBodyHtml5();
+  if (popup5 === "nodes") return nodesBodyHtml5();
+  if (popup5 === "computation") return computationBodyHtml5();
+  return `<div class="rc-pop-hint">Aging skills from the Skill Tree that change Salt. Changes here also change the Skill Tree. Press Save to apply them.</div><div id="rcSkillSlot"></div>`;
+}
+function borrow5(id, slotId) {
+  const el = document.getElementById(id);
+  const slot = document.getElementById(slotId);
+  if (!el || !slot) return;
+  const parent = el.parentNode;
+  const next = el.nextSibling;
+  slot.appendChild(el);
+  restoreFns5.push(() => {
+    if (!parent) return;
+    if (next && next.parentNode === parent) parent.insertBefore(el, next);
+    else parent.appendChild(el);
+  });
+}
+function releaseBorrowed5() {
+  while (restoreFns5.length) restoreFns5.pop()();
+}
+var savedSkillCategory5 = null;
+function setupBorrowed5() {
+  if (popup5 === "skills") {
+    savedSkillCategory5 = skillCategory;
+    setSkillCategory("aging");
+    borrow5("ascensionBar", "rcAscSlot");
+    borrow5("skillListWrap", "rcSkillSlot");
+    borrow5("skillSaveBar", "rcSaveSlot");
+    renderSkillPanel();
+    renderAscensionBar();
+    updateSkillSaveBarState();
+  } else if (popup5 === "boost") {
+    borrow5("skillSaveBar", "rcSaveSlot");
+    updateSkillSaveBarState();
+  }
+}
+function teardownBorrowed5() {
+  releaseBorrowed5();
+  if (savedSkillCategory5 != null) {
+    setSkillCategory(savedSkillCategory5);
+    savedSkillCategory5 = null;
+    renderSkillPanel();
+  }
+}
+function footerHtml5() {
+  if (popup5 === "nodes") return `<button type="button" class="rc-save guro-frame" id="rcNodesSave">Save Changes</button>`;
+  if (popup5 === "skills" || popup5 === "boost") return `<div id="rcSaveSlot"></div>`;
+  return "";
+}
+function overlayHtml5() {
+  return `<div class="rc-pop guro-frame${popup5 === "computation" ? " rc-pop-comp" : ""}" role="dialog" aria-modal="true" aria-label="${popupTitle5()}">
+    <div class="rc-pop-head"><span class="rc-pop-title">${popupTitle5()}</span><button type="button" class="rc-pop-close" data-rc-close aria-label="Close">\u2715</button></div>
+    <div class="rc-pop-body" id="rcPopBody">${popupBodyHtml5()}</div>
+    <div class="rc-pop-foot">${footerHtml5()}</div>
+  </div>`;
+}
+function renderOverlayBody5() {
+  if (!overlayEl5) return;
+  const body = overlayEl5.querySelector("#rcPopBody");
+  if (!body) return;
+  if (popup5 === "skills") return;
+  const top = body.scrollTop;
+  body.innerHTML = popupBodyHtml5();
+  body.scrollTop = top;
+  updateSkillSaveBarState();
+}
+function isPopupDirty5() {
+  if (popup5 === "skills" || popup5 === "boost") return isSkillDraftDirty() || isBoostDraftDirty();
+  if (popup5 === "nodes") {
+    if (!nodesDraft5) return false;
+    const levelChanged = Object.prototype.hasOwnProperty.call(nodesDraft5, "level") && Number(nodesDraft5.level) !== saltFarmLevel;
+    const nodesChanged = Object.prototype.hasOwnProperty.call(nodesDraft5, "nodes") && Number(nodesDraft5.nodes) !== currentNodeValue2();
+    return levelChanged || nodesChanged;
+  }
+  return false;
+}
+function openPopup5(kind) {
+  if (popup5) return;
+  popup5 = kind;
+  nodesDraft5 = null;
+  overlayEl5 = document.createElement("div");
+  overlayEl5.className = "rc-overlay";
+  overlayEl5.innerHTML = overlayHtml5();
+  document.body.appendChild(overlayEl5);
+  document.body.classList.add("rc-no-scroll");
+  const slot = overlayEl5.querySelector("#rcSkillSlot");
+  if (kind === "skills" && slot) {
+    const asc = document.createElement("div");
+    asc.id = "rcAscSlot";
+    slot.parentNode.insertBefore(asc, slot);
+  }
+  setupBorrowed5();
+}
+function destroyPopup5() {
+  teardownBorrowed5();
+  if (overlayEl5) overlayEl5.remove();
+  overlayEl5 = null;
+  popup5 = null;
+  nodesDraft5 = null;
+  document.body.classList.remove("rc-no-scroll");
+}
+function closePopup5(force) {
+  if (!popup5) return;
+  if (!force && isPopupDirty5()) {
+    showPrompt5("You have unsaved changes. Save them first, or discard them to close.", [{
+      label: "Keep Editing"
+    }, {
+      label: "Discard",
+      run: () => {
+        discardSkillBoostDrafts();
+        destroyPopup5();
+        refreshResults5();
+      }
+    }]);
+    return;
+  }
+  const wasComputation = popup5 === "computation";
+  destroyPopup5();
+  if (!wasComputation) refreshResults5();
+}
+function showPrompt5(message, buttons) {
+  if (promptEl5) promptEl5.remove();
+  promptEl5 = document.createElement("div");
+  promptEl5.className = "rc-overlay rc-overlay-top";
+  promptEl5.innerHTML = `<div class="rc-prompt guro-frame" role="alertdialog" aria-modal="true"><p class="rc-prompt-text">${esc6(message)}</p><div class="rc-prompt-actions">${buttons.map((b, i) => `<button type="button" class="rc-prompt-btn guro-frame" data-rc-prompt="${i}">${esc6(b.label)}</button>`).join("")}</div></div>`;
+  promptEl5.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-rc-prompt]");
+    if (!btn) return;
+    const b = buttons[Number(btn.getAttribute("data-rc-prompt"))];
+    promptEl5.remove();
+    promptEl5 = null;
+    if (b && b.run) b.run();
+  });
+  document.body.appendChild(promptEl5);
+  const first = promptEl5.querySelector("button");
+  if (first) first.focus();
+}
+function closeCycleEditor5() {
+  if (promptEl5) promptEl5.remove();
+  promptEl5 = null;
+}
+function openCycleEditor5() {
+  if (promptEl5) promptEl5.remove();
+  const fig = computeSaltFarmFigures();
+  const current = state5.cycles > 0 ? state5.cycles : "";
+  const fallback = fig && fig.timeSec > 0 ? Math.round(86400 / fig.timeSec) : 0;
+  promptEl5 = document.createElement("div");
+  promptEl5.className = "rc-overlay rc-overlay-top";
+  promptEl5.innerHTML = `<div class="rc-prompt rc-cycle-edit guro-frame" role="dialog" aria-modal="true" aria-label="Editing Cycle"><div class="rc-cycle-edit-label">Editing Cycle</div><div class="rc-cycle-edit-row"><input type="number" min="0" max="${MAX_CUSTOM_CYCLES5}" step="1" inputmode="numeric" data-rc-cycle-input value="${current}" placeholder="${fallback}"><button type="button" class="rc-prompt-btn guro-frame" data-rc-cycle-save>Save</button></div></div>`;
+  promptEl5.addEventListener("click", (e) => {
+    if (e.target === promptEl5) {
+      closeCycleEditor5();
+      return;
+    }
+    if (e.target.closest("[data-rc-cycle-save]")) saveCycleEdit5();
+  });
+  promptEl5.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      saveCycleEdit5();
+    }
+  });
+  document.body.appendChild(promptEl5);
+  const input = promptEl5.querySelector("[data-rc-cycle-input]");
+  if (input) {
+    input.focus();
+    input.select();
+  }
+}
+function saveCycleEdit5() {
+  if (!promptEl5) return;
+  const input = promptEl5.querySelector("[data-rc-cycle-input]");
+  const btn = promptEl5.querySelector("[data-rc-cycle-save]");
+  if (!input || btn && btn.disabled) return;
+  const value = input.value === "" ? 0 : Math.floor(Number(input.value));
+  if (btn) btn.disabled = true;
+  input.disabled = true;
+  const chip = document.createElement("div");
+  chip.className = "bg-sim-saving guro-frame";
+  chip.innerHTML = `<span class="bg-sim-spin"></span><span class="bg-sim-saving-text">Saving...</span>`;
+  document.body.appendChild(chip);
+  setTimeout(() => {
+    state5.cycles = isFinite(value) && value > 0 ? Math.min(value, MAX_CUSTOM_CYCLES5) : 0;
+    saveState5();
+    closeCycleEditor5();
+    refreshResults5();
+    chip.classList.add("is-done");
+    chip.innerHTML = `<span class="bg-sim-tick">\u2713</span><span class="bg-sim-saving-text">Saved</span>`;
+    setTimeout(() => chip.remove(), 900);
+  }, 700);
+}
+function saveNodes5() {
+  const draft = nodesDraft5 || {};
+  const maxLevel = FARM_LEVEL_NODES.length;
+  if (Object.prototype.hasOwnProperty.call(draft, "level")) {
+    setSaltFarmLevel(Math.max(1, Math.min(maxLevel, Math.floor(Number(draft.level)) || 1)));
+  }
+  if (Object.prototype.hasOwnProperty.call(draft, "nodes")) {
+    const v = Math.max(0, Math.floor(Number(draft.nodes) || 0));
+    setNodeCount("Salt", Math.min(v, farmLevelMaxNodes()));
+  }
+  invalidateCostCache();
+  renderLibraryLists();
+  renderBoostPanel();
+  updateCalcSummary();
+  nodesDraft5 = null;
+  toast("\u2705 Salt nodes saved");
+  renderOverlayBody5();
+  refreshResults5();
+}
+function setMode5(id) {
+  if (id === state5.mode) return;
+  state5.mode = id;
+  saveState5();
+  refreshResults5();
+}
+function sculptureChanged() {
+  invalidateCostCache();
+  renderOverlayBody5();
+  refreshResults5();
+}
+function onClick5(e) {
+  const details = e.target.closest("[data-rc-details]");
+  if (details) {
+    detailsOpen5 = !detailsOpen5;
+    refreshResults5();
+    return;
+  }
+  const mode = e.target.closest("[data-rc-mode]");
+  if (mode) {
+    setMode5(mode.getAttribute("data-rc-mode"));
+    return;
+  }
+  const open = e.target.closest("[data-rc-open]");
+  if (open && !open.disabled) openPopup5(open.getAttribute("data-rc-open"));
+}
+function onDocClick5(e) {
+  if (!overlayEl5) return;
+  if (promptEl5 && promptEl5.contains(e.target)) return;
+  if (e.target === overlayEl5 || e.target.closest("[data-rc-close]")) {
+    closePopup5(false);
+    return;
+  }
+  if (!overlayEl5.contains(e.target)) return;
+  if (e.target.closest("#rcNodesSave")) {
+    saveNodes5();
+    return;
+  }
+  const editCycle = e.target.closest("[data-rc-edit-cycle]");
+  if (editCycle && popup5 === "computation") {
+    openCycleEditor5();
+    return;
+  }
+  const lvl = e.target.closest("[data-rc-sculpt-level]");
+  if (lvl && popup5 === "computation") {
+    setSculptureLevel(Number(lvl.getAttribute("data-rc-sculpt-level")));
+    sculptureChanged();
+    return;
+  }
+  const perk = e.target.closest("[data-rc-perk]");
+  if (perk && popup5 === "computation") {
+    const i = Number(perk.getAttribute("data-rc-perk"));
+    setSculpturePerk(i, !isSculpturePerkOn(i));
+    sculptureChanged();
+    return;
+  }
+  const matBtn = e.target.closest("[data-rc-mat]");
+  if (matBtn && popup5 === "computation") {
+    setMaterialMode(RAKE_MODE_KEY, matBtn.getAttribute("data-rc-mat"), matBtn.getAttribute("data-rc-mode"));
+    invalidateCostCache();
+    renderOverlayBody5();
+    refreshResults5();
+    return;
+  }
+  const row = e.target.closest("[data-boost-id]");
+  if (row && popup5 === "boost" && overlayEl5.contains(row)) {
+    draftToggleBoost(row.getAttribute("data-boost-id"));
+    renderOverlayBody5();
+  }
+}
+function onDocInput5(e) {
+  const t = e.target;
+  if (!t || !t.dataset) return;
+  if (t.dataset.rcSaltNodes != null) {
+    nodesDraft5 = nodesDraft5 || {};
+    nodesDraft5.nodes = t.value === "" ? 0 : Number(t.value);
+  }
+  if (t.dataset.rcSaltLevel != null) {
+    nodesDraft5 = nodesDraft5 || {};
+    nodesDraft5.level = t.value === "" ? 1 : Number(t.value);
+  }
+}
+function onDocChange(e) {
+  const t = e.target;
+  if (popup5 === "nodes" && t && t.dataset && t.dataset.rcSaltLevel != null) renderOverlayBody5();
+}
+function onKey5(e) {
+  if (e.key !== "Escape") return;
+  if (promptEl5) {
+    promptEl5.remove();
+    promptEl5 = null;
+    return;
+  }
+  if (popup5) closePopup5(false);
+}
+function onBoostsChanged5() {
+  if (!host5) return;
+  invalidateCostCache();
+  if (popup5 === "boost") renderOverlayBody5();
+  refreshResults5();
+}
+function onExternalChange5() {
+  if (!host5) return;
+  refreshResults5();
+}
+function mountSaltCalculator(root, appApi) {
+  host5 = root;
+  api5 = appApi;
+  invalidateCostCache();
+  loadBaseSaltMarketIfNeeded();
+  state5 = loadState5();
+  detailsOpen5 = false;
+  syncGemRatio5();
+  host5.addEventListener("click", onClick5);
+  document.addEventListener("click", onDocClick5);
+  document.addEventListener("input", onDocInput5);
+  document.addEventListener("change", onDocChange);
+  document.addEventListener("keydown", onKey5);
+  window.addEventListener("guroBoostsChanged", onBoostsChanged5);
+  window.addEventListener("guroGemPackChanged", onExternalChange5);
+  window.addEventListener("guroPricesUpdated", onExternalChange5);
+  listening5 = true;
+  render5();
+}
+function unmountSaltCalculator() {
+  invalidateCostCache();
+  if (popup5) destroyPopup5();
+  if (promptEl5) {
+    promptEl5.remove();
+    promptEl5 = null;
+  }
+  if (host5) {
+    host5.removeEventListener("click", onClick5);
+    host5.innerHTML = "";
+  }
+  if (listening5) {
+    document.removeEventListener("click", onDocClick5);
+    document.removeEventListener("input", onDocInput5);
+    document.removeEventListener("change", onDocChange);
+    document.removeEventListener("keydown", onKey5);
+    window.removeEventListener("guroBoostsChanged", onBoostsChanged5);
+    window.removeEventListener("guroGemPackChanged", onExternalChange5);
+    window.removeEventListener("guroPricesUpdated", onExternalChange5);
+    listening5 = false;
+  }
+  host5 = null;
+  api5 = null;
+}
+function saltCalculatorCanLeave() {
+  if (!popup5) return true;
+  if (isPopupDirty5()) {
+    toast("\u26A0\uFE0F Save your changes first");
+    return false;
+  }
+  destroyPopup5();
+  return true;
+}
+
+// src/rescalc_obsidian.js
+var STORE_KEY6 = "guro_rc_obsidian_v1";
+var MAX_CUSTOM_CYCLES6 = 1e5;
+var AUTO_COLLECT_MIN_PROFIT2 = 0.2;
+var NODE_NAME = "Lava Pit";
+var ITEM = "Obsidian";
+var MODES6 = [{
+  id: "harvest",
+  label: "Per Harvest"
+}, {
+  id: "weekly",
+  label: "Weekly"
+}];
+var host6 = null;
+var state6 = null;
+var popup6 = null;
+var overlayEl6 = null;
+var promptEl6 = null;
+var restoreFns6 = [];
+var nodesDraft6 = null;
+var listening6 = false;
+var detailsOpen6 = false;
+var savedSkillCategory6 = null;
+function esc7(s) {
+  return escapeHtml(String(s));
+}
+function loadState6() {
+  const base = {
+    mode: "harvest",
+    season: normalizeSeason(previewSeason),
+    cycles: 0
+  };
+  try {
+    const raw = JSON.parse(localStorage.getItem(STORE_KEY6) || "null");
+    if (raw && typeof raw === "object") {
+      if (raw.mode === "weekly" || raw.mode === "harvest") base.mode = raw.mode;
+      if (SEASON_ORDER.includes(raw.season)) base.season = raw.season;
+      const v = Math.floor(Number(raw.cycles));
+      if (isFinite(v) && v > 0) base.cycles = Math.min(v, MAX_CUSTOM_CYCLES6);
+    }
+  } catch (e) {
+  }
+  return base;
+}
+function saveState6() {
+  try {
+    localStorage.setItem(STORE_KEY6, JSON.stringify(state6));
+  } catch (e) {
+  }
+}
+function n27(n) {
+  if (!isFinite(n)) return "\u2014";
+  return n.toLocaleString(void 0, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2
+  });
+}
+function fl6(n) {
+  if (!isFinite(n)) return "\u2014";
+  const a = Math.abs(n);
+  const max = a >= 1e3 ? 0 : a >= 1 ? 2 : 4;
+  return n.toLocaleString(void 0, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: max
+  });
+}
+function signed7(n, f) {
+  const r = f(Math.abs(n));
+  if (n > 0 && r !== "0") return "+" + r;
+  if (n < 0 && r !== "0") return "-" + r;
+  return r;
+}
+function flowerSigned6(n) {
+  return `${signed7(n, fl6)}${FLOWER_ICON}`;
+}
+function flowerHtml6(n) {
+  return `${fl6(n)}${FLOWER_ICON}`;
+}
+function autoModeFor2(material) {
+  const sell = farmPanelGetMarketPriceFlower(material) || 0;
+  if (!(sell > 0)) return null;
+  const cost = coinsToFlower(getItemCostByName(material));
+  if (!isFinite(cost)) return null;
+  if (cost <= 0) return "collect";
+  const net = sell * (1 - (feePercent || 0) / 100);
+  return (net - cost) / cost >= AUTO_COLLECT_MIN_PROFIT2 ? "collect" : "buy";
+}
+function refreshAutoModes2() {
+  const map = {};
+  setAutoMaterialModes(map);
+  invalidateCostCache();
+  SEASON_ORDER.forEach((season) => {
+    const res = "Obsidian_" + season;
+    LAVA_PIT_RECIPES[season].materials.forEach((m) => {
+      if (m.name.toLowerCase() === "oil" || hasManualMaterialMode(res, m.name)) return;
+      const mode = autoModeFor2(m.name);
+      if (!mode) return;
+      map[res + ":" + m.name] = mode;
+      invalidateCostCache();
+    });
+  });
+}
+function compute6() {
+  refreshAutoModes2();
+  const season = state6.season;
+  const mode = state6.mode;
+  const fig = computeLavaPitFigures(season);
+  const nodes = getNodeCount(NODE_NAME) || 0;
+  const sell = farmPanelGetMarketPriceFlower(ITEM) || 0;
+  const feeRate = (feePercent || 0) / 100;
+  const shrine = getActiveShrineDailyCost(fig.activeBoosts);
+  const costPit = coinsToFlower(fig.totalMaterialsCost);
+  const yieldPit = fig.yieldVal;
+  const yieldAll = nodes * yieldPit;
+  const grossCycle = yieldAll * sell;
+  const costCycle = nodes * costPit;
+  const shrineCycle = shrine.total * fig.timeSec / 86400;
+  const out = {
+    season,
+    mode,
+    fig,
+    nodes,
+    timeSec: fig.timeSec,
+    yieldPit,
+    yieldAll,
+    sell,
+    costPit,
+    grossCycle,
+    costCycle,
+    shrineCycle,
+    feeRate,
+    activeBoosts: fig.activeBoosts
+  };
+  const autoCycles = fig.timeSec > 0 ? Math.round(7 * 86400 / fig.timeSec) : 0;
+  out.autoCycles = autoCycles;
+  if (mode === "harvest") {
+    out.cycles = 1;
+    out.cyclesCustom = false;
+    out.totalYield = yieldAll;
+    out.sellable = yieldAll;
+    out.gross = grossCycle;
+    out.fee = grossCycle * feeRate;
+    out.cost = costCycle;
+    out.shrine = shrineCycle;
+  } else {
+    const custom = state6.cycles > 0 ? state6.cycles : void 0;
+    const w = computeObsidianWeeklyProfit(fig, sell, custom);
+    out.cycles = w.cyclesPerWeek;
+    out.cyclesCustom = custom != null;
+    out.totalYield = w.produced;
+    out.sellable = w.sellable;
+    out.gross = w.sellable * sell;
+    out.fee = out.gross - w.revenue;
+    out.cost = w.cost;
+    out.shrine = shrine.total * 7;
+    out.allGross = w.produced * sell;
+    out.allFee = out.allGross * feeRate;
+    out.allCost = w.cyclesPerWeek * costCycle;
+    out.allNet = out.allGross - out.allFee - out.allCost - out.shrine;
+  }
+  out.net = out.gross - out.fee - out.cost - out.shrine;
+  out.netCycle = grossCycle * (1 - feeRate) - costCycle - shrineCycle;
+  return out;
+}
+function seasonCardsHtml4() {
+  return SEASON_ORDER.map((s) => {
+    const on = state6.season === s;
+    const icon = SEASON_EMOJI[s];
+    return `<button type="button" class="rc-season guro-frame${on ? " is-on" : ""}" data-rc-season="${s}" aria-pressed="${on ? "true" : "false"}">${icon}<span class="rc-season-name">${s}</span></button>`;
+  }).join("");
+}
+function itemCellHtml() {
+  return `<div class="rc-crop guro-frame is-on"><span class="rc-crop-icon">${getIcon(ITEM)}</span><span class="rc-crop-name">${ITEM}</span></div>`;
+}
+function tilesHtml6(r) {
+  const good = r.net >= 0;
+  return `<div class="rc-tiles-wrap guro-frame"><div class="rc-tiles"><div class="rc-tile guro-frame ${good ? "is-profit" : "is-loss"}"><span class="rc-tile-icon">${getIcon(ITEM)}</span><span class="rc-tile-yield">${signed7(r.totalYield, n27)}</span><span class="rc-tile-net">${fl6(r.gross)}${FLOWER_ICON}</span></div></div></div>`;
+}
+function valueBoxHtml6(label, html, extra) {
+  return `<div class="rc-val guro-frame${extra ? " " + extra : ""}"><span class="rc-val-label">${label}</span><span class="rc-val-num">${html}</span></div>`;
+}
+function netBoxHtml(label, net, extra) {
+  return valueBoxHtml6(label, `<span class="${net >= 0 ? "is-profit" : "is-loss"}">${signed7(net, fl6)}${FLOWER_ICON}</span>`, extra);
+}
+function valuesHtml6(r) {
+  const weekly = r.mode === "weekly";
+  const feeBox = r.feeRate > 0 ? valueBoxHtml6("Market Fee", flowerHtml6(r.fee)) : "";
+  const allFeeBox = r.feeRate > 0 ? valueBoxHtml6("Market Fee", flowerHtml6(r.allFee)) : "";
+  const sellLabel = weekly ? "Sellable " : "";
+  const sellable = `<div class="rc-values">
+    ${weekly ? valueBoxHtml6("Sellable (max " + OBSIDIAN_WEEKLY_SELL_CAP + ")", `${signed7(r.sellable, n27)}${getIcon(ITEM)}`, "rc-val-wide") : ""}
+    ${valueBoxHtml6(sellLabel + "Gross", flowerHtml6(r.gross))}
+    ${valueBoxHtml6(sellLabel + "Cost", flowerHtml6(r.cost))}
+    ${valueBoxHtml6("Shrine Cost", flowerHtml6(r.shrine))}
+    ${feeBox}
+  </div>
+  <div class="rc-net-row">
+    ${netBoxHtml(sellLabel + "Net", r.net, "rc-val-net")}
+    <button type="button" class="rc-linktext" data-rc-open="computation">Computation</button>
+  </div>`;
+  if (!weekly) return sellable;
+  const all = `<div class="rc-values">
+    ${valueBoxHtml6("Weekly Yield", `${signed7(r.totalYield, n27)}${getIcon(ITEM)}`, "rc-val-wide")}
+    ${valueBoxHtml6("Yield Gross", flowerHtml6(r.allGross))}
+    ${valueBoxHtml6("Yield Cost", flowerHtml6(r.allCost))}
+    ${valueBoxHtml6("Shrine Cost", flowerHtml6(r.shrine))}
+    ${allFeeBox}
+  </div>
+  <div class="rc-net-row">
+    ${netBoxHtml("Yield Net", r.allNet, "rc-val-net")}
+  </div>`;
+  return all + sellable;
+}
+function modeNoteHtml6(r) {
+  const warn = r.nodes > 0 ? "" : `<div class="rc-note is-warn">Lava Pit is 0, so every result is 0. Open Nodes above and enter your lava pits.</div>`;
+  const text = state6.mode === "harvest" ? `Per Harvest: one harvest of every Lava Pit. The recipe is paid for every pit and every obsidian is valued at the market price.` : `Weekly: ${OBSIDIAN_WEEKLY_SELL_CAP} obsidian can be sold per week, so only that many are counted as gross and cost. Buying is capped at ${OBSIDIAN_WEEKLY_PURCHASE_CAP} per week.`;
+  return `<div class="rc-details-row"><button type="button" class="rc-linktext" data-rc-details aria-expanded="${detailsOpen6 ? "true" : "false"}">Details</button></div>${detailsOpen6 ? `<div class="rc-note">${text}</div>` : ""}${warn}`;
+}
+function pickerHtml6() {
+  return `<section class="rc-block guro-frame" aria-label="Obsidian Calculator">
+    <div class="rc-block-title">Obsidian Calculator</div>
+    <div class="rc-seasons" id="rcSeasons">${seasonCardsHtml4()}</div>
+    <div class="rc-crops" id="rcCrops">${itemCellHtml()}</div>
+  </section>`;
+}
+function resultsHtml6() {
+  const r = compute6();
+  return `<section class="rc-block guro-frame" aria-label="Obsidian results">
+    <div class="rc-modes" role="group" aria-label="Calculation mode">${MODES6.map((m) => `<button type="button" class="rc-mode guro-frame${state6.mode === m.id ? " is-on" : ""}" data-rc-mode="${m.id}" aria-pressed="${state6.mode === m.id ? "true" : "false"}">${m.label}</button>`).join("")}</div>
+    <div class="rc-tools">
+      <button type="button" class="rc-tool guro-frame" data-rc-open="skills">Skills</button>
+      <button type="button" class="rc-tool guro-frame" data-rc-open="boost">Boost</button>
+      <button type="button" class="rc-tool guro-frame" data-rc-open="nodes">Nodes</button>
+    </div>
+    ${modeNoteHtml6(r)}
+    <div id="rcResults">${tilesHtml6(r)}${valuesHtml6(r)}</div>
+  </section>`;
+}
+function render6() {
+  if (!host6) return;
+  const scroller = document.scrollingElement;
+  const y = scroller ? scroller.scrollTop : 0;
+  host6.innerHTML = pickerHtml6() + resultsHtml6();
+  if (scroller) scroller.scrollTop = y;
+}
+function refreshResults6() {
+  if (!host6) return;
+  const blocks = host6.querySelectorAll(".rc-block");
+  if (!blocks[1]) {
+    render6();
+    return;
+  }
+  const tmp = document.createElement("div");
+  tmp.innerHTML = resultsHtml6();
+  blocks[1].replaceWith(tmp.firstElementChild);
+  if (popup6 === "computation") renderOverlayBody6();
+}
+function effectParts6(b) {
+  const y = [];
+  const t = [];
+  const c = [];
+  if (b.yieldAdd) y.push(`${b.yieldAdd > 0 ? "+" : ""}${n27(b.yieldAdd)} yield`);
+  if (b.timeMult) t.push(`\xD7${b.timeMult} time`);
+  if (b.materialQtyMult) c.push(`\xD7${b.materialQtyMult} materials`);
+  return {
+    yield: y,
+    time: t,
+    cost: c
+  };
+}
+function appliedBoostHtml6(r) {
+  const groups = {
+    yield: [],
+    time: [],
+    cost: []
+  };
+  r.activeBoosts.forEach((b) => {
+    const p = effectParts6(b);
+    ["yield", "time", "cost"].forEach((k) => {
+      if (p[k].length) groups[k].push(`<div class="rc-boost-row">${getBoostIconAnyFallback(b.name)}<span class="rc-boost-name">${esc7(b.name)}</span><span class="rc-boost-eff">${esc7(p[k].join(", "))}</span></div>`);
+    });
+  });
+  const section = (label, items) => items.length ? `<div class="rc-boost-group"><div class="rc-boost-label">${label}</div>${items.join("")}</div>` : "";
+  const body = section("Yield Boost", groups.yield) + section("Time Boost", groups.time) + section("Material Boost", groups.cost);
+  return `<div class="rc-group"><div class="rc-comp-sub">Applied Boost</div>${body || `<div class="rc-boost-none">No boost applied</div>`}</div>`;
+}
+function kv6(label, html, cls) {
+  return `<div class="rc-kv${cls ? " " + cls : ""}"><span class="rc-kv-label">${label}</span><span class="rc-kv-val">${html}</span></div>`;
+}
+function totalCycleHtml6(r) {
+  const val = n27(r.cycles);
+  if (r.mode !== "weekly") return val;
+  return `<span class="rc-cycle-val"><span>${val}${r.cyclesCustom ? ` <span class="rc-kv-sub">Custom</span>` : ""}</span><button type="button" class="rc-edit-link" data-rc-edit-cycle="${ITEM}">Edit</button></span>`;
+}
+function recipeConfigHtml(r) {
+  const res = "Obsidian_" + r.season;
+  const btn = (m, mode, label) => `<button type="button" class="es-mode-btn es-toolcfg-tbtn${m.mode === mode ? " active" : ""}" data-rc-res="${esc7(res)}" data-rc-mat="${esc7(m.name)}" data-rc-mode="${mode}">${label}</button>`;
+  const rows = r.fig.breakdown.map((m) => {
+    const tog = m.name.toLowerCase() === "oil" ? `<span class="es-toolcfg-free">Always Collect</span>` : `<span class="es-toolcfg-tog">${btn(m, "collect", "Collect")}${btn(m, "buy", "Buy")}</span>`;
+    const unit = m.mode === "buy" ? flowerHtml6(coinsToFlower(m.unitCost)) : `${fl6(m.unitCost)}${COIN_ICON}`;
+    return `<div class="rc-tool-mat"><span class="rc-tool-mat-item"><span class="rc-tool-mat-qty">${n27(m.qty)}</span>${getIcon(m.name)}<span class="rc-kv-sub">${m.mode === "buy" ? "market" : "collect"} @ ${unit}/u</span></span>${tog}</div>`;
+  }).join("");
+  return `<div class="rc-group"><div class="rc-comp-sub">${esc7(r.season)} Recipe (per Lava Pit)</div>
+    <div class="rc-tool-cfg"><div class="rc-tool-name">${getIcon(NODE_NAME)}<span>${NODE_NAME}</span></div>${rows}</div></div>`;
+}
+function computationCardHtml6(r) {
+  const modeLabel = r.mode === "harvest" ? "Per Harvest" : "Weekly";
+  const weeklyRows = r.mode === "weekly" ? `${kv6("Total Cycle", totalCycleHtml6(r), "rc-kv-wide")}${kv6("Produced / Week", `${signed7(r.totalYield, n27)}${getIcon(ITEM)}`)}${kv6("Sellable (cap " + OBSIDIAN_WEEKLY_SELL_CAP + ")", `${signed7(r.sellable, n27)}${getIcon(ITEM)}`)}` : `${kv6("Total Yield", `${signed7(r.totalYield, n27)}${getIcon(ITEM)}`, "rc-kv-wide")}`;
+  return `<article class="rc-comp-card guro-frame">
+    <header class="rc-comp-head"><span class="rc-comp-icon">${getIcon(ITEM)}</span><span class="rc-comp-name">${ITEM} \xB7 ${esc7(r.season)}</span><span class="rc-comp-nodes">${getIcon(NODE_NAME)} ${n27(r.nodes)}</span></header>
+    <div class="rc-group"><div class="rc-kv-grid">
+      ${kv6("Growth Time", esc7(formatDuration(r.timeSec)), "rc-kv-wide")}
+      ${kv6("Yield / Pit", `${signed7(r.yieldPit, n27)}${getIcon(ITEM)}`)}
+      ${kv6("Yield / Harvest", `${signed7(r.yieldAll, n27)}${getIcon(ITEM)}`)}
+      ${kv6("Market Price / Unit", flowerSigned6(r.sell))}
+      ${kv6("Gross / Harvest", flowerSigned6(r.grossCycle))}
+      ${kv6("Cost / Pit", flowerHtml6(r.costPit))}
+      ${kv6("Cost / Harvest", flowerHtml6(r.costCycle))}
+      ${kv6("Shrine / Harvest", flowerHtml6(r.shrineCycle))}
+      ${kv6("Net / Harvest", `<span class="${r.netCycle >= 0 ? "is-profit" : "is-loss"}">${signed7(r.netCycle, fl6)}${FLOWER_ICON}</span>`)}
+    </div></div>
+    <div class="rc-group"><div class="rc-comp-sub">${modeLabel}</div>
+    <div class="rc-kv-grid">
+      ${weeklyRows}
+      ${r.mode === "weekly" ? kv6("Yield Gross", flowerSigned6(r.allGross)) + kv6("Yield Cost", flowerHtml6(r.allCost)) + kv6("Yield Net", `<span class="${r.allNet >= 0 ? "is-profit" : "is-loss"}">${signed7(r.allNet, fl6)}${FLOWER_ICON}</span>`, "rc-kv-wide") : ""}
+      ${kv6(r.mode === "weekly" ? "Sellable Gross" : "Total Gross", flowerSigned6(r.gross))}
+      ${kv6(r.mode === "weekly" ? "Sellable Cost" : "Total Cost", flowerHtml6(r.cost))}
+      ${kv6("Total Shrine Cost", flowerHtml6(r.shrine))}
+      ${r.feeRate > 0 ? kv6("Market Fee", flowerHtml6(r.fee)) : ""}
+      ${kv6(r.mode === "weekly" ? "Sellable Net" : "Total Net", `<span class="${r.net >= 0 ? "is-profit" : "is-loss"}">${signed7(r.net, fl6)}${FLOWER_ICON}</span>`, "rc-kv-wide rc-kv-net")}
+    </div></div>
+    ${appliedBoostHtml6(r)}
+    ${recipeConfigHtml(r)}
+  </article>`;
+}
+function computationBodyHtml6() {
+  return computationCardHtml6(compute6());
+}
+function boostBodyHtml6() {
+  const subjects = [{
+    name: ITEM,
+    icon: getIcon(ITEM)
+  }];
+  const boosts = BOOSTS.filter((b) => b.category === "resources" && b.scope === "lavaPit" && b.source !== "skill" && !b.hiddenFromOwnPanel);
+  const html = boostsBySubjectHtml({
+    subjects,
+    boosts,
+    appliesTo: () => true,
+    unit: "pits",
+    allLabel: "Boost for Obsidian"
+  });
+  return `<div class="rc-pop-hint">Boosts that affect ${ITEM}. Tap a boost to switch it on or off, then press Save.</div>${html || `<div class="rc-empty">No boosts found.</div>`}`;
+}
+function nodesBodyHtml6() {
+  const value = nodesDraft6 == null ? getNodeCount(NODE_NAME) : nodesDraft6;
+  return `<div class="rc-pop-hint">Enter how many Lava Pits you have, then press Save.</div>
+  <label class="rc-node-row guro-frame"><span class="rc-node-icon">${getIcon(NODE_NAME)}</span><span class="rc-node-text"><span class="rc-node-name">${NODE_NAME}</span><span class="rc-node-used">Used by: ${ITEM}</span></span><input type="number" min="0" step="1" inputmode="numeric" id="rcNodesInput" value="${value ? value : ""}" placeholder="0"></label>`;
+}
+function popupTitle6() {
+  if (popup6 === "skills") return "Obsidian Skills";
+  if (popup6 === "boost") return "Obsidian Boosts";
+  if (popup6 === "nodes") return "Obsidian Nodes";
+  return "Computation";
+}
+function popupBodyHtml6() {
+  if (popup6 === "boost") return boostBodyHtml6();
+  if (popup6 === "nodes") return nodesBodyHtml6();
+  if (popup6 === "computation") return computationBodyHtml6();
+  return `<div class="rc-pop-hint">Mining skills from the Skill Tree. Changes here also change the Skill Tree. Press Save to apply them.</div><div id="rcSkillSlot"></div>`;
+}
+function borrow6(id, slotId) {
+  const el = document.getElementById(id);
+  const slot = document.getElementById(slotId);
+  if (!el || !slot) return;
+  const parent = el.parentNode;
+  const next = el.nextSibling;
+  slot.appendChild(el);
+  restoreFns6.push(() => {
+    if (!parent) return;
+    if (next && next.parentNode === parent) parent.insertBefore(el, next);
+    else parent.appendChild(el);
+  });
+}
+function releaseBorrowed6() {
+  while (restoreFns6.length) restoreFns6.pop()();
+}
+function setupBorrowed6() {
+  if (popup6 === "skills") {
+    savedSkillCategory6 = skillCategory;
+    setSkillCategory("mining");
+    borrow6("ascensionBar", "rcAscSlot");
+    borrow6("skillListWrap", "rcSkillSlot");
+    borrow6("skillSaveBar", "rcSaveSlot");
+    renderSkillPanel();
+    renderAscensionBar();
+    updateSkillSaveBarState();
+  } else if (popup6 === "boost") {
+    borrow6("skillSaveBar", "rcSaveSlot");
+    updateSkillSaveBarState();
+  }
+}
+function teardownBorrowed6() {
+  releaseBorrowed6();
+  if (savedSkillCategory6 != null) {
+    setSkillCategory(savedSkillCategory6);
+    savedSkillCategory6 = null;
+    renderSkillPanel();
+  }
+}
+function footerHtml6() {
+  if (popup6 === "nodes") return `<button type="button" class="rc-save guro-frame" id="rcNodesSave">Save Changes</button>`;
+  if (popup6 === "skills" || popup6 === "boost") return `<div id="rcSaveSlot"></div>`;
+  return "";
+}
+function overlayHtml6() {
+  return `<div class="rc-pop guro-frame${popup6 === "computation" ? " rc-pop-comp" : ""}" role="dialog" aria-modal="true" aria-label="${popupTitle6()}">
+    <div class="rc-pop-head"><span class="rc-pop-title">${popupTitle6()}</span><button type="button" class="rc-pop-close" data-rc-close aria-label="Close">\u2715</button></div>
+    <div class="rc-pop-body" id="rcPopBody">${popupBodyHtml6()}</div>
+    <div class="rc-pop-foot">${footerHtml6()}</div>
+  </div>`;
+}
+function renderOverlayBody6() {
+  if (!overlayEl6) return;
+  const body = overlayEl6.querySelector("#rcPopBody");
+  if (!body) return;
+  if (popup6 === "skills") return;
+  const top = body.scrollTop;
+  body.innerHTML = popupBodyHtml6();
+  body.scrollTop = top;
+  updateSkillSaveBarState();
+}
+function isPopupDirty6() {
+  if (popup6 === "skills" || popup6 === "boost") return isSkillDraftDirty() || isBoostDraftDirty();
+  if (popup6 === "nodes") return nodesDraft6 != null && Number(nodesDraft6) !== (getNodeCount(NODE_NAME) || 0);
+  return false;
+}
+function openPopup6(kind) {
+  if (popup6) return;
+  popup6 = kind;
+  nodesDraft6 = null;
+  overlayEl6 = document.createElement("div");
+  overlayEl6.className = "rc-overlay";
+  overlayEl6.innerHTML = overlayHtml6();
+  document.body.appendChild(overlayEl6);
+  document.body.classList.add("rc-no-scroll");
+  const slot = overlayEl6.querySelector("#rcSkillSlot");
+  if (kind === "skills" && slot) {
+    const asc = document.createElement("div");
+    asc.id = "rcAscSlot";
+    slot.parentNode.insertBefore(asc, slot);
+  }
+  setupBorrowed6();
+}
+function destroyPopup6() {
+  teardownBorrowed6();
+  if (overlayEl6) overlayEl6.remove();
+  overlayEl6 = null;
+  popup6 = null;
+  nodesDraft6 = null;
+  document.body.classList.remove("rc-no-scroll");
+}
+function closePopup6(force) {
+  if (!popup6) return;
+  if (!force && isPopupDirty6()) {
+    showPrompt6("You have unsaved changes. Save them first, or discard them to close.", [{
+      label: "Keep Editing"
+    }, {
+      label: "Discard",
+      run: () => {
+        discardSkillBoostDrafts();
+        destroyPopup6();
+        refreshResults6();
+      }
+    }]);
+    return;
+  }
+  const wasComputation = popup6 === "computation";
+  destroyPopup6();
+  if (!wasComputation) refreshResults6();
+}
+function showPrompt6(message, buttons) {
+  if (promptEl6) promptEl6.remove();
+  promptEl6 = document.createElement("div");
+  promptEl6.className = "rc-overlay rc-overlay-top";
+  promptEl6.innerHTML = `<div class="rc-prompt guro-frame" role="alertdialog" aria-modal="true"><p class="rc-prompt-text">${esc7(message)}</p><div class="rc-prompt-actions">${buttons.map((b, i) => `<button type="button" class="rc-prompt-btn guro-frame" data-rc-prompt="${i}">${esc7(b.label)}</button>`).join("")}</div></div>`;
+  promptEl6.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-rc-prompt]");
+    if (!btn) return;
+    const b = buttons[Number(btn.getAttribute("data-rc-prompt"))];
+    promptEl6.remove();
+    promptEl6 = null;
+    if (b && b.run) b.run();
+  });
+  document.body.appendChild(promptEl6);
+  const first = promptEl6.querySelector("button");
+  if (first) first.focus();
+}
+function closeCycleEditor6() {
+  if (promptEl6) promptEl6.remove();
+  promptEl6 = null;
+}
+function openCycleEditor6() {
+  if (promptEl6) promptEl6.remove();
+  const current = state6.cycles > 0 ? state6.cycles : "";
+  const fallback = compute6().autoCycles;
+  promptEl6 = document.createElement("div");
+  promptEl6.className = "rc-overlay rc-overlay-top";
+  promptEl6.innerHTML = `<div class="rc-prompt rc-cycle-edit guro-frame" role="dialog" aria-modal="true" aria-label="Editing Cycle"><div class="rc-cycle-edit-label">Editing Cycle</div><div class="rc-cycle-edit-row"><input type="number" min="0" max="${MAX_CUSTOM_CYCLES6}" step="1" inputmode="numeric" class="rc-cycle-input guro-frame" data-rc-cycle-input value="${current}" placeholder="${fallback}" aria-label="Cycle count"><button type="button" class="rc-prompt-btn guro-frame" data-rc-cycle-save>Save</button></div></div>`;
+  promptEl6.addEventListener("click", (e) => {
+    if (e.target === promptEl6) {
+      closeCycleEditor6();
+      return;
+    }
+    if (e.target.closest("[data-rc-cycle-save]")) saveCycleEdit6();
+  });
+  promptEl6.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      saveCycleEdit6();
+    }
+  });
+  document.body.appendChild(promptEl6);
+  const input = promptEl6.querySelector("[data-rc-cycle-input]");
+  if (input) {
+    input.focus();
+    input.select();
+  }
+}
+function saveCycleEdit6() {
+  if (!promptEl6) return;
+  const input = promptEl6.querySelector("[data-rc-cycle-input]");
+  const btn = promptEl6.querySelector("[data-rc-cycle-save]");
+  if (!input || btn && btn.disabled) return;
+  const value = input.value === "" ? 0 : Math.floor(Number(input.value));
+  if (btn) btn.disabled = true;
+  input.disabled = true;
+  const chip = document.createElement("div");
+  chip.className = "bg-sim-saving guro-frame";
+  chip.innerHTML = `<span class="bg-sim-spin"></span><span class="bg-sim-saving-text">Saving...</span>`;
+  document.body.appendChild(chip);
+  setTimeout(() => {
+    state6.cycles = isFinite(value) && value > 0 ? Math.min(value, MAX_CUSTOM_CYCLES6) : 0;
+    saveState6();
+    closeCycleEditor6();
+    refreshResults6();
+    chip.classList.add("is-done");
+    chip.innerHTML = `<span class="bg-sim-tick">\u2713</span><span class="bg-sim-saving-text">Saved</span>`;
+    setTimeout(() => chip.remove(), 900);
+  }, 700);
+}
+function saveNodes6() {
+  const v = Math.max(0, Math.floor(Number(nodesDraft6 == null ? getNodeCount(NODE_NAME) : nodesDraft6) || 0));
+  setNodeCount(NODE_NAME, v);
+  invalidateCostCache();
+  renderLibraryLists();
+  renderBoostPanel();
+  updateCalcSummary();
+  nodesDraft6 = null;
+  toast("\u2705 Lava pits saved");
+  renderOverlayBody6();
+  refreshResults6();
+}
+function setMode6(id) {
+  if (id === state6.mode) return;
+  state6.mode = id;
+  saveState6();
+  refreshResults6();
+}
+function onClick6(e) {
+  const details = e.target.closest("[data-rc-details]");
+  if (details) {
+    detailsOpen6 = !detailsOpen6;
+    refreshResults6();
+    return;
+  }
+  const season = e.target.closest("[data-rc-season]");
+  if (season) {
+    state6.season = season.getAttribute("data-rc-season");
+    saveState6();
+    const seasons = host6.querySelector("#rcSeasons");
+    if (seasons) seasons.innerHTML = seasonCardsHtml4();
+    refreshResults6();
+    return;
+  }
+  const mode = e.target.closest("[data-rc-mode]");
+  if (mode) {
+    setMode6(mode.getAttribute("data-rc-mode"));
+    return;
+  }
+  const open = e.target.closest("[data-rc-open]");
+  if (open && !open.disabled) openPopup6(open.getAttribute("data-rc-open"));
+}
+function onDocClick6(e) {
+  if (!overlayEl6) return;
+  if (promptEl6 && promptEl6.contains(e.target)) return;
+  if (e.target === overlayEl6 || e.target.closest("[data-rc-close]")) {
+    closePopup6(false);
+    return;
+  }
+  if (!overlayEl6.contains(e.target)) return;
+  if (e.target.closest("#rcNodesSave")) {
+    saveNodes6();
+    return;
+  }
+  if (e.target.closest("[data-rc-edit-cycle]") && popup6 === "computation") {
+    openCycleEditor6();
+    return;
+  }
+  const matBtn = e.target.closest("[data-rc-mat]");
+  if (matBtn && popup6 === "computation") {
+    setMaterialMode(matBtn.getAttribute("data-rc-res"), matBtn.getAttribute("data-rc-mat"), matBtn.getAttribute("data-rc-mode"));
+    invalidateCostCache();
+    renderOverlayBody6();
+    refreshResults6();
+    return;
+  }
+  const row = e.target.closest("[data-boost-id]");
+  if (row && popup6 === "boost" && overlayEl6.contains(row)) {
+    draftToggleBoost(row.getAttribute("data-boost-id"));
+    renderOverlayBody6();
+  }
+}
+function onDocInput6(e) {
+  if (e.target && e.target.id === "rcNodesInput") nodesDraft6 = e.target.value === "" ? 0 : Number(e.target.value);
+}
+function onKey6(e) {
+  if (e.key !== "Escape") return;
+  if (promptEl6) {
+    promptEl6.remove();
+    promptEl6 = null;
+    return;
+  }
+  if (popup6) closePopup6(false);
+}
+function onBoostsChanged6() {
+  if (!host6) return;
+  invalidateCostCache();
+  if (popup6 === "boost") renderOverlayBody6();
+  refreshResults6();
+}
+function onExternalChange6() {
+  if (!host6) return;
+  refreshResults6();
+}
+function mountObsidianCalculator(root) {
+  host6 = root;
+  loadBaseCropsIfNeeded();
+  invalidateCostCache();
+  state6 = loadState6();
+  detailsOpen6 = false;
+  host6.addEventListener("click", onClick6);
+  document.addEventListener("click", onDocClick6);
+  document.addEventListener("input", onDocInput6);
+  document.addEventListener("keydown", onKey6);
+  window.addEventListener("guroBoostsChanged", onBoostsChanged6);
+  window.addEventListener("guroGemPackChanged", onExternalChange6);
+  window.addEventListener("guroPricesUpdated", onExternalChange6);
+  listening6 = true;
+  render6();
+}
+function unmountObsidianCalculator() {
+  setAutoMaterialModes({});
+  invalidateCostCache();
+  if (popup6) destroyPopup6();
+  if (promptEl6) {
+    promptEl6.remove();
+    promptEl6 = null;
+  }
+  if (host6) {
+    host6.removeEventListener("click", onClick6);
+    host6.innerHTML = "";
+  }
+  if (listening6) {
+    document.removeEventListener("click", onDocClick6);
+    document.removeEventListener("input", onDocInput6);
+    document.removeEventListener("keydown", onKey6);
+    window.removeEventListener("guroBoostsChanged", onBoostsChanged6);
+    window.removeEventListener("guroGemPackChanged", onExternalChange6);
+    window.removeEventListener("guroPricesUpdated", onExternalChange6);
+    listening6 = false;
+  }
+  host6 = null;
+}
+function obsidianCalculatorCanLeave() {
+  if (!popup6) return true;
+  if (isPopupDirty6()) {
+    toast("\u26A0\uFE0F Save your changes first");
+    return false;
+  }
+  destroyPopup6();
+  return true;
+}
+
+// src/rescalc_honey.js
+var MAX_ROWS = 40;
+var host7 = null;
+var popup7 = null;
+var overlayEl7 = null;
+var promptEl7 = null;
+var restoreFns7 = [];
+var hivesDraft = null;
+var listening7 = false;
+var detailsOpen7 = false;
+var openMenu = null;
+var savedSkillCategory7 = null;
+function esc8(s) {
+  return escapeHtml(String(s));
+}
+function n28(n) {
+  if (!isFinite(n)) return "\u2014";
+  return n.toLocaleString(void 0, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2
+  });
+}
+function fl7(n) {
+  if (!isFinite(n)) return "\u2014";
+  const a = Math.abs(n);
+  const max = a >= 1e3 ? 0 : a >= 1 ? 2 : 4;
+  return n.toLocaleString(void 0, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: max
+  });
+}
+function signed8(n, f) {
+  const r = f(Math.abs(n));
+  if (n > 0 && r !== "0") return "+" + r;
+  if (n < 0 && r !== "0") return "-" + r;
+  return r;
+}
+function flowerHtml7(n) {
+  return `${fl7(n)}${FLOWER_ICON}`;
+}
+function flowerNameIcon(name) {
+  const v = FLOWER_VARIETIES[name];
+  if (IMAGE_ICONS[name]) return getIcon(name);
+  return `<span class="rc-dd-emoji">${v ? v.icon : ""}</span>`;
+}
+function swarmIcon() {
+  return `<img src="${BEE_SWARM_ICON}" alt="Bee Swarm">`;
+}
+function syncGemRatio6() {
+  try {
+    const want = currentRatio();
+    const fpg = flowerPerGem();
+    const have = fpg > 0 ? 1 / fpg : 0;
+    const same = want.free ? !(fpg > 0) : Math.abs(want.gems - have) < 1e-6;
+    if (!same) applySelection();
+  } catch (e) {
+  }
+}
+function getEcon() {
+  syncGemRatio6();
   loadBaseHoneyIfNeeded();
   return computeHiveEconomics();
 }
@@ -3860,20 +5415,20 @@ function totalsOf5(e) {
   };
 }
 function ddButtonHtml(kind, icon, label) {
-  return `<button type="button" class="rc-dd-btn guro-frame" data-rc-dd-toggle="${kind}" aria-haspopup="listbox" aria-expanded="${openMenu === kind ? "true" : "false"}"><span class="rc-dd-icon">${icon}</span><span class="rc-dd-label">${esc6(label)}</span><span class="rc-dd-chev">\u25BE</span></button>`;
+  return `<button type="button" class="rc-dd-btn guro-frame" data-rc-dd-toggle="${kind}" aria-haspopup="listbox" aria-expanded="${openMenu === kind ? "true" : "false"}"><span class="rc-dd-icon">${icon}</span><span class="rc-dd-label">${esc8(label)}</span><span class="rc-dd-chev">\u25BE</span></button>`;
 }
 function flowerMenuHtml(kind) {
   const options = Object.keys(FLOWER_VARIETIES).map((n) => {
     const locked = isFlowerVarietySeasonLocked(n);
     const on = n === selectedHoneyFlower;
-    return `<div class="rc-dd-opt${on ? " is-on" : ""}${locked ? " is-locked" : ""}" role="option" tabindex="0" aria-selected="${on ? "true" : "false"}" data-rc-dd-pick="${kind}" data-rc-value="${esc6(n)}"><span class="rc-dd-icon">${flowerNameIcon(n)}</span><span class="rc-dd-label">${esc6(n)}</span>${locked ? `<span class="rc-dd-lock">\u{1F512}</span>` : ""}</div>`;
+    return `<div class="rc-dd-opt${on ? " is-on" : ""}${locked ? " is-locked" : ""}" role="option" tabindex="0" aria-selected="${on ? "true" : "false"}" data-rc-dd-pick="${kind}" data-rc-value="${esc8(n)}"><span class="rc-dd-icon">${flowerNameIcon(n)}</span><span class="rc-dd-label">${esc8(n)}</span>${locked ? `<span class="rc-dd-lock">\u{1F512}</span>` : ""}</div>`;
   }).join("");
   return `<div class="rc-dd-menu guro-frame" role="listbox">${options}</div>`;
 }
 function cropMenuHtml() {
   const options = Object.keys(BASE_CROPS).map((n) => {
     const on = n === selectedSwarmCrop;
-    return `<div class="rc-dd-opt${on ? " is-on" : ""}" role="option" tabindex="0" aria-selected="${on ? "true" : "false"}" data-rc-dd-pick="crop" data-rc-value="${esc6(n)}"><span class="rc-dd-icon">${getIcon(n)}</span><span class="rc-dd-label">${esc6(n)}</span></div>`;
+    return `<div class="rc-dd-opt${on ? " is-on" : ""}" role="option" tabindex="0" aria-selected="${on ? "true" : "false"}" data-rc-dd-pick="crop" data-rc-value="${esc8(n)}"><span class="rc-dd-icon">${getIcon(n)}</span><span class="rc-dd-label">${esc8(n)}</span></div>`;
   }).join("");
   return `<div class="rc-dd-menu guro-frame" role="listbox">${options}</div>`;
 }
@@ -3885,7 +5440,7 @@ function cropPickerHtml() {
   const name = selectedSwarmCrop;
   return `<div class="rc-dd rc-dd-inline" data-rc-dd="crop">${ddButtonHtml("crop", getIcon(name), name)}${openMenu === "crop" ? cropMenuHtml() : ""}</div>`;
 }
-function pickerHtml5() {
+function pickerHtml7() {
   return `<section class="rc-block guro-frame" aria-label="Honey Calculator">
     <div class="rc-block-title">Honey Calculator</div>
     <div class="rc-field">
@@ -3898,35 +5453,35 @@ function pickerHtml5() {
 function tileHtml(icon, yieldText, netHtml, good, key) {
   return `<div class="rc-tile guro-frame ${good ? "is-profit" : "is-loss"}" data-rc-tile="${key}"><span class="rc-tile-icon">${icon}</span><span class="rc-tile-yield">${yieldText}</span><span class="rc-tile-net">${netHtml}</span></div>`;
 }
-function tilesHtml5(e, t) {
+function tilesHtml7(e, t) {
   if (!(e.hives > 0)) return `<div class="rc-empty">You have 0 hives. Open Hives above and enter your hive count.</div>`;
-  const honeyTile = tileHtml(getIcon("Honey"), signed6(t.honey, n26), `${fl5(t.honeyGross)}${FLOWER_ICON}`, true, "honey");
-  const flowerTile = tileHtml(flowerNameIcon(selectedHoneyFlower), signed6(t.flowers, n26), `-${fl5(t.cost + t.restock)}${FLOWER_ICON}`, false, "flower");
+  const honeyTile = tileHtml(getIcon("Honey"), signed8(t.honey, n28), `${fl7(t.honeyGross)}${FLOWER_ICON}`, true, "honey");
+  const flowerTile = tileHtml(flowerNameIcon(selectedHoneyFlower), signed8(t.flowers, n28), `-${fl7(t.cost + t.restock)}${FLOWER_ICON}`, false, "flower");
   return `<div class="rc-tiles-wrap guro-frame"><div class="rc-tiles">${honeyTile}${flowerTile}</div></div>`;
 }
-function valueBoxHtml5(label, html, extra) {
+function valueBoxHtml7(label, html, extra) {
   return `<div class="rc-val guro-frame${extra ? " " + extra : ""}"><span class="rc-val-label">${label}</span><span class="rc-val-num">${html}</span></div>`;
 }
-function valuesHtml5(t) {
-  const feeBox = (feePercent || 0) > 0 ? valueBoxHtml5("Market Fee", flowerHtml5(t.fee)) : "";
+function valuesHtml7(t) {
+  const feeBox = (feePercent || 0) > 0 ? valueBoxHtml7("Market Fee", flowerHtml7(t.fee)) : "";
   return `<div class="rc-values">
-    ${valueBoxHtml5("Gross", flowerHtml5(t.gross))}
-    ${valueBoxHtml5("Flower Cost", flowerHtml5(t.cost))}
-    ${valueBoxHtml5("Shrine Cost", flowerHtml5(t.shrine))}
-    ${valueBoxHtml5("Restock Cost", flowerHtml5(t.restock))}
+    ${valueBoxHtml7("Gross", flowerHtml7(t.gross))}
+    ${valueBoxHtml7("Flower Cost", flowerHtml7(t.cost))}
+    ${valueBoxHtml7("Shrine Cost", flowerHtml7(t.shrine))}
+    ${valueBoxHtml7("Restock Cost", flowerHtml7(t.restock))}
     ${feeBox}
   </div>
   <div class="rc-net-row">
-    ${valueBoxHtml5("Net", `<span class="${t.net >= 0 ? "is-profit" : "is-loss"}">${signed6(t.net, fl5)}${FLOWER_ICON}</span>`, "rc-val-net")}
+    ${valueBoxHtml7("Net", `<span class="${t.net >= 0 ? "is-profit" : "is-loss"}">${signed8(t.net, fl7)}${FLOWER_ICON}</span>`, "rc-val-net")}
     <button type="button" class="rc-linktext" data-rc-open="computation">Computation</button>
   </div>`;
 }
-function modeNoteHtml5(e) {
+function modeNoteHtml7(e) {
   const warn = !(e.hives > 0) ? `<div class="rc-note is-warn">You have 0 hives, so every result is 0. Open Hives above and enter your hive count.</div>` : "";
   const text = "24Hrs: every hive is full of honey once a day (more often with speed boosts), the flower is replanted all day and every restock needed is paid for.";
-  return `<div class="rc-details-row"><button type="button" class="rc-linktext" data-rc-details aria-expanded="${detailsOpen5 ? "true" : "false"}">Details</button></div>${detailsOpen5 ? `<div class="rc-note">${text}</div>` : ""}${warn}`;
+  return `<div class="rc-details-row"><button type="button" class="rc-linktext" data-rc-details aria-expanded="${detailsOpen7 ? "true" : "false"}">Details</button></div>${detailsOpen7 ? `<div class="rc-note">${text}</div>` : ""}${warn}`;
 }
-function resultsHtml5() {
+function resultsHtml7() {
   const e = getEcon();
   const t = totalsOf5(e);
   return `<section class="rc-block guro-frame" aria-label="Honey results">
@@ -3935,51 +5490,51 @@ function resultsHtml5() {
       <button type="button" class="rc-tool guro-frame" data-rc-open="boost">Boost</button>
       <button type="button" class="rc-tool guro-frame" data-rc-open="hives">Hives</button>
     </div>
-    ${modeNoteHtml5(e)}
-    <div id="rcResults">${tilesHtml5(e, t)}${valuesHtml5(t)}</div>
+    ${modeNoteHtml7(e)}
+    <div id="rcResults">${tilesHtml7(e, t)}${valuesHtml7(t)}</div>
   </section>`;
 }
-function render5() {
-  if (!host5) return;
+function render7() {
+  if (!host7) return;
   const scroller = document.scrollingElement;
   const y = scroller ? scroller.scrollTop : 0;
-  host5.innerHTML = pickerHtml5() + resultsHtml5();
+  host7.innerHTML = pickerHtml7() + resultsHtml7();
   if (scroller) scroller.scrollTop = y;
 }
-function refreshResults5() {
-  if (!host5) return;
-  const blocks = host5.querySelectorAll(".rc-block");
+function refreshResults7() {
+  if (!host7) return;
+  const blocks = host7.querySelectorAll(".rc-block");
   if (blocks.length < 2) {
-    render5();
+    render7();
     return;
   }
   const tmp = document.createElement("div");
-  tmp.innerHTML = resultsHtml5();
+  tmp.innerHTML = resultsHtml7();
   blocks[1].replaceWith(tmp.firstElementChild);
-  if (popup5 === "computation") renderOverlayBody5();
+  if (popup7 === "computation") renderOverlayBody7();
 }
 function refreshAll() {
-  render5();
-  if (popup5 === "computation") renderOverlayBody5();
+  render7();
+  if (popup7 === "computation") renderOverlayBody7();
 }
-function kv5(label, html, cls) {
+function kv7(label, html, cls) {
   return `<div class="rc-kv${cls ? " " + cls : ""}"><span class="rc-kv-label">${label}</span><span class="rc-kv-val">${html}</span></div>`;
 }
 function effectText(b) {
   const parts = [];
-  if (b.speedAdd) parts.push(`${b.speedAdd > 0 ? "+" : ""}${n26(b.speedAdd)} speed`);
-  if (b.honeyYieldAdd) parts.push(`${b.honeyYieldAdd > 0 ? "+" : ""}${n26(b.honeyYieldAdd)} honey`);
-  if (b.swarmChanceAdd) parts.push(`+${n26(b.swarmChanceAdd * 100)}% swarm chance`);
+  if (b.speedAdd) parts.push(`${b.speedAdd > 0 ? "+" : ""}${n28(b.speedAdd)} speed`);
+  if (b.honeyYieldAdd) parts.push(`${b.honeyYieldAdd > 0 ? "+" : ""}${n28(b.honeyYieldAdd)} honey`);
+  if (b.swarmChanceAdd) parts.push(`+${n28(b.swarmChanceAdd * 100)}% swarm chance`);
   if (b.swarmChanceMult) parts.push(`\xD7${b.swarmChanceMult} swarm chance`);
   if (b.flowerTimeMult) parts.push(`\xD7${b.flowerTimeMult} flower time`);
-  if (b.flowerExtraChance) parts.push(`+${n26(b.flowerExtraChance)} flowers`);
-  if (b.flowerExtraFlat) parts.push(`+${n26(b.flowerExtraFlat)} flowers`);
+  if (b.flowerExtraChance) parts.push(`+${n28(b.flowerExtraChance)} flowers`);
+  if (b.flowerExtraFlat) parts.push(`+${n28(b.flowerExtraFlat)} flowers`);
   return parts.join(", ");
 }
 function boostRowsHtml(list) {
-  return list.map((b) => `<div class="rc-boost-row">${getBoostIconAnyFallback(b.name)}<span class="rc-boost-name">${esc6(b.name)}</span><span class="rc-boost-eff">${esc6(effectText(b))}</span></div>`).join("");
+  return list.map((b) => `<div class="rc-boost-row">${getBoostIconAnyFallback(b.name)}<span class="rc-boost-name">${esc8(b.name)}</span><span class="rc-boost-eff">${esc8(effectText(b))}</span></div>`).join("");
 }
-function appliedBoostHtml5(e) {
+function appliedBoostHtml7(e) {
   const hive = e.hiveStats.activeBoosts.filter((b) => effectText(b));
   const flower = e.flowerStats.activeBoosts.filter((b) => effectText(b));
   const section = (label, items) => items.length ? `<div class="rc-boost-group"><div class="rc-boost-label">${label}</div>${boostRowsHtml(items)}</div>` : "";
@@ -4007,7 +5562,7 @@ function swarmTableHtml(e) {
     <div class="rc-sw-wrap"><table class="rc-sw-grid"><thead><tr><th>Swarms</th><th>Chance</th><th>Crop Yield</th><th>Value</th></tr></thead><tbody>${body}</tbody></table></div>${note}`;
 }
 function swarmBonusHtml(e) {
-  const crop = esc6(selectedSwarmCrop);
+  const crop = esc8(selectedSwarmCrop);
   const pollen = isSkillActive("skill_pollen_power_up") ? " (0.2 base + Pollen Power Up)" : "";
   return `<div class="rc-group rc-swarm">
     <div class="rc-swarm-head"><span class="rc-swarm-icon">${swarmIcon()}</span><span class="rc-swarm-title">Bee Swarm bonus</span></div>
@@ -4022,27 +5577,27 @@ function calculatorCardHtml(e) {
   const feeNote = feePercent > 0 ? `<span class="rc-kv-sub">(${fmt(e.netHoneySell)}${FLOWER_ICON} after ${feePercent}% fee)</span>` : "";
   const formula = e.flowerStats.expectedYield > 1 ? `<span class="rc-kv-sub">(${fmt(e.flowerCostFlower)}${FLOWER_ICON} \xF7 ${fmt(e.flowerStats.expectedYield)} expected flowers/cycle = ${fmt(e.costPerFlower)}${FLOWER_ICON}/flower)</span>` : "";
   return `<article class="rc-comp-card guro-frame">
-    <header class="rc-comp-head"><span class="rc-comp-icon">${getIcon("Honey")}</span><span class="rc-comp-name">Honey Calculator</span><span class="rc-comp-nodes">${getIcon("Beehive")} ${n26(e.hives)}</span></header>
+    <header class="rc-comp-head"><span class="rc-comp-icon">${getIcon("Honey")}</span><span class="rc-comp-name">Honey Calculator</span><span class="rc-comp-nodes">${getIcon("Beehive")} ${n28(e.hives)}</span></header>
     <div class="rc-group"><div class="rc-kv-grid">
-      ${kv5("Honey Speed", fmt(e.hiveStats.speed))}
-      ${kv5("Time To Full Hive", esc6(formatDuration(e.hiveStats.timeToFullSec)))}
-      ${kv5("Honey / Hive / Day", fmt(e.hiveStats.honeyPerHiveDay))}
-      ${kv5("Swarm Chance / Fill", `${(e.hiveStats.swarmChance * 100).toFixed(2)}%`)}
+      ${kv7("Honey Speed", fmt(e.hiveStats.speed))}
+      ${kv7("Time To Full Hive", esc8(formatDuration(e.hiveStats.timeToFullSec)))}
+      ${kv7("Honey / Hive / Day", fmt(e.hiveStats.honeyPerHiveDay))}
+      ${kv7("Swarm Chance / Fill", `${(e.hiveStats.swarmChance * 100).toFixed(2)}%`)}
     </div></div>
-    ${appliedBoostHtml5(e)}
+    ${appliedBoostHtml7(e)}
     <div class="rc-group"><div class="rc-comp-sub">Active Flower</div>
       ${flowerPickerHtml("popflower")}
       <div class="rc-kv-grid">
-        ${kv5("Replants / Day", fmt(e.replantsPerDay))}
-        ${kv5("Average Yield", `${fmt(e.flowerStats.expectedYield)} <span class="rc-kv-sub">flowers/cycle</span>`)}
-        ${kv5("Cost / Hive / Day", `${fmt(e.costPerHiveDay)}${FLOWER_ICON}${formula}`, "rc-kv-wide")}
-        ${kv5("Seed Restock Cost / Hive / Day", `${e.flowerRestockCost > 0 ? "+" + fmt(e.flowerRestockCost) : "0"}${FLOWER_ICON}`, "rc-kv-wide")}
+        ${kv7("Replants / Day", fmt(e.replantsPerDay))}
+        ${kv7("Average Yield", `${fmt(e.flowerStats.expectedYield)} <span class="rc-kv-sub">flowers/cycle</span>`)}
+        ${kv7("Cost / Hive / Day", `${fmt(e.costPerHiveDay)}${FLOWER_ICON}${formula}`, "rc-kv-wide")}
+        ${kv7("Seed Restock Cost / Hive / Day", `${e.flowerRestockCost > 0 ? "+" + fmt(e.flowerRestockCost) : "0"}${FLOWER_ICON}`, "rc-kv-wide")}
       </div>
     </div>
     <div class="rc-group"><div class="rc-comp-sub">Honey Sell Price</div>
       <div class="rc-kv-grid">
-        ${kv5("Honey Sell Price", `${fmt(e.honeySellFlower)}${FLOWER_ICON}${feeNote}`, "rc-kv-wide")}
-        ${kv5("Revenue / Hive / Day", `${fmt(e.hiveStats.honeyPerHiveDay * e.netHoneySell)}${FLOWER_ICON}`, "rc-kv-wide")}
+        ${kv7("Honey Sell Price", `${fmt(e.honeySellFlower)}${FLOWER_ICON}${feeNote}`, "rc-kv-wide")}
+        ${kv7("Revenue / Hive / Day", `${fmt(e.hiveStats.honeyPerHiveDay * e.netHoneySell)}${FLOWER_ICON}`, "rc-kv-wide")}
       </div>
     </div>
     ${swarmBonusHtml(e)}
@@ -4050,28 +5605,28 @@ function calculatorCardHtml(e) {
 }
 function profitCardHtml(e, t) {
   const perHive = e.hives > 0 ? t.net / e.hives : 0;
-  const shrineNames = t.shrines.length ? `<span class="rc-kv-sub">${esc6(t.shrines.map((s) => s.name).join(", "))}</span>` : "";
+  const shrineNames = t.shrines.length ? `<span class="rc-kv-sub">${esc8(t.shrines.map((s) => s.name).join(", "))}</span>` : "";
   return `<article class="rc-comp-card guro-frame">
-    <header class="rc-comp-head"><span class="rc-comp-icon">${getIcon("Honey")}</span><span class="rc-comp-name">Honey 24hr Profitability</span><span class="rc-comp-nodes">${getIcon("Beehive")} ${n26(e.hives)}</span></header>
+    <header class="rc-comp-head"><span class="rc-comp-icon">${getIcon("Honey")}</span><span class="rc-comp-name">Honey 24hr Profitability</span><span class="rc-comp-nodes">${getIcon("Beehive")} ${n28(e.hives)}</span></header>
     <div class="rc-group"><div class="rc-comp-sub">24Hrs Profit / Loss \u2014 ${fmt(e.hives)} hives</div>
     <div class="rc-kv-grid">
-      ${kv5("Total Honey", `${signed6(t.honey, n26)}${getIcon("Honey")}`)}
-      ${kv5("Total Gross", `${signed6(t.gross, fl5)}${FLOWER_ICON}`)}
-      ${kv5("Flower Cost", flowerHtml5(t.cost))}
-      ${kv5("Seed Restock Cost", flowerHtml5(t.restock))}
-      ${kv5("Shrine Cost", `${flowerHtml5(t.shrine)}${shrineNames}`)}
-      ${feePercent > 0 ? kv5("Market Fee", flowerHtml5(t.fee)) : ""}
-      ${kv5("Profit / Hive / Day", `<span class="${perHive >= 0 ? "is-profit" : "is-loss"}">${signed6(perHive, fl5)}${FLOWER_ICON}</span>`, "rc-kv-wide")}
-      ${kv5(`Total / ${fmt(e.hives)} Hives / Day`, `<span class="${t.net >= 0 ? "is-profit" : "is-loss"}">${signed6(t.net, fl5)}${FLOWER_ICON}</span>`, "rc-kv-wide rc-kv-net")}
+      ${kv7("Total Honey", `${signed8(t.honey, n28)}${getIcon("Honey")}`)}
+      ${kv7("Total Gross", `${signed8(t.gross, fl7)}${FLOWER_ICON}`)}
+      ${kv7("Flower Cost", flowerHtml7(t.cost))}
+      ${kv7("Seed Restock Cost", flowerHtml7(t.restock))}
+      ${kv7("Shrine Cost", `${flowerHtml7(t.shrine)}${shrineNames}`)}
+      ${feePercent > 0 ? kv7("Market Fee", flowerHtml7(t.fee)) : ""}
+      ${kv7("Profit / Hive / Day", `<span class="${perHive >= 0 ? "is-profit" : "is-loss"}">${signed8(perHive, fl7)}${FLOWER_ICON}</span>`, "rc-kv-wide")}
+      ${kv7(`Total / ${fmt(e.hives)} Hives / Day`, `<span class="${t.net >= 0 ? "is-profit" : "is-loss"}">${signed8(t.net, fl7)}${FLOWER_ICON}</span>`, "rc-kv-wide rc-kv-net")}
     </div></div>
   </article>`;
 }
-function computationBodyHtml5() {
+function computationBodyHtml7() {
   const e = getEcon();
   const t = totalsOf5(e);
   return calculatorCardHtml(e) + profitCardHtml(e, t);
 }
-function boostBodyHtml5() {
+function boostBodyHtml7() {
   const flower = selectedHoneyFlower;
   const subjects = [{
     name: "Hives",
@@ -4094,151 +5649,151 @@ function boostBodyHtml5() {
     noteSkip: /./,
     allLabel: "Boost for All"
   });
-  return `<div class="rc-pop-hint">Boosts that affect your hives and ${esc6(flower)}. Tap a boost to switch it on or off, then press Save.</div>${html || `<div class="rc-empty">No boosts found.</div>`}`;
+  return `<div class="rc-pop-hint">Boosts that affect your hives and ${esc8(flower)}. Tap a boost to switch it on or off, then press Save.</div>${html || `<div class="rc-empty">No boosts found.</div>`}`;
 }
 function hivesBodyHtml() {
   const value = hivesDraft == null ? getHiveCount() : hivesDraft;
   return `<div class="rc-pop-hint">Every hive uses the same flower and the same boosts. Change your hive count here, then press Save.</div>
   <label class="rc-node-row guro-frame"><span class="rc-node-icon">${getIcon("Beehive")}</span><span class="rc-node-text"><span class="rc-node-name">Beehive</span><span class="rc-node-used">Used by: Honey, Bee Swarm</span></span><input type="number" min="0" step="1" inputmode="numeric" data-rc-hives value="${value ? value : ""}" placeholder="0"></label>`;
 }
-function popupTitle5() {
-  if (popup5 === "skills") return "Honey Skills";
-  if (popup5 === "boost") return "Honey Boosts";
-  if (popup5 === "hives") return "Hives";
+function popupTitle7() {
+  if (popup7 === "skills") return "Honey Skills";
+  if (popup7 === "boost") return "Honey Boosts";
+  if (popup7 === "hives") return "Hives";
   return "Computation";
 }
-function popupBodyHtml5() {
-  if (popup5 === "boost") return boostBodyHtml5();
-  if (popup5 === "hives") return hivesBodyHtml();
-  if (popup5 === "computation") return computationBodyHtml5();
+function popupBodyHtml7() {
+  if (popup7 === "boost") return boostBodyHtml7();
+  if (popup7 === "hives") return hivesBodyHtml();
+  if (popup7 === "computation") return computationBodyHtml7();
   return `<div class="rc-pop-hint">Bees and Flowers skills from the Skill Tree. Changes here also change the Skill Tree. Press Save to apply them.</div><div id="rcSkillSlot"></div>`;
 }
-function borrow5(id, slotId) {
+function borrow7(id, slotId) {
   const el = document.getElementById(id);
   const slot = document.getElementById(slotId);
   if (!el || !slot) return;
   const parent = el.parentNode;
   const next = el.nextSibling;
   slot.appendChild(el);
-  restoreFns5.push(() => {
+  restoreFns7.push(() => {
     if (!parent) return;
     if (next && next.parentNode === parent) parent.insertBefore(el, next);
     else parent.appendChild(el);
   });
 }
-function releaseBorrowed5() {
-  while (restoreFns5.length) restoreFns5.pop()();
+function releaseBorrowed7() {
+  while (restoreFns7.length) restoreFns7.pop()();
 }
-function setupBorrowed5() {
-  if (popup5 === "skills") {
-    savedSkillCategory5 = skillCategory;
+function setupBorrowed7() {
+  if (popup7 === "skills") {
+    savedSkillCategory7 = skillCategory;
     setSkillCategory("bees");
-    borrow5("ascensionBar", "rcAscSlot");
-    borrow5("skillListWrap", "rcSkillSlot");
-    borrow5("skillSaveBar", "rcSaveSlot");
+    borrow7("ascensionBar", "rcAscSlot");
+    borrow7("skillListWrap", "rcSkillSlot");
+    borrow7("skillSaveBar", "rcSaveSlot");
     renderSkillPanel();
     renderAscensionBar();
     updateSkillSaveBarState();
-  } else if (popup5 === "boost") {
-    borrow5("skillSaveBar", "rcSaveSlot");
+  } else if (popup7 === "boost") {
+    borrow7("skillSaveBar", "rcSaveSlot");
     updateSkillSaveBarState();
   }
 }
-function teardownBorrowed5() {
-  releaseBorrowed5();
-  if (savedSkillCategory5 != null) {
-    setSkillCategory(savedSkillCategory5);
-    savedSkillCategory5 = null;
+function teardownBorrowed7() {
+  releaseBorrowed7();
+  if (savedSkillCategory7 != null) {
+    setSkillCategory(savedSkillCategory7);
+    savedSkillCategory7 = null;
     renderSkillPanel();
   }
 }
-function footerHtml5() {
-  if (popup5 === "hives") return `<button type="button" class="rc-save guro-frame" id="rcNodesSave">Save Changes</button>`;
-  if (popup5 === "skills" || popup5 === "boost") return `<div id="rcSaveSlot"></div>`;
+function footerHtml7() {
+  if (popup7 === "hives") return `<button type="button" class="rc-save guro-frame" id="rcNodesSave">Save Changes</button>`;
+  if (popup7 === "skills" || popup7 === "boost") return `<div id="rcSaveSlot"></div>`;
   return "";
 }
-function overlayHtml5() {
-  return `<div class="rc-pop guro-frame${popup5 === "computation" ? " rc-pop-comp" : ""}" role="dialog" aria-modal="true" aria-label="${popupTitle5()}">
-    <div class="rc-pop-head"><span class="rc-pop-title">${popupTitle5()}</span><button type="button" class="rc-pop-close" data-rc-close aria-label="Close">\u2715</button></div>
-    <div class="rc-pop-body" id="rcPopBody">${popupBodyHtml5()}</div>
-    <div class="rc-pop-foot">${footerHtml5()}</div>
+function overlayHtml7() {
+  return `<div class="rc-pop guro-frame${popup7 === "computation" ? " rc-pop-comp" : ""}" role="dialog" aria-modal="true" aria-label="${popupTitle7()}">
+    <div class="rc-pop-head"><span class="rc-pop-title">${popupTitle7()}</span><button type="button" class="rc-pop-close" data-rc-close aria-label="Close">\u2715</button></div>
+    <div class="rc-pop-body" id="rcPopBody">${popupBodyHtml7()}</div>
+    <div class="rc-pop-foot">${footerHtml7()}</div>
   </div>`;
 }
-function renderOverlayBody5() {
-  if (!overlayEl5) return;
-  const body = overlayEl5.querySelector("#rcPopBody");
+function renderOverlayBody7() {
+  if (!overlayEl7) return;
+  const body = overlayEl7.querySelector("#rcPopBody");
   if (!body) return;
-  if (popup5 === "skills") return;
+  if (popup7 === "skills") return;
   const top = body.scrollTop;
-  body.innerHTML = popupBodyHtml5();
+  body.innerHTML = popupBodyHtml7();
   body.scrollTop = top;
   updateSkillSaveBarState();
 }
-function isPopupDirty5() {
-  if (popup5 === "skills" || popup5 === "boost") return isSkillDraftDirty() || isBoostDraftDirty();
-  if (popup5 === "hives") return hivesDraft != null && Number(hivesDraft) !== (getHiveCount() || 0);
+function isPopupDirty7() {
+  if (popup7 === "skills" || popup7 === "boost") return isSkillDraftDirty() || isBoostDraftDirty();
+  if (popup7 === "hives") return hivesDraft != null && Number(hivesDraft) !== (getHiveCount() || 0);
   return false;
 }
-function openPopup5(kind) {
-  if (popup5) return;
-  popup5 = kind;
+function openPopup7(kind) {
+  if (popup7) return;
+  popup7 = kind;
   hivesDraft = null;
   openMenu = null;
-  overlayEl5 = document.createElement("div");
-  overlayEl5.className = "rc-overlay";
-  overlayEl5.innerHTML = overlayHtml5();
-  document.body.appendChild(overlayEl5);
+  overlayEl7 = document.createElement("div");
+  overlayEl7.className = "rc-overlay";
+  overlayEl7.innerHTML = overlayHtml7();
+  document.body.appendChild(overlayEl7);
   document.body.classList.add("rc-no-scroll");
-  const slot = overlayEl5.querySelector("#rcSkillSlot");
+  const slot = overlayEl7.querySelector("#rcSkillSlot");
   if (kind === "skills" && slot) {
     const asc = document.createElement("div");
     asc.id = "rcAscSlot";
     slot.parentNode.insertBefore(asc, slot);
   }
-  setupBorrowed5();
+  setupBorrowed7();
 }
-function destroyPopup5() {
-  teardownBorrowed5();
-  if (overlayEl5) overlayEl5.remove();
-  overlayEl5 = null;
-  popup5 = null;
+function destroyPopup7() {
+  teardownBorrowed7();
+  if (overlayEl7) overlayEl7.remove();
+  overlayEl7 = null;
+  popup7 = null;
   hivesDraft = null;
   openMenu = null;
   document.body.classList.remove("rc-no-scroll");
 }
-function closePopup5(force) {
-  if (!popup5) return;
-  if (!force && isPopupDirty5()) {
-    showPrompt5("You have unsaved changes. Save them first, or discard them to close.", [{
+function closePopup7(force) {
+  if (!popup7) return;
+  if (!force && isPopupDirty7()) {
+    showPrompt7("You have unsaved changes. Save them first, or discard them to close.", [{
       label: "Keep Editing"
     }, {
       label: "Discard",
       run: () => {
         discardSkillBoostDrafts();
-        destroyPopup5();
+        destroyPopup7();
         refreshAll();
       }
     }]);
     return;
   }
-  destroyPopup5();
+  destroyPopup7();
   refreshAll();
 }
-function showPrompt5(message, buttons) {
-  if (promptEl5) promptEl5.remove();
-  promptEl5 = document.createElement("div");
-  promptEl5.className = "rc-overlay rc-overlay-top";
-  promptEl5.innerHTML = `<div class="rc-prompt guro-frame" role="alertdialog" aria-modal="true"><p class="rc-prompt-text">${esc6(message)}</p><div class="rc-prompt-actions">${buttons.map((b, i) => `<button type="button" class="rc-prompt-btn guro-frame" data-rc-prompt="${i}">${esc6(b.label)}</button>`).join("")}</div></div>`;
-  promptEl5.addEventListener("click", (e) => {
+function showPrompt7(message, buttons) {
+  if (promptEl7) promptEl7.remove();
+  promptEl7 = document.createElement("div");
+  promptEl7.className = "rc-overlay rc-overlay-top";
+  promptEl7.innerHTML = `<div class="rc-prompt guro-frame" role="alertdialog" aria-modal="true"><p class="rc-prompt-text">${esc8(message)}</p><div class="rc-prompt-actions">${buttons.map((b, i) => `<button type="button" class="rc-prompt-btn guro-frame" data-rc-prompt="${i}">${esc8(b.label)}</button>`).join("")}</div></div>`;
+  promptEl7.addEventListener("click", (e) => {
     const btn = e.target.closest("[data-rc-prompt]");
     if (!btn) return;
     const b = buttons[Number(btn.getAttribute("data-rc-prompt"))];
-    promptEl5.remove();
-    promptEl5 = null;
+    promptEl7.remove();
+    promptEl7 = null;
     if (b && b.run) b.run();
   });
-  document.body.appendChild(promptEl5);
-  const first = promptEl5.querySelector("button");
+  document.body.appendChild(promptEl7);
+  const first = promptEl7.querySelector("button");
   if (first) first.focus();
 }
 function saveHives() {
@@ -4250,8 +5805,8 @@ function saveHives() {
   updateCalcSummary();
   hivesDraft = null;
   toast("\u2705 Hive count saved");
-  renderOverlayBody5();
-  refreshResults5();
+  renderOverlayBody7();
+  refreshResults7();
 }
 function pickFlower(name) {
   if (!FLOWER_VARIETIES[name]) return;
@@ -4290,50 +5845,50 @@ function handleDropdown(e) {
   }
   return false;
 }
-function onClick5(e) {
+function onClick7(e) {
   const details = e.target.closest("[data-rc-details]");
   if (details) {
-    detailsOpen5 = !detailsOpen5;
-    refreshResults5();
+    detailsOpen7 = !detailsOpen7;
+    refreshResults7();
     return;
   }
   const open = e.target.closest("[data-rc-open]");
-  if (open && !open.disabled) openPopup5(open.getAttribute("data-rc-open"));
+  if (open && !open.disabled) openPopup7(open.getAttribute("data-rc-open"));
 }
-function onDocClick5(e) {
-  if (!host5) return;
-  if (promptEl5 && promptEl5.contains(e.target)) return;
+function onDocClick7(e) {
+  if (!host7) return;
+  if (promptEl7 && promptEl7.contains(e.target)) return;
   if (handleDropdown(e)) return;
-  if (!overlayEl5) return;
-  if (e.target === overlayEl5 || e.target.closest("[data-rc-close]")) {
-    closePopup5(false);
+  if (!overlayEl7) return;
+  if (e.target === overlayEl7 || e.target.closest("[data-rc-close]")) {
+    closePopup7(false);
     return;
   }
-  if (!overlayEl5.contains(e.target)) return;
+  if (!overlayEl7.contains(e.target)) return;
   if (e.target.closest("#rcNodesSave")) {
     saveHives();
     return;
   }
   const row = e.target.closest("[data-boost-id]");
-  if (row && popup5 === "boost" && overlayEl5.contains(row)) {
+  if (row && popup7 === "boost" && overlayEl7.contains(row)) {
     draftToggleBoost(row.getAttribute("data-boost-id"));
-    renderOverlayBody5();
+    renderOverlayBody7();
   }
 }
-function onDocInput5(e) {
+function onDocInput7(e) {
   const t = e.target;
   if (t && t.dataset && t.dataset.rcHives != null) hivesDraft = t.value === "" ? 0 : Number(t.value);
 }
-function onKey5(e) {
+function onKey7(e) {
   if ((e.key === "Enter" || e.key === " ") && e.target && e.target.closest && e.target.closest("[data-rc-dd-pick]")) {
     e.preventDefault();
     e.target.closest("[data-rc-dd-pick]").click();
     return;
   }
   if (e.key !== "Escape") return;
-  if (promptEl5) {
-    promptEl5.remove();
-    promptEl5 = null;
+  if (promptEl7) {
+    promptEl7.remove();
+    promptEl7 = null;
     return;
   }
   if (openMenu) {
@@ -4341,64 +5896,64 @@ function onKey5(e) {
     refreshAll();
     return;
   }
-  if (popup5) closePopup5(false);
+  if (popup7) closePopup7(false);
 }
-function onBoostsChanged5() {
-  if (!host5) return;
+function onBoostsChanged7() {
+  if (!host7) return;
   invalidateCostCache();
-  if (popup5 === "boost") renderOverlayBody5();
-  refreshResults5();
+  if (popup7 === "boost") renderOverlayBody7();
+  refreshResults7();
 }
-function onExternalChange5() {
-  if (!host5) return;
-  refreshResults5();
+function onExternalChange7() {
+  if (!host7) return;
+  refreshResults7();
 }
 function mountHoneyCalculator(root) {
-  host5 = root;
+  host7 = root;
   invalidateCostCache();
-  detailsOpen5 = false;
+  detailsOpen7 = false;
   openMenu = null;
-  syncGemRatio5();
-  host5.addEventListener("click", onClick5);
-  document.addEventListener("click", onDocClick5);
-  document.addEventListener("input", onDocInput5);
-  document.addEventListener("keydown", onKey5);
-  window.addEventListener("guroBoostsChanged", onBoostsChanged5);
-  window.addEventListener("guroGemPackChanged", onExternalChange5);
-  window.addEventListener("guroPricesUpdated", onExternalChange5);
-  listening5 = true;
-  render5();
+  syncGemRatio6();
+  host7.addEventListener("click", onClick7);
+  document.addEventListener("click", onDocClick7);
+  document.addEventListener("input", onDocInput7);
+  document.addEventListener("keydown", onKey7);
+  window.addEventListener("guroBoostsChanged", onBoostsChanged7);
+  window.addEventListener("guroGemPackChanged", onExternalChange7);
+  window.addEventListener("guroPricesUpdated", onExternalChange7);
+  listening7 = true;
+  render7();
 }
 function unmountHoneyCalculator() {
   invalidateCostCache();
-  if (popup5) destroyPopup5();
-  if (promptEl5) {
-    promptEl5.remove();
-    promptEl5 = null;
+  if (popup7) destroyPopup7();
+  if (promptEl7) {
+    promptEl7.remove();
+    promptEl7 = null;
   }
-  if (host5) {
-    host5.removeEventListener("click", onClick5);
-    host5.innerHTML = "";
+  if (host7) {
+    host7.removeEventListener("click", onClick7);
+    host7.innerHTML = "";
   }
-  if (listening5) {
-    document.removeEventListener("click", onDocClick5);
-    document.removeEventListener("input", onDocInput5);
-    document.removeEventListener("keydown", onKey5);
-    window.removeEventListener("guroBoostsChanged", onBoostsChanged5);
-    window.removeEventListener("guroGemPackChanged", onExternalChange5);
-    window.removeEventListener("guroPricesUpdated", onExternalChange5);
-    listening5 = false;
+  if (listening7) {
+    document.removeEventListener("click", onDocClick7);
+    document.removeEventListener("input", onDocInput7);
+    document.removeEventListener("keydown", onKey7);
+    window.removeEventListener("guroBoostsChanged", onBoostsChanged7);
+    window.removeEventListener("guroGemPackChanged", onExternalChange7);
+    window.removeEventListener("guroPricesUpdated", onExternalChange7);
+    listening7 = false;
   }
-  host5 = null;
+  host7 = null;
   openMenu = null;
 }
 function honeyCalculatorCanLeave() {
-  if (!popup5) return true;
-  if (isPopupDirty5()) {
+  if (!popup7) return true;
+  if (isPopupDirty7()) {
     toast("\u26A0\uFE0F Save your changes first");
     return false;
   }
-  destroyPopup5();
+  destroyPopup7();
   return true;
 }
 
@@ -4423,10 +5978,22 @@ var CALCULATORS = [{
   canLeave: greenhouseCalculatorCanLeave
 }, {
   id: "resources",
-  label: "Resources Calculator",
+  label: "Mining Calculator",
   mount: mountResourcesCalculator,
   unmount: unmountResourcesCalculator,
   canLeave: resourcesCalculatorCanLeave
+}, {
+  id: "salt",
+  label: "Salt Calculator",
+  mount: mountSaltCalculator,
+  unmount: unmountSaltCalculator,
+  canLeave: saltCalculatorCanLeave
+}, {
+  id: "obsidian",
+  label: "Obsidian Calculator",
+  mount: mountObsidianCalculator,
+  unmount: unmountObsidianCalculator,
+  canLeave: obsidianCalculatorCanLeave
 }, {
   id: "honey",
   label: "Honey Calculator",
@@ -4462,16 +6029,16 @@ function showCalculator(id) {
   if (activeCalc && activeCalc.unmount) activeCalc.unmount();
   activeId = next.id;
   activeCalc = next;
-  const host6 = rootEl.querySelector("#rcDisplayHost");
-  host6.innerHTML = "";
-  next.mount(host6);
+  const host8 = rootEl.querySelector("#rcDisplayHost");
+  host8.innerHTML = "";
+  next.mount(host8);
   rootEl.querySelectorAll(".rc-link").forEach((b) => {
     const on = b.getAttribute("data-rc-calc") === activeId;
     b.classList.toggle("is-active", on);
     b.setAttribute("aria-pressed", on ? "true" : "false");
   });
 }
-function onClick6(e) {
+function onClick8(e) {
   const link = e.target.closest("[data-rc-calc]");
   if (!link) return;
   const id = link.getAttribute("data-rc-calc");
@@ -4482,7 +6049,7 @@ function onClick6(e) {
 function mount(root) {
   rootEl = root;
   root.innerHTML = shellHtml();
-  root.addEventListener("click", onClick6);
+  root.addEventListener("click", onClick8);
   activeCalc = null;
   showCalculator(activeId);
 }
@@ -4490,7 +6057,7 @@ function unmount() {
   if (activeCalc && activeCalc.unmount) activeCalc.unmount();
   activeCalc = null;
   if (rootEl) {
-    rootEl.removeEventListener("click", onClick6);
+    rootEl.removeEventListener("click", onClick8);
     rootEl.innerHTML = "";
   }
   rootEl = null;

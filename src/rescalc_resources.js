@@ -4,7 +4,7 @@ import * as ui from "./ui.js";
 import { boostsBySubjectHtml } from "./rescalc_boosts.js";
 import { farmPanelGetMarketPriceFlower } from "./inprogress.js";
 import { applySelection, currentRatio } from "./gem_packs.js";
-import { toolRestockShareCount } from "./rescalc_shared.js";
+import { toolRestockShareCount, toolRestockIconsHtml } from "./rescalc_shared.js";
 
 const STORE_KEY = "guro_rc_resources_v1";
 
@@ -360,13 +360,13 @@ function valuesHtml(rows) {
 function modeNoteHtml(rows) {
   const total = state.selected.reduce((s, n) => s + nodeCountOf(n), 0);
   const warn = state.selected.length && total <= 0 ? `<div class="rc-note is-warn">The selected resources have 0 nodes, so every result is 0. Open Nodes above and enter your nodes.</div>` : "";
-  const text = state.mode === "restock" ? `Per Restock Mode: the tool stock is used up and 1 restock is shared by all ${toolRestockShareCount()} tools, selected or not.` : `24Hrs Mode: the nodes are harvested all day and every restock needed is shared by all ${toolRestockShareCount()} tools, selected or not.`;
+  const text = state.mode === "restock" ? `Per Restock Mode: the tool stock is used up and 1 restock is shared by all ${toolRestockShareCount()} tools ${toolRestockIconsHtml()}, selected or not.` : `24Hrs Mode: the nodes are harvested all day and every restock needed is shared by all ${toolRestockShareCount()} tools ${toolRestockIconsHtml()}, selected or not.`;
   return `<div class="rc-details-row"><button type="button" class="rc-linktext" data-rc-details aria-expanded="${detailsOpen ? "true" : "false"}">Details</button></div>${detailsOpen ? `<div class="rc-note">${text}</div>` : ""}${warn}`;
 }
 
 function pickerHtml() {
-  return `<section class="rc-block guro-frame" aria-label="Resources Calculator">
-    <div class="rc-block-title">Resources Calculator</div>
+  return `<section class="rc-block guro-frame" aria-label="Mining Calculator">
+    <div class="rc-block-title">Mining Calculator</div>
     <div class="rc-crops" id="rcCrops">${cropCellsHtml()}</div>
   </section>`;
 }
