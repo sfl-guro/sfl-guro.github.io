@@ -1843,6 +1843,7 @@ __export(ui_exports, {
   renderBumpkinLevelPanel: () => renderBumpkinLevelPanel,
   renderCalcIngredients: () => renderCalcIngredients,
   renderCardProductDetailRow: () => renderCardProductDetailRow,
+  renderChapterFishPage: () => renderChapterFishPage,
   renderCmOilTank: () => renderCmOilTank,
   renderCmQtyControls: () => renderCmQtyControls,
   renderCmSelectedDetail: () => renderCmSelectedDetail,
@@ -13220,6 +13221,10 @@ function openGunterShop() {
 function closeGunterShop() {
   $("gunterShopOverlay").classList.remove("show");
   syncModalRoute("guntershop", false);
+}
+function renderChapterFishPage() {
+  gunterMutantSyncAutoBoosts();
+  renderChapterFishMutants();
 }
 function renderGunterShopPage() {
   gunterGridEntranceShown.buy = false;

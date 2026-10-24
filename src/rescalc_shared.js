@@ -1,9 +1,49 @@
 import * as calc from "./calculator.js";
+import * as ui from "./ui.js";
 
-export function restockShareCount() {
-  const count = bag => Object.keys(bag).filter(n => (bag[n] || 0) > 0).length;
-  const fruits = Object.keys(calc.BASE_STOCK_FRUITS).filter(n => (calc.BASE_STOCK_FRUITS[n] || 0) > 0 && !(calc.BASE_FRUITS[n] && calc.BASE_FRUITS[n].moonOnly)).length;
-  return Math.max(1, count(calc.BASE_STOCK_CROPS) + fruits + count(calc.BASE_STOCK_GREENHOUSE) + count(calc.BASE_STOCK_FLOWERS));
+const FLOWER_SEED_SEASONS = {
+  Lavender: [ "Spring" ],
+  Gladiolus: [ "Summer" ],
+  Clover: [ "Autumn" ],
+  Edelweiss: [ "Winter" ]
+};
+
+function flowerSeedSeasons(name) {
+  return FLOWER_SEED_SEASONS[name] || calc.SEASON_ORDER;
+}
+
+export function normalizeSeason(season) {
+  return calc.SEASON_ORDER.includes(season) ? season : calc.previewSeason || calc.SEASON_ORDER[0];
+}
+
+export function restockSeedsForSeason(season) {
+  const s = normalizeSeason(season);
+  const stocked = bag => Object.keys(bag).filter(n => (bag[n] || 0) > 0);
+  const crops = stocked(calc.BASE_STOCK_CROPS).filter(n => calc.getCropSeasons(n).includes(s)).map(n => ({
+    name: n,
+    icon: n
+  }));
+  const fruits = stocked(calc.BASE_STOCK_FRUITS).filter(n => !(calc.BASE_FRUITS[n] && calc.BASE_FRUITS[n].moonOnly) && calc.getFruitSeasons(n).includes(s)).map(n => ({
+    name: n,
+    icon: n
+  }));
+  const greenhouse = stocked(calc.BASE_STOCK_GREENHOUSE).map(n => ({
+    name: n,
+    icon: n
+  }));
+  const flowers = stocked(calc.BASE_STOCK_FLOWERS).filter(n => flowerSeedSeasons(n).includes(s)).map(n => ({
+    name: n,
+    icon: `${n} Seed`
+  }));
+  return crops.concat(fruits, greenhouse, flowers);
+}
+
+export function restockShareCount(season) {
+  return Math.max(1, restockSeedsForSeason(season).length);
+}
+
+export function restockSeedIconsHtml(season) {
+  return `(${restockSeedsForSeason(season).map(s => `<span class="rc-share-icon">${ui.getIcon(s.icon)}</span>`).join("")})`;
 }
 
 export function toolRestockShareCount() {

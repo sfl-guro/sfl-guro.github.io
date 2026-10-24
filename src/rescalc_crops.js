@@ -5,7 +5,7 @@ import { boostsBySubjectHtml } from "./rescalc_boosts.js";
 import { loadBaseCropsIfNeeded } from "./storage.js";
 import { farmPanelGetMarketPriceFlower } from "./inprogress.js";
 import { applySelection, currentRatio } from "./gem_packs.js";
-import { restockShareCount } from "./rescalc_shared.js";
+import { restockShareCount, restockSeedIconsHtml, normalizeSeason } from "./rescalc_shared.js";
 
 const STORE_KEY = "guro_rc_crops_v1";
 
@@ -39,7 +39,7 @@ function esc(s) {
 function loadState() {
   const base = {
     mode: "restock",
-    season: calc.previewSeason || "Spring",
+    season: normalizeSeason(calc.previewSeason),
     selected: [],
     cycles: {}
   };
@@ -47,7 +47,7 @@ function loadState() {
     const raw = JSON.parse(localStorage.getItem(STORE_KEY) || "null");
     if (raw && typeof raw === "object") {
       if (raw.mode === "24h" || raw.mode === "restock") base.mode = raw.mode;
-      if (raw.season === "All" || calc.SEASON_ORDER.includes(raw.season)) base.season = raw.season;
+      if (calc.SEASON_ORDER.includes(raw.season)) base.season = raw.season;
       if (Array.isArray(raw.selected)) base.selected = raw.selected.filter(n => calc.BASE_CROPS[n]);
       if (raw.cycles && typeof raw.cycles === "object") Object.keys(raw.cycles).forEach(k => {
         const v = Math.floor(Number(raw.cycles[k]));
@@ -108,7 +108,6 @@ function cropNames() {
 
 function visibleCrops() {
   const all = cropNames();
-  if (state.season === "All") return all;
   return all.filter(n => calc.getCropSeasons(n).includes(state.season));
 }
 
@@ -229,7 +228,7 @@ function syncGemRatio() {
 
 function computeAll() {
   syncGemRatio();
-  const share = restockShareCount();
+  const share = restockShareCount(state.season);
   return state.selected.filter(n => calc.BASE_CROPS[n]).map(n => compute(n, state.mode, share));
 }
 
@@ -254,10 +253,10 @@ function totalsOf(rows) {
 }
 
 function seasonCardsHtml() {
-  return calc.SEASON_ORDER.concat([ "All" ]).map(s => {
+  return calc.SEASON_ORDER.map(s => {
     const on = state.season === s;
-    const icon = s === "All" ? `<span class="rc-season-all">★</span>` : calc.SEASON_EMOJI[s];
-    return `<button type="button" class="rc-season guro-frame${on ? " is-on" : ""}" data-rc-season="${s}" aria-pressed="${on ? "true" : "false"}">${icon}<span class="rc-season-name">${s === "All" ? "Show All" : s}</span></button>`;
+    const icon = calc.SEASON_EMOJI[s];
+    return `<button type="button" class="rc-season guro-frame${on ? " is-on" : ""}" data-rc-season="${s}" aria-pressed="${on ? "true" : "false"}">${icon}<span class="rc-season-name">${s}</span></button>`;
   }).join("");
 }
 
@@ -299,7 +298,7 @@ function valuesHtml(rows) {
 function modeNoteHtml(rows) {
   const plots = calc.getPlotCount() || 0;
   const warn = plots > 0 ? "" : `<div class="rc-note is-warn">Crop Plot is 0, so every result is 0. Open Nodes above and enter your crop plots.</div>`;
-  const text = state.mode === "restock" ? `Per Restock Mode: 1 restock is shared by all ${restockShareCount()} seeds (all crops, fruits, greenhouse and flower seeds), selected or not.` : "24Hrs Mode: the crop keeps restocking all day and pays for every restock alone.";
+  const text = state.mode === "restock" ? `Per Restock Mode: 1 restock is shared by ${restockShareCount(state.season)} seeds in ${state.season} ${restockSeedIconsHtml(state.season)}, selected or not.` : "24Hrs Mode: the crop keeps restocking all day and pays for every restock alone.";
   return `<div class="rc-details-row"><button type="button" class="rc-linktext" data-rc-details aria-expanded="${detailsOpen ? "true" : "false"}">Details</button></div>${detailsOpen ? `<div class="rc-note">${text}</div>` : ""}${warn}`;
 }
 
@@ -751,6 +750,7 @@ function onClick(e) {
     const crops = host.querySelector("#rcCrops");
     if (seasons) seasons.innerHTML = seasonCardsHtml();
     if (crops) crops.innerHTML = cropCellsHtml();
+    refreshResults();
     return;
   }
   const mode = e.target.closest("[data-rc-mode]");

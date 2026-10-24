@@ -16,7 +16,7 @@ import {
   skillCategory,
   toast,
   updateSkillSaveBarState
-} from "./chunk.MSDJSCKB.js";
+} from "./chunk.UJ7OA4Z2.js";
 import "./chunk.LPEVZJ4B.js";
 import "./chunk.VR6FV3KR.js";
 import "./chunk.AS3VMXOQ.js";

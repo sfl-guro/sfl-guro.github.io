@@ -4596,6 +4596,11 @@ export function closeGunterShop() {
   syncModalRoute("guntershop", false);
 }
 
+export function renderChapterFishPage() {
+  gunterMutantSyncAutoBoosts();
+  renderChapterFishMutants();
+}
+
 export function renderGunterShopPage() {
   gunterGridEntranceShown.buy = false;
   gunterGridEntranceShown.upgrade = false;

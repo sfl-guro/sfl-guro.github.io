@@ -24,6 +24,8 @@ const NAV_ICON_SFLBUBBLES = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAA
 
 const NAV_ICON_FACTIONDELIVERY = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAABLklEQVR42nWSPUvDUBSGn1scxLpVEQdpKTQUsnQwq1M26eYPKEJDxkz9Ce3aMUQoroVCocXtTl3bwSUgEYpOIrWbFQchDiEhNx9nPs8573nPKzTdDElV4EtBQWX7jgC8R5f18wsAD2PCLKzpZth3HACMThurZ1MB8CYzjE4bgL7jKNOzkDeZAURgGVwGAVQCX4rNShbCZ5fNHLRZSQJfCpGWdH1jAmDd3yU3z6cLABqtZgIpUss2AwxHAwUCEFkT5tMFjVYk8e11y3A0SDk+TuBC22N5ZVBuY7d2YP35y9+VkYO6tQPLfVW9UdPN0K3vIgcvjvn62GL1bAUCcOu75Mcihp6+TwCUqZpuhoEvRawG4Pb0B/v9PNpYBKVzG/hSLPdV0r3JfdkQlwU97vsHE3e2F0JAyRgAAAAASUVORK5CYII=";
 
+const NAV_ICON_CHAPTERFISH = "data:image/webp;base64,UklGRkABAABXRUJQVlA4TDQBAAAvH8AHEMegJpKt5lVIAB34QCtiMJBzqhhKvg01kWw1n5x6qBCAXzpkIAgHlDmpiSQp2osPG4jAC0rx8EZIuCL8ITsCQYjOWuqENwIA9PUARFg742pjFPRhh6DI5RwYepD1wwdbntEEwPEXAOpnconxbsNMpLbHPdOpMziMbFtpIsh/2AWi/bf6LT8VnBfR/wm48GoK+LWpR33D1K3hnz3AlXzALx4TPMaYCR5FXfKxTxpjm6IurpFFMB372f2AU5bdnyprmuiyskJ1ybqv8c2oTp32yBMEUr6lFMAK5ZbYXr5mLJQIUxetBchERsFxCj6xAu6YTBi4ow+UWXCQ424y0Kfi7TIEFhy9k1VpGfKfkCmlBipIpvrygeLEXLnMy+zLnF1fvjX+g/ur8d1fNP2L5pdWAA==";
+
 const PAGE_TITLES = {
   growing: [ "GROWING", "What is growing and ready on your farm" ],
   digging: [ "DIGGING", "Beach bounty treasure map" ],
@@ -42,6 +44,7 @@ const PAGE_TITLES = {
   craftingbox: [ "CRAFTING BOX", "Crafting box recipes and costs" ],
   workbench: [ "WORKBENCH RECIPE", "Workbench recipes and costs" ],
   seasons: [ "SEASONS", "Recipes and items that only appear in a certain season" ],
+  chapterfish: [ "CHAPTER FISH MUTANT", "Mutant fish and Marine Marvels drop rates for this chapter" ],
   map: [ "MAP", "Land map" ],
   guntershop: [ "GUNTER SHOP", "Sunstone & Obsidian crafting costs" ],
   ticketcalc: [ "CHAPTER TICKET CALCULATOR", "Project delivery ticket income over time" ],
@@ -111,6 +114,8 @@ export function pageIconHtml(id) {
      return iconOrFallback("Axe", "\u{1F528}");
    case "seasons":
      return imgHtml(ICON_DATA["season_summer.png"]);
+   case "chapterfish":
+     return imgHtml(NAV_ICON_CHAPTERFISH);
    case "map":
      return imgHtml(NAV_ICON_MAP);
    case "guntershop":
@@ -177,7 +182,7 @@ const NAV_GROUPS = [ {
   items: [ "nodes", "boost", "skilltree", "settings" ]
 }, {
   label: "Information",
-  items: [ "userguide", "marketplace", "basecoincost", "flowercombo", "bumpkinlevel", "auctionleaderboard", "leaderboard", "craftingbox", "workbench", "seasons" ]
+  items: [ "userguide", "marketplace", "basecoincost", "flowercombo", "bumpkinlevel", "auctionleaderboard", "leaderboard", "craftingbox", "workbench", "seasons", "chapterfish" ]
 }, {
   label: "Themes",
   items: [ "theme:sfl", "theme:dark" ]

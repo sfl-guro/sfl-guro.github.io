@@ -1,8 +1,8 @@
 import {
   navigateTo
-} from "./chunk.3TRDNWZ2.js";
+} from "./chunk.CMAQ35U2.js";
 import "./chunk.F7REBWYF.js";
-import "./chunk.MSDJSCKB.js";
+import "./chunk.UJ7OA4Z2.js";
 import "./chunk.LPEVZJ4B.js";
 import {
   ICON_DATA
@@ -198,6 +198,18 @@ var USER_GUIDES = [
       "Buy and Upgrade switch the list underneath.",
       "I tap a node tile, such as Tree or Stone Rock, to calculate its cost in the box above.",
       "Collect or Buy decides how materials are priced, and the Flower Cost shows the total."
+    ]
+  },
+  {
+    id: "chapterfish",
+    label: "Chapter Fish",
+    title: "Chapter Fish Mutant",
+    intro: "Shows the mutant fish of the current chapter and the Marine Marvels with the fish that can trigger them and their drop rates.",
+    steps: [
+      "Chapter Mutant Fish and Marine Marvels switch the list. On a wide screen both lists show side by side.",
+      "Each card lists the trigger fish with the chum, bait and drop rate needed to get the mutant.",
+      "Catch-Rate Boosts are checked automatically after I sync. I can also tick them by hand.",
+      "The multiplier under the boosts raises every drop rate shown in the cards."
     ]
   },
   {
