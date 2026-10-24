@@ -4,7 +4,7 @@ import * as ui from "./ui.js";
 import { boostsBySubjectHtml } from "./rescalc_boosts.js";
 import { farmPanelGetMarketPriceFlower } from "./inprogress.js";
 import { applySelection, currentRatio } from "./gem_packs.js";
-import { restockShareCount } from "./rescalc_shared.js";
+import { restockShareCount, restockSeedIconsHtml, normalizeSeason } from "./rescalc_shared.js";
 
 const STORE_KEY = "guro_rc_fruits_v1";
 
@@ -38,7 +38,7 @@ function esc(s) {
 function loadState() {
   const base = {
     mode: "restock",
-    season: calc.previewSeason || "Spring",
+    season: normalizeSeason(calc.previewSeason),
     selected: [],
     cycles: {}
   };
@@ -46,7 +46,7 @@ function loadState() {
     const raw = JSON.parse(localStorage.getItem(STORE_KEY) || "null");
     if (raw && typeof raw === "object") {
       if (raw.mode === "24h" || raw.mode === "restock") base.mode = raw.mode;
-      if (raw.season === "All" || calc.SEASON_ORDER.includes(raw.season)) base.season = raw.season;
+      if (calc.SEASON_ORDER.includes(raw.season)) base.season = raw.season;
       if (Array.isArray(raw.selected)) base.selected = raw.selected.filter(n => calc.BASE_FRUITS[n]);
       if (raw.cycles && typeof raw.cycles === "object") Object.keys(raw.cycles).forEach(k => {
         const v = Math.floor(Number(raw.cycles[k]));
@@ -107,7 +107,6 @@ function fruitNames() {
 
 function visibleFruits() {
   const all = fruitNames();
-  if (state.season === "All") return all;
   return all.filter(n => calc.getFruitSeasons(n).includes(state.season));
 }
 
@@ -282,7 +281,7 @@ function syncGemRatio() {
 
 function computeAll() {
   syncGemRatio();
-  const share = restockShareCount();
+  const share = restockShareCount(state.season);
   return state.selected.filter(n => calc.BASE_FRUITS[n]).map(n => compute(n, state.mode, share));
 }
 
@@ -309,10 +308,10 @@ function totalsOf(rows) {
 }
 
 function seasonCardsHtml() {
-  return calc.SEASON_ORDER.concat([ "All" ]).map(s => {
+  return calc.SEASON_ORDER.map(s => {
     const on = state.season === s;
-    const icon = s === "All" ? `<span class="rc-season-all">★</span>` : calc.SEASON_EMOJI[s];
-    return `<button type="button" class="rc-season guro-frame${on ? " is-on" : ""}" data-rc-season="${s}" aria-pressed="${on ? "true" : "false"}">${icon}<span class="rc-season-name">${s === "All" ? "Show All" : s}</span></button>`;
+    const icon = calc.SEASON_EMOJI[s];
+    return `<button type="button" class="rc-season guro-frame${on ? " is-on" : ""}" data-rc-season="${s}" aria-pressed="${on ? "true" : "false"}">${icon}<span class="rc-season-name">${s}</span></button>`;
   }).join("");
 }
 
@@ -356,7 +355,7 @@ function modeNoteHtml(rows) {
   const missing = rows.filter(r => !(r.nodes > 0));
   const warn = missing.length ? `<div class="rc-note is-warn">${missing.map(r => esc(r.name)).join(", ")} ${missing.length === 1 ? "has" : "have"} 0 Fruit Patches, so ${missing.length === 1 ? "its result is" : "their results are"} 0. Open Nodes above and enter your fruit patches.</div>` : "";
   const moon = rows.some(r => r.moon) ? `<div class="rc-note">Moon fruits are only sold on a real Full Moon day, so their restock cost is 0.</div>` : "";
-  const text = state.mode === "restock" ? `Per Restock Mode: 1 restock is shared by all ${restockShareCount()} seeds (all crops, fruits, greenhouse and flower seeds, moon seeds excluded), selected or not. Every seed grows 1 tree that is harvested an average number of times, then chopped for Wood.` : "24Hrs Mode: the fruit keeps restocking all day and pays for every restock alone. Trees are replanted as they die, using the average harvests per tree.";
+  const text = state.mode === "restock" ? `Per Restock Mode: 1 restock is shared by ${restockShareCount(state.season)} seeds in ${state.season} ${restockSeedIconsHtml(state.season)}, moon seeds excluded, selected or not. Every seed grows 1 tree that is harvested an average number of times, then chopped for Wood.` : "24Hrs Mode: the fruit keeps restocking all day and pays for every restock alone. Trees are replanted as they die, using the average harvests per tree.";
   return `<div class="rc-details-row"><button type="button" class="rc-linktext" data-rc-details aria-expanded="${detailsOpen ? "true" : "false"}">Details</button></div>${detailsOpen ? `<div class="rc-note">${text}</div>${moon}` : ""}${warn}`;
 }
 
@@ -846,6 +845,7 @@ function onClick(e) {
     const crops = host.querySelector("#rcCrops");
     if (seasons) seasons.innerHTML = seasonCardsHtml();
     if (crops) crops.innerHTML = cropCellsHtml();
+    refreshResults();
     return;
   }
   const mode = e.target.closest("[data-rc-mode]");

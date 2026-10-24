@@ -14161,6 +14161,24 @@ html body:not(.sfl-theme) .ticket-overlay-inline .trade-shop-card{
   border-image:var(--px-border-image) 20% !important; border-image-repeat:stretch !important; border-radius:0 !important; image-rendering:pixelated !important;
 }
 
+#chapterFishMutantsOverlay.cfm-overlay-inline{
+  position:static; display:block !important; padding:0; background:transparent !important; inset:auto; z-index:auto; animation:none !important;
+  border:0 !important; border-image:none !important; box-shadow:none !important;
+}
+.cfm-overlay-inline .cfm-card{ width:100% !important; max-width:100% !important; height:auto !important; max-height:none !important; overflow:visible !important; animation:none !important; }
+.cfm-overlay-inline .cfm-body{ overflow:visible !important; max-height:none !important; }
+.cfm-overlay-inline .cfm-columns{ grid-template-columns:repeat(2, minmax(0, 1fr)); }
+.cfm-overlay-inline .cfm-columns > .cook-list-frame{ min-width:0; }
+html body.sfl-theme .cfm-overlay-inline .cfm-card{
+  border-style:solid !important; border-width:var(--sfl-panel-corner-width) !important; border-color:var(--sfl-outer-border) !important;
+  border-image:var(--sfl-panel-corner-image) 20% !important; border-image-repeat:stretch !important; border-radius:0 !important;
+  box-shadow:3px 3px 0 rgba(0,0,0,.25) !important; image-rendering:pixelated !important;
+}
+html body:not(.sfl-theme) .cfm-overlay-inline .cfm-card{
+  border-style:solid !important; border-width:var(--px-panel-corner-width) !important;
+  border-image:var(--px-border-image) 20% !important; border-image-repeat:stretch !important; border-radius:0 !important; image-rendering:pixelated !important;
+}
+
 html body #pageContainer .library-panel > .at-mini-sync, html body .at-mini-sync{
   width:38px !important; height:38px !important; min-width:38px !important; max-width:38px !important; margin:0 !important; padding:0 !important;
   left:auto !important; right:22px !important; bottom:78px !important; flex:0 0 38px !important; box-sizing:border-box !important;
@@ -14702,7 +14720,9 @@ html body #pageResourceCalc .rc-link.is-active{ color:var(--ink) !important; tex
 #rcDisplayHost{ display:flex; flex-direction:column; gap:12px; min-width:0; }
 .rc-block{ box-sizing:border-box; min-width:0; padding:12px; background:var(--surface, #fff); color:var(--ink); display:flex; flex-direction:column; gap:12px; }
 .rc-block-title{ font-family:var(--pixel-font); font-size:12px; letter-spacing:.6px; text-transform:uppercase; text-align:left; color:var(--ink); }
-.rc-seasons{ display:grid; grid-template-columns:repeat(5, minmax(0, 1fr)); gap:6px; }
+.rc-seasons{ display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:6px; }
+.rc-share-icon{ display:inline-block; margin:0 1px; vertical-align:middle; }
+.rc-share-icon img{ width:14px; height:14px; image-rendering:pixelated; vertical-align:middle; }
 html body #pageResourceCalc .rc-season, html body #pageResourceCalc .rc-mode, html body #pageResourceCalc .rc-tool{
   appearance:none; -webkit-appearance:none; box-sizing:border-box; margin:0; min-width:0; cursor:pointer; color:var(--ink);
   background:var(--parchment, #f2d9a0); font-family:var(--pixel-font); text-transform:uppercase; letter-spacing:.3px; line-height:1.2; text-align:center; touch-action:manipulation;
@@ -14710,7 +14730,6 @@ html body #pageResourceCalc .rc-season, html body #pageResourceCalc .rc-mode, ht
 html body #pageResourceCalc .rc-season.is-on, html body #pageResourceCalc .rc-mode.is-on{ background:var(--sun-deep); color:#fff; }
 .rc-season{ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; padding:7px 2px; font-size:8px; }
 .rc-season img{ width:14px; height:14px; image-rendering:pixelated; }
-.rc-season-all{ font-size:13px; line-height:14px; height:14px; }
 .rc-season-name{ overflow-wrap:anywhere; }
 .rc-crops{ display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:6px; }
 .rc-crop{ box-sizing:border-box; display:flex; align-items:center; gap:3px; min-width:0; min-height:40px; padding:4px 3px; background:var(--parchment, #f2d9a0); color:var(--ink); cursor:pointer; }

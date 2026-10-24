@@ -111,6 +111,11 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://sfl-guro.github.io/chapterfishmutant</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://sfl-guro.github.io/chapter-ticket</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>

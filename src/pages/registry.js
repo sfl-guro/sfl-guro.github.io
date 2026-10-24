@@ -107,6 +107,12 @@ export const PAGES = [ {
   root: "seasonsPanel",
   load: () => import("./seasons.js")
 }, {
+  id: "chapterfish",
+  path: "/chapterfishmutant",
+  label: "Chapter Fish Mutant",
+  root: "pageChapterFish",
+  load: () => import("./chapterfish.js")
+}, {
   id: "map",
   path: "/map",
   label: "Map",

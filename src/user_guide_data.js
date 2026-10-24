@@ -190,6 +190,18 @@ export const USER_GUIDES = [
     ]
   },
   {
+    id: "chapterfish",
+    label: "Chapter Fish",
+    title: "Chapter Fish Mutant",
+    intro: "Shows the mutant fish of the current chapter and the Marine Marvels with the fish that can trigger them and their drop rates.",
+    steps: [
+      "Chapter Mutant Fish and Marine Marvels switch the list. On a wide screen both lists show side by side.",
+      "Each card lists the trigger fish with the chum, bait and drop rate needed to get the mutant.",
+      "Catch-Rate Boosts are checked automatically after I sync. I can also tick them by hand.",
+      "The multiplier under the boosts raises every drop rate shown in the cards."
+    ]
+  },
+  {
     id: "ticketcalc",
     label: "Ticket Calc",
     title: "Chapter Ticket Calculator",
