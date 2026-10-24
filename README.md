@@ -40,7 +40,7 @@ Everything uses live prices from the game, so the numbers stay close to what you
 
 ## Found a bug or have an idea?
 
-Tell us on Discord. Every report helps, even a small one.
+Tell to me on Discord. Every report helps, even a small one.
 
 ## Note
 
