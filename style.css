@@ -14420,9 +14420,14 @@ input[type="checkbox"]:not(.dprofit-cost-config-input):checked{ background-image
 .guro-confirm-icon{ width:12px; height:11px; image-rendering:pixelated; flex-shrink:0; vertical-align:middle; }
 
 .pf-wrap{ display:flex; flex-direction:column; gap:12px; padding:2px 0 12px; }
-.pf-value{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 12px; background:var(--parchment, #f2d9a0); }
-.pf-value-label{ font-family:var(--pixel-font); font-size:10px; text-transform:uppercase; letter-spacing:.6px; color:var(--ink-soft); }
-.pf-value-num{ display:inline-flex; align-items:center; gap:5px; font-size:18px; font-weight:800; color:var(--ink); }
+.pf-value{ display:flex; flex-direction:column; align-items:stretch; gap:8px; padding:10px 12px; background:var(--parchment, #f2d9a0); }
+.pf-value-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; font-size:12px; font-weight:700; color:var(--ink); }
+.pf-value-label{ color:var(--ink); }
+.pf-value-num{ display:inline-flex; align-items:center; gap:5px; color:var(--ink); }
+.pf-badge{ display:inline-flex; align-items:center; padding:2px 8px; font-size:11px; font-weight:800; color:#fff; background:var(--ink-soft, #7a6a55); }
+.pf-badge-whale{ background:#2f6fb0; }
+.pf-badge-investor{ background:var(--profit, #3d7a42); }
+.pf-badge-extractor{ background:var(--loss, #9c3320); }
 .pf-box{ display:flex; flex-direction:column; gap:10px; padding:10px; background:var(--parchment, #f2d9a0); min-width:0; }
 .pf-title{ font-family:var(--pixel-font); font-size:12px; text-transform:uppercase; letter-spacing:.8px; color:var(--ink); }
 .pf-list{ display:flex; flex-direction:column; gap:4px; max-height:360px; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:auto; }
@@ -14471,7 +14476,6 @@ input[type="checkbox"]:not(.dprofit-cost-config-input):checked{ background-image
   .pf-wrap{ flex-direction:row; align-items:flex-start; }
   .pf-side{ flex:0 0 calc(20% - 6px); width:calc(20% - 6px); }
   .pf-main{ flex:0 0 calc(80% - 6px); width:calc(80% - 6px); }
-  .pf-side .pf-value{ flex-direction:column; align-items:flex-start; }
   .pf-side .pf-list{ max-height:none; }
 }
 

@@ -2,7 +2,7 @@ import {
   api,
   initNav,
   initRouter
-} from "./chunk.CMAQ35U2.js";
+} from "./chunk.R5623VGO.js";
 import {
   initGemPacks
 } from "./chunk.F7REBWYF.js";
@@ -218,7 +218,7 @@ async function scanGoals() {
   if (!bootDone) return;
   let fresh = [];
   try {
-    const mod = await import("./sft_goals.FWX65JU3.js");
+    const mod = await import("./sft_goals.DH5PQBTP.js");
     mod.bindApi(api);
     fresh = mod.takeNewlyReachedGoals();
   } catch (e) {

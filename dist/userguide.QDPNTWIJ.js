@@ -1,6 +1,6 @@
 import {
   navigateTo
-} from "./chunk.CMAQ35U2.js";
+} from "./chunk.R5623VGO.js";
 import "./chunk.F7REBWYF.js";
 import "./chunk.UJ7OA4Z2.js";
 import "./chunk.LPEVZJ4B.js";
