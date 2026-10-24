@@ -49,3 +49,8 @@ export function restockSeedIconsHtml(season) {
 export function toolRestockShareCount() {
   return Math.max(1, Object.keys(calc.BASE_STOCK_TOOLS).filter(n => (calc.BASE_STOCK_TOOLS[n] || 0) > 0).length);
 }
+
+export function toolRestockIconsHtml() {
+  const names = Object.keys(calc.BASE_STOCK_TOOLS).filter(n => (calc.BASE_STOCK_TOOLS[n] || 0) > 0);
+  return `(${names.map(n => `<span class="rc-share-icon">${ui.getIcon(n)}</span>`).join("")})`;
+}

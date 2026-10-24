@@ -638,6 +638,7 @@ __export(calculator_exports, {
   isOvernightGroundCrop: () => isOvernightGroundCrop,
   isPetFoodChecked: () => isPetFoodChecked,
   isPowerHourExpiredSinceSync: () => isPowerHourExpiredSinceSync,
+  isSculpturePerkOn: () => isSculpturePerkOn,
   isSeasonLocked: () => isSeasonLocked,
   isSkillActive: () => isSkillActive,
   isSkillDraftActive: () => isSkillDraftActive,
@@ -749,6 +750,7 @@ __export(calculator_exports, {
   saltFarmLevel: () => saltFarmLevel,
   saltPrimeChancePct: () => saltPrimeChancePct,
   saltSculptureLevel: () => saltSculptureLevel,
+  saltSculptureOff: () => saltSculptureOff,
   saltUi: () => saltUi,
   saltUiSet: () => saltUiSet,
   scheduleCascade: () => scheduleCascade,
@@ -791,6 +793,7 @@ __export(calculator_exports, {
   setRateInputValue: () => setRateInputValue,
   setSaltFarmLevel: () => setSaltFarmLevel,
   setSculptureLevel: () => setSculptureLevel,
+  setSculpturePerk: () => setSculpturePerk,
   setSelectedHoneyFlower: () => setSelectedHoneyFlower,
   setSelectedSwarmCrop: () => setSelectedSwarmCrop,
   setSkillCategory: () => setSkillCategory,
@@ -54744,9 +54747,38 @@ var SCULPTURE_LEVELS = [{
 }];
 var SCULPTURE_EFFECTS_LIST = ["\u22125% Salt charge (regen) time", "+4% Prime Aged chance", "+1 stored charge cap", "\u221210% Salt Rake coin cost", "\u22125% Aging Rack time", "+1 stored charge cap"];
 var saltSculptureLevel = parseFloat(localStorage.getItem("hl_sculpture_level") || "0") || 0;
+var saltSculptureOff = (() => {
+  const raw = safeLSJSON(localStorage.getItem("guro_sculpture_off"), []);
+  return Array.isArray(raw) ? raw.filter((n) => Number.isInteger(n) && n >= 1 && n <= 6) : [];
+})();
+function saveSculptureOff() {
+  localStorage.setItem("guro_sculpture_off", JSON.stringify(saltSculptureOff));
+}
 function setSculptureLevel(lvl) {
   saltSculptureLevel = Math.max(0, Math.min(SCULPTURE_LEVELS.length, parseFloat(lvl) || 0));
+  saltSculptureOff = [];
   saveSculptureLevel();
+  saveSculptureOff();
+}
+function isSculpturePerkOn(i) {
+  return saltSculptureLevel >= i && !saltSculptureOff.includes(i);
+}
+function setSculpturePerk(i, on) {
+  if (i < 1 || i > SCULPTURE_LEVELS.length) return;
+  if (on) {
+    if (saltSculptureLevel < i) {
+      saltSculptureLevel = i;
+      saveSculptureLevel();
+    }
+    saltSculptureOff = saltSculptureOff.filter((n) => n !== i);
+  } else if (i === saltSculptureLevel) {
+    saltSculptureLevel = i - 1;
+    saveSculptureLevel();
+  } else if (!saltSculptureOff.includes(i)) {
+    saltSculptureOff = saltSculptureOff.concat(i);
+  }
+  saltSculptureOff = saltSculptureOff.filter((n) => n <= saltSculptureLevel);
+  saveSculptureOff();
 }
 var saltPrimeChancePct = parseFloat(localStorage.getItem("hl_salt_prime_chance") || "5") || 5;
 var saltUi = safeLSJSON(localStorage.getItem("hl_salt_ui"), {});
@@ -54761,11 +54793,11 @@ function sculptureEffects() {
   const lvl = saltSculptureLevel;
   return {
     level: lvl,
-    chargeTimeMult: lvl >= 1 ? 0.95 : 1,
-    primeBonusPct: lvl >= 2 ? 4 : 0,
-    storedChargeCap: SALT_BASE_CHARGE_CAP + (lvl >= 3 ? 1 : 0) + (lvl >= 6 ? 1 : 0),
-    rakeCostMult: lvl >= 4 ? 0.9 : 1,
-    agingTimeMult: lvl >= 5 ? 0.95 : 1
+    chargeTimeMult: isSculpturePerkOn(1) ? 0.95 : 1,
+    primeBonusPct: isSculpturePerkOn(2) ? 4 : 0,
+    storedChargeCap: SALT_BASE_CHARGE_CAP + (isSculpturePerkOn(3) ? 1 : 0) + (isSculpturePerkOn(6) ? 1 : 0),
+    rakeCostMult: isSculpturePerkOn(4) ? 0.9 : 1,
+    agingTimeMult: isSculpturePerkOn(5) ? 0.95 : 1
   };
 }
 function effectivePrimeChancePct() {
@@ -60319,6 +60351,27 @@ function digDugTreasuresHtml(dug, pct) {
   if (!rows.length) return '<div class="dig-empty">Nothing dug yet \u2014 sync your farm.</div>';
   return rows.map((r) => `<div class="dig-dug-row"><span class="dig-dug-qty">\xD7${digFmt(r.qty)}</span>${digIconHtml(r.name)}<span class="dig-dug-name" title="${escapeHtml(r.name)}">${escapeHtml(r.name)}</span><span class="dig-dug-val">${digFmt(r.total)}${COIN_ICON}</span></div>`).join("");
 }
+function digInventoryHtml(g, pct) {
+  const src = g && g.inventory && typeof g.inventory === "object" ? g.inventory : {};
+  let totalQty = 0;
+  let totalCoins = 0;
+  const rows = Object.keys(SELLABLE_TREASURES).map((name) => {
+    const qty = Number(src[name]);
+    if (!isFinite(qty) || qty <= 0) return null;
+    const total = digItemPrice(name, pct).price * qty;
+    totalQty += qty;
+    totalCoins += total;
+    return {
+      name,
+      qty,
+      total
+    };
+  }).filter(Boolean).sort((a, b) => b.total - a.total);
+  if (!rows.length) return '<div class="dig-empty">No treasures in inventory \u2014 sync your farm.</div>';
+  const list = rows.map((r) => `<div class="dig-dug-row"><span class="dig-dug-qty">\xD7${digFmt(r.qty)}</span>${digIconHtml(r.name)}<span class="dig-dug-name" title="${escapeHtml(r.name)}">${escapeHtml(r.name)}</span><span class="dig-dug-val">${digFmt(r.total)}${COIN_ICON}</span></div>`).join("");
+  const totals = `<div class="dig-totals"><div class="dig-total-row"><span class="dig-total-label">Total</span><span class="dig-total-val">${digFmt(totalQty)} <small>treasures</small> \xB7 ${digFmt(totalCoins)}${COIN_ICON}</span></div></div>`;
+  return `<div class="dig-inv-grid">${list}</div>${totals}`;
+}
 function digRewardIconHtml(name) {
   const src = IMAGE_ICONS[name] || COOKING_FOOD_IMAGES[name] || KEY_ICON_DATA[name] || DIG_EXTRA_ICONS[name] || IMAGE_ICON_FALLBACK;
   return `<img class="dig-ico" src="${src}" alt="${escapeHtml(name)}" decoding="async">`;
@@ -60572,6 +60625,7 @@ function renderDigDataPanel(solved) {
   const streakInfo = digStreakInfo(g);
   $("digStreakDug").innerHTML = digStreakDugHtml(streakInfo, pct);
   $("digDugTotals").innerHTML = digTotalsHtml(dug, pct, digStreakBonusItems(streakInfo));
+  $("digInventoryList").innerHTML = digInventoryHtml(g, pct);
   $("digPriceList").innerHTML = digTreasurePriceHtml(digDataLastSolved, pct);
   $("digStreakList").innerHTML = digStreakTiersHtml();
 }
@@ -68267,12 +68321,14 @@ export {
   ui_exports,
   loadBaseCropsIfNeeded,
   loadBaseHoneyIfNeeded,
+  loadBaseSaltMarketIfNeeded,
   computeRestockCost24hDetailedIndividual,
   invalidateCostCache,
   getItemCostByName,
   getMaterialUnitCostCoins,
   getActiveShrineDailyCost,
   getRestockGemCostIndividual,
+  hasFreeSaltRakeCost,
   getCropCostCoins,
   getFruitSeedFertCoins,
   getGreenhouseSeedCoins,
@@ -68304,6 +68360,7 @@ export {
   RESOURCE_DATA,
   RESOURCE_NODE_TIERS,
   isTieredResource,
+  LAVA_PIT_RECIPES,
   SEASON_ORDER,
   SEASON_EMOJI,
   getCropSeasons,
@@ -68330,6 +68387,7 @@ export {
   setSelectedSwarmCrop,
   setAutoMaterialModes,
   hasManualMaterialMode,
+  getMaterialMode,
   setMaterialMode,
   computeBoostedCropStats,
   computeBoostedFruitStats,
@@ -68338,6 +68396,10 @@ export {
   isFlowerVarietySeasonLocked,
   computeHiveEconomics,
   computeResourceFigures,
+  computeLavaPitFigures,
+  OBSIDIAN_WEEKLY_SELL_CAP,
+  OBSIDIAN_WEEKLY_PURCHASE_CAP,
+  computeObsidianWeeklyProfit,
   SKILL_CATEGORY_META,
   BOOSTS,
   isSkillActive,
@@ -68352,10 +68414,13 @@ export {
   feePercent,
   flowerPerGem,
   gemsToFlower,
+  findTool,
   getInstantRegrowSources,
   getInstantRegrowChance,
+  getBoostedToolRecipe,
   coinsToFlower,
   simulateStockCycles,
+  FARM_LEVEL_NODES,
   MUTANT_TYPE_EMOJI,
   setSkillCategory,
   discardSkillBoostDrafts,
@@ -68363,6 +68428,16 @@ export {
   NPC_ICONS,
   ES_ISLAND_ICONS,
   updateCalcSummary,
+  SCULPTURE_LEVELS,
+  SCULPTURE_EFFECTS_LIST,
+  saltSculptureLevel,
+  setSculptureLevel,
+  isSculpturePerkOn,
+  setSculpturePerk,
+  saltFarmLevel,
+  farmLevelMaxNodes,
+  setSaltFarmLevel,
+  computeSaltFarmFigures,
   runDeferredInitialRender,
   __deferredInitialRenderCallbacks,
   setAppDarkMode,

@@ -27909,9 +27909,42 @@ export const SCULPTURE_EFFECTS_LIST = [ "−5% Salt charge (regen) time", "+4% P
 
 export let saltSculptureLevel = parseFloat(localStorage.getItem("hl_sculpture_level") || "0") || 0;
 
+export let saltSculptureOff = (() => {
+  const raw = safeLSJSON(localStorage.getItem("guro_sculpture_off"), []);
+  return Array.isArray(raw) ? raw.filter(n => Number.isInteger(n) && n >= 1 && n <= 6) : [];
+})();
+
+function saveSculptureOff() {
+  localStorage.setItem("guro_sculpture_off", JSON.stringify(saltSculptureOff));
+}
+
 export function setSculptureLevel(lvl) {
   saltSculptureLevel = Math.max(0, Math.min(SCULPTURE_LEVELS.length, parseFloat(lvl) || 0));
+  saltSculptureOff = [];
   saveSculptureLevel();
+  saveSculptureOff();
+}
+
+export function isSculpturePerkOn(i) {
+  return saltSculptureLevel >= i && !saltSculptureOff.includes(i);
+}
+
+export function setSculpturePerk(i, on) {
+  if (i < 1 || i > SCULPTURE_LEVELS.length) return;
+  if (on) {
+    if (saltSculptureLevel < i) {
+      saltSculptureLevel = i;
+      saveSculptureLevel();
+    }
+    saltSculptureOff = saltSculptureOff.filter(n => n !== i);
+  } else if (i === saltSculptureLevel) {
+    saltSculptureLevel = i - 1;
+    saveSculptureLevel();
+  } else if (!saltSculptureOff.includes(i)) {
+    saltSculptureOff = saltSculptureOff.concat(i);
+  }
+  saltSculptureOff = saltSculptureOff.filter(n => n <= saltSculptureLevel);
+  saveSculptureOff();
 }
 
 export let saltPrimeChancePct = parseFloat(localStorage.getItem("hl_salt_prime_chance") || "5") || 5;
@@ -27931,11 +27964,11 @@ export function sculptureEffects() {
   const lvl = saltSculptureLevel;
   return {
     level: lvl,
-    chargeTimeMult: lvl >= 1 ? .95 : 1,
-    primeBonusPct: lvl >= 2 ? 4 : 0,
-    storedChargeCap: SALT_BASE_CHARGE_CAP + (lvl >= 3 ? 1 : 0) + (lvl >= 6 ? 1 : 0),
-    rakeCostMult: lvl >= 4 ? .9 : 1,
-    agingTimeMult: lvl >= 5 ? .95 : 1
+    chargeTimeMult: isSculpturePerkOn(1) ? .95 : 1,
+    primeBonusPct: isSculpturePerkOn(2) ? 4 : 0,
+    storedChargeCap: SALT_BASE_CHARGE_CAP + (isSculpturePerkOn(3) ? 1 : 0) + (isSculpturePerkOn(6) ? 1 : 0),
+    rakeCostMult: isSculpturePerkOn(4) ? .9 : 1,
+    agingTimeMult: isSculpturePerkOn(5) ? .95 : 1
   };
 }
 
@@ -33750,6 +33783,28 @@ function digDugTreasuresHtml(dug, pct) {
   return rows.map(r => `<div class="dig-dug-row"><span class="dig-dug-qty">×${digFmt(r.qty)}</span>${digIconHtml(r.name)}<span class="dig-dug-name" title="${escapeHtml(r.name)}">${escapeHtml(r.name)}</span><span class="dig-dug-val">${digFmt(r.total)}${COIN_ICON}</span></div>`).join("");
 }
 
+function digInventoryHtml(g, pct) {
+  const src = g && g.inventory && typeof g.inventory === "object" ? g.inventory : {};
+  let totalQty = 0;
+  let totalCoins = 0;
+  const rows = Object.keys(SELLABLE_TREASURES).map(name => {
+    const qty = Number(src[name]);
+    if (!isFinite(qty) || qty <= 0) return null;
+    const total = digItemPrice(name, pct).price * qty;
+    totalQty += qty;
+    totalCoins += total;
+    return {
+      name: name,
+      qty: qty,
+      total: total
+    };
+  }).filter(Boolean).sort((a, b) => b.total - a.total);
+  if (!rows.length) return '<div class="dig-empty">No treasures in inventory — sync your farm.</div>';
+  const list = rows.map(r => `<div class="dig-dug-row"><span class="dig-dug-qty">×${digFmt(r.qty)}</span>${digIconHtml(r.name)}<span class="dig-dug-name" title="${escapeHtml(r.name)}">${escapeHtml(r.name)}</span><span class="dig-dug-val">${digFmt(r.total)}${COIN_ICON}</span></div>`).join("");
+  const totals = `<div class="dig-totals"><div class="dig-total-row"><span class="dig-total-label">Total</span><span class="dig-total-val">${digFmt(totalQty)} <small>treasures</small> · ${digFmt(totalCoins)}${COIN_ICON}</span></div></div>`;
+  return `<div class="dig-inv-grid">${list}</div>${totals}`;
+}
+
 function digRewardIconHtml(name) {
   const src = IMAGE_ICONS[name] || COOKING_FOOD_IMAGES[name] || KEY_ICON_DATA[name] || DIG_EXTRA_ICONS[name] || IMAGE_ICON_FALLBACK;
   return `<img class="dig-ico" src="${src}" alt="${escapeHtml(name)}" decoding="async">`;
@@ -34020,6 +34075,7 @@ export function renderDigDataPanel(solved) {
   const streakInfo = digStreakInfo(g);
   $("digStreakDug").innerHTML = digStreakDugHtml(streakInfo, pct);
   $("digDugTotals").innerHTML = digTotalsHtml(dug, pct, digStreakBonusItems(streakInfo));
+  $("digInventoryList").innerHTML = digInventoryHtml(g, pct);
   $("digPriceList").innerHTML = digTreasurePriceHtml(digDataLastSolved, pct);
   $("digStreakList").innerHTML = digStreakTiersHtml();
 }
