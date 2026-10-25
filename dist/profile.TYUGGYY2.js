@@ -196,7 +196,7 @@ async function mount(root, api) {
   FLOWER_ICON = api.calc.FLOWER_ICON;
   escapeHtml = api.calc.escapeHtml;
   getIcon = api.ui.getIcon;
-  const goals = await import("./sft_goals.DH5PQBTP.js");
+  const goals = await import("./sft_goals.7BRUD4YV.js");
   goals.bindApi(api);
   loadGoals = goals.loadGoals;
   saveGoals = goals.saveGoals;

@@ -65,6 +65,7 @@ function sftCandidates() {
   });
   return out.sort((a, b) => a.name.localeCompare(b.name));
 }
+var LOVE_CHARM_PER_FLOWER = 80;
 function computeInventory() {
   let g = null;
   try {
@@ -92,13 +93,20 @@ function computeInventory() {
       value: qty * price
     });
   });
-  rows.sort((a, b) => b.value - a.value);
   const gross = rows.reduce((t, r) => t + r.value, 0);
   const fee = Math.min(Math.max(Number(A.calc.feePercent) || 0, 0), 100);
+  const loveCharms = A.calc.profileGetInventoryAmount(g, "Love Charm");
+  const loveValue = loveCharms > 0 ? loveCharms / LOVE_CHARM_PER_FLOWER : 0;
+  if (loveValue > 0) rows.push({
+    name: "Love Charm",
+    qty: loveCharms,
+    value: loveValue
+  });
+  rows.sort((a, b) => b.value - a.value);
   return {
     rows,
-    gross,
-    net: gross * (1 - fee / 100),
+    gross: gross + loveValue,
+    net: gross * (1 - fee / 100) + loveValue,
     ready: true
   };
 }
