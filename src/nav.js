@@ -213,7 +213,7 @@ export function setPageTitle(id) {
     bar.innerHTML = "";
     return;
   }
-  bar.innerHTML = `<div class="expansion-sim-icon-wrap"><img data-page-icon="${id}" src="" alt=""></div><div><div class="expansion-sim-title-text">${t[0]}</div><div class="expansion-sim-title-sub">${t[1]}</div></div>${id === "digging" || id === "potionroom" ? '<button type="button" class="es-mode-btn dig-data-toggle" id="digDataToggleBtn">' + (id === "potionroom" ? "Store" : "Data") + "</button>" : ""}${id === "potionroom" ? '<button type="button" class="es-mode-btn potion-logs-toggle" id="potionLogsBtn">Logs</button>' : ""}`;
+  bar.innerHTML = `<div class="expansion-sim-icon-wrap"><img data-page-icon="${id}" src="" alt=""></div><div><div class="expansion-sim-title-text">${t[0]}</div><div class="expansion-sim-title-sub">${t[1]}</div></div>${id === "digging" ? '<button type="button" class="es-mode-btn dig-pct-toggle" id="digPctToggleBtn">Percentage</button>' : ""}${id === "digging" || id === "potionroom" ? '<button type="button" class="es-mode-btn dig-data-toggle" id="digDataToggleBtn">' + (id === "potionroom" ? "Store" : "Data") + "</button>" : ""}${id === "potionroom" ? '<button type="button" class="es-mode-btn potion-logs-toggle" id="potionLogsBtn">Logs</button>' : ""}`;
   bar.hidden = false;
 }
 
