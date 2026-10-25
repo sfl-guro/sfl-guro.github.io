@@ -23102,15 +23102,6 @@ function dailyHarvestSetYield(groupKey, perNode, iconHtml2, nodeQty, econ, farmI
   });
   if (changed) saveStore();
 }
-function dailyOrdinal(n) {
-  const mod100 = n % 100;
-  if (mod100 >= 11 && mod100 <= 13) return `${n}th`;
-  const mod10 = n % 10;
-  if (mod10 === 1) return `${n}st`;
-  if (mod10 === 2) return `${n}nd`;
-  if (mod10 === 3) return `${n}rd`;
-  return `${n}th`;
-}
 var KIND_META = {
   wood: {
     verb: "Chopped",
@@ -23208,7 +23199,7 @@ function dailyHarvestBadgeHtml(groupKey, kind, iconHtml2, farmId) {
   if (!KIND_META[kind]) return "";
   const info = dailyHarvestInfo(groupKey, farmId);
   if (!info) return "";
-  return `<span class="daily-harvest-badge guro-frame dh-${kind}" role="button" tabindex="0" data-dh-key="${escapeAttr(groupKey)}" data-dh-kind="${kind}" data-dh-farm="${escapeAttr(farmId || "")}"><span class="dh-ord">${info.estimated ? "~" : ""}${dailyOrdinal(info.rounds)}</span><span class="dh-icon">${iconHtml2 || ""}${effectSvg(kind)}</span></span>`;
+  return `<span class="daily-harvest-badge guro-frame dh-${kind}" role="button" tabindex="0" data-dh-key="${escapeAttr(groupKey)}" data-dh-kind="${kind}" data-dh-farm="${escapeAttr(farmId || "")}"><span class="dh-ord">${info.estimated ? "~" : ""}${info.rounds}x</span><span class="dh-icon">${iconHtml2 || ""}${effectSvg(kind)}</span></span>`;
 }
 function formatResetIn(now) {
   const next = utcDayStart(now) + 864e5;
@@ -23294,7 +23285,7 @@ function openDailyPop(badgeEl) {
   const safeNoun = escapeAttr(noun);
   const bodyText = kind === "animal" ? `Your ${safeNoun} produce has been ${meta.action} ${times} today. A round is counted once all of your ${safeNoun} animals (${info.need} of ${info.total}) have been ${meta.action}.` : `Your ${safeNoun} ${meta.unit} have been ${meta.action} ${times} today. A round is counted once all of them (${info.need} of ${info.total}) have been ${meta.action}.`;
   const now = Date.now();
-  const html = `<div class="dh-pop-back" id="dailyHarvestPop"><div class="dh-pop guro-frame dh-${kind}" role="dialog" aria-modal="true"><div class="dh-pop-top"><span class="dh-pop-top-title">Daily Harvest \xB7 UTC</span><button type="button" class="dh-pop-x" data-dh-close="1" aria-label="Close"></button></div><div class="dh-pop-head"><span class="dh-pop-icon guro-frame dh-icon">${iconHtml2}</span><div class="dh-pop-headtext guro-frame"><div class="dh-pop-title dh-pop-title-solo">${escapeAttr(noun)}</div></div><span class="dh-pop-ord guro-frame">${info.estimated ? "~" : ""}${dailyOrdinal(info.rounds)}</span></div><div class="dh-pop-main guro-frame">${meta.verb} <b>${times}</b> today</div><p class="dh-pop-text">${bodyText}</p><div class="dh-pop-stats guro-frame"><div class="dh-stat"><span>Accuracy</span><b>${info.estimated ? "Estimated" : "Exact"}</b></div><div class="dh-stat"><span>Next round</span><b>${info.nextProgress} / ${info.need}</b></div><div class="dh-stat"><span>Last completed</span><b>${formatClock(info.lastAt)}</b></div><div class="dh-stat"><span>Resets in</span><b>${formatResetIn(now)}</b></div></div>${logHtml(groupKey, info)}${info.estimated ? `<p class="dh-pop-text dh-pop-note">Includes harvests made between syncs, estimated from your lifetime activity counters.</p>` : ""}</div></div>`;
+  const html = `<div class="dh-pop-back" id="dailyHarvestPop"><div class="dh-pop guro-frame dh-${kind}" role="dialog" aria-modal="true"><div class="dh-pop-top"><span class="dh-pop-top-title">Daily Harvest \xB7 UTC</span><button type="button" class="dh-pop-x" data-dh-close="1" aria-label="Close"></button></div><div class="dh-pop-head"><span class="dh-pop-icon guro-frame dh-icon">${iconHtml2}</span><div class="dh-pop-headtext guro-frame"><div class="dh-pop-title dh-pop-title-solo">${escapeAttr(noun)}</div></div><span class="dh-pop-ord guro-frame">${info.estimated ? "~" : ""}${info.rounds}x</span></div><div class="dh-pop-main guro-frame">${meta.verb} <b>${times}</b> today</div><p class="dh-pop-text">${bodyText}</p><div class="dh-pop-stats guro-frame"><div class="dh-stat"><span>Accuracy</span><b>${info.estimated ? "Estimated" : "Exact"}</b></div><div class="dh-stat"><span>Next round</span><b>${info.nextProgress} / ${info.need}</b></div><div class="dh-stat"><span>Last completed</span><b>${formatClock(info.lastAt)}</b></div><div class="dh-stat"><span>Resets in</span><b>${formatResetIn(now)}</b></div></div>${logHtml(groupKey, info)}${info.estimated ? `<p class="dh-pop-text dh-pop-note">Includes harvests made between syncs, estimated from your lifetime activity counters.</p>` : ""}</div></div>`;
   document.body.insertAdjacentHTML("beforeend", html);
   document.documentElement.classList.add("dh-pop-lock");
 }
