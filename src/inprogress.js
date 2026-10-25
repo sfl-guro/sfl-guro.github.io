@@ -6,7 +6,7 @@ import { getPumpkinPeteQuest } from "./pete_quests.js";
 
 import { $, hiveClockText, cookFoodIcon, getBoostIcon, getIcon, renderAnimalCardProductDetailRow, renderAnimalYieldGroupsList, renderBeehiveListHtml, renderCardProductDetailRow, renderCostNetInfoTrigger, renderCrimstoneInstantMineBoostHtml, renderCrimstoneNodeYieldList, renderFarmPanelTabContent, renderFruitHarvestsLeftHtml, renderGoldInstantMineBoostHtml, renderNodeTierYieldList, renderOilNodeYieldList, renderPlantYieldNodeList, renderSaltNodeYieldList, renderSeaBlessedBoostHtml, renderTotalsBreakdown, renderTurnaroundBoostHtml } from "./ui.js";
 import { potionTrackFromState, digStreakTrackFromState } from "./calculator.js";
-import { dailyHarvestTrack, dailyHarvestBadgeHtml, dailyHarvestSetYield } from "./daily_harvest.js";
+import { dailyHarvestTrack, dailyHarvestBadgeHtml, dailyHarvestSetYield, dailyHarvestSetResolver } from "./daily_harvest.js";
 
 export function farmPanelDetectNodeTier(resourceName, node) {
   const tiers = RESOURCE_NODE_TIERS[resourceName];
@@ -4622,12 +4622,12 @@ function farmPanelRenderAnimalMergedCard(card) {
     badgeHtml += `<span class="harvest-badge" style="background:rgba(214,80,80,0.15);color:#c33;">🤒 ${card.sickCount} sick</span>`;
   }
   const animalIcon = getIcon(card.typeLabel);
-  const dailyBadgeHtml = dailyHarvestBadgeHtml(card.typeLabel, "animal", animalIcon);
+  const dailyBadgeHtml = dailyHarvestBadgeHtml(card.typeLabel, "animal", animalIcon, farmPanelDailyFarmId());
   const animalPerHead = card.count > 0 ? card.products.reduce((sum, p) => sum + p.totalYield, 0) / card.count : 0;
   dailyHarvestSetYield(card.typeLabel, animalPerHead, card.products.length ? getIcon(card.products[0].name) : "", null, {
     price: card.avgPricePerUnit,
     feeRate: card.gross > 0 ? card.sellFee / card.gross : 0
-  });
+  }, farmPanelDailyFarmId());
   const productChipsHtml = card.products.map(p => `\n      <span class="animal-produce-chip">\n        <span class="produce-yield">+${fmtAnimal(p.totalYield)}</span>\n        <span class="produce-icon">${getIcon(p.name)}</span>\n        <span class="produce-name">${escapeHtml(p.name)}</span>\n      </span>`).join("");
   const valueBlockHtml = guroValueBlockHtml(card.gross, card.sellFee, fmtAnimal);
   const productDetailRows = card.products.map(p => renderAnimalCardProductDetailRow(getIcon(p.name), p.name, p.totalYield, p.grossRevenue, p.feeAmount)).join("");
@@ -4654,8 +4654,8 @@ function farmPanelRenderHoneyCard(row) {
   dailyHarvestSetYield("Honey", 0, produceIcon, null, {
     price: row.price,
     feeRate: row.grossRevenue > 0 ? row.feeAmount / row.grossRevenue : 0
-  });
-  const dailyBadgeHtml = dailyHarvestBadgeHtml("Honey", "honey", beehiveIcon);
+  }, farmPanelDailyFarmId());
+  const dailyBadgeHtml = dailyHarvestBadgeHtml("Honey", "honey", beehiveIcon, farmPanelDailyFarmId());
   const boostSummary = farmPanelComputeNodeYieldBoostSummary(row);
   const productChipHtml = `\n      <span class="animal-produce-chip">\n        <span class="produce-yield">+${(Math.floor(row.totalYield * 100) / 100).toFixed(2)}</span>\n        <span class="produce-icon">${produceIcon}</span>\n        <span class="produce-name">${escapeHtml(row.name)}</span>\n      </span>`;
   const valueBlockHtml = guroValueBlockHtml(row.grossRevenue, row.feeAmount, fmt);
@@ -4763,6 +4763,90 @@ const FARM_PANEL_DAILY_NODE_KINDS = {
   Oil: "oil"
 };
 
+const FARM_PANEL_PENDING_BAGS = {
+  Wood: "trees",
+  Stone: "stones",
+  Iron: "iron",
+  Gold: "gold"
+};
+
+function farmPanelResolveHarvestPending(groupKey, pend) {
+  const json = farmPanelGameState;
+  if (!json) return undefined;
+  const bagKey = FARM_PANEL_PENDING_BAGS[groupKey];
+  if (!bagKey || !pend || !Array.isArray(pend.ids) || !pend.prev || !pend.now) return null;
+  if (!Number(farmPanelGetLastInfo().id)) return undefined;
+  const g = farmSyncExtractGameState(json);
+  const bag = farmPanelField(g, bagKey);
+  const baseActivity = farmPanelField(g, "farmActivity");
+  if (!bag || !baseActivity) return undefined;
+  const byType = {};
+  for (let i = 0; i < pend.ids.length; i++) {
+    const node = bag[pend.ids[i]];
+    if (!node) return null;
+    let type;
+    let actKey;
+    if (groupKey === "Wood") {
+      type = farmPanelTreeTypeForNode(node);
+      actKey = `${type === "Tree" ? "Basic Tree" : type} Chopped`;
+    } else {
+      const known = groupKey === "Stone" ? STONE_KNOWN_IDS : groupKey === "Iron" ? IRON_KNOWN_IDS : GOLD_KNOWN_IDS;
+      type = farmPanelRockNameForNode(node, known, `${groupKey} Rock`);
+      actKey = `${type} Mined`;
+    }
+    const slot = byType[type] || (byType[type] = {
+      actKey: actKey,
+      nodes: []
+    });
+    slot.nodes.push({
+      id: pend.ids[i],
+      node: node
+    });
+  }
+  const out = {};
+  const now = Date.now();
+  const types = Object.keys(byType);
+  for (let t = 0; t < types.length; t++) {
+    const type = types[t];
+    const slot = byType[type];
+    const prev = pend.prev[slot.actKey];
+    const after = pend.now[slot.actKey];
+    if (typeof prev !== "number" || typeof after !== "number") return null;
+    const clone = {
+      farm: Object.assign({}, g, {
+        farmActivity: Object.assign({}, baseActivity, {
+          [slot.actKey]: prev
+        })
+      })
+    };
+    const count = slot.nodes.length;
+    if (groupKey === "Wood" || groupKey === "Gold") {
+      const chains = groupKey === "Wood" ? farmPanelBuildSequentialWoodRollChains(clone, type, count) : farmPanelBuildSequentialGoldRollChains(clone, type, count);
+      if (!chains) return undefined;
+      const consumed = chains.reduce((sum, chain) => sum + chain.length, 0);
+      if (consumed !== after - prev) return null;
+      slot.nodes.forEach((entry, i) => {
+        out[entry.id] = chains[i].reduce((sum, roll) => sum + ((groupKey === "Wood" ? farmPanelComputeExactWoodYieldForNode(entry.node, type, roll) : farmPanelComputeExactGoldYieldForNode(json, entry.node, type, roll, now)) || 0), 0);
+      });
+    } else {
+      const rolls = groupKey === "Stone" ? farmPanelBuildSequentialStoneRolls(clone, type, count) : farmPanelBuildSequentialIronRolls(clone, type, count);
+      if (!rolls) return undefined;
+      if (count !== after - prev) return null;
+      slot.nodes.forEach((entry, i) => {
+        out[entry.id] = (groupKey === "Stone" ? farmPanelComputeExactStoneYieldForNode(json, entry.node, type, rolls[i], now) : farmPanelComputeExactIronYieldForNode(json, entry.node, type, rolls[i], now)) || 0;
+      });
+    }
+  }
+  return out;
+}
+
+dailyHarvestSetResolver(farmPanelResolveHarvestPending);
+
+function farmPanelDailyFarmId() {
+  const stateId = farmPanelGameState && farmPanelGameState.id;
+  return String(stateId || farmPanelGetLastInfo().id || "");
+}
+
 function farmPanelDailyHarvestKind(name) {
   if (FARM_PANEL_DAILY_NODE_KINDS[name]) return FARM_PANEL_DAILY_NODE_KINDS[name];
   if (BASE_CROPS[name]) return "crop";
@@ -4815,12 +4899,12 @@ export function farmPanelRenderInProgressRow(row) {
   const nodeIcon = getNodeIconHtml(row.name);
   const nodeLabel = getNodeLabel(row.name);
   const dailyKind = farmPanelDailyHarvestKind(row.name);
-  const dailyBadgeHtml = dailyKind ? dailyHarvestBadgeHtml(row.name, dailyKind, nodeIcon) : "";
+  const dailyBadgeHtml = dailyKind ? dailyHarvestBadgeHtml(row.name, dailyKind, nodeIcon, farmPanelDailyFarmId()) : "";
   const produceIcon = getIcon(row.name);
   if (dailyKind) dailyHarvestSetYield(row.name, row.count > 0 ? row.totalYield / row.count : 0, produceIcon, row.nodeYields, row.name === "Oil" ? null : {
     price: row.price,
     feeRate: row.grossRevenue > 0 ? row.feeAmount / row.grossRevenue : 0
-  });
+  }, farmPanelDailyFarmId());
   const boostSummary = farmPanelComputeNodeYieldBoostSummary(row);
   const woodIcon = row.fruitWood ? getIcon("Wood") : "";
   const woodChipHtml = row.fruitWood ? `\n      <span class="animal-produce-chip fruit-wood-chip">\n        <span class="produce-yield">+${fmt(row.fruitWood.econ.totalYield)}</span>\n        <span class="produce-icon">${woodIcon}</span>\n        <span class="produce-name">Wood</span>\n      </span>` : "";
@@ -5352,7 +5436,7 @@ export function farmPanelSaveGameState(json, isFullSync) {
   farmPanelGameState = json || null;
   if (isFullSync) farmPanelStateIsCached = false;
   try {
-    if (json) dailyHarvestTrack(farmSyncExtractGameState(json), json.id);
+    if (json) dailyHarvestTrack(farmSyncExtractGameState(json), json.id || farmPanelGetLastInfo().id);
   } catch (e) {}
   farmPanelHoneySnapshotMs = Date.now();
   const toStore = farmPanelGameState;

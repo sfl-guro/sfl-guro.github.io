@@ -33712,6 +33712,15 @@ function digItemPrice(name, pct) {
   };
 }
 
+export function digTileProfit(name) {
+  if (!name) return null;
+  const cost = digToolUnitCoins("Sand Shovel");
+  const price = digItemPrice(name, digPricePct()).price;
+  if (!(price > 0)) return null;
+  const perDig = name === "Sand" || name === "Crab" ? digYieldPerDig(name) : 1;
+  return price * perDig >= cost ? "profit" : "loss";
+}
+
 function digBoostGridHtml() {
   return DIG_BOOST_DEFS.map(b => `<div class="betty-boost-row dig-boost-card${digBoostOn(b.id) ? " is-on" : ""}">\n      <span class="dig-boost-icon">${digIconHtml(b.icon)}</span>\n      <div class="betty-boost-row-main dig-boost-main">\n        <div class="betty-boost-row-name dig-boost-name">${escapeHtml(b.name)}</div>\n        <div class="betty-boost-row-desc dig-boost-desc">${escapeHtml(b.desc)}</div>\n      </div>\n      <label class="bg-sim-check"><input type="checkbox" data-dig-boost="${b.id}" aria-label="${escapeHtml(b.name)}"${digBoostOn(b.id) ? " checked" : ""}></label>\n    </div>`).join("");
 }
@@ -36684,13 +36693,6 @@ function profileTradableResourceRows(g) {
     name: "Coins",
     qty: coinQty,
     value: coinsToFlower(coinQty),
-    category: "other"
-  });
-  const loveCharmQty = profileGetInventoryAmount(g, "Love Charm");
-  if (loveCharmQty > 0) rows.push({
-    name: "Love Charm",
-    qty: loveCharmQty,
-    value: loveCharmQty / 80,
     category: "other"
   });
   return rows.sort((a, b) => b.value - a.value);

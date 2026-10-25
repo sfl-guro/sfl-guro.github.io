@@ -431,6 +431,7 @@ __export(calculator_exports, {
   digSetManualMark: () => digSetManualMark,
   digSolveBoard: () => digSolveBoard,
   digStreakTrackFromState: () => digStreakTrackFromState,
+  digTileProfit: () => digTileProfit,
   discardSkillBoostDrafts: () => discardSkillBoostDrafts,
   draftSetAscensionRank: () => draftSetAscensionRank,
   editingLibId: () => editingLibId,
@@ -16785,10 +16786,19 @@ function renderDigCellHtml(cell, farmId, pctMap) {
     icon = `<span class="dig-pct">${pct}%</span>`;
     label = `${pct}% chance of treasure \xB7 ${label}`;
   }
+  let plBadge = "";
+  if (!manualStatus) {
+    const plItem = cell.dug ? cell.item : displayStatus === "guaranteed" && cell.predicted ? cell.predicted.item : displayStatus === "crab" ? "Crab" : displayStatus === "sand" ? "Sand" : null;
+    const plState = plItem ? digTileProfit(plItem) : null;
+    if (plState) {
+      plBadge = `<span class="dig-pl is-${plState}">${plState === "profit" ? "\u2713" : "\u2715"}</span>`;
+      label = `${label} \xB7 ${plState === "profit" ? "profit" : "loss"} vs 1 shovel`;
+    }
+  }
   const dataAttrs = cell.dug ? "" : ` data-dig-x="${cell.x}" data-dig-y="${cell.y}"`;
   const seqBadge = cell.dug && cell.seq > 0 ? `<span class="dig-seq">${cell.seq}</span>` : "";
   if (cell.dug && cell.seq > 0) label = `${label} \xB7 dig #${cell.seq}`;
-  return `<div class="dig-cell ${cls}" title="${escapeHtml(String(label))}"${dataAttrs}>${icon}${seqBadge}</div>`;
+  return `<div class="dig-cell ${cls}" title="${escapeHtml(String(label))}"${dataAttrs}>${icon}${plBadge}${seqBadge}</div>`;
 }
 function renderDigGridHtml(solved, farmId) {
   const pctMap = digPercentModeOn() ? digBuildPercentMap(solved) : null;
@@ -22549,6 +22559,40 @@ function utcDayStart(ms) {
   const d = new Date(ms);
   return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
 }
+function pruneStore(store) {
+  const today = utcDay(Date.now());
+  const active = store.__last;
+  let changed = false;
+  Object.keys(store).forEach((k) => {
+    if (k === "__last") return;
+    const rec = store[k];
+    if (!rec || typeof rec !== "object") {
+      delete store[k];
+      changed = true;
+      return;
+    }
+    if (rec.day === today) return;
+    if (k === active) {
+      if (Object.keys(rec.stats || {}).length || Object.keys(rec.prev || {}).length) {
+        store[k] = {
+          day: rec.day,
+          prev: {},
+          stats: {},
+          counters: rec.counters || {},
+          inv: rec.inv || {},
+          act: rec.act || {},
+          power: rec.power || {},
+          syncAt: rec.syncAt || 0
+        };
+        changed = true;
+      }
+      return;
+    }
+    delete store[k];
+    changed = true;
+  });
+  return changed;
+}
 function loadStore() {
   if (memStore) return memStore;
   try {
@@ -22558,7 +22602,13 @@ function loadStore() {
   } catch (e) {
     memStore = {};
   }
+  if (pruneStore(memStore)) saveStore();
   return memStore;
+}
+function freshStore() {
+  const store = loadStore();
+  if (pruneStore(store)) saveStore();
+  return store;
 }
 function saveStore() {
   try {
@@ -22574,6 +22624,31 @@ function isActiveNode(node, now) {
   return !(typeof node.removedAt === "number" && node.removedAt <= now);
 }
 var yieldMeta = {};
+var metaFarm = "";
+var RESOLVABLE_GROUPS = {
+  Wood: true,
+  Stone: true,
+  Iron: true,
+  Gold: true
+};
+var ACT_KEY_RE = /^(.+ Tree Chopped|.+ Rock Mined)$/;
+var pendResolver = null;
+function dailyHarvestSetResolver(fn) {
+  pendResolver = typeof fn === "function" ? fn : null;
+}
+function pickActivity(fa) {
+  const out = {};
+  if (!fa || typeof fa !== "object") return out;
+  Object.keys(fa).forEach((k) => {
+    if (k !== "Tree Chopped" && ACT_KEY_RE.test(k) && typeof fa[k] === "number") out[k] = fa[k];
+  });
+  return out;
+}
+function oilAmountOf(g, id) {
+  const reserve = g.oilReserves && g.oilReserves[id];
+  const amount = reserve && reserve.oil && reserve.oil.amount;
+  return typeof amount === "number" && isFinite(amount) && amount > 0 ? amount : null;
+}
 var LOG_CAP = 60;
 var POWER_KINDS = {
   "Tree Blitz": "wood",
@@ -22715,9 +22790,11 @@ function dailyHarvestTrack(g, farmId) {
   const now = Date.now();
   const today = utcDay(now);
   const start = utcDayStart(now);
-  const store = loadStore();
-  const fid = String(farmId || store.__last || "default");
+  const store = freshStore();
+  const fid = String(farmId || store.__last || "");
+  if (!fid) return;
   store.__last = fid;
+  pruneStore(store);
   const old = store[fid];
   let rec = old;
   const fresh = !rec || rec.day !== today;
@@ -22727,11 +22804,14 @@ function dailyHarvestTrack(g, farmId) {
     stats: {},
     counters: old && old.counters ? old.counters : {},
     inv: old && old.inv ? old.inv : {},
+    act: old && old.act ? old.act : {},
     power: old && old.power ? old.power : {},
     syncAt: old && old.syncAt ? old.syncAt : 0
   };
   const prevSyncAt = rec.syncAt || 0;
   const invPrev = rec.inv || {};
+  const actPrev = rec.act || {};
+  const actNow = pickActivity(g.farmActivity);
   const invNowMap = {};
   const inventory = g.inventory && typeof g.inventory === "object" ? g.inventory : null;
   const powerNow = g.bumpkin && g.bumpkin.previousPowerUseAt && typeof g.bumpkin.previousPowerUseAt === "object" ? g.bumpkin.previousPowerUseAt : {};
@@ -22826,7 +22906,7 @@ function dailyHarvestTrack(g, farmId) {
     const sorted = events.slice().sort();
     const per = Math.floor(extras / sorted.length);
     const rem = extras % sorted.length;
-    const snap = yieldMeta[groupKey] && yieldMeta[groupKey].nodes ? yieldMeta[groupKey].nodes : null;
+    const snap = metaFarm === fid && yieldMeta[groupKey] && yieldMeta[groupKey].nodes ? yieldMeta[groupKey].nodes : null;
     const buckets = {};
     sorted.forEach((id, i) => {
       const inc = (hiddenOnly ? 0 : 1) + per + (i < rem ? 1 : 0);
@@ -22839,19 +22919,41 @@ function dailyHarvestTrack(g, farmId) {
         t,
         n: 0,
         y: 0,
-        miss: false
+        miss: false,
+        ids: []
       });
       b.t = Math.max(b.t, t);
       b.n += 1;
-      if (snap && typeof snap[id] === "number") b.y += snap[id];
+      b.ids.push(id);
+      const oilAmt = groupKey === "Oil" ? oilAmountOf(g, id) : null;
+      if (oilAmt !== null) b.y += oilAmt;
+      else if (snap && typeof snap[id] === "number") b.y += snap[id];
       else b.miss = true;
     });
     const honeyTotal = grp.mode === "honey" && cNow !== null && cPrev !== null && cNow > cPrev ? cNow - cPrev : null;
-    const entries = Object.values(buckets).sort((a, b) => a.t - b.t).map((b) => ({
-      t: b.t,
-      n: b.n,
-      y: b.miss ? null : b.y
-    }));
+    const resolvable = RESOLVABLE_GROUPS[groupKey] && grp.mode === "ts" && !hiddenOnly;
+    const entries = Object.values(buckets).sort((a, b) => a.t - b.t).map((b) => {
+      const entry = {
+        t: b.t,
+        n: b.n,
+        y: b.miss ? null : b.y
+      };
+      if (resolvable) entry.ids = b.ids;
+      return entry;
+    });
+    if (resolvable && entries.length) {
+      const pid = String(now);
+      const ordered = sorted.slice().sort((a, b) => grp.nodes[a].ts - grp.nodes[b].ts || (a < b ? -1 : 1));
+      st.pend = st.pend || {};
+      st.pend[pid] = {
+        ids: ordered,
+        prev: Object.assign({}, actPrev),
+        now: Object.assign({}, actNow)
+      };
+      entries.forEach((e) => {
+        e.pid = pid;
+      });
+    }
     if (extras > 0 && grp.mode !== "honey") {
       const snapVals = snap ? Object.values(snap).filter((v) => typeof v === "number") : [];
       const mean = snapVals.length ? snapVals.reduce((a, b) => a + b, 0) / snapVals.length : 0;
@@ -22870,7 +22972,7 @@ function dailyHarvestTrack(g, farmId) {
     const invBefore = invItemNow && typeof invPrev[invItemNow] === "number" ? invPrev[invItemNow] : null;
     const invAfter = invItemNow && typeof invNowMap[invItemNow] === "number" ? invNowMap[invItemNow] : null;
     const spanInDay = !(fresh && prevSyncAt && prevSyncAt < start);
-    if (honeyTotal === null && invBefore !== null && invAfter !== null && spanInDay && entries.length) {
+    if (honeyTotal === null && groupKey !== "Oil" && invBefore !== null && invAfter !== null && spanInDay && entries.length) {
       const gained = invAfter - invBefore;
       if (gained > 1e-9) entries.forEach((e) => {
         e.y = gained * e.n / nSum;
@@ -22895,16 +22997,14 @@ function dailyHarvestTrack(g, farmId) {
     if (typeof powerNow[skill] === "number") rec.power[skill] = powerNow[skill];
   });
   rec.inv = Object.assign({}, invPrev, invNowMap);
+  rec.act = Object.assign({}, actPrev, actNow);
   rec.syncAt = now;
   store[fid] = rec;
-  Object.keys(store).forEach((k) => {
-    if (k !== "__last" && k !== fid && store[k] && store[k].day !== today) delete store[k];
-  });
   saveStore();
 }
-function dailyHarvestInfo(groupKey) {
-  const store = loadStore();
-  const rec = store[store.__last];
+function dailyHarvestInfo(groupKey, farmId) {
+  const store = freshStore();
+  const rec = store[farmId ? String(farmId) : store.__last];
   if (!rec || rec.day !== utcDay(Date.now())) return null;
   const st = rec.stats[groupKey];
   if (!st) return null;
@@ -22921,7 +23021,52 @@ function dailyHarvestInfo(groupKey) {
     log: Array.isArray(st.log) ? st.log : []
   };
 }
-function dailyHarvestSetYield(groupKey, perNode, iconHtml2, nodeQty, econ) {
+function resolvePending(st, groupKey) {
+  if (!st.pend || !pendResolver) return false;
+  let changed = false;
+  Object.keys(st.pend).forEach((pid) => {
+    let amounts;
+    try {
+      amounts = pendResolver(groupKey, st.pend[pid]);
+    } catch (e) {
+      amounts = null;
+    }
+    if (amounts === void 0) return;
+    if (amounts) {
+      st.log.forEach((e) => {
+        if (e.pid !== pid || !Array.isArray(e.ids)) return;
+        let sum = 0;
+        let ok = true;
+        e.ids.forEach((id) => {
+          if (typeof amounts[id] === "number") sum += amounts[id];
+          else ok = false;
+        });
+        if (ok) {
+          e.y = sum;
+          e.exact = true;
+        }
+      });
+    }
+    st.log.forEach((e) => {
+      if (e.pid === pid) {
+        delete e.pid;
+        delete e.ids;
+      }
+    });
+    delete st.pend[pid];
+    changed = true;
+  });
+  return changed;
+}
+function dailyHarvestSetYield(groupKey, perNode, iconHtml2, nodeQty, econ, farmId) {
+  const metaStore = freshStore();
+  const metaFid = farmId ? String(farmId) : metaStore.__last || "";
+  if (metaFarm !== metaFid) {
+    Object.keys(yieldMeta).forEach((k) => {
+      delete yieldMeta[k];
+    });
+    metaFarm = metaFid;
+  }
   const per = typeof perNode === "number" && isFinite(perNode) && perNode > 0 ? perNode : 0;
   const meta = yieldMeta[groupKey] || (yieldMeta[groupKey] = {
     per: 0,
@@ -22944,13 +23089,12 @@ function dailyHarvestSetYield(groupKey, perNode, iconHtml2, nodeQty, econ) {
   }
   if (per) meta.per = per;
   if (iconHtml2) meta.icon = iconHtml2;
-  if (!meta.per) return;
-  const store = loadStore();
-  const rec = store[store.__last];
+  const store = metaStore;
+  const rec = store[metaFid];
   const st = rec && rec.stats ? rec.stats[groupKey] : null;
   if (!st || !Array.isArray(st.log)) return;
-  let changed = false;
-  st.log.forEach((e) => {
+  let changed = resolvePending(st, groupKey);
+  if (meta.per) st.log.forEach((e) => {
     if (e.y === null || e.y === void 0) {
       e.y = e.n * meta.per;
       changed = true;
@@ -23060,11 +23204,11 @@ function effectSvg(kind) {
 function escapeAttr(s) {
   return String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
-function dailyHarvestBadgeHtml(groupKey, kind, iconHtml2) {
+function dailyHarvestBadgeHtml(groupKey, kind, iconHtml2, farmId) {
   if (!KIND_META[kind]) return "";
-  const info = dailyHarvestInfo(groupKey);
+  const info = dailyHarvestInfo(groupKey, farmId);
   if (!info) return "";
-  return `<span class="daily-harvest-badge guro-frame dh-${kind}" role="button" tabindex="0" data-dh-key="${escapeAttr(groupKey)}" data-dh-kind="${kind}"><span class="dh-ord">${info.estimated ? "~" : ""}${dailyOrdinal(info.rounds)}</span><span class="dh-icon">${iconHtml2 || ""}${effectSvg(kind)}</span></span>`;
+  return `<span class="daily-harvest-badge guro-frame dh-${kind}" role="button" tabindex="0" data-dh-key="${escapeAttr(groupKey)}" data-dh-kind="${kind}" data-dh-farm="${escapeAttr(farmId || "")}"><span class="dh-ord">${info.estimated ? "~" : ""}${dailyOrdinal(info.rounds)}</span><span class="dh-icon">${iconHtml2 || ""}${effectSvg(kind)}</span></span>`;
 }
 function formatResetIn(now) {
   const next = utcDayStart(now) + 864e5;
@@ -23140,7 +23284,7 @@ function openDailyPop(badgeEl) {
   const groupKey = badgeEl.getAttribute("data-dh-key");
   const kind = badgeEl.getAttribute("data-dh-kind");
   const meta = KIND_META[kind];
-  const info = dailyHarvestInfo(groupKey);
+  const info = dailyHarvestInfo(groupKey, badgeEl.getAttribute("data-dh-farm") || "");
   if (!meta || !info) return;
   closeDailyPop();
   const noun = KIND_NOUN[groupKey] || groupKey;
@@ -27571,12 +27715,12 @@ function farmPanelRenderAnimalMergedCard(card2) {
     badgeHtml += `<span class="harvest-badge" style="background:rgba(214,80,80,0.15);color:#c33;">\u{1F912} ${card2.sickCount} sick</span>`;
   }
   const animalIcon = getIcon(card2.typeLabel);
-  const dailyBadgeHtml = dailyHarvestBadgeHtml(card2.typeLabel, "animal", animalIcon);
+  const dailyBadgeHtml = dailyHarvestBadgeHtml(card2.typeLabel, "animal", animalIcon, farmPanelDailyFarmId());
   const animalPerHead = card2.count > 0 ? card2.products.reduce((sum, p) => sum + p.totalYield, 0) / card2.count : 0;
   dailyHarvestSetYield(card2.typeLabel, animalPerHead, card2.products.length ? getIcon(card2.products[0].name) : "", null, {
     price: card2.avgPricePerUnit,
     feeRate: card2.gross > 0 ? card2.sellFee / card2.gross : 0
-  });
+  }, farmPanelDailyFarmId());
   const productChipsHtml = card2.products.map((p) => `
       <span class="animal-produce-chip">
         <span class="produce-yield">+${fmtAnimal(p.totalYield)}</span>
@@ -27641,8 +27785,8 @@ function farmPanelRenderHoneyCard(row3) {
   dailyHarvestSetYield("Honey", 0, produceIcon, null, {
     price: row3.price,
     feeRate: row3.grossRevenue > 0 ? row3.feeAmount / row3.grossRevenue : 0
-  });
-  const dailyBadgeHtml = dailyHarvestBadgeHtml("Honey", "honey", beehiveIcon);
+  }, farmPanelDailyFarmId());
+  const dailyBadgeHtml = dailyHarvestBadgeHtml("Honey", "honey", beehiveIcon, farmPanelDailyFarmId());
   const boostSummary = farmPanelComputeNodeYieldBoostSummary(row3);
   const productChipHtml = `
       <span class="animal-produce-chip">
@@ -27812,6 +27956,86 @@ var FARM_PANEL_DAILY_NODE_KINDS = {
   Crimstone: "crimstone",
   Oil: "oil"
 };
+var FARM_PANEL_PENDING_BAGS = {
+  Wood: "trees",
+  Stone: "stones",
+  Iron: "iron",
+  Gold: "gold"
+};
+function farmPanelResolveHarvestPending(groupKey, pend) {
+  const json = farmPanelGameState;
+  if (!json) return void 0;
+  const bagKey = FARM_PANEL_PENDING_BAGS[groupKey];
+  if (!bagKey || !pend || !Array.isArray(pend.ids) || !pend.prev || !pend.now) return null;
+  if (!Number(farmPanelGetLastInfo().id)) return void 0;
+  const g = farmSyncExtractGameState(json);
+  const bag = farmPanelField(g, bagKey);
+  const baseActivity = farmPanelField(g, "farmActivity");
+  if (!bag || !baseActivity) return void 0;
+  const byType = {};
+  for (let i = 0; i < pend.ids.length; i++) {
+    const node = bag[pend.ids[i]];
+    if (!node) return null;
+    let type;
+    let actKey;
+    if (groupKey === "Wood") {
+      type = farmPanelTreeTypeForNode(node);
+      actKey = `${type === "Tree" ? "Basic Tree" : type} Chopped`;
+    } else {
+      const known = groupKey === "Stone" ? STONE_KNOWN_IDS : groupKey === "Iron" ? IRON_KNOWN_IDS : GOLD_KNOWN_IDS;
+      type = farmPanelRockNameForNode(node, known, `${groupKey} Rock`);
+      actKey = `${type} Mined`;
+    }
+    const slot = byType[type] || (byType[type] = {
+      actKey,
+      nodes: []
+    });
+    slot.nodes.push({
+      id: pend.ids[i],
+      node
+    });
+  }
+  const out = {};
+  const now = Date.now();
+  const types = Object.keys(byType);
+  for (let t = 0; t < types.length; t++) {
+    const type = types[t];
+    const slot = byType[type];
+    const prev = pend.prev[slot.actKey];
+    const after = pend.now[slot.actKey];
+    if (typeof prev !== "number" || typeof after !== "number") return null;
+    const clone = {
+      farm: Object.assign({}, g, {
+        farmActivity: Object.assign({}, baseActivity, {
+          [slot.actKey]: prev
+        })
+      })
+    };
+    const count = slot.nodes.length;
+    if (groupKey === "Wood" || groupKey === "Gold") {
+      const chains = groupKey === "Wood" ? farmPanelBuildSequentialWoodRollChains(clone, type, count) : farmPanelBuildSequentialGoldRollChains(clone, type, count);
+      if (!chains) return void 0;
+      const consumed = chains.reduce((sum, chain) => sum + chain.length, 0);
+      if (consumed !== after - prev) return null;
+      slot.nodes.forEach((entry, i) => {
+        out[entry.id] = chains[i].reduce((sum, roll) => sum + ((groupKey === "Wood" ? farmPanelComputeExactWoodYieldForNode(entry.node, type, roll) : farmPanelComputeExactGoldYieldForNode(json, entry.node, type, roll, now)) || 0), 0);
+      });
+    } else {
+      const rolls = groupKey === "Stone" ? farmPanelBuildSequentialStoneRolls(clone, type, count) : farmPanelBuildSequentialIronRolls(clone, type, count);
+      if (!rolls) return void 0;
+      if (count !== after - prev) return null;
+      slot.nodes.forEach((entry, i) => {
+        out[entry.id] = (groupKey === "Stone" ? farmPanelComputeExactStoneYieldForNode(json, entry.node, type, rolls[i], now) : farmPanelComputeExactIronYieldForNode(json, entry.node, type, rolls[i], now)) || 0;
+      });
+    }
+  }
+  return out;
+}
+dailyHarvestSetResolver(farmPanelResolveHarvestPending);
+function farmPanelDailyFarmId() {
+  const stateId = farmPanelGameState && farmPanelGameState.id;
+  return String(stateId || farmPanelGetLastInfo().id || "");
+}
 function farmPanelDailyHarvestKind(name) {
   if (FARM_PANEL_DAILY_NODE_KINDS[name]) return FARM_PANEL_DAILY_NODE_KINDS[name];
   if (BASE_CROPS[name]) return "crop";
@@ -27863,12 +28087,12 @@ function farmPanelRenderInProgressRow(row3) {
   const nodeIcon = getNodeIconHtml(row3.name);
   const nodeLabel = getNodeLabel(row3.name);
   const dailyKind = farmPanelDailyHarvestKind(row3.name);
-  const dailyBadgeHtml = dailyKind ? dailyHarvestBadgeHtml(row3.name, dailyKind, nodeIcon) : "";
+  const dailyBadgeHtml = dailyKind ? dailyHarvestBadgeHtml(row3.name, dailyKind, nodeIcon, farmPanelDailyFarmId()) : "";
   const produceIcon = getIcon(row3.name);
   if (dailyKind) dailyHarvestSetYield(row3.name, row3.count > 0 ? row3.totalYield / row3.count : 0, produceIcon, row3.nodeYields, row3.name === "Oil" ? null : {
     price: row3.price,
     feeRate: row3.grossRevenue > 0 ? row3.feeAmount / row3.grossRevenue : 0
-  });
+  }, farmPanelDailyFarmId());
   const boostSummary = farmPanelComputeNodeYieldBoostSummary(row3);
   const woodIcon = row3.fruitWood ? getIcon("Wood") : "";
   const woodChipHtml = row3.fruitWood ? `
@@ -28460,7 +28684,7 @@ function farmPanelSaveGameState(json, isFullSync) {
   farmPanelGameState = json || null;
   if (isFullSync) farmPanelStateIsCached = false;
   try {
-    if (json) dailyHarvestTrack(farmSyncExtractGameState(json), json.id);
+    if (json) dailyHarvestTrack(farmSyncExtractGameState(json), json.id || farmPanelGetLastInfo().id);
   } catch (e) {
   }
   farmPanelHoneySnapshotMs = Date.now();
@@ -61005,6 +61229,14 @@ function digItemPrice(name, pct) {
     sellable: false
   };
 }
+function digTileProfit(name) {
+  if (!name) return null;
+  const cost = digToolUnitCoins("Sand Shovel");
+  const price = digItemPrice(name, digPricePct()).price;
+  if (!(price > 0)) return null;
+  const perDig = name === "Sand" || name === "Crab" ? digYieldPerDig(name) : 1;
+  return price * perDig >= cost ? "profit" : "loss";
+}
 function digBoostGridHtml() {
   return DIG_BOOST_DEFS.map((b) => `<div class="betty-boost-row dig-boost-card${digBoostOn(b.id) ? " is-on" : ""}">
       <span class="dig-boost-icon">${digIconHtml(b.icon)}</span>
@@ -63823,13 +64055,6 @@ function profileTradableResourceRows(g) {
     name: "Coins",
     qty: coinQty,
     value: coinsToFlower(coinQty),
-    category: "other"
-  });
-  const loveCharmQty = profileGetInventoryAmount(g, "Love Charm");
-  if (loveCharmQty > 0) rows.push({
-    name: "Love Charm",
-    qty: loveCharmQty,
-    value: loveCharmQty / 80,
     category: "other"
   });
   return rows.sort((a, b) => b.value - a.value);

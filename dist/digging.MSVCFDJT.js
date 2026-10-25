@@ -13,18 +13,28 @@ function setDataMode(root, on) {
 function setPercentMode(root, on) {
   root.classList.toggle("dig-pct-mode", on);
   const btn = document.getElementById("digPctToggleBtn");
-  if (btn) btn.textContent = on ? "Icons" : "Percentage";
+  if (btn) btn.classList.toggle("active", on);
+}
+function setMarkMode(root, on) {
+  root.classList.toggle("dig-show-pl", on);
+  const btn = document.getElementById("digPlToggleBtn");
+  if (btn) btn.classList.toggle("active", on);
 }
 function mount(root, api) {
   setOpenClass("digSidePanel", true);
   setDataMode(root, false);
   setPercentMode(root, false);
+  setMarkMode(root, false);
   const bar = document.getElementById("guroPageTitle");
   if (bar) {
     onTitleClick = (ev) => {
       if (ev.target.closest("#digPctToggleBtn")) {
         setPercentMode(root, !root.classList.contains("dig-pct-mode"));
         api.ui.renderDigTreasurePanel();
+        return;
+      }
+      if (ev.target.closest("#digPlToggleBtn")) {
+        setMarkMode(root, !root.classList.contains("dig-show-pl"));
         return;
       }
       if (!ev.target.closest("#digDataToggleBtn")) return;
@@ -43,6 +53,7 @@ function unmount() {
   if (root) {
     root.classList.remove("dig-show-data");
     root.classList.remove("dig-pct-mode");
+    root.classList.remove("dig-show-pl");
   }
 }
 export {

@@ -13,7 +13,7 @@ import {
   prices_exports,
   setAppDarkMode,
   ui_exports
-} from "./chunk.KRHQ436Y.js";
+} from "./chunk.KUDPM2WE.js";
 import {
   KEY_ICON_DATA,
   NAV_ICON_DATA
@@ -43,7 +43,7 @@ var PAGES = [{
   path: "/digging",
   label: "Digging",
   root: "pageDigging",
-  load: () => import("./digging.K6H2WW55.js")
+  load: () => import("./digging.MSVCFDJT.js")
 }, {
   id: "potionroom",
   path: "/potionroom",
@@ -169,13 +169,13 @@ var PAGES = [{
   path: "/experience-calculator",
   label: "Experience Calculator",
   root: "cookingPanel",
-  load: () => import("./experiencecalc.EIJPI4DK.js")
+  load: () => import("./experiencecalc.CRHELO6E.js")
 }, {
   id: "beginnerguide",
   path: "/beginner-guide",
   label: "Beginner Guide",
   root: "beginnerPanel",
-  load: () => import("./beginnerguide.F66FBFOB.js")
+  load: () => import("./beginnerguide.2K7JS2CB.js")
 }, {
   id: "fishing",
   path: "/fishing",
@@ -193,7 +193,7 @@ var PAGES = [{
   path: "/resource-calculators",
   label: "Resource Calculators",
   root: "pageResourceCalc",
-  load: () => import("./resourcecalc.R5R4RGXI.js")
+  load: () => import("./resourcecalc.V3GDKLGC.js")
 }, {
   id: "sflbubbles",
   path: "/sflbubbleschart",
@@ -211,13 +211,13 @@ var PAGES = [{
   path: "/userguide",
   label: "User Guide",
   root: "pageUserGuide",
-  load: () => import("./userguide.LOQGU6KT.js")
+  load: () => import("./userguide.WGH34BC5.js")
 }, {
   id: "profile",
   path: "/profile",
   label: "Profile",
   root: "pageProfile",
-  load: () => import("./profile.7SPAZORN.js")
+  load: () => import("./profile.TYUGGYY2.js")
 }];
 var DEFAULT_PAGE_ID = "growing";
 function pageById(id) {
@@ -230,6 +230,10 @@ function pageForPath(pathname) {
 
 // src/rescalc_icon.js
 var RESCALC_ICON = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAtklEQVR42mNgoBAwMjAwMEiIqP4nR/OLN7cZWWCca1urSdKs5d3KwMDAwMCCTZAQWFXoAmczoUuu2L4dg41OIwMmbDagK4zw9GRYsX07Q4SnJ4ZaFnQBZEW42DgNODPJl6gwuHf/O3YD2PQsGBgYGBh+XTqBlc8w9RKE9lLFbsCNjfsZGBgYGJQUObHyCXoBXSGGxmw9CE2uF6IeX2NgYGBgaGFQpJEXsIUyMh/ZZqplJkpzMwMAgzxG7wZpfTIAAAAASUVORK5CYII=";
+
+// src/dig_icons.js
+var DIG_PCT_ICON_SRC = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAYAAABWdVznAAAARklEQVR42mNgIAdoS/H/15bi/49PHisHmyZ0MSZCNl999pGRKA3YFOP0Az7/4PUgocDAGQDIbCai3IzuaWIVE/QgQT8QAwA/Oyffxlr73gAAAABJRU5ErkJggg==";
+var DIG_CHECK_ICON_SRC = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAYAAABWdVznAAAAW0lEQVR42mNgIBEwEquQO0rqPwMDAwMTsYr1lv5iIEoDsmKiTLb8L/Lf8r/If5iTMNxItGJkCXyKWZA5ekt/MVxiQLj5UjQbw9dlzxgJuherM/BpIkoxLs9TDAAS/z91cnmLNAAAAABJRU5ErkJggg==";
 
 // src/nav.js
 var BUMPKIN_LEVEL_ICON = "data:image/webp;base64,UklGRo4FAABXRUJQVlA4TIIFAAAvY8AYAKfhtrZt09rPTNnFy1//FSByZOMbuw22kW0rwd0tdBqgZCqCjJwCvuPy2Ea2reR8QjIyh9wjmqFQ6qASd73zHwT9zi9eggu8BRd4Ci7wFnLBDT7CU/ABH/ABLwgCAH4AAEB6NN6PZOhV7Yv3//t9Mu6/RDJO93I/bo/15LsJdThYnaGUB73o2D2cHCY4wsi2GalaqkXEEmiu71LZyCgOWy9rJoy95okU08fg3db2tm22bXN674kAN4ZIBPL0edJmeInrv3IHGmld/9q2R/R/An78p8Gf+fP1s7LuNCdOJE48jl410hnq9VPSL0lIwujs9PrZQmemz9Sfq1+SkERC56S3jfrzVN2ER6XML0lIIqGz0Wdb9OdnAlN+fiZb08OZmbJlAOeJEs7OUlB9JibOxvcNJ6DXssG37Gn+bjXzHdD8fdfTArKZXgXSGRHshBLNe2NH5DTvjYmUEv9AwT9QwmmGlGb43vLbpku21bfC01z6renXzY0MzFzY3k7wtfRU8LXtl+1LmJNmAr6Un1JfHu0iKcVFstfUQDrNfHnMi6QUqcl+2dPnXS6SUqWf608zn5t/2uciqeZTw9PMp+Yfd7rYko9NO4nmH3Y6seQ/NO+O+vCIA2ucIBdotUxAq/ebjxBWJiATA/F9/cQiBO8bv9t4tGElTkDqIRDhXa2x7x7jmGIlXkyQI8IQq7Ct3m56p3EYYQgrY7xgYpEechB5y5B8uyj1dv/jnSIjccwkH+JawgBEJtjozZZlcYgXPNjEQDQDEJkSyTeNX284QmS4Ewm4sA+xwQQsUictr1u/2jA3E2BmiBfwoDgHmBkiDEQ7wZJ61fxl+zuNxAE0RxiZlYjjPBApW9Kdji/3f0duDMAc1vQcYJiH+BJqjhu8aH6nCAnN/P3XHArnvzXfaXgBcSh4QXcUzZ83v9MYATOGvwRroRTupOfWsEjPoTuK5s9a341kULBrcTDPkgYkqTvqWfOnrVNDBEazhtKVwMjT6u6opzuHOAKJAKyENf8YnjQeIQJPikpXCCNPqrujaH7fdkzGQRECsEJY8wlGVXdH3e87gxjOyp8CJEUYiaCBAKw2ZMKa4O7PvcQuaKWJaDXEAkIirI8B4BLAXJKdgCXyZwglBLumA+O9uQS4B+iOgvvLe4m0JOwlapzQn8tg16YBJOlfl4XdUZdbHqyXRZKQUpd+u+zBo+4oDhbZkoNFEhLIImUOklmbeUkIZbujDhKSkIQkgSQ2WQrCGsxpTpqwP2RQnsxBUif9VlhD91vq5pMkut9SWIO6Q94bUpIwwghJKAlOPgGySyu4KPEpUDIDcl6VOLwr9ji7TDi7javVURR7V16RXTThfEIydj5dwNxJCmtQkd/Cs4kmvAuwQljDCpzm5AqENcC+2i6SJmUalyWr9mi0F8+OfAWGnYCv8fvxe/GPDIdZz0upN+mqADRJF7T2FWnfIKQLvKtMeXDgyXk2SQbIBThIADm3B+/a+xYBcDYATTyZWu88u4CVYF06APs7VHpJApROpJ314AKwEkClHtQdxaEhqBxUX+JKQ1byZGx31EGiamvQLTkHeOcd+CLra/ZKGWBcGb10a3NsxR7o5c8DVIDSvWRctZIHb2SooY0EBoGKb6GXHPiEL7mFQ63xBmQBYQpTogSkPnkt3ciidCsd/aFIDbIpSHAL9LpuaKSr7EHyCaWSJBpX3AJ9OyAj6UbSjpLIXt0CvaSbNroFCnSDuSpJe0EFSAKhJDdcCbiWhEFIQpKQJLiSQHKHK+lG6CD5EpBQbULCIIuTBDkq3EHgZZEEsjVIEoYcrcDjAI9Lexw0IockIUno3xKSisjgnceR8A7vUh4kSKlFMlVsqp13rZX2qBq0e9c+s0s=";
@@ -405,7 +409,7 @@ function setPageTitle(id) {
     bar.innerHTML = "";
     return;
   }
-  bar.innerHTML = `<div class="expansion-sim-icon-wrap"><img data-page-icon="${id}" src="" alt=""></div><div><div class="expansion-sim-title-text">${t[0]}</div><div class="expansion-sim-title-sub">${t[1]}</div></div>${id === "digging" ? '<button type="button" class="es-mode-btn dig-pct-toggle" id="digPctToggleBtn">Percentage</button>' : ""}${id === "digging" || id === "potionroom" ? '<button type="button" class="es-mode-btn dig-data-toggle" id="digDataToggleBtn">' + (id === "potionroom" ? "Store" : "Data") + "</button>" : ""}${id === "potionroom" ? '<button type="button" class="es-mode-btn potion-logs-toggle" id="potionLogsBtn">Logs</button>' : ""}`;
+  bar.innerHTML = `<div class="expansion-sim-icon-wrap"><img data-page-icon="${id}" src="" alt=""></div><div><div class="expansion-sim-title-text">${t[0]}</div><div class="expansion-sim-title-sub">${t[1]}</div></div>${id === "digging" ? '<button type="button" class="es-mode-btn dig-pct-toggle" id="digPctToggleBtn" aria-label="Show percentages"><img src="' + DIG_PCT_ICON_SRC + '" alt=""></button><button type="button" class="es-mode-btn dig-pl-toggle" id="digPlToggleBtn" aria-label="Show price marks"><img src="' + DIG_CHECK_ICON_SRC + '" alt=""></button>' : ""}${id === "digging" || id === "potionroom" ? '<button type="button" class="es-mode-btn dig-data-toggle" id="digDataToggleBtn">' + (id === "potionroom" ? "Store" : "Data") + "</button>" : ""}${id === "potionroom" ? '<button type="button" class="es-mode-btn potion-logs-toggle" id="potionLogsBtn">Logs</button>' : ""}`;
   bar.hidden = false;
 }
 function fillRateIcons() {
