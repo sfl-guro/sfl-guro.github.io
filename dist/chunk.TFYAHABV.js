@@ -22649,6 +22649,74 @@ function oilAmountOf(g, id) {
   const amount = reserve && reserve.oil && reserve.oil.amount;
   return typeof amount === "number" && isFinite(amount) && amount > 0 ? amount : null;
 }
+var FLOW_KEYS = /* @__PURE__ */ new Set([
+  "Treasure Dug",
+  "Digging Reward Collected",
+  "Pirate Chest Opened",
+  "Daily Reward Collected",
+  "Gift Giver Reward Opened",
+  "VIP Chest Opened",
+  "VIP Gift Claimed",
+  "Airdrop Reward Claimed",
+  "Streamer Hat Reward Claimed",
+  "Minigame Prize Claimed",
+  "Faction Prize Claimed",
+  "Raffle Won",
+  "Coins Order Delivered",
+  "FLOWER Order Delivered",
+  "Ticket Order Delivered",
+  "Marketplace Offer Claimed",
+  "Marketplace Listing Created",
+  "Marketplace Listing Cancelled",
+  "Marketplace Bulk Listings Cancelled",
+  "Marketplace Offer Made",
+  "Marketplace Offer Cancelled",
+  "Marketplace Bulk Offers Cancelled",
+  "Trades Cleared",
+  "Chore Skipped",
+  "Shiny Feather Collected",
+  "Acorn Fetched",
+  "Dewberry Fetched",
+  "Heart leaf Fetched",
+  "Ribbon Fetched",
+  "Fossil Shell Fetched",
+  "Chewed Bone Fetched",
+  "Crabs and Traps Points Earned",
+  "Salt Awakening free Milestone Claimed",
+  "Salt Awakening premium Milestone Claimed",
+  "Ascension Age free Milestone Claimed",
+  "Ascension Age premium Milestone Claimed",
+  "Crabs and Traps free Milestone Claimed",
+  "Crabs and Traps premium Milestone Claimed"
+]);
+var FRUIT_HARVEST_RE = /^(Apple|Blueberry|Orange|Banana|Tomato|Lemon|Grape|Duskberry|Lunara|Celestine|Olive|Crystal Leaf) Harvested$/;
+var GROUP_FLOW_RE = /^(Wood|Stone|Iron|Gold) (Bought|Sold|Delivered|Fetched|Collected|Burned|Exchanged)$/;
+function isFlowKey(key) {
+  return FLOW_KEYS.has(key) || FRUIT_HARVEST_RE.test(key) || GROUP_FLOW_RE.test(key);
+}
+function pickFlow(fa) {
+  const out = {};
+  if (!fa || typeof fa !== "object") return out;
+  Object.keys(fa).forEach((k) => {
+    if (isFlowKey(k) && typeof fa[k] === "number") out[k] = fa[k];
+  });
+  return out;
+}
+function flowAffects(groupKey, key) {
+  if (FRUIT_HARVEST_RE.test(key)) return groupKey === "Wood";
+  const m = GROUP_FLOW_RE.exec(key);
+  if (m) return m[1] === groupKey;
+  return true;
+}
+function hasOutsideFlow(groupKey, flowPrev, flowNow) {
+  const known = Object.keys(flowPrev).length > 0;
+  if (!known) return false;
+  return Object.keys(flowNow).some((k) => {
+    if (!flowAffects(groupKey, k)) return false;
+    const before = typeof flowPrev[k] === "number" ? flowPrev[k] : 0;
+    return flowNow[k] > before;
+  });
+}
 var LOG_CAP = 60;
 var POWER_KINDS = {
   "Tree Blitz": "wood",
@@ -22805,6 +22873,7 @@ function dailyHarvestTrack(g, farmId) {
     counters: old && old.counters ? old.counters : {},
     inv: old && old.inv ? old.inv : {},
     act: old && old.act ? old.act : {},
+    flow: old && old.flow ? old.flow : {},
     power: old && old.power ? old.power : {},
     syncAt: old && old.syncAt ? old.syncAt : 0
   };
@@ -22812,6 +22881,8 @@ function dailyHarvestTrack(g, farmId) {
   const invPrev = rec.inv || {};
   const actPrev = rec.act || {};
   const actNow = pickActivity(g.farmActivity);
+  const flowPrev = rec.flow || {};
+  const flowNow = pickFlow(g.farmActivity);
   const invNowMap = {};
   const inventory = g.inventory && typeof g.inventory === "object" ? g.inventory : null;
   const powerNow = g.bumpkin && g.bumpkin.previousPowerUseAt && typeof g.bumpkin.previousPowerUseAt === "object" ? g.bumpkin.previousPowerUseAt : {};
@@ -22972,7 +23043,8 @@ function dailyHarvestTrack(g, farmId) {
     const invBefore = invItemNow && typeof invPrev[invItemNow] === "number" ? invPrev[invItemNow] : null;
     const invAfter = invItemNow && typeof invNowMap[invItemNow] === "number" ? invNowMap[invItemNow] : null;
     const spanInDay = !(fresh && prevSyncAt && prevSyncAt < start);
-    if (honeyTotal === null && groupKey !== "Oil" && invBefore !== null && invAfter !== null && spanInDay && entries.length) {
+    const outsideFlow = hasOutsideFlow(groupKey, flowPrev, flowNow);
+    if (honeyTotal === null && groupKey !== "Oil" && invBefore !== null && invAfter !== null && spanInDay && entries.length && !outsideFlow) {
       const gained = invAfter - invBefore;
       if (gained > 1e-9) entries.forEach((e) => {
         e.y = gained * e.n / nSum;
@@ -22998,6 +23070,7 @@ function dailyHarvestTrack(g, farmId) {
   });
   rec.inv = Object.assign({}, invPrev, invNowMap);
   rec.act = Object.assign({}, actPrev, actNow);
+  rec.flow = Object.assign({}, flowPrev, flowNow);
   rec.syncAt = now;
   store[fid] = rec;
   saveStore();
