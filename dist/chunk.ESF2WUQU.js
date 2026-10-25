@@ -13,7 +13,7 @@ import {
   prices_exports,
   setAppDarkMode,
   ui_exports
-} from "./chunk.CMHF3RBB.js";
+} from "./chunk.KRHQ436Y.js";
 import {
   KEY_ICON_DATA,
   NAV_ICON_DATA
@@ -43,7 +43,7 @@ var PAGES = [{
   path: "/digging",
   label: "Digging",
   root: "pageDigging",
-  load: () => import("./digging.BCZDWFTP.js")
+  load: () => import("./digging.K6H2WW55.js")
 }, {
   id: "potionroom",
   path: "/potionroom",
@@ -169,13 +169,13 @@ var PAGES = [{
   path: "/experience-calculator",
   label: "Experience Calculator",
   root: "cookingPanel",
-  load: () => import("./experiencecalc.3L4AZ4QA.js")
+  load: () => import("./experiencecalc.EIJPI4DK.js")
 }, {
   id: "beginnerguide",
   path: "/beginner-guide",
   label: "Beginner Guide",
   root: "beginnerPanel",
-  load: () => import("./beginnerguide.UYGU4RIG.js")
+  load: () => import("./beginnerguide.F66FBFOB.js")
 }, {
   id: "fishing",
   path: "/fishing",
@@ -193,7 +193,7 @@ var PAGES = [{
   path: "/resource-calculators",
   label: "Resource Calculators",
   root: "pageResourceCalc",
-  load: () => import("./resourcecalc.IYNOP75V.js")
+  load: () => import("./resourcecalc.R5R4RGXI.js")
 }, {
   id: "sflbubbles",
   path: "/sflbubbleschart",
@@ -211,7 +211,7 @@ var PAGES = [{
   path: "/userguide",
   label: "User Guide",
   root: "pageUserGuide",
-  load: () => import("./userguide.DCNQGT56.js")
+  load: () => import("./userguide.LOQGU6KT.js")
 }, {
   id: "profile",
   path: "/profile",
@@ -405,7 +405,7 @@ function setPageTitle(id) {
     bar.innerHTML = "";
     return;
   }
-  bar.innerHTML = `<div class="expansion-sim-icon-wrap"><img data-page-icon="${id}" src="" alt=""></div><div><div class="expansion-sim-title-text">${t[0]}</div><div class="expansion-sim-title-sub">${t[1]}</div></div>${id === "digging" || id === "potionroom" ? '<button type="button" class="es-mode-btn dig-data-toggle" id="digDataToggleBtn">' + (id === "potionroom" ? "Store" : "Data") + "</button>" : ""}${id === "potionroom" ? '<button type="button" class="es-mode-btn potion-logs-toggle" id="potionLogsBtn">Logs</button>' : ""}`;
+  bar.innerHTML = `<div class="expansion-sim-icon-wrap"><img data-page-icon="${id}" src="" alt=""></div><div><div class="expansion-sim-title-text">${t[0]}</div><div class="expansion-sim-title-sub">${t[1]}</div></div>${id === "digging" ? '<button type="button" class="es-mode-btn dig-pct-toggle" id="digPctToggleBtn">Percentage</button>' : ""}${id === "digging" || id === "potionroom" ? '<button type="button" class="es-mode-btn dig-data-toggle" id="digDataToggleBtn">' + (id === "potionroom" ? "Store" : "Data") + "</button>" : ""}${id === "potionroom" ? '<button type="button" class="es-mode-btn potion-logs-toggle" id="potionLogsBtn">Logs</button>' : ""}`;
   bar.hidden = false;
 }
 function fillRateIcons() {

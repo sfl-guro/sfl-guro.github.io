@@ -2422,7 +2422,7 @@ export function renderBeehiveListHtml(honeyHiveDetails) {
     } else {
       timeHtml = `<span class="hive-time-pill guro-frame is-idle">No flower</span>`;
     }
-    return `<div class="hive-row"><div class="hive-main"><span class="hive-jar">${beehiveIcon}</span><div class="hive-info"><div class="hive-line"><span class="hive-qty">+${(Math.floor(h.currentQty * 100) / 100).toFixed(2)}</span> <span class="hive-pct">(${h.fillPct.toFixed(1)}%)</span>${honeyIcon}</div>${swarmHtml}</div></div><div class="hive-time">${timeHtml}</div></div>`;
+    return `<div class="hive-row"><div class="hive-main"><span class="hive-jar">${beehiveIcon}</span><div class="hive-info"><div class="hive-line"><span class="hive-qty">+${(Math.floor(h.currentQty * 100) / 100).toFixed(2)}</span>${honeyIcon}<span class="hive-pct">${h.fillPct.toFixed(1)}%</span></div>${swarmHtml}</div></div><div class="hive-time">${timeHtml}</div></div>`;
   }).join("");
   return `<div class="lib-section-title" style="margin-top:10px;">🐝 Bee Hives</div><div class="hive-list">${rows}</div>`;
 }
@@ -7374,7 +7374,41 @@ function renderPatternChip(shape, confirmed, guaranteed) {
   return `<div class="${cls}" style="grid-template-columns:repeat(${w}, 18px);grid-template-rows:repeat(${h}, 18px);">${cellsHtml}${badge}</div>`;
 }
 
-function renderDigCellHtml(cell, farmId) {
+function digPercentModeOn() {
+  const root = document.getElementById("pageDigging");
+  return !!root && root.classList.contains("dig-pct-mode");
+}
+
+function digBuildPercentMap(solved) {
+  const flat = [].concat.apply([], solved.cells);
+  const dugTreasure = flat.filter(c => c.dug && c.kind === "treasure").length;
+  const totalShape = solved.instances.reduce((sum, inst) => sum + inst.shape.length, 0);
+  const guaranteed = flat.filter(c => !c.dug && c.status === "guaranteed").length;
+  const pool = flat.filter(c => !c.dug && (c.status === "possible" || c.status === "unknown"));
+  const remaining = Math.max(0, totalShape - dugTreasure - guaranteed);
+  const weightOf = c => c.status === "possible" ? 3 : 1;
+  const weightSum = pool.reduce((sum, c) => sum + weightOf(c), 0);
+  const map = [];
+  for (let y = 0; y < 10; y++) {
+    map[y] = [];
+    for (let x = 0; x < 10; x++) {
+      const c = solved.cells[y][x];
+      if (c.dug) {
+        map[y][x] = null;
+      } else if (c.status === "guaranteed") {
+        map[y][x] = 100;
+      } else if (c.status === "possible" || c.status === "unknown") {
+        const raw = weightSum > 0 ? remaining * weightOf(c) / weightSum * 100 : 0;
+        map[y][x] = remaining > 0 ? Math.min(99, Math.max(1, Math.round(raw))) : 0;
+      } else {
+        map[y][x] = 0;
+      }
+    }
+  }
+  return map;
+}
+
+function renderDigCellHtml(cell, farmId, pctMap) {
   let manualStatus = null;
   if (!cell.dug) {
     manualStatus = digGetManualMark(farmId, cell.x, cell.y);
@@ -7416,6 +7450,12 @@ function renderDigCellHtml(cell, farmId) {
   } else {
     label = "No clue nearby yet";
   }
+  if (pctMap && !cell.dug) {
+    let pct = pctMap[cell.y][cell.x];
+    if (manualStatus === "guaranteed") pct = 100; else if (manualStatus === "empty") pct = 0;
+    icon = `<span class="dig-pct">${pct}%</span>`;
+    label = `${pct}% chance of treasure · ${label}`;
+  }
   const dataAttrs = cell.dug ? "" : ` data-dig-x="${cell.x}" data-dig-y="${cell.y}"`;
   const seqBadge = cell.dug && cell.seq > 0 ? `<span class="dig-seq">${cell.seq}</span>` : "";
   if (cell.dug && cell.seq > 0) label = `${label} · dig #${cell.seq}`;
@@ -7423,13 +7463,14 @@ function renderDigCellHtml(cell, farmId) {
 }
 
 function renderDigGridHtml(solved, farmId) {
+  const pctMap = digPercentModeOn() ? digBuildPercentMap(solved) : null;
   const cols = "ABCDEFGHIJ";
   let html = `<div class="dig-grid-label"></div>`;
   for (let x = 0; x < 10; x++) html += `<div class="dig-grid-label">${cols[x]}</div>`;
   for (let y = 0; y < 10; y++) {
     html += `<div class="dig-grid-label">${y + 1}</div>`;
     for (let x = 0; x < 10; x++) {
-      html += renderDigCellHtml(solved.cells[y][x], farmId);
+      html += renderDigCellHtml(solved.cells[y][x], farmId, pctMap);
     }
   }
   return html;

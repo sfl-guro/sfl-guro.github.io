@@ -10,12 +10,23 @@ function setDataMode(root, on) {
   const btn = document.getElementById("digDataToggleBtn");
   if (btn) btn.textContent = on ? "Map" : "Data";
 }
+function setPercentMode(root, on) {
+  root.classList.toggle("dig-pct-mode", on);
+  const btn = document.getElementById("digPctToggleBtn");
+  if (btn) btn.textContent = on ? "Icons" : "Percentage";
+}
 function mount(root, api) {
   setOpenClass("digSidePanel", true);
   setDataMode(root, false);
+  setPercentMode(root, false);
   const bar = document.getElementById("guroPageTitle");
   if (bar) {
     onTitleClick = (ev) => {
+      if (ev.target.closest("#digPctToggleBtn")) {
+        setPercentMode(root, !root.classList.contains("dig-pct-mode"));
+        api.ui.renderDigTreasurePanel();
+        return;
+      }
       if (!ev.target.closest("#digDataToggleBtn")) return;
       setDataMode(root, !root.classList.contains("dig-show-data"));
     };
@@ -29,7 +40,10 @@ function unmount() {
   if (bar && onTitleClick) bar.removeEventListener("click", onTitleClick);
   onTitleClick = null;
   const root = document.getElementById("pageDigging");
-  if (root) root.classList.remove("dig-show-data");
+  if (root) {
+    root.classList.remove("dig-show-data");
+    root.classList.remove("dig-pct-mode");
+  }
 }
 export {
   mount,

@@ -1,0 +1,682 @@
+import { FLOWER_ICON } from "./calculator.js";
+
+const STORE_KEY = "hl_daily_harvest_v1";
+
+const ROUND_THRESHOLD = 1;
+
+let memStore = null;
+
+function utcDay(ms) {
+  return new Date(ms).toISOString().slice(0, 10);
+}
+
+function utcDayStart(ms) {
+  const d = new Date(ms);
+  return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+}
+
+function loadStore() {
+  if (memStore) return memStore;
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+    memStore = parsed && typeof parsed === "object" ? parsed : {};
+  } catch (e) {
+    memStore = {};
+  }
+  return memStore;
+}
+
+function saveStore() {
+  try {
+    localStorage.setItem(STORE_KEY, JSON.stringify(memStore || {}));
+  } catch (e) {}
+}
+
+function numTs(v) {
+  return typeof v === "number" && v > 0 ? v : 0;
+}
+
+function isActiveNode(node, now) {
+  if (!node || typeof node !== "object") return false;
+  return !(typeof node.removedAt === "number" && node.removedAt <= now);
+}
+
+const yieldMeta = {};
+
+const LOG_CAP = 60;
+
+const POWER_KINDS = {
+  "Tree Blitz": "wood",
+  "Grease Lightning": "oil",
+  "Instant Growth": "crop",
+  "Barnyard Rouse": "animal",
+  "Greenhouse Guru": "greenhouse",
+  "Petal Blessed": "flower"
+};
+
+function kindOfGroup(groupKey) {
+  if (groupKey === "Wood") return "wood";
+  if (groupKey === "Oil") return "oil";
+  return "";
+}
+
+const NODE_BAGS = [ [ "trees", "Wood", n => n.wood && n.wood.choppedAt ], [ "stones", "Stone", n => n.stone && n.stone.minedAt ], [ "iron", "Iron", n => n.stone && n.stone.minedAt ], [ "gold", "Gold", n => n.stone && n.stone.minedAt ], [ "crimstones", "Crimstone", n => n.stone && n.stone.minedAt ], [ "oilReserves", "Oil", n => n.oil && n.oil.drilledAt ] ];
+
+function isCropMachineActive(g, now) {
+  const list = g.buildings && g.buildings["Crop Machine"];
+  return Array.isArray(list) && list.some(b => isActiveNode(b, now));
+}
+
+function inventoryItemFor(groupKey, kind) {
+  if (kind === "animal" || groupKey === "Honey") return null;
+  return groupKey;
+}
+
+function collectGroups(g, now) {
+  const groups = {};
+  const cropMachine = isCropMachineActive(g, now);
+  const add = (groupKey, mode, id, ts, key, noCounter, val, kind) => {
+    const grp = groups[groupKey] || (groups[groupKey] = {
+      mode: mode,
+      kind: kind || kindOfGroup(groupKey),
+      noCounter: !!noCounter,
+      nodes: {}
+    });
+    grp.nodes[id] = {
+      ts: ts,
+      key: key,
+      val: val
+    };
+  };
+  NODE_BAGS.forEach(([bagKey, groupKey, getTs]) => {
+    const bag = g[bagKey];
+    if (!bag || typeof bag !== "object") return;
+    Object.entries(bag).forEach(([id, node]) => {
+      if (!isActiveNode(node, now)) return;
+      const ts = numTs(getTs(node));
+      add(groupKey, "ts", id, ts, String(ts));
+    });
+  });
+  if (g.crops && typeof g.crops === "object") {
+    Object.entries(g.crops).forEach(([id, plot]) => {
+      if (!isActiveNode(plot, now)) return;
+      const crop = plot.crop;
+      if (!crop || !crop.name) return;
+      add(crop.name, "key", id, numTs(crop.plantedAt), crop.id ? String(crop.id) : String(numTs(crop.plantedAt)), cropMachine, undefined, "crop");
+    });
+  }
+  if (g.greenhouse && g.greenhouse.pots && typeof g.greenhouse.pots === "object") {
+    Object.entries(g.greenhouse.pots).forEach(([id, pot]) => {
+      const plant = pot && pot.plant;
+      if (!plant || !plant.name) return;
+      add(plant.name, "key", id, 0, plant.name, false, undefined, "greenhouse");
+    });
+  }
+  if (g.flowers && g.flowers.flowerBeds && typeof g.flowers.flowerBeds === "object") {
+    Object.entries(g.flowers.flowerBeds).forEach(([id, bed]) => {
+      const flower = bed && bed.flower;
+      if (!flower || !flower.name) return;
+      add(flower.name, "key", id, 0, flower.name, false, undefined, "flower");
+    });
+  }
+  if (g.fruitPatches && typeof g.fruitPatches === "object") {
+    Object.entries(g.fruitPatches).forEach(([id, patch]) => {
+      if (!isActiveNode(patch, now)) return;
+      const fruit = patch.fruit;
+      if (!fruit || !fruit.name) return;
+      add(fruit.name, "key", id, numTs(fruit.harvestedAt), `${numTs(fruit.plantedAt)}|${numTs(fruit.harvestedAt)}`);
+    });
+  }
+  if (g.beehives && typeof g.beehives === "object") {
+    Object.entries(g.beehives).forEach(([id, hive]) => {
+      if (!hive || !hive.honey || typeof hive.honey.produced !== "number") return;
+      add("Honey", "honey", id, numTs(hive.honey.updatedAt), String(hive.honey.produced), false, hive.honey.produced);
+    });
+  }
+  [ "henHouse", "barn", "pigpen" ].forEach(buildingKey => {
+    const animals = g[buildingKey] && g[buildingKey].animals;
+    if (!animals || typeof animals !== "object") return;
+    Object.entries(animals).forEach(([id, animal]) => {
+      if (!animal || !animal.type) return;
+      const ts = numTs(animal.asleepAt);
+      add(animal.type, "ts", id, ts, String(ts), false, undefined, "animal");
+    });
+  });
+  return groups;
+}
+
+const COUNTER_KEYS = {
+  Crimstone: "Crimstone Mined",
+  Oil: "Oil Drilled",
+  Chicken: "Egg Collected",
+  Cow: "Milk Collected",
+  Sheep: "Wool Collected"
+};
+
+const COUNTER_PATTERNS = {
+  Wood: k => /Tree Chopped$/.test(k) && k !== "Tree Chopped",
+  Stone: k => /Stone Rock Mined$/.test(k),
+  Iron: k => /Iron Rock Mined$/.test(k),
+  Gold: k => /Gold Rock Mined$/.test(k)
+};
+
+function counterFor(g, groupKey, noCounter) {
+  const fa = g.farmActivity;
+  if (noCounter || !fa || typeof fa !== "object") return null;
+  if (COUNTER_PATTERNS[groupKey]) {
+    let sum = 0;
+    let found = false;
+    Object.keys(fa).forEach(k => {
+      if (COUNTER_PATTERNS[groupKey](k)) {
+        sum += Number(fa[k]) || 0;
+        found = true;
+      }
+    });
+    return found ? sum : 0;
+  }
+  const key = COUNTER_KEYS[groupKey] || `${groupKey} Harvested`;
+  return typeof fa[key] === "number" ? fa[key] : 0;
+}
+
+function roundsFromStats(st) {
+  const need = Math.max(1, Math.ceil(st.total * ROUND_THRESHOLD));
+  const counts = Object.values(st.counts).sort((a, b) => b - a);
+  const rounds = counts.length >= need ? counts[need - 1] : 0;
+  const nextProgress = counts.filter(c => c > rounds).length;
+  return {
+    need: need,
+    rounds: rounds,
+    nextProgress: nextProgress
+  };
+}
+
+export function dailyHarvestTrack(g, farmId) {
+  if (!g || typeof g !== "object") return;
+  const now = Date.now();
+  const today = utcDay(now);
+  const start = utcDayStart(now);
+  const store = loadStore();
+  const fid = String(farmId || store.__last || "default");
+  store.__last = fid;
+  const old = store[fid];
+  let rec = old;
+  const fresh = !rec || rec.day !== today;
+  if (fresh) rec = {
+    day: today,
+    prev: {},
+    stats: {},
+    counters: old && old.counters ? old.counters : {},
+    inv: old && old.inv ? old.inv : {},
+    power: old && old.power ? old.power : {},
+    syncAt: old && old.syncAt ? old.syncAt : 0
+  };
+  const prevSyncAt = rec.syncAt || 0;
+  const invPrev = rec.inv || {};
+  const invNowMap = {};
+  const inventory = g.inventory && typeof g.inventory === "object" ? g.inventory : null;
+  const powerNow = g.bumpkin && g.bumpkin.previousPowerUseAt && typeof g.bumpkin.previousPowerUseAt === "object" ? g.bumpkin.previousPowerUseAt : {};
+  const knownPower = rec.power || {};
+  const skillTimes = {};
+  Object.keys(POWER_KINDS).forEach(skill => {
+    const at = powerNow[skill];
+    if (typeof at !== "number" || !prevSyncAt || at <= prevSyncAt || at <= (knownPower[skill] || 0)) return;
+    const kind = POWER_KINDS[skill];
+    skillTimes[kind] = Math.max(skillTimes[kind] || 0, at);
+  });
+  const groups = collectGroups(g, now);
+  const keys = new Set([ ...Object.keys(groups), ...Object.keys(rec.prev) ]);
+  keys.forEach(groupKey => {
+    const invItem = inventoryItemFor(groupKey, groups[groupKey] ? groups[groupKey].kind : "");
+    if (invItem && inventory) invNowMap[invItem] = Number(inventory[invItem]) || 0;
+    const grp = groups[groupKey] || {
+      mode: rec.prev[groupKey] ? rec.prev[groupKey].mode : "ts",
+      noCounter: rec.prev[groupKey] ? !!rec.prev[groupKey].noCounter : false,
+      nodes: {}
+    };
+    const ids = Object.keys(grp.nodes);
+    const prev = fresh ? null : rec.prev[groupKey] || null;
+    let st = rec.stats[groupKey];
+    if (!st) st = rec.stats[groupKey] = {
+      total: ids.length,
+      counts: {},
+      lastAt: 0,
+      est: false
+    };
+    st.total = Math.max(st.total, ids.length);
+    const cNow = counterFor(g, groupKey, grp.noCounter);
+    const cPrev = typeof rec.counters[groupKey] === "number" ? rec.counters[groupKey] : null;
+    if (cNow !== null) rec.counters[groupKey] = cNow;
+    const events = [];
+    if (fresh) {
+      const honeyMoved = grp.mode !== "honey" || cNow !== null && cPrev !== null && cNow > cPrev;
+      ids.forEach(id => {
+        if (honeyMoved && grp.nodes[id].ts >= start) events.push(id);
+      });
+    } else if (prev) {
+      if (grp.mode === "ts") {
+        ids.forEach(id => {
+          const p = prev.nodes[id];
+          if (p && grp.nodes[id].ts > p.ts) events.push(id);
+        });
+      } else if (grp.mode === "honey") {
+        ids.forEach(id => {
+          const p = prev.nodes[id];
+          if (p && typeof p.val === "number" && grp.nodes[id].val < p.val - 1e-6) events.push(id);
+        });
+      } else {
+        Object.keys(prev.nodes).forEach(id => {
+          const c = grp.nodes[id];
+          if (!c || c.key !== prev.nodes[id].key && !String(prev.nodes[id].key).startsWith(`${c.key}:`)) events.push(id);
+        });
+      }
+    }
+    const skillTime = grp.kind ? skillTimes[grp.kind] || 0 : 0;
+    const gapScale = fresh && prevSyncAt && prevSyncAt < start && skillTime < start ? Math.min(1, Math.max(0, (now - start) / (now - prevSyncAt))) : 1;
+    let hiddenOnly = false;
+    if (!events.length) {
+      const gain = grp.mode !== "honey" && skillTime && cNow !== null && cPrev !== null && cNow > cPrev ? Math.round((cNow - cPrev) * gapScale) : 0;
+      if (!gain) return;
+      hiddenOnly = true;
+      ids.forEach(id => events.push(id));
+    }
+    let extras = 0;
+    let estimated = false;
+    if (hiddenOnly) {
+      extras = Math.round((cNow - cPrev) * gapScale);
+      estimated = true;
+    } else if (grp.mode === "honey") {
+      estimated = fresh;
+    } else if (cNow !== null && cPrev !== null && cNow >= cPrev) {
+      let yesterday = 0;
+      if (fresh && prevSyncAt && prevSyncAt < start) {
+        ids.forEach(id => {
+          const ts = grp.nodes[id].ts;
+          if (ts > prevSyncAt && ts < start) yesterday += 1;
+        });
+      }
+      extras = Math.max(0, cNow - cPrev - events.length - yesterday);
+      if (fresh && prevSyncAt && prevSyncAt < start && extras > 0) {
+        extras = Math.round(extras * gapScale);
+      }
+      if (extras > 0) estimated = true;
+    } else if (fresh) {
+      estimated = true;
+    }
+    const before = roundsFromStats(st).rounds;
+    const sorted = events.slice().sort();
+    const per = Math.floor(extras / sorted.length);
+    const rem = extras % sorted.length;
+    const snap = yieldMeta[groupKey] && yieldMeta[groupKey].nodes ? yieldMeta[groupKey].nodes : null;
+    const buckets = {};
+    sorted.forEach((id, i) => {
+      const inc = (hiddenOnly ? 0 : 1) + per + (i < rem ? 1 : 0);
+      st.counts[id] = (st.counts[id] || 0) + inc;
+      if (hiddenOnly) return;
+      const ts = grp.nodes[id] ? grp.nodes[id].ts : 0;
+      const t = ts && ts >= start ? ts : now;
+      const bk = Math.floor(t / 6e4);
+      const b = buckets[bk] || (buckets[bk] = {
+        t: t,
+        n: 0,
+        y: 0,
+        miss: false
+      });
+      b.t = Math.max(b.t, t);
+      b.n += 1;
+      if (snap && typeof snap[id] === "number") b.y += snap[id]; else b.miss = true;
+    });
+    const honeyTotal = grp.mode === "honey" && cNow !== null && cPrev !== null && cNow > cPrev ? cNow - cPrev : null;
+    const entries = Object.values(buckets).sort((a, b) => a.t - b.t).map(b => ({
+      t: b.t,
+      n: b.n,
+      y: b.miss ? null : b.y
+    }));
+    if (extras > 0 && grp.mode !== "honey") {
+      const snapVals = snap ? Object.values(snap).filter(v => typeof v === "number") : [];
+      const mean = snapVals.length ? snapVals.reduce((a, b) => a + b, 0) / snapVals.length : 0;
+      const lastVisible = entries.length ? entries[entries.length - 1].t : now;
+      entries.push({
+        t: skillTime || lastVisible,
+        n: extras,
+        y: mean ? mean * extras : null
+      });
+    }
+    const nSum = entries.reduce((sum, e) => sum + e.n, 0) || 1;
+    entries.forEach(e => {
+      if (honeyTotal !== null) e.y = honeyTotal * e.n / nSum;
+    });
+    const invItemNow = inventoryItemFor(groupKey, grp.kind);
+    const invBefore = invItemNow && typeof invPrev[invItemNow] === "number" ? invPrev[invItemNow] : null;
+    const invAfter = invItemNow && typeof invNowMap[invItemNow] === "number" ? invNowMap[invItemNow] : null;
+    const spanInDay = !(fresh && prevSyncAt && prevSyncAt < start);
+    if (honeyTotal === null && invBefore !== null && invAfter !== null && spanInDay && entries.length) {
+      const gained = invAfter - invBefore;
+      if (gained > 1e-9) entries.forEach(e => {
+        e.y = gained * e.n / nSum;
+      });
+    }
+    const mergedLog = (st.log || []).concat(entries);
+    const overflow = mergedLog.length - LOG_CAP;
+    if (overflow > 0) {
+      st.dropped = (st.dropped || 0) + mergedLog.slice(0, overflow).reduce((sum, e) => sum + (typeof e.y === "number" ? e.y : 0), 0);
+    }
+    st.log = mergedLog.slice(-LOG_CAP);
+    if (estimated) st.est = true;
+    const after = roundsFromStats(st).rounds;
+    if (after > before) {
+      const stamps = hiddenOnly ? [ skillTime ] : events.map(id => grp.nodes[id] ? grp.nodes[id].ts : 0).filter(Boolean);
+      st.lastAt = stamps.length ? Math.max(...stamps) : now;
+    }
+  });
+  rec.prev = groups;
+  rec.power = Object.assign({}, knownPower);
+  Object.keys(POWER_KINDS).forEach(skill => {
+    if (typeof powerNow[skill] === "number") rec.power[skill] = powerNow[skill];
+  });
+  rec.inv = Object.assign({}, invPrev, invNowMap);
+  rec.syncAt = now;
+  store[fid] = rec;
+  Object.keys(store).forEach(k => {
+    if (k !== "__last" && k !== fid && store[k] && store[k].day !== today) delete store[k];
+  });
+  saveStore();
+}
+
+export function dailyHarvestInfo(groupKey) {
+  const store = loadStore();
+  const rec = store[store.__last];
+  if (!rec || rec.day !== utcDay(Date.now())) return null;
+  const st = rec.stats[groupKey];
+  if (!st) return null;
+  const r = roundsFromStats(st);
+  if (r.rounds < 1) return null;
+  return {
+    rounds: r.rounds,
+    need: r.need,
+    total: st.total,
+    nextProgress: r.nextProgress,
+    lastAt: st.lastAt,
+    estimated: !!st.est,
+    dropped: typeof st.dropped === "number" ? st.dropped : 0,
+    log: Array.isArray(st.log) ? st.log : []
+  };
+}
+
+export function dailyHarvestSetYield(groupKey, perNode, iconHtml, nodeQty, econ) {
+  const per = typeof perNode === "number" && isFinite(perNode) && perNode > 0 ? perNode : 0;
+  const meta = yieldMeta[groupKey] || (yieldMeta[groupKey] = {
+    per: 0,
+    icon: "",
+    nodes: null,
+    price: 0,
+    feeRate: 0
+  });
+  if (econ && typeof econ === "object") {
+    meta.price = typeof econ.price === "number" && isFinite(econ.price) && econ.price > 0 ? econ.price : 0;
+    meta.feeRate = typeof econ.feeRate === "number" && isFinite(econ.feeRate) && econ.feeRate > 0 ? econ.feeRate : 0;
+  }
+  if (Array.isArray(nodeQty) && nodeQty.length) {
+    const map = {};
+    nodeQty.forEach(n => {
+      if (!n || typeof n.key !== "string" || typeof n.qty !== "number" || !isFinite(n.qty)) return;
+      map[n.key.slice(n.key.indexOf(":") + 1)] = n.qty;
+    });
+    meta.nodes = map;
+  }
+  if (per) meta.per = per;
+  if (iconHtml) meta.icon = iconHtml;
+  if (!meta.per) return;
+  const store = loadStore();
+  const rec = store[store.__last];
+  const st = rec && rec.stats ? rec.stats[groupKey] : null;
+  if (!st || !Array.isArray(st.log)) return;
+  let changed = false;
+  st.log.forEach(e => {
+    if (e.y === null || e.y === undefined) {
+      e.y = e.n * meta.per;
+      changed = true;
+    }
+  });
+  if (changed) saveStore();
+}
+
+export function dailyOrdinal(n) {
+  const mod100 = n % 100;
+  if (mod100 >= 11 && mod100 <= 13) return `${n}th`;
+  const mod10 = n % 10;
+  if (mod10 === 1) return `${n}st`;
+  if (mod10 === 2) return `${n}nd`;
+  if (mod10 === 3) return `${n}rd`;
+  return `${n}th`;
+}
+
+const KIND_META = {
+  wood: {
+    verb: "Chopped",
+    action: "chopped",
+    unit: "nodes",
+    palette: [ "#a0673a", "#d8a060", "#6b4226" ]
+  },
+  stone: {
+    verb: "Mined",
+    action: "mined",
+    unit: "nodes",
+    palette: [ "#b8bcc8", "#7a7f90", "#e6e9f0" ]
+  },
+  iron: {
+    verb: "Mined",
+    action: "mined",
+    unit: "nodes",
+    palette: [ "#9fb4c9", "#e8eef5", "#c27a4a" ]
+  },
+  gold: {
+    verb: "Mined",
+    action: "mined",
+    unit: "nodes",
+    palette: [ "#ffd23f", "#fff3a0", "#d69a1e" ]
+  },
+  crimstone: {
+    verb: "Mined",
+    action: "mined",
+    unit: "nodes",
+    palette: [ "#e43b44", "#ff8a8a", "#a1202a" ]
+  },
+  honey: {
+    verb: "Collected",
+    action: "collected",
+    unit: "nodes",
+    palette: [ "#ffd23f", "#fff3a0", "#d69a1e" ]
+  },
+  oil: {
+    verb: "Drilled",
+    action: "drilled",
+    unit: "reserves",
+    palette: [ "#2b2b3a", "#6a5acd", "#9a8cff" ]
+  },
+  crop: {
+    verb: "Harvested",
+    action: "harvested",
+    unit: "plots",
+    palette: [ "#5fcf4a", "#c9f07a", "#ffe14a" ]
+  },
+  fruit: {
+    verb: "Harvested",
+    action: "harvested",
+    unit: "patches",
+    palette: [ "#ff6b6b", "#ffe14a", "#5fcf4a" ]
+  },
+  flower: {
+    verb: "Harvested",
+    action: "harvested",
+    unit: "beds",
+    palette: [ "#ff8ac8", "#ffe14a", "#c9f07a" ]
+  },
+  greenhouse: {
+    verb: "Harvested",
+    action: "harvested",
+    unit: "pots",
+    palette: [ "#5fcf4a", "#9fe6ff", "#ffe14a" ]
+  },
+  animal: {
+    verb: "Collected",
+    action: "collected",
+    unit: "animals",
+    palette: [ "#ffffff", "#f5d36b", "#ffb347" ]
+  }
+};
+
+const KIND_NOUN = {
+  Wood: "Tree",
+  Stone: "Stone",
+  Iron: "Iron",
+  Gold: "Gold",
+  Crimstone: "Crimstone",
+  Oil: "Oil",
+  Honey: "Beehive"
+};
+
+const PARTICLES = [ [ 2, 9, -5, -7 ], [ 9, 2, 6, -6 ], [ 11, 8, 7, 3 ], [ 4, 11, -6, 4 ], [ 6, 1, 1, -8 ], [ 12, 5, 8, -2 ] ];
+
+function effectSvg(kind) {
+  const meta = KIND_META[kind];
+  if (!meta) return "";
+  const rects = PARTICLES.map(([x, y, dx, dy], i) => `<rect class="dh-p" x="${x}" y="${y}" width="2" height="2" fill="${meta.palette[i % meta.palette.length]}" style="--dx:${dx}px;--dy:${dy}px;animation-delay:${i * 18}ms"/>`).join("");
+  return `<svg class="dh-fx" viewBox="0 0 14 14" width="14" height="14" shape-rendering="crispEdges" aria-hidden="true"><path class="dh-slash" d="M2 2h2v2h2v2h2v2h2v2h2" fill="none" stroke="#ffffff" stroke-width="1.4"/>${rects}</svg>`;
+}
+
+function escapeAttr(s) {
+  return String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+export function dailyHarvestBadgeHtml(groupKey, kind, iconHtml) {
+  if (!KIND_META[kind]) return "";
+  const info = dailyHarvestInfo(groupKey);
+  if (!info) return "";
+  return `<span class="daily-harvest-badge guro-frame dh-${kind}" role="button" tabindex="0" data-dh-key="${escapeAttr(groupKey)}" data-dh-kind="${kind}"><span class="dh-ord">${info.estimated ? "~" : ""}${dailyOrdinal(info.rounds)}</span><span class="dh-icon">${iconHtml || ""}${effectSvg(kind)}</span></span>`;
+}
+
+function formatResetIn(now) {
+  const next = utcDayStart(now) + 864e5;
+  const mins = Math.max(0, Math.floor((next - now) / 6e4));
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return `${h}h ${String(m).padStart(2, "0")}m`;
+}
+
+function formatClock(ms) {
+  if (!ms) return "Just now";
+  try {
+    return new Date(ms).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  } catch (e) {
+    return "Today";
+  }
+}
+
+function formatLogClock(ms) {
+  const d = new Date(ms);
+  const h = d.getHours();
+  const m = String(d.getMinutes()).padStart(2, "0");
+  return `${h % 12 || 12}:${m}${h < 12 ? "AM" : "PM"}`;
+}
+
+const LOG_MERGE_GAP = 10 * 60 * 1000;
+
+function formatLogYield(y) {
+  return y.toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+}
+
+function logHtml(groupKey, info) {
+  const meta = yieldMeta[groupKey] || {
+    per: 0,
+    icon: "",
+    price: 0,
+    feeRate: 0
+  };
+  const sorted = info.log.slice().sort((a, b) => b.t - a.t);
+  if (!sorted.length) return "";
+  let total = info.dropped || 0;
+  const merged = [];
+  sorted.forEach(e => {
+    const y = typeof e.y === "number" ? e.y : meta.per ? e.n * meta.per : null;
+    if (y !== null) total += y;
+    const last = merged[merged.length - 1];
+    if (last && last.t - e.t <= LOG_MERGE_GAP) {
+      if (y !== null) last.y = (last.y || 0) + y;
+      return;
+    }
+    merged.push({
+      t: e.t,
+      y
+    });
+  });
+  const rows = merged.map(e => {
+    const amount = e.y === null ? "—" : `+${formatLogYield(e.y)}`;
+    return `<div class="dh-log-row"><span>${formatLogClock(e.t)}</span><span class="dh-log-yield">${amount}<span class="dh-log-ico">${meta.icon}</span></span></div>`;
+  }).join("");
+  const gross = total * meta.price;
+  const net = gross - gross * meta.feeRate;
+  const valueRows = meta.price > 0 ? `<div class="dh-log-row"><span>Gross</span><span class="dh-log-yield">${formatLogYield(gross)}<span class="dh-log-ico">${FLOWER_ICON}</span></span></div><div class="dh-log-row"><span>Net</span><span class="dh-log-yield">${formatLogYield(net)}<span class="dh-log-ico">${FLOWER_ICON}</span></span></div>` : "";
+  const sumHtml = `<div class="dh-log-sum"><div class="dh-log-row dh-log-total"><span>Total</span><span class="dh-log-yield">+${formatLogYield(total)}<span class="dh-log-ico">${meta.icon}</span></span></div>${valueRows}</div>`;
+  return `<div class="dh-pop-log guro-frame"><div class="dh-log-head"><span>Time</span><span>Harvested</span></div><div class="dh-log-list">${rows}</div>${sumHtml}</div>`;
+}
+
+function closeDailyPop() {
+  const el = document.getElementById("dailyHarvestPop");
+  if (el) el.remove();
+  document.documentElement.classList.remove("dh-pop-lock");
+}
+
+function openDailyPop(badgeEl) {
+  const groupKey = badgeEl.getAttribute("data-dh-key");
+  const kind = badgeEl.getAttribute("data-dh-kind");
+  const meta = KIND_META[kind];
+  const info = dailyHarvestInfo(groupKey);
+  if (!meta || !info) return;
+  closeDailyPop();
+  const noun = KIND_NOUN[groupKey] || groupKey;
+  const iconEl = badgeEl.querySelector(".dh-icon");
+  const iconHtml = iconEl ? iconEl.innerHTML : "";
+  const times = `${info.estimated ? "~" : ""}${info.rounds}x`;
+  const safeNoun = escapeAttr(noun);
+  const bodyText = kind === "animal" ? `Your ${safeNoun} produce has been ${meta.action} ${times} today. A round is counted once all of your ${safeNoun} animals (${info.need} of ${info.total}) have been ${meta.action}.` : `Your ${safeNoun} ${meta.unit} have been ${meta.action} ${times} today. A round is counted once all of them (${info.need} of ${info.total}) have been ${meta.action}.`;
+  const now = Date.now();
+  const html = `<div class="dh-pop-back" id="dailyHarvestPop"><div class="dh-pop guro-frame dh-${kind}" role="dialog" aria-modal="true"><div class="dh-pop-top"><span class="dh-pop-top-title">Daily Harvest · UTC</span><button type="button" class="dh-pop-x" data-dh-close="1" aria-label="Close"></button></div><div class="dh-pop-head"><span class="dh-pop-icon guro-frame dh-icon">${iconHtml}</span><div class="dh-pop-headtext guro-frame"><div class="dh-pop-title dh-pop-title-solo">${escapeAttr(noun)}</div></div><span class="dh-pop-ord guro-frame">${info.estimated ? "~" : ""}${dailyOrdinal(info.rounds)}</span></div><div class="dh-pop-main guro-frame">${meta.verb} <b>${times}</b> today</div><p class="dh-pop-text">${bodyText}</p><div class="dh-pop-stats guro-frame"><div class="dh-stat"><span>Accuracy</span><b>${info.estimated ? "Estimated" : "Exact"}</b></div><div class="dh-stat"><span>Next round</span><b>${info.nextProgress} / ${info.need}</b></div><div class="dh-stat"><span>Last completed</span><b>${formatClock(info.lastAt)}</b></div><div class="dh-stat"><span>Resets in</span><b>${formatResetIn(now)}</b></div></div>${logHtml(groupKey, info)}${info.estimated ? `<p class="dh-pop-text dh-pop-note">Includes harvests made between syncs, estimated from your lifetime activity counters.</p>` : ""}</div></div>`;
+  document.body.insertAdjacentHTML("beforeend", html);
+  document.documentElement.classList.add("dh-pop-lock");
+}
+
+document.addEventListener("click", e => {
+  const target = e.target;
+  if (!target || !target.closest) return;
+  if (target.closest("[data-dh-close]")) {
+    e.stopPropagation();
+    closeDailyPop();
+    return;
+  }
+  const backdrop = target.closest(".dh-pop-back");
+  if (backdrop && target === backdrop) {
+    closeDailyPop();
+    return;
+  }
+  const badge = target.closest(".daily-harvest-badge");
+  if (!badge) return;
+  e.stopPropagation();
+  e.preventDefault();
+  openDailyPop(badge);
+}, true);
+
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape") closeDailyPop();
+  if ((e.key === "Enter" || e.key === " ") && e.target && e.target.classList && e.target.classList.contains("daily-harvest-badge")) {
+    e.preventDefault();
+    e.stopPropagation();
+    openDailyPop(e.target);
+  }
+}, true);

@@ -6,6 +6,7 @@ import { getPumpkinPeteQuest } from "./pete_quests.js";
 
 import { $, hiveClockText, cookFoodIcon, getBoostIcon, getIcon, renderAnimalCardProductDetailRow, renderAnimalYieldGroupsList, renderBeehiveListHtml, renderCardProductDetailRow, renderCostNetInfoTrigger, renderCrimstoneInstantMineBoostHtml, renderCrimstoneNodeYieldList, renderFarmPanelTabContent, renderFruitHarvestsLeftHtml, renderGoldInstantMineBoostHtml, renderNodeTierYieldList, renderOilNodeYieldList, renderPlantYieldNodeList, renderSaltNodeYieldList, renderSeaBlessedBoostHtml, renderTotalsBreakdown, renderTurnaroundBoostHtml } from "./ui.js";
 import { potionTrackFromState, digStreakTrackFromState } from "./calculator.js";
+import { dailyHarvestTrack, dailyHarvestBadgeHtml, dailyHarvestSetYield } from "./daily_harvest.js";
 
 export function farmPanelDetectNodeTier(resourceName, node) {
   const tiers = RESOURCE_NODE_TIERS[resourceName];
@@ -4243,6 +4244,10 @@ export function farmPanelComputeInProgress(json) {
       exactBoosts: exactBoosts,
       exactBoostTotals: exactBoostTotals,
       exactTimeBoosts: exactTimeBoosts,
+      nodeYields: g.nodes.filter(n => typeof n.mapKey === "string" && typeof n.qty === "number").map(n => ({
+        key: n.mapKey,
+        qty: n.qty
+      })),
       tierCounts: tierCounts,
       tierYields: tierYields,
       oilNodeGroups: oilNodeGroups,
@@ -4617,12 +4622,18 @@ function farmPanelRenderAnimalMergedCard(card) {
     badgeHtml += `<span class="harvest-badge" style="background:rgba(214,80,80,0.15);color:#c33;">🤒 ${card.sickCount} sick</span>`;
   }
   const animalIcon = getIcon(card.typeLabel);
+  const dailyBadgeHtml = dailyHarvestBadgeHtml(card.typeLabel, "animal", animalIcon);
+  const animalPerHead = card.count > 0 ? card.products.reduce((sum, p) => sum + p.totalYield, 0) / card.count : 0;
+  dailyHarvestSetYield(card.typeLabel, animalPerHead, card.products.length ? getIcon(card.products[0].name) : "", null, {
+    price: card.avgPricePerUnit,
+    feeRate: card.gross > 0 ? card.sellFee / card.gross : 0
+  });
   const productChipsHtml = card.products.map(p => `\n      <span class="animal-produce-chip">\n        <span class="produce-yield">+${fmtAnimal(p.totalYield)}</span>\n        <span class="produce-icon">${getIcon(p.name)}</span>\n        <span class="produce-name">${escapeHtml(p.name)}</span>\n      </span>`).join("");
   const valueBlockHtml = guroValueBlockHtml(card.gross, card.sellFee, fmtAnimal);
   const productDetailRows = card.products.map(p => renderAnimalCardProductDetailRow(getIcon(p.name), p.name, p.totalYield, p.grossRevenue, p.feeAmount)).join("");
   const yieldBoostListHtml = farmPanelRenderAnimalYieldBoostList(card.yieldBoosts, card.productNames, card.products, card.count, card.spiceBuffCards, card.timeBoosts, [], card.cycleTimeSec);
   const animalYieldGroupsHtml = renderAnimalYieldGroupsList(card);
-  return `\n  <div class="card animal-merged-card${isProfit ? " is-profit" : " is-loss"}${expandedCls}" data-search="${card.searchKey}" data-fp-category="animals">\n    <div class="card-toggle">\n      <div class="card-name-row">\n        <span class="card-icon">${animalIcon}</span>\n        <div>\n          <div class="card-name">${escapeHtml(card.typeLabel)}</div>\n          <div class="card-type-row">\n            <span class="card-type">${card.count} animal${card.count === 1 ? "" : "s"}</span>\n            ${badgeHtml}\n          </div>\n          <div class="animal-fold-row">${productChipsHtml}</div>${valueBlockHtml}\n        </div>\n      </div>\n      <div class="card-collapsed-profit">\n        ${statusBadgeHtml}\n        <span class="chev">▾</span>\n      </div>\n      ${statusFoldHtml}\n    </div>\n    <div class="card-details">\n      <div class="animal-detail-grid">\n        ${productDetailRows}\n        <div class="animal-detail-stat"><span class="label">Market Price/Unit</span><span class="value">${fmtAnimalCost(card.avgPricePerUnit)} ${FLOWER_ICON}</span></div>\n        <div class="animal-detail-stat"><span class="label">Market Value</span><span class="value">${fmtAnimal(card.gross)} ${FLOWER_ICON}</span></div>\n        <div class="animal-detail-stat"><span class="label">Tax</span><span class="value">${card.sellFee > 0 ? `-${fmtAnimalCost(card.sellFee)}` : "0"} ${FLOWER_ICON}</span></div>\n      </div>\n      <div class="animal-net-row2">\n        <span class="label">Net</span>\n        <span class="value ${isProfit ? "is-profit" : "is-loss"}">${fmtAnimal(cardNet)} ${FLOWER_ICON}</span>\n      </div>\n      ${animalYieldGroupsHtml}\n      ${yieldBoostListHtml}\n    </div>\n  </div>`;
+  return `\n  <div class="card animal-merged-card${isProfit ? " is-profit" : " is-loss"}${expandedCls}" data-search="${card.searchKey}" data-fp-category="animals">\n    <div class="card-toggle">\n      <div class="card-name-row">\n        <span class="card-icon">${animalIcon}</span>\n        <div>\n          <div class="card-name">${escapeHtml(card.typeLabel)}</div>\n          <div class="card-type-row">\n            <span class="card-type">${card.count} animal${card.count === 1 ? "" : "s"}</span>\n            ${badgeHtml}\n          </div>\n          <div class="animal-fold-row">${productChipsHtml}</div>${valueBlockHtml}\n        </div>\n      </div>\n      <div class="card-collapsed-profit">\n        <span class="harvest-stack">${dailyBadgeHtml}${statusBadgeHtml}</span>\n        <span class="chev">▾</span>\n      </div>\n      ${statusFoldHtml}\n    </div>\n    <div class="card-details">\n      <div class="animal-detail-grid">\n        ${productDetailRows}\n        <div class="animal-detail-stat"><span class="label">Market Price/Unit</span><span class="value">${fmtAnimalCost(card.avgPricePerUnit)} ${FLOWER_ICON}</span></div>\n        <div class="animal-detail-stat"><span class="label">Market Value</span><span class="value">${fmtAnimal(card.gross)} ${FLOWER_ICON}</span></div>\n        <div class="animal-detail-stat"><span class="label">Tax</span><span class="value">${card.sellFee > 0 ? `-${fmtAnimalCost(card.sellFee)}` : "0"} ${FLOWER_ICON}</span></div>\n      </div>\n      <div class="animal-net-row2">\n        <span class="label">Net</span>\n        <span class="value ${isProfit ? "is-profit" : "is-loss"}">${fmtAnimal(cardNet)} ${FLOWER_ICON}</span>\n      </div>\n      ${animalYieldGroupsHtml}\n      ${yieldBoostListHtml}\n    </div>\n  </div>`;
 }
 
 function farmPanelRenderHoneyCard(row) {
@@ -4640,6 +4651,11 @@ function farmPanelRenderHoneyCard(row) {
   const tierNote = tierEntries.length ? ` <span class="card-tier-note">(${tierEntries.map(([label, c]) => `${c} ${escapeHtml(label)}`).join(", ")})</span>` : "";
   const beehiveIcon = getIcon("Beehive");
   const produceIcon = getIcon("Honey");
+  dailyHarvestSetYield("Honey", 0, produceIcon, null, {
+    price: row.price,
+    feeRate: row.grossRevenue > 0 ? row.feeAmount / row.grossRevenue : 0
+  });
+  const dailyBadgeHtml = dailyHarvestBadgeHtml("Honey", "honey", beehiveIcon);
   const boostSummary = farmPanelComputeNodeYieldBoostSummary(row);
   const productChipHtml = `\n      <span class="animal-produce-chip">\n        <span class="produce-yield">+${(Math.floor(row.totalYield * 100) / 100).toFixed(2)}</span>\n        <span class="produce-icon">${produceIcon}</span>\n        <span class="produce-name">${escapeHtml(row.name)}</span>\n      </span>`;
   const valueBlockHtml = guroValueBlockHtml(row.grossRevenue, row.feeAmount, fmt);
@@ -4647,7 +4663,7 @@ function farmPanelRenderHoneyCard(row) {
   const productDetailRow = renderCardProductDetailRow(produceIcon, row.name, row.totalYield, row.grossRevenue, row.feeAmount, row.isBoosted ? row.baseTotalYield : null);
   const boostListHtml = farmPanelRenderNodeYieldBoostList(row, boostSummary, produceIcon);
   const beehiveListHtml = renderBeehiveListHtml(row.honeyHiveDetails);
-  return `\n  <div class="card animal-merged-card${isProfit ? " is-profit" : " is-loss"}${expandedCls}" data-search="honey" data-fp-category="beehive">\n    <div class="card-toggle">\n      <div class="card-name-row">\n        <span class="card-icon">${beehiveIcon}</span>\n        <div>\n          <div class="card-name">Beehive</div>\n          <div class="card-type-row">\n            <span class="card-type">${row.displayNodeCount} node${row.displayNodeCount === 1 ? "" : "s"}${tierNote}</span>\n            ${badgeHtml}\n          </div>\n          <div class="animal-fold-row">${productChipHtml}${swarmChipHtml}</div>${valueBlockHtml}\n        </div>\n      </div>\n      <div class="card-collapsed-profit">\n        ${statusBadgeHtml}\n        <span class="chev">▾</span>\n      </div>\n      ${statusFoldHtml}\n    </div>\n    <div class="card-details">\n      <div class="animal-detail-grid">\n        ${productDetailRow}\n        <div class="animal-detail-stat"><span class="label">Market Price/Unit</span><span class="value">${fmt(row.price)} ${FLOWER_ICON}</span></div>\n        <div class="animal-detail-stat"><span class="label">Market Value</span><span class="value">${fmt(row.grossRevenue)} ${FLOWER_ICON}</span></div>\n        <div class="animal-detail-stat"><span class="label">Tax</span><span class="value">${row.feeAmount > 0 ? `-${fmt(row.feeAmount)}` : "0"} ${FLOWER_ICON}</span></div>\n      </div>\n      <div class="animal-net-row2">\n        <span class="label">Net</span>\n        <span class="value ${isProfit ? "is-profit" : "is-loss"}">${fmt(row.grossRevenue - row.feeAmount)} ${FLOWER_ICON}</span>\n      </div>\n      ${beehiveListHtml}\n      ${boostListHtml}\n    </div>\n  </div>`;
+  return `\n  <div class="card animal-merged-card${isProfit ? " is-profit" : " is-loss"}${expandedCls}" data-search="honey" data-fp-category="beehive">\n    <div class="card-toggle">\n      <div class="card-name-row">\n        <span class="card-icon">${beehiveIcon}</span>\n        <div>\n          <div class="card-name">Beehive</div>\n          <div class="card-type-row">\n            <span class="card-type">${row.displayNodeCount} node${row.displayNodeCount === 1 ? "" : "s"}${tierNote}</span>\n            ${badgeHtml}\n          </div>\n          <div class="animal-fold-row">${productChipHtml}${swarmChipHtml}</div>${valueBlockHtml}\n        </div>\n      </div>\n      <div class="card-collapsed-profit">\n        <span class="harvest-stack">${dailyBadgeHtml}${statusBadgeHtml}</span>\n        <span class="chev">▾</span>\n      </div>\n      ${statusFoldHtml}\n    </div>\n    <div class="card-details">\n      <div class="animal-detail-grid">\n        ${productDetailRow}\n        <div class="animal-detail-stat"><span class="label">Market Price/Unit</span><span class="value">${fmt(row.price)} ${FLOWER_ICON}</span></div>\n        <div class="animal-detail-stat"><span class="label">Market Value</span><span class="value">${fmt(row.grossRevenue)} ${FLOWER_ICON}</span></div>\n        <div class="animal-detail-stat"><span class="label">Tax</span><span class="value">${row.feeAmount > 0 ? `-${fmt(row.feeAmount)}` : "0"} ${FLOWER_ICON}</span></div>\n      </div>\n      <div class="animal-net-row2">\n        <span class="label">Net</span>\n        <span class="value ${isProfit ? "is-profit" : "is-loss"}">${fmt(row.grossRevenue - row.feeAmount)} ${FLOWER_ICON}</span>\n      </div>\n      ${beehiveListHtml}\n      ${boostListHtml}\n    </div>\n  </div>`;
 }
 
 function cookingFoodOrFishIcon(name) {
@@ -4738,6 +4754,24 @@ function farmPanelRenderCookingCard(row) {
   return `\n  <div class="card animal-merged-card${isProfit ? " is-profit" : " is-loss"}${expandedCls}" data-search="${searchKey}" data-fp-category="cooking">\n    <div class="card-toggle">\n      <div class="card-name-row">\n        <span class="card-icon">${buildingIcon}</span>\n        <div>\n          <div class="card-name">${escapeHtml(building)}</div>\n          <div class="card-type-row">\n            <span class="card-type">${row.slotCount} slot${row.slotCount === 1 ? "" : "s"}</span>\n            ${badgeHtml}\n          </div>\n          <div class="animal-fold-row">${productChipHtml}</div>${valueBlockHtml}\n        </div>\n      </div>\n      <div class="card-collapsed-profit">\n        ${statusBadgeHtml}\n        <span class="chev">▾</span>\n      </div>\n      ${statusFoldHtml}\n    </div>\n    <div class="card-details">\n      ${yieldListHtml}\n      ${boostListHtml}\n    </div>\n  </div>`;
 }
 
+const FARM_PANEL_DAILY_NODE_KINDS = {
+  Wood: "wood",
+  Stone: "stone",
+  Iron: "iron",
+  Gold: "gold",
+  Crimstone: "crimstone",
+  Oil: "oil"
+};
+
+function farmPanelDailyHarvestKind(name) {
+  if (FARM_PANEL_DAILY_NODE_KINDS[name]) return FARM_PANEL_DAILY_NODE_KINDS[name];
+  if (BASE_CROPS[name]) return "crop";
+  if (BASE_FRUITS[name]) return "fruit";
+  if (BASE_GREENHOUSE[name]) return "greenhouse";
+  if (FLOWER_VARIETIES[name]) return "flower";
+  return "";
+}
+
 export function farmPanelRenderInProgressRow(row) {
   if (row.isAnimalMerged) return farmPanelRenderAnimalMergedCard(row);
   if (row.isHoneyCard) return farmPanelRenderHoneyCard(row);
@@ -4780,7 +4814,13 @@ export function farmPanelRenderInProgressRow(row) {
   const tierNote = tierEntries.length ? ` <span class="card-tier-note">(${tierEntries.map(([label, c]) => `${c} ${escapeHtml(label)}`).join(", ")})</span>` : "";
   const nodeIcon = getNodeIconHtml(row.name);
   const nodeLabel = getNodeLabel(row.name);
+  const dailyKind = farmPanelDailyHarvestKind(row.name);
+  const dailyBadgeHtml = dailyKind ? dailyHarvestBadgeHtml(row.name, dailyKind, nodeIcon) : "";
   const produceIcon = getIcon(row.name);
+  if (dailyKind) dailyHarvestSetYield(row.name, row.count > 0 ? row.totalYield / row.count : 0, produceIcon, row.nodeYields, row.name === "Oil" ? null : {
+    price: row.price,
+    feeRate: row.grossRevenue > 0 ? row.feeAmount / row.grossRevenue : 0
+  });
   const boostSummary = farmPanelComputeNodeYieldBoostSummary(row);
   const woodIcon = row.fruitWood ? getIcon("Wood") : "";
   const woodChipHtml = row.fruitWood ? `\n      <span class="animal-produce-chip fruit-wood-chip">\n        <span class="produce-yield">+${fmt(row.fruitWood.econ.totalYield)}</span>\n        <span class="produce-icon">${woodIcon}</span>\n        <span class="produce-name">Wood</span>\n      </span>` : "";
@@ -4812,7 +4852,7 @@ export function farmPanelRenderInProgressRow(row) {
       saltProjectedHtml = `<div class="salt-section-label">Projected Harvest</div>\n          <div class="animal-fold-row">${projectedChipHtml}</div>\n          ${projectedChainNote}`;
     }
   }
-  return `\n  <div class="card animal-merged-card${isProfit ? " is-profit" : " is-loss"}${expandedCls}" data-search="${row.name.toLowerCase()}" data-fp-category="${farmPanelCardCategory(row)}">\n    <div class="card-toggle">\n      <div class="card-name-row">\n        <span class="card-icon">${nodeIcon}</span>\n        <div>\n          <div class="card-name">${escapeHtml(nodeLabel)}</div>\n          <div class="card-type-row">\n            <span class="card-type">${row.displayNodeCount} node${row.displayNodeCount === 1 ? "" : "s"}${tierNote}</span>\n            ${badgeHtml}\n          </div>\n          ${saltReadyLabelHtml}<div class="animal-fold-row">${productChipHtml}${woodChipHtml}${moneyTreeBadgeHtml}</div>${valueBlockHtml}\n          ${saltProjectedHtml}${seaBlessedBoostHtml}${turnaroundBoostHtml}${goldInstantMineBoostHtml}${crimstoneInstantMineBoostHtml}\n        </div>\n      </div>\n      <div class="card-collapsed-profit">\n        ${statusBadgeHtml}\n        <span class="chev">▾</span>\n      </div>\n      ${statusFoldHtml}\n    </div>\n    <div class="card-details">\n      <div class="animal-detail-grid">\n        ${productDetailRow}${woodDetailRowHtml}\n        <div class="animal-detail-stat"><span class="label">Market Price/Unit</span><span class="value">${fmt(row.price)} ${FLOWER_ICON}</span></div>\n        <div class="animal-detail-stat"><span class="label">Market Value</span><span class="value">${fmt(totalGross)} ${FLOWER_ICON}</span></div>\n        <div class="animal-detail-stat"><span class="label">Tax</span><span class="value">${totalFee > 0 ? `-${fmt(totalFee)}` : "0"} ${FLOWER_ICON}</span></div>\n      </div>\n      <div class="animal-net-row2">\n        <span class="label">Net</span>\n        <span class="value ${isProfit ? "is-profit" : "is-loss"}">${fmt(totalGross - totalFee)} ${FLOWER_ICON}</span>\n      </div>\n      ${harvestsLeftHtml}\n      ${tierYieldListHtml}\n      ${boostListHtml}\n    </div>\n  </div>`;
+  return `\n  <div class="card animal-merged-card${isProfit ? " is-profit" : " is-loss"}${expandedCls}" data-search="${row.name.toLowerCase()}" data-fp-category="${farmPanelCardCategory(row)}">\n    <div class="card-toggle">\n      <div class="card-name-row">\n        <span class="card-icon">${nodeIcon}</span>\n        <div>\n          <div class="card-name">${escapeHtml(nodeLabel)}</div>\n          <div class="card-type-row">\n            <span class="card-type">${row.displayNodeCount} node${row.displayNodeCount === 1 ? "" : "s"}${tierNote}</span>\n            ${badgeHtml}\n          </div>\n          ${saltReadyLabelHtml}<div class="animal-fold-row">${productChipHtml}${woodChipHtml}${moneyTreeBadgeHtml}</div>${valueBlockHtml}\n          ${saltProjectedHtml}${seaBlessedBoostHtml}${turnaroundBoostHtml}${goldInstantMineBoostHtml}${crimstoneInstantMineBoostHtml}\n        </div>\n      </div>\n      <div class="card-collapsed-profit">\n        <span class="harvest-stack">${dailyBadgeHtml}${statusBadgeHtml}</span>\n        <span class="chev">▾</span>\n      </div>\n      ${statusFoldHtml}\n    </div>\n    <div class="card-details">\n      <div class="animal-detail-grid">\n        ${productDetailRow}${woodDetailRowHtml}\n        <div class="animal-detail-stat"><span class="label">Market Price/Unit</span><span class="value">${fmt(row.price)} ${FLOWER_ICON}</span></div>\n        <div class="animal-detail-stat"><span class="label">Market Value</span><span class="value">${fmt(totalGross)} ${FLOWER_ICON}</span></div>\n        <div class="animal-detail-stat"><span class="label">Tax</span><span class="value">${totalFee > 0 ? `-${fmt(totalFee)}` : "0"} ${FLOWER_ICON}</span></div>\n      </div>\n      <div class="animal-net-row2">\n        <span class="label">Net</span>\n        <span class="value ${isProfit ? "is-profit" : "is-loss"}">${fmt(totalGross - totalFee)} ${FLOWER_ICON}</span>\n      </div>\n      ${harvestsLeftHtml}\n      ${tierYieldListHtml}\n      ${boostListHtml}\n    </div>\n  </div>`;
 }
 
 export function farmPanelRenderStockRow(row) {
@@ -5311,6 +5351,9 @@ function farmPanelSectionStorageKey(name) {
 export function farmPanelSaveGameState(json, isFullSync) {
   farmPanelGameState = json || null;
   if (isFullSync) farmPanelStateIsCached = false;
+  try {
+    if (json) dailyHarvestTrack(farmSyncExtractGameState(json), json.id);
+  } catch (e) {}
   farmPanelHoneySnapshotMs = Date.now();
   const toStore = farmPanelGameState;
   if (__farmPanelSaveGameStateHandle !== null) {
