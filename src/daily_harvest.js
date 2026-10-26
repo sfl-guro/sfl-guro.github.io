@@ -99,6 +99,65 @@ const ACT_KEY_RE = /^(.+ Tree Chopped|.+ Rock Mined)$/;
 
 let pendResolver = null;
 
+const TREE_BASE_RECOVERY_MS = 7200 * 1e3;
+
+const TREE_CHARGE_RANKS = [ .9, .875, .85 ];
+
+function treePermanentShiftMs(g) {
+  let mult = 1;
+  const col = g && g.collectibles && typeof g.collectibles === "object" ? g.collectibles : {};
+  const placed = name => Array.isArray(col[name]) && col[name].some(c => c && c.coordinates);
+  if (placed("Apprentice Beaver") || placed("Foreman Beaver")) mult *= .5;
+  const skills = g && g.bumpkin && g.bumpkin.skills ? g.bumpkin.skills : {};
+  const lvl = Number(skills["Tree Charge"]) || 0;
+  if (lvl > 0) mult *= TREE_CHARGE_RANKS[Math.min(lvl, TREE_CHARGE_RANKS.length) - 1];
+  return Math.round(TREE_BASE_RECOVERY_MS * (1 - mult));
+}
+
+const TREE_USE_BOOSTS = [ "Tree Charge", "Tree Turnaround", "Tough Tree", "Lumberjack's Extra", "Apprentice Beaver", "Foreman Beaver", "Super Totem", "Time Warp Totem", "Timber Hourglass", "Badger Shrine" ];
+
+const WOOD_BATCH_MS = 5 * 6e4;
+
+let woodShiftMs = 0;
+
+let woodLowerBound = 0;
+
+let woodAnchor = 0;
+
+let woodBatchMin = 0;
+
+const OIL_USE_BOOSTS = [ "Oil Extraction", "Oil Gallon", "Oil Can", "Oil Overalls", "Battle Fish", "Knight Chicken", "Stag Shrine", "Dev Wrench", "Oil Be Back", "Infernal Drill" ];
+
+const OIL_BASE_RECOVERY_MS = 20 * 3600 * 1e3;
+
+let oilAnchor = 0;
+
+let oilBatchMin = 0;
+
+function latestTreeUse(g, from, now, names) {
+  const used = g && g.boostsUsedAt && typeof g.boostsUsedAt === "object" ? g.boostsUsedAt : {};
+  let best = 0;
+  (names || TREE_USE_BOOSTS).forEach(name => {
+    const t = used[name];
+    if (typeof t === "number" && t >= from && t <= now && t > best) best = t;
+  });
+  return best;
+}
+
+function realStamp(groupKey, node, now) {
+  const ts = node ? node.ts : 0;
+  if (!ts) return ts;
+  if (node.shift > 0) return Math.min(now, ts + node.shift);
+  if (groupKey === "Oil" && node.legacy) {
+    if (oilAnchor && ts >= oilBatchMin && oilAnchor >= ts && oilAnchor <= ts + OIL_BASE_RECOVERY_MS) return Math.min(now, oilAnchor);
+    return ts;
+  }
+  if (groupKey !== "Wood" || !node.legacy) return ts;
+  if (woodAnchor && ts >= woodBatchMin && woodAnchor >= ts && woodAnchor <= ts + TREE_BASE_RECOVERY_MS) return Math.min(now, woodAnchor);
+  const lower = Math.min(now, Math.max(ts, woodLowerBound));
+  return Math.min(now, Math.max(lower, ts + woodShiftMs));
+}
+
 export function dailyHarvestSetResolver(fn) {
   pendResolver = typeof fn === "function" ? fn : null;
 }
@@ -225,7 +284,7 @@ function inventoryItemFor(groupKey, kind) {
 function collectGroups(g, now) {
   const groups = {};
   const cropMachine = isCropMachineActive(g, now);
-  const add = (groupKey, mode, id, ts, key, noCounter, val, kind) => {
+  const add = (groupKey, mode, id, ts, key, noCounter, val, kind, legacy, shift) => {
     const grp = groups[groupKey] || (groups[groupKey] = {
       mode: mode,
       kind: kind || kindOfGroup(groupKey),
@@ -235,7 +294,9 @@ function collectGroups(g, now) {
     grp.nodes[id] = {
       ts: ts,
       key: key,
-      val: val
+      val: val,
+      legacy: !!legacy,
+      shift: typeof shift === "number" && shift > 0 ? shift : 0
     };
   };
   NODE_BAGS.forEach(([bagKey, groupKey, getTs]) => {
@@ -244,7 +305,9 @@ function collectGroups(g, now) {
     Object.entries(bag).forEach(([id, node]) => {
       if (!isActiveNode(node, now)) return;
       const ts = numTs(getTs(node));
-      add(groupKey, "ts", id, ts, String(ts));
+      const legacy = groupKey === "Wood" && !(node.wood && node.wood.baseDurationMs !== undefined) || groupKey === "Oil" && !(node.oil && node.oil.baseDurationMs !== undefined);
+      const rock = node.stone && node.stone.baseDurationMs === undefined ? node.stone.boostedTime : 0;
+      add(groupKey, "ts", id, ts, String(ts), undefined, undefined, undefined, legacy, rock);
     });
   });
   if (g.crops && typeof g.crops === "object") {
@@ -252,7 +315,7 @@ function collectGroups(g, now) {
       if (!isActiveNode(plot, now)) return;
       const crop = plot.crop;
       if (!crop || !crop.name) return;
-      add(crop.name, "key", id, numTs(crop.plantedAt), crop.id ? String(crop.id) : String(numTs(crop.plantedAt)), cropMachine, undefined, "crop");
+      add(crop.name, "key", id, numTs(crop.plantedAt), crop.id ? String(crop.id) : String(numTs(crop.plantedAt)), cropMachine, undefined, "crop", false, crop.baseDurationMs === undefined ? crop.boostedTime : 0);
     });
   }
   if (g.greenhouse && g.greenhouse.pots && typeof g.greenhouse.pots === "object") {
@@ -274,7 +337,7 @@ function collectGroups(g, now) {
       if (!isActiveNode(patch, now)) return;
       const fruit = patch.fruit;
       if (!fruit || !fruit.name) return;
-      add(fruit.name, "key", id, numTs(fruit.harvestedAt), `${numTs(fruit.plantedAt)}|${numTs(fruit.harvestedAt)}`);
+      add(fruit.name, "key", id, numTs(fruit.harvestedAt), `${numTs(fruit.plantedAt)}|${numTs(fruit.harvestedAt)}`, undefined, undefined, undefined, false, fruit.baseDurationMs === undefined && fruit.harvestedAt ? fruit.boostedTime : 0);
     });
   }
   if (g.beehives && typeof g.beehives === "object") {
@@ -365,6 +428,8 @@ export function dailyHarvestTrack(g, farmId) {
     syncAt: old && old.syncAt ? old.syncAt : 0
   };
   const prevSyncAt = rec.syncAt || 0;
+  woodShiftMs = treePermanentShiftMs(g);
+  woodLowerBound = Math.max(prevSyncAt, start);
   const invPrev = rec.inv || {};
   const actPrev = rec.act || {};
   const actNow = pickActivity(g.farmActivity);
@@ -382,6 +447,18 @@ export function dailyHarvestTrack(g, farmId) {
     skillTimes[kind] = Math.max(skillTimes[kind] || 0, at);
   });
   const groups = collectGroups(g, now);
+  woodAnchor = latestTreeUse(g, woodLowerBound, now);
+  woodBatchMin = 0;
+  if (groups.Wood) {
+    const legacyTs = Object.values(groups.Wood.nodes).filter(n => n.legacy && n.ts).map(n => n.ts);
+    if (legacyTs.length) woodBatchMin = Math.max(...legacyTs) - WOOD_BATCH_MS;
+  }
+  oilAnchor = latestTreeUse(g, Math.max(prevSyncAt, start), now, OIL_USE_BOOSTS);
+  oilBatchMin = 0;
+  if (groups.Oil) {
+    const oilTs = Object.values(groups.Oil.nodes).filter(n => n.legacy && n.ts).map(n => n.ts);
+    if (oilTs.length) oilBatchMin = Math.max(...oilTs) - WOOD_BATCH_MS;
+  }
   const keys = new Set([ ...Object.keys(groups), ...Object.keys(rec.prev) ]);
   keys.forEach(groupKey => {
     const invItem = inventoryItemFor(groupKey, groups[groupKey] ? groups[groupKey].kind : "");
@@ -471,7 +548,8 @@ export function dailyHarvestTrack(g, farmId) {
       st.counts[id] = (st.counts[id] || 0) + inc;
       if (hiddenOnly) return;
       const ts = grp.nodes[id] ? grp.nodes[id].ts : 0;
-      const t = ts && ts >= start ? ts : now;
+      const rs = ts ? realStamp(groupKey, grp.nodes[id], now) : 0;
+      const t = rs && rs >= start ? rs : now;
       const bk = Math.floor(t / 6e4);
       const b = buckets[bk] || (buckets[bk] = {
         t: t,
@@ -548,7 +626,7 @@ export function dailyHarvestTrack(g, farmId) {
     if (estimated) st.est = true;
     const after = roundsFromStats(st).rounds;
     if (after > before) {
-      const stamps = hiddenOnly ? [ skillTime ] : events.map(id => grp.nodes[id] ? grp.nodes[id].ts : 0).filter(Boolean);
+      const stamps = hiddenOnly ? [ skillTime ] : events.map(id => grp.nodes[id] ? realStamp(groupKey, grp.nodes[id], now) : 0).filter(Boolean);
       st.lastAt = stamps.length ? Math.max(...stamps) : now;
     }
   });
