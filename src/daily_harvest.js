@@ -497,8 +497,10 @@ export function dailyHarvestTrack(g, farmId) {
       if (resolvable) entry.ids = b.ids;
       return entry;
     });
+    let pendId = null;
     if (resolvable && entries.length) {
       const pid = String(now);
+      pendId = pid;
       const ordered = sorted.slice().sort((a, b) => grp.nodes[a].ts - grp.nodes[b].ts || (a < b ? -1 : 1));
       st.pend = st.pend || {};
       st.pend[pid] = {
@@ -514,11 +516,13 @@ export function dailyHarvestTrack(g, farmId) {
       const snapVals = snap ? Object.values(snap).filter(v => typeof v === "number") : [];
       const mean = snapVals.length ? snapVals.reduce((a, b) => a + b, 0) / snapVals.length : 0;
       const lastVisible = entries.length ? entries[entries.length - 1].t : now;
-      entries.push({
+      const extraEntry = {
         t: skillTime || lastVisible,
         n: extras,
         y: mean ? mean * extras : null
-      });
+      };
+      if (pendId) extraEntry.xpid = pendId;
+      entries.push(extraEntry);
     }
     const nSum = entries.reduce((sum, e) => sum + e.n, 0) || 1;
     entries.forEach(e => {
@@ -593,6 +597,7 @@ function resolvePending(st, groupKey) {
     }
     if (amounts === undefined) return;
     if (amounts) {
+      st.log = st.log.filter(e => e.xpid !== pid);
       st.log.forEach(e => {
         if (e.pid !== pid || !Array.isArray(e.ids)) return;
         let sum = 0;
@@ -611,6 +616,7 @@ function resolvePending(st, groupKey) {
         delete e.pid;
         delete e.ids;
       }
+      if (e.xpid === pid) delete e.xpid;
     });
     delete st.pend[pid];
     changed = true;

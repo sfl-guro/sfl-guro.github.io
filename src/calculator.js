@@ -33462,7 +33462,8 @@ function digDataLoadState() {
   digDataState = {
     boosts: obj(s.boosts),
     detected: obj(s.detected),
-    mats: obj(s.mats),
+    mats: s.autoMatsV1 === true ? obj(s.mats) : {},
+    autoMatsV1: true,
     toolsOpen: s.toolsOpen === true
   };
   return digDataState;
@@ -33478,10 +33479,29 @@ function digBoostOn(id) {
   return digDataLoadState().boosts[id] === true;
 }
 
+let digAutoModeBusy = false;
+
+function digAutoMatMode(owner, name) {
+  if (digAutoModeBusy) return name === "Wood" ? "collect" : "buy";
+  digAutoModeBusy = true;
+  try {
+    const buyCost = getMaterialUnitCostCoins(name, "buy");
+    let collectCost;
+    if (name === "Crimstone") collectCost = digCrimstoneUnitCoins(); else collectCost = RESOURCE_DATA[name] ? esResourceCollectCoins(name) : getItemCostByName(name);
+    const dflt = name === "Wood" ? "collect" : "buy";
+    if (!(collectCost > 0) || !isFinite(collectCost) || !(buyCost > 0) || !isFinite(buyCost)) return dflt;
+    return collectCost <= buyCost ? "collect" : "buy";
+  } catch (e) {
+    return name === "Wood" ? "collect" : "buy";
+  } finally {
+    digAutoModeBusy = false;
+  }
+}
+
 function digMatMode(owner, name) {
   const v = digDataLoadState().mats[owner + ":" + name];
   if (v === "collect" || v === "buy") return v;
-  return name === "Wood" ? "collect" : "buy";
+  return digAutoMatMode(owner, name);
 }
 
 function digIconHtml(name) {
@@ -33712,13 +33732,25 @@ function digItemPrice(name, pct) {
   };
 }
 
-export function digTileProfit(name) {
+export function digTileProfitInfo(name) {
   if (!name) return null;
   const cost = digToolUnitCoins("Sand Shovel");
   const price = digItemPrice(name, digPricePct()).price;
   if (!(price > 0)) return null;
   const perDig = name === "Sand" || name === "Crab" ? digYieldPerDig(name) : 1;
-  return price * perDig >= cost ? "profit" : "loss";
+  const value = price * perDig;
+  return {
+    state: value >= cost ? "profit" : "loss",
+    price: price,
+    perDig: perDig,
+    value: value,
+    cost: cost
+  };
+}
+
+export function digTileProfit(name) {
+  const info = digTileProfitInfo(name);
+  return info ? info.state : null;
 }
 
 function digBoostGridHtml() {
@@ -34100,6 +34132,7 @@ function digWireDataPanel() {
     digDataLoadState().boosts[el.getAttribute("data-dig-boost")] = el.checked;
     digDataSaveState();
     renderDigDataPanel();
+    renderDigTreasurePanel();
   });
   card.addEventListener("click", ev => {
     const t = ev.target && ev.target.closest ? ev.target.closest("#digToolCfgBtn, [data-dig-mat-mode], [data-dig-streak-pick], [data-dig-streak-edit]") : null;
@@ -34117,6 +34150,7 @@ function digWireDataPanel() {
     }
     digDataSaveState();
     renderDigDataPanel();
+    renderDigTreasurePanel();
   });
 }
 

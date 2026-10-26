@@ -5026,7 +5026,7 @@ body.app-dark .dig-treasure-fab-label{ color:#c7c4bc; text-shadow:none; }
 .dig-swatch-hint{ border-style:dashed; }
 
 .dig-panel-grid-wrap{
-  flex:0 0 auto; overflow:visible;
+  position:relative; flex:0 0 auto; overflow:visible;
   display:flex; align-items:flex-start; justify-content:center;
   border:2px solid var(--soil-dark); background:#fff;
   padding:6px;
@@ -15302,3 +15302,20 @@ html body.sfl-theme .guro-grow-content .feed-xp-chip.feed-xp-chip{
   border-radius:0 !important; box-shadow:none !important; image-rendering:pixelated !important;
   box-sizing:border-box;
 }
+
+.dig-pl-card{
+  display:none; position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); z-index:30;
+  min-width:210px; max-width:calc(100% - 16px); box-sizing:border-box; padding:8px 10px;
+  background:var(--sfl-inner, #f5deb3); color:var(--ink, #3a2410); font-size:13px; font-weight:700;
+  pointer-events:none; box-shadow:0 3px 10px rgba(0,0,0,.35);
+}
+.dig-pl-row{ display:flex; align-items:center; gap:6px; padding:3px 0; white-space:nowrap; }
+.dig-pl-row .dig-pl-val{ margin-left:auto; display:inline-flex; align-items:center; gap:3px; }
+.dig-pl-ico{ display:inline-flex; align-items:center; }
+.dig-pl-ico img, .dig-pl-val img{ width:16px; height:16px; image-rendering:pixelated; }
+.dig-pl-head{ padding-bottom:5px; }
+.dig-pl-state{ margin-left:4px; }
+.dig-pl-qty{ font-weight:900; }
+.dig-pl-net{ padding-top:5px; }
+.dig-pl-card .is-profit{ color:#1f9d2f; }
+.dig-pl-card .is-loss{ color:#d41f1f; }
