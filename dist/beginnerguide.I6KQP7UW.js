@@ -1,6 +1,6 @@
 import {
   renderBeginnerPanel
-} from "./chunk.2XJOMNAT.js";
+} from "./chunk.UMYRUO73.js";
 import "./chunk.LPEVZJ4B.js";
 import "./chunk.VR6FV3KR.js";
 import "./chunk.AS3VMXOQ.js";

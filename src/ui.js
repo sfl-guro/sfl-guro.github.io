@@ -7498,7 +7498,9 @@ function digPlFmt(n) {
   });
 }
 
-function showDigPlInfo(gridEl, data) {
+function showDigPlInfo(gridEl, data, sticky) {
+  const plRoot = document.getElementById("pageDigging");
+  if (!plRoot || !plRoot.classList.contains("dig-show-pl")) return;
   const wrap = gridEl.parentNode;
   let box = document.getElementById("digPlInfo");
   if (!box) {
@@ -7515,16 +7517,39 @@ function showDigPlInfo(gridEl, data) {
   box.innerHTML = `<div class="dig-pl-row dig-pl-head"><span class="dig-pl-ico">${getIcon(data.item)}</span><span class="dig-pl-name">${escapeHtml(data.item)}</span><span class="dig-pl-state ${stateCls}">${isProfit ? "Profit" : "Loss"}</span></div>` + `<div class="dig-pl-row"><span class="dig-pl-ico">${getIcon("Sand Shovel")}</span><span class="dig-pl-label">Shovel Cost</span><span class="dig-pl-val">${digPlFmt(data.cost)}${COIN_ICON}</span></div>` + `<div class="dig-pl-row">${qty}<span class="dig-pl-ico">${getIcon(data.item)}</span><span class="dig-pl-label">${escapeHtml(data.item)} Value</span><span class="dig-pl-val">${digPlFmt(data.value)}${COIN_ICON}</span></div>` + `<div class="dig-pl-row dig-pl-net"><span class="dig-pl-label">Net</span><span class="dig-pl-val"><span class="${stateCls}">${netText}</span>${COIN_ICON}</span></div>`;
   box.style.display = "block";
   clearTimeout(box._t);
+  if (sticky) return;
   box._t = setTimeout(() => {
     box.style.display = "none";
   }, 4000);
 }
 
+function digPlHoverMode() {
+  return !!(window.matchMedia && window.matchMedia("(hover: hover) and (pointer: fine)").matches);
+}
+
+function hideDigPlInfo() {
+  const box = document.getElementById("digPlInfo");
+  if (!box) return;
+  clearTimeout(box._t);
+  box.style.display = "none";
+}
+
 function wireDigGridManualTaps(gridEl, farmId) {
+  const hoverMode = digPlHoverMode();
   gridEl.querySelectorAll(".dig-cell[data-pl]").forEach(cellEl => {
+    const readData = () => JSON.parse(decodeURIComponent(cellEl.getAttribute("data-pl")));
+    if (hoverMode) {
+      cellEl.addEventListener("mouseenter", () => {
+        const box = document.getElementById("digPlInfo");
+        if (box) clearTimeout(box._t);
+        showDigPlInfo(gridEl, readData(), true);
+      });
+      cellEl.addEventListener("mouseleave", hideDigPlInfo);
+      return;
+    }
     const show = ev => {
       ev.stopPropagation();
-      showDigPlInfo(gridEl, JSON.parse(decodeURIComponent(cellEl.getAttribute("data-pl"))));
+      showDigPlInfo(gridEl, readData());
     };
     const badge = cellEl.querySelector(".dig-pl");
     if (badge) badge.addEventListener("click", show);
@@ -7533,8 +7558,7 @@ function wireDigGridManualTaps(gridEl, farmId) {
   gridEl.querySelectorAll(".dig-cell[data-dig-x]").forEach(cellEl => {
     cellEl.onclick = () => {
       const plText = cellEl.getAttribute("data-pl");
-      const plRoot = document.getElementById("pageDigging");
-      if (plText) showDigPlInfo(gridEl, JSON.parse(decodeURIComponent(plText)));
+      if (hoverMode) hideDigPlInfo(); else if (plText) showDigPlInfo(gridEl, JSON.parse(decodeURIComponent(plText)));
       const x = parseInt(cellEl.dataset.digX, 10);
       const y = parseInt(cellEl.dataset.digY, 10);
       digCycleManualMark(farmId, x, y);
