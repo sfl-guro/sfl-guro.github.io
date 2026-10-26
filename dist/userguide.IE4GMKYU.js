@@ -1,8 +1,8 @@
 import {
   navigateTo
-} from "./chunk.63RZOA7N.js";
+} from "./chunk.VIGLYM4E.js";
 import "./chunk.F7REBWYF.js";
-import "./chunk.2XJOMNAT.js";
+import "./chunk.UMYRUO73.js";
 import "./chunk.LPEVZJ4B.js";
 import {
   ICON_DATA

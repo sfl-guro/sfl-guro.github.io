@@ -19,6 +19,13 @@ function setMarkMode(root, on) {
   root.classList.toggle("dig-show-pl", on);
   const btn = document.getElementById("digPlToggleBtn");
   if (btn) btn.classList.toggle("active", on);
+  if (!on) {
+    const card = document.getElementById("digPlInfo");
+    if (card) {
+      clearTimeout(card._t);
+      card.style.display = "none";
+    }
+  }
 }
 function mount(root, api) {
   setOpenClass("digSidePanel", true);
