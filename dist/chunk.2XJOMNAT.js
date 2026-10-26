@@ -432,6 +432,7 @@ __export(calculator_exports, {
   digSolveBoard: () => digSolveBoard,
   digStreakTrackFromState: () => digStreakTrackFromState,
   digTileProfit: () => digTileProfit,
+  digTileProfitInfo: () => digTileProfitInfo,
   discardSkillBoostDrafts: () => discardSkillBoostDrafts,
   draftSetAscensionRank: () => draftSetAscensionRank,
   editingLibId: () => editingLibId,
@@ -16787,18 +16788,24 @@ function renderDigCellHtml(cell, farmId, pctMap) {
     label = `${pct}% chance of treasure \xB7 ${label}`;
   }
   let plBadge = "";
+  let plAttr = "";
   if (!manualStatus) {
     const plItem = cell.dug ? cell.item : displayStatus === "guaranteed" && cell.predicted ? cell.predicted.item : displayStatus === "crab" ? "Crab" : displayStatus === "sand" ? "Sand" : null;
-    const plState = plItem ? digTileProfit(plItem) : null;
-    if (plState) {
+    const plInfo = plItem ? digTileProfitInfo(plItem) : null;
+    if (plInfo) {
+      const plState = plInfo.state;
       plBadge = `<span class="dig-pl is-${plState}">${plState === "profit" ? "\u2713" : "\u2715"}</span>`;
-      label = `${label} \xB7 ${plState === "profit" ? "profit" : "loss"} vs 1 shovel`;
+      const plMath = plInfo.perDig > 1 ? `${plInfo.perDig}\xD7 ${plItem} = ${plInfo.value.toFixed(2)}` : `${plItem} = ${plInfo.value.toFixed(2)}`;
+      const plText = `${plState === "profit" ? "\u2713 Profit" : "\u2715 Loss"}: 1 shovel (${plInfo.cost.toFixed(2)}) \u2192 ${plMath}`;
+      const plData = JSON.stringify({ item: plItem, state: plState, cost: plInfo.cost, perDig: plInfo.perDig, value: plInfo.value });
+      plAttr = ` data-pl="${encodeURIComponent(plData)}"`;
+      label = `${label} \xB7 ${plText}`;
     }
   }
   const dataAttrs = cell.dug ? "" : ` data-dig-x="${cell.x}" data-dig-y="${cell.y}"`;
   const seqBadge = cell.dug && cell.seq > 0 ? `<span class="dig-seq">${cell.seq}</span>` : "";
   if (cell.dug && cell.seq > 0) label = `${label} \xB7 dig #${cell.seq}`;
-  return `<div class="dig-cell ${cls}" title="${escapeHtml(String(label))}"${dataAttrs}>${icon}${plBadge}${seqBadge}</div>`;
+  return `<div class="dig-cell ${cls}" title="${escapeHtml(String(label))}"${dataAttrs}${plAttr}>${icon}${plBadge}${seqBadge}</div>`;
 }
 function renderDigGridHtml(solved, farmId) {
   const pctMap = digPercentModeOn() ? digBuildPercentMap(solved) : null;
@@ -16813,9 +16820,48 @@ function renderDigGridHtml(solved, farmId) {
   }
   return html;
 }
+function digPlFmt(n) {
+  return (Math.round(n * 100) / 100).toLocaleString(void 0, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+}
+function showDigPlInfo(gridEl, data) {
+  const wrap = gridEl.parentNode;
+  let box = document.getElementById("digPlInfo");
+  if (!box) {
+    box = document.createElement("div");
+    box.id = "digPlInfo";
+    box.className = "dig-pl-card guro-frame";
+    wrap.appendChild(box);
+  }
+  const isProfit = data.state === "profit";
+  const net = data.value - data.cost;
+  const netText = (net >= 0 ? "+" : "-") + digPlFmt(Math.abs(net));
+  const stateCls = isProfit ? "is-profit" : "is-loss";
+  const qty = data.perDig > 1 ? `<span class="dig-pl-qty">${data.perDig}\xD7</span>` : "";
+  box.innerHTML = `<div class="dig-pl-row dig-pl-head"><span class="dig-pl-ico">${getIcon(data.item)}</span><span class="dig-pl-name">${escapeHtml(data.item)}</span><span class="dig-pl-state ${stateCls}">${isProfit ? "Profit" : "Loss"}</span></div><div class="dig-pl-row"><span class="dig-pl-ico">${getIcon("Sand Shovel")}</span><span class="dig-pl-label">Shovel Cost</span><span class="dig-pl-val">${digPlFmt(data.cost)}${COIN_ICON}</span></div><div class="dig-pl-row">${qty}<span class="dig-pl-ico">${getIcon(data.item)}</span><span class="dig-pl-label">${escapeHtml(data.item)} Value</span><span class="dig-pl-val">${digPlFmt(data.value)}${COIN_ICON}</span></div><div class="dig-pl-row dig-pl-net"><span class="dig-pl-label">Net</span><span class="dig-pl-val"><span class="${stateCls}">${netText}</span>${COIN_ICON}</span></div>`;
+  box.style.display = "block";
+  clearTimeout(box._t);
+  box._t = setTimeout(() => {
+    box.style.display = "none";
+  }, 4e3);
+}
 function wireDigGridManualTaps(gridEl, farmId) {
+  gridEl.querySelectorAll(".dig-cell[data-pl]").forEach((cellEl) => {
+    const show = (ev) => {
+      ev.stopPropagation();
+      showDigPlInfo(gridEl, JSON.parse(decodeURIComponent(cellEl.getAttribute("data-pl"))));
+    };
+    const badge = cellEl.querySelector(".dig-pl");
+    if (badge) badge.addEventListener("click", show);
+    if (!cellEl.hasAttribute("data-dig-x")) cellEl.addEventListener("click", show);
+  });
   gridEl.querySelectorAll(".dig-cell[data-dig-x]").forEach((cellEl) => {
     cellEl.onclick = () => {
+      const plText = cellEl.getAttribute("data-pl");
+      const plRoot = document.getElementById("pageDigging");
+      if (plText) showDigPlInfo(gridEl, JSON.parse(decodeURIComponent(plText)));
       const x = parseInt(cellEl.dataset.digX, 10);
       const y = parseInt(cellEl.dataset.digY, 10);
       digCycleManualMark(farmId, x, y);
@@ -23012,8 +23058,10 @@ function dailyHarvestTrack(g, farmId) {
       if (resolvable) entry.ids = b.ids;
       return entry;
     });
+    let pendId = null;
     if (resolvable && entries.length) {
       const pid = String(now);
+      pendId = pid;
       const ordered = sorted.slice().sort((a, b) => grp.nodes[a].ts - grp.nodes[b].ts || (a < b ? -1 : 1));
       st.pend = st.pend || {};
       st.pend[pid] = {
@@ -23029,11 +23077,13 @@ function dailyHarvestTrack(g, farmId) {
       const snapVals = snap ? Object.values(snap).filter((v) => typeof v === "number") : [];
       const mean = snapVals.length ? snapVals.reduce((a, b) => a + b, 0) / snapVals.length : 0;
       const lastVisible = entries.length ? entries[entries.length - 1].t : now;
-      entries.push({
+      const extraEntry = {
         t: skillTime || lastVisible,
         n: extras,
         y: mean ? mean * extras : null
-      });
+      };
+      if (pendId) extraEntry.xpid = pendId;
+      entries.push(extraEntry);
     }
     const nSum = entries.reduce((sum, e) => sum + e.n, 0) || 1;
     entries.forEach((e) => {
@@ -23106,6 +23156,7 @@ function resolvePending(st, groupKey) {
     }
     if (amounts === void 0) return;
     if (amounts) {
+      st.log = st.log.filter((e) => e.xpid !== pid);
       st.log.forEach((e) => {
         if (e.pid !== pid || !Array.isArray(e.ids)) return;
         let sum = 0;
@@ -23125,6 +23176,7 @@ function resolvePending(st, groupKey) {
         delete e.pid;
         delete e.ids;
       }
+      if (e.xpid === pid) delete e.xpid;
     });
     delete st.pend[pid];
     changed = true;
@@ -61062,7 +61114,8 @@ function digDataLoadState() {
   digDataState = {
     boosts: obj(s.boosts),
     detected: obj(s.detected),
-    mats: obj(s.mats),
+    mats: s.autoMatsV1 === true ? obj(s.mats) : {},
+    autoMatsV1: true,
     toolsOpen: s.toolsOpen === true
   };
   return digDataState;
@@ -61076,10 +61129,28 @@ function digDataSaveState() {
 function digBoostOn(id) {
   return digDataLoadState().boosts[id] === true;
 }
+var digAutoModeBusy = false;
+function digAutoMatMode(owner, name) {
+  if (digAutoModeBusy) return name === "Wood" ? "collect" : "buy";
+  digAutoModeBusy = true;
+  try {
+    const buyCost = getMaterialUnitCostCoins(name, "buy");
+    let collectCost;
+    if (name === "Crimstone") collectCost = digCrimstoneUnitCoins();
+    else collectCost = RESOURCE_DATA[name] ? esResourceCollectCoins(name) : getItemCostByName(name);
+    const dflt = name === "Wood" ? "collect" : "buy";
+    if (!(collectCost > 0) || !isFinite(collectCost) || !(buyCost > 0) || !isFinite(buyCost)) return dflt;
+    return collectCost <= buyCost ? "collect" : "buy";
+  } catch (e) {
+    return name === "Wood" ? "collect" : "buy";
+  } finally {
+    digAutoModeBusy = false;
+  }
+}
 function digMatMode(owner, name) {
   const v = digDataLoadState().mats[owner + ":" + name];
   if (v === "collect" || v === "buy") return v;
-  return name === "Wood" ? "collect" : "buy";
+  return digAutoMatMode(owner, name);
 }
 function digIconHtml(name) {
   const src = IMAGE_ICONS[name] || IMAGE_ICON_FALLBACK;
@@ -61293,13 +61364,24 @@ function digItemPrice(name, pct) {
     sellable: false
   };
 }
-function digTileProfit(name) {
+function digTileProfitInfo(name) {
   if (!name) return null;
   const cost = digToolUnitCoins("Sand Shovel");
   const price = digItemPrice(name, digPricePct()).price;
   if (!(price > 0)) return null;
   const perDig = name === "Sand" || name === "Crab" ? digYieldPerDig(name) : 1;
-  return price * perDig >= cost ? "profit" : "loss";
+  const value = price * perDig;
+  return {
+    state: value >= cost ? "profit" : "loss",
+    price,
+    perDig,
+    value,
+    cost
+  };
+}
+function digTileProfit(name) {
+  const info = digTileProfitInfo(name);
+  return info ? info.state : null;
 }
 function digBoostGridHtml() {
   return DIG_BOOST_DEFS.map((b) => `<div class="betty-boost-row dig-boost-card${digBoostOn(b.id) ? " is-on" : ""}">
@@ -61661,6 +61743,7 @@ function digWireDataPanel() {
     digDataLoadState().boosts[el.getAttribute("data-dig-boost")] = el.checked;
     digDataSaveState();
     renderDigDataPanel();
+    renderDigTreasurePanel();
   });
   card2.addEventListener("click", (ev) => {
     const t = ev.target && ev.target.closest ? ev.target.closest("#digToolCfgBtn, [data-dig-mat-mode], [data-dig-streak-pick], [data-dig-streak-edit]") : null;
@@ -61678,6 +61761,7 @@ function digWireDataPanel() {
     }
     digDataSaveState();
     renderDigDataPanel();
+    renderDigTreasurePanel();
   });
 }
 var POTION_NAMES = ["Bloom Boost", "Dream Drip", "Earth Essence", "Flower Power", "Silver Syrup", "Happy Hooch", "Organic Oasis"];
