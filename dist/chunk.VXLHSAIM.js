@@ -4506,7 +4506,7 @@ function sflbSwitchDisplayMode(mode) {
   document.querySelectorAll("#sflBubRange .sfl-bub-display-btn").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.sfldisplay === mode);
   });
-  const rerender = () => {
+  const rerender2 = () => {
     if (sflbState.displayMode !== mode) return;
     if (sflbState.tab === "prices" && sflbState.viewMode !== "list" && sflbState.priceCatalog) {
       const filtered = sflbApplyPriceFilter(sflbState.priceCatalog);
@@ -4514,9 +4514,9 @@ function sflbSwitchDisplayMode(mode) {
     }
   };
   if (mode === "currency") {
-    ensureExchangeRates().then(rerender);
+    ensureExchangeRates().then(rerender2);
   } else {
-    rerender();
+    rerender2();
   }
 }
 function sflbBuildListRows(catalog) {
@@ -22909,7 +22909,7 @@ function collectGroups(g, now) {
       if (!isActiveNode(patch, now)) return;
       const fruit = patch.fruit;
       if (!fruit || !fruit.name) return;
-      add(fruit.name, "key", id, numTs(fruit.harvestedAt), `${numTs(fruit.plantedAt)}|${numTs(fruit.harvestedAt)}`, void 0, void 0, void 0, false, fruit.baseDurationMs === void 0 && fruit.harvestedAt ? fruit.boostedTime : 0);
+      add(fruit.name, "key", id, numTs(fruit.harvestedAt), `${numTs(fruit.plantedAt)}|${numTs(fruit.harvestedAt)}`, void 0, void 0, "fruit", false, fruit.baseDurationMs === void 0 && fruit.harvestedAt ? fruit.boostedTime : 0);
     });
   }
   if (g.beehives && typeof g.beehives === "object") {
@@ -23044,6 +23044,7 @@ function dailyHarvestTrack(g, farmId) {
       lastAt: 0,
       est: false
     };
+    if (grp.kind) st.kind = grp.kind;
     st.total = Math.max(st.total, ids.length);
     const cNow = counterFor(g, groupKey, grp.noCounter);
     const cPrev = typeof rec.counters[groupKey] === "number" ? rec.counters[groupKey] : null;
@@ -23269,7 +23270,17 @@ function resolvePending(st, groupKey) {
   });
   return changed;
 }
+var yieldListener = null;
+function dailyHarvestOnYield(fn) {
+  yieldListener = typeof fn === "function" ? fn : null;
+}
 function dailyHarvestSetYield(groupKey, perNode, iconHtml2, nodeQty, econ, farmId) {
+  if (yieldListener) {
+    try {
+      yieldListener();
+    } catch (e) {
+    }
+  }
   const metaStore = freshStore();
   const metaFid = farmId ? String(farmId) : metaStore.__last || "";
   if (metaFarm !== metaFid) {
@@ -23312,6 +23323,42 @@ function dailyHarvestSetYield(groupKey, perNode, iconHtml2, nodeQty, econ, farmI
     }
   });
   if (changed) saveStore();
+}
+var LOG_NODE_GROUPS = ["Wood", "Stone", "Iron", "Gold", "Crimstone", "Oil"];
+var LOG_KIND_OF = {
+  crop: "crop",
+  fruit: "fruit",
+  greenhouse: "greenhouse"
+};
+function dailyHarvestTotals(farmId) {
+  const store = freshStore();
+  const rec = store[farmId ? String(farmId) : store.__last];
+  if (!rec || rec.day !== utcDay(Date.now()) || !rec.stats) return null;
+  const totals = {};
+  Object.keys(rec.stats).forEach((groupKey) => {
+    const st = rec.stats[groupKey];
+    if (!st || !Array.isArray(st.log) || !st.log.length) return;
+    const logKind = LOG_NODE_GROUPS.includes(groupKey) ? "node" : LOG_KIND_OF[st.kind];
+    if (!logKind) return;
+    const per = yieldMeta[groupKey] && yieldMeta[groupKey].per || 0;
+    let amount = typeof st.dropped === "number" ? st.dropped : 0;
+    st.log.forEach((e) => {
+      if (typeof e.y === "number") amount += e.y;
+      else if (per) amount += e.n * per;
+    });
+    amount = Math.round(amount * 100) / 100;
+    if (amount > 0 && isFinite(amount)) totals[groupKey] = {
+      k: logKind,
+      a: amount
+    };
+  });
+  return {
+    day: rec.day,
+    totals
+  };
+}
+function store0Last() {
+  return freshStore().__last || "";
 }
 var KIND_META = {
   wood: {
@@ -23496,13 +23543,24 @@ function openDailyPop(badgeEl) {
   const safeNoun = escapeAttr(noun);
   const bodyText = kind === "animal" ? `Your ${safeNoun} produce has been ${meta.action} ${times} today. A round is counted once all of your ${safeNoun} animals (${info.need} of ${info.total}) have been ${meta.action}.` : `Your ${safeNoun} ${meta.unit} have been ${meta.action} ${times} today. A round is counted once all of them (${info.need} of ${info.total}) have been ${meta.action}.`;
   const now = Date.now();
-  const html = `<div class="dh-pop-back" id="dailyHarvestPop"><div class="dh-pop guro-frame dh-${kind}" role="dialog" aria-modal="true"><div class="dh-pop-top"><span class="dh-pop-top-title">Daily Harvest \xB7 UTC</span><button type="button" class="dh-pop-x" data-dh-close="1" aria-label="Close"></button></div><div class="dh-pop-head"><span class="dh-pop-icon guro-frame dh-icon">${iconHtml2}</span><div class="dh-pop-headtext guro-frame"><div class="dh-pop-title dh-pop-title-solo">${escapeAttr(noun)}</div></div><span class="dh-pop-ord guro-frame">${info.estimated ? "~" : ""}${info.rounds}x</span></div><div class="dh-pop-main guro-frame">${meta.verb} <b>${times}</b> today</div><p class="dh-pop-text">${bodyText}</p><div class="dh-pop-stats guro-frame"><div class="dh-stat"><span>Accuracy</span><b>${info.estimated ? "Estimated" : "Exact"}</b></div><div class="dh-stat"><span>Next round</span><b>${info.nextProgress} / ${info.need}</b></div><div class="dh-stat"><span>Last completed</span><b>${formatClock(info.lastAt)}</b></div><div class="dh-stat"><span>Resets in</span><b>${formatResetIn(now)}</b></div></div>${logHtml(groupKey, info)}${info.estimated ? `<p class="dh-pop-text dh-pop-note">Includes harvests made between syncs, estimated from your lifetime activity counters.</p>` : ""}</div></div>`;
+  const html = `<div class="dh-pop-back" id="dailyHarvestPop"><div class="dh-pop guro-frame dh-${kind}" role="dialog" aria-modal="true"><div class="dh-pop-top"><span class="dh-pop-top-title">Daily Harvest \xB7 UTC</span><span class="dh-pop-top-acts"><button type="button" class="dh-pop-log-btn" data-dh-log="${escapeAttr(badgeEl.getAttribute("data-dh-farm") || store0Last())}">Log</button><button type="button" class="dh-pop-x" data-dh-close="1" aria-label="Close"></button></span></div><div class="dh-pop-head"><span class="dh-pop-icon guro-frame dh-icon">${iconHtml2}</span><div class="dh-pop-headtext guro-frame"><div class="dh-pop-title dh-pop-title-solo">${escapeAttr(noun)}</div></div><span class="dh-pop-ord guro-frame">${info.estimated ? "~" : ""}${info.rounds}x</span></div><div class="dh-pop-main guro-frame">${meta.verb} <b>${times}</b> today</div><p class="dh-pop-text">${bodyText}</p><div class="dh-pop-stats guro-frame"><div class="dh-stat"><span>Accuracy</span><b>${info.estimated ? "Estimated" : "Exact"}</b></div><div class="dh-stat"><span>Next round</span><b>${info.nextProgress} / ${info.need}</b></div><div class="dh-stat"><span>Last completed</span><b>${formatClock(info.lastAt)}</b></div><div class="dh-stat"><span>Resets in</span><b>${formatResetIn(now)}</b></div></div>${logHtml(groupKey, info)}${info.estimated ? `<p class="dh-pop-text dh-pop-note">Includes harvests made between syncs, estimated from your lifetime activity counters.</p>` : ""}</div></div>`;
   document.body.insertAdjacentHTML("beforeend", html);
   document.documentElement.classList.add("dh-pop-lock");
 }
 document.addEventListener("click", (e) => {
   const target = e.target;
   if (!target || !target.closest) return;
+  const logBtn = target.closest("[data-dh-log]");
+  if (logBtn) {
+    e.stopPropagation();
+    e.preventDefault();
+    document.dispatchEvent(new CustomEvent("dh-open-log", {
+      detail: {
+        farm: logBtn.getAttribute("data-dh-log") || ""
+      }
+    }));
+    return;
+  }
   if (target.closest("[data-dh-close]")) {
     e.stopPropagation();
     closeDailyPop();
@@ -23526,6 +23584,322 @@ document.addEventListener("keydown", (e) => {
     e.stopPropagation();
     openDailyPop(e.target);
   }
+}, true);
+
+// src/harvest_log.js
+var HARVEST_LOG_BASE = "https://sfl-harvest-log.bossweki.workers.dev";
+var SENT_KEY = "hl_hlog_sent_v1";
+var SETTLE_MS = 1200;
+var FALLBACK_MS = 6e3;
+var REQUEST_TIMEOUT_MS = 8e3;
+var NODE_ORDER = ["Wood", "Stone", "Iron", "Gold", "Crimstone", "Oil"];
+var KIND_ORDER = {
+  node: 0,
+  crop: 1,
+  fruit: 2,
+  greenhouse: 3
+};
+var pendingFarm = "";
+var settleTimer = null;
+var fallbackTimer = null;
+function loadSent() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(SENT_KEY) || "null");
+    return raw && typeof raw === "object" ? raw : {};
+  } catch (e) {
+    return {};
+  }
+}
+function saveSent(obj) {
+  try {
+    localStorage.setItem(SENT_KEY, JSON.stringify(obj));
+  } catch (e) {
+  }
+}
+function fetchWithTimeout(url, opts) {
+  const ctrl = typeof AbortController === "function" ? new AbortController() : null;
+  const timer = ctrl ? setTimeout(() => ctrl.abort(), REQUEST_TIMEOUT_MS) : null;
+  return fetch(url, Object.assign({}, opts, ctrl ? {
+    signal: ctrl.signal
+  } : {})).finally(() => {
+    if (timer) clearTimeout(timer);
+  });
+}
+var FARM_KEY = "hl_hlog_farm";
+var FARM_RE = /^\d{1,20}$/;
+function harvestLogSetFarm(id) {
+  id = String(id == null ? "" : id).trim();
+  if (!FARM_RE.test(id)) return;
+  try {
+    localStorage.setItem(FARM_KEY, id);
+  } catch (e) {
+  }
+}
+function currentFarmId() {
+  const tries = [];
+  try {
+    tries.push(localStorage.getItem("hl_farm_panel_id"));
+    tries.push(localStorage.getItem(FARM_KEY));
+  } catch (e) {
+  }
+  const input = document.getElementById("farmPanelIdInput");
+  tries.push(input ? input.value : "");
+  for (const t of tries) {
+    const id = String(t || "").trim();
+    if (FARM_RE.test(id)) return id;
+  }
+  return "";
+}
+async function pushTotals(trackKey) {
+  const farmId = currentFarmId();
+  if (!farmId) return;
+  const data = dailyHarvestTotals(trackKey);
+  if (!data || !Object.keys(data.totals).length) return;
+  const sig = JSON.stringify([farmId, data.day, data.totals]);
+  const sent = loadSent();
+  if (sent.sig === sig) return;
+  const res = await fetchWithTimeout(HARVEST_LOG_BASE + "/log", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      farmId,
+      day: data.day,
+      totals: data.totals
+    })
+  });
+  if (res.status < 500) saveSent({
+    sig
+  });
+}
+function flush() {
+  clearTimeout(settleTimer);
+  clearTimeout(fallbackTimer);
+  settleTimer = null;
+  fallbackTimer = null;
+  const farmId = pendingFarm;
+  pendingFarm = "";
+  if (!farmId) return;
+  pushTotals(farmId).catch(() => {
+  });
+}
+function harvestLogArm(farmId) {
+  if (!farmId) return;
+  pendingFarm = String(farmId);
+  clearTimeout(settleTimer);
+  clearTimeout(fallbackTimer);
+  fallbackTimer = setTimeout(flush, FALLBACK_MS);
+}
+dailyHarvestOnYield(() => {
+  if (!pendingFarm) return;
+  clearTimeout(settleTimer);
+  settleTimer = setTimeout(flush, SETTLE_MS);
+});
+function esc(s) {
+  return String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+function fmtAmount(n) {
+  return n.toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+}
+function dateLabel(day) {
+  return (/* @__PURE__ */ new Date(day + "T00:00:00Z")).toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC"
+  });
+}
+function sortedNames(totals) {
+  return Object.keys(totals).sort((a, b) => {
+    const ka = KIND_ORDER[totals[a].k] ?? 9;
+    const kb = KIND_ORDER[totals[b].k] ?? 9;
+    if (ka !== kb) return ka - kb;
+    if (ka === 0) return NODE_ORDER.indexOf(a) - NODE_ORDER.indexOf(b);
+    return a.localeCompare(b);
+  });
+}
+function dayHtml(entry, number) {
+  const rows = sortedNames(entry.totals).map((name) => `<div class="dh-hlog-row"><span class="dh-hlog-amt">\xD7${fmtAmount(entry.totals[name].a)}</span><span class="dh-hlog-ico">${getIcon(name)}</span><span class="dh-hlog-name">${esc(name)}</span></div>`).join("");
+  return `<div class="dh-hlog-day guro-frame"><div class="dh-hlog-dayhead"><span class="dh-hlog-no">#${number}</span><span class="dh-hlog-date">${dateLabel(entry.day)}</span></div>${rows}</div>`;
+}
+function mergeLocalToday(days, farmId) {
+  const local = dailyHarvestTotals(farmId);
+  if (!local || !Object.keys(local.totals).length) return days;
+  const out = days.map((d) => ({
+    day: d.day,
+    totals: Object.assign({}, d.totals)
+  }));
+  let today = out.find((d) => d.day === local.day);
+  if (!today) {
+    today = {
+      day: local.day,
+      totals: {}
+    };
+    out.push(today);
+  }
+  Object.keys(local.totals).forEach((name) => {
+    const cur = today.totals[name];
+    if (!cur || local.totals[name].a > cur.a) today.totals[name] = local.totals[name];
+  });
+  return out;
+}
+var CACHE_KEY = "hl_hlog_cache_v1";
+var CACHE_FRESH_MS = 6e4;
+var CACHE_MAX_DAYS = 400;
+function loadCache(farmId) {
+  try {
+    const c = JSON.parse(localStorage.getItem(CACHE_KEY) || "null");
+    if (c && c.farm === farmId && c.days && typeof c.days === "object") return c;
+  } catch (e) {
+  }
+  return {
+    farm: farmId,
+    days: {},
+    at: 0
+  };
+}
+function saveCache(c) {
+  const keys = Object.keys(c.days).sort();
+  while (keys.length > CACHE_MAX_DAYS) delete c.days[keys.shift()];
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(c));
+  } catch (e) {
+  }
+}
+async function fetchDays(farmId) {
+  const url = HARVEST_LOG_BASE + "/log?farm=" + encodeURIComponent(farmId);
+  const res = await fetchWithTimeout(url, {
+    cache: "no-store"
+  });
+  if (!res.ok) throw new Error("bad_response_" + res.status);
+  const json = await res.json();
+  return Array.isArray(json.days) ? json.days : [];
+}
+async function refreshCache(farmId, cache) {
+  const days = await fetchDays(farmId);
+  let changed = false;
+  days.forEach((d) => {
+    if (!d || !d.day || !d.totals) return;
+    const old = JSON.stringify(cache.days[d.day] || null);
+    const nu = JSON.stringify(d.totals);
+    if (old !== nu) {
+      cache.days[d.day] = d.totals;
+      changed = true;
+    }
+  });
+  cache.at = Date.now();
+  saveCache(cache);
+  return changed;
+}
+function cacheToList(cache) {
+  return Object.keys(cache.days).map((day) => ({
+    day,
+    totals: cache.days[day]
+  }));
+}
+function ensureLayer() {
+  let layer = document.getElementById("dhLogLayer");
+  if (layer) return layer;
+  layer = document.createElement("div");
+  layer.id = "dhLogLayer";
+  layer.innerHTML = `<div class="dh-log-outer guro-frame" role="dialog" aria-modal="true"><button type="button" class="guro-reward-close" id="dhLogClose" aria-label="Close"><img src="${ICON_DATA["close.png"]}" alt="Close"></button><div class="dh-hlog-title">Daily Harvest History Log</div><div class="dh-hlog-sub">Total harvested per UTC day, newest first. Saved from your Farm ID syncs.</div><div class="dh-hlog-body" id="dhLogBody"></div></div>`;
+  document.body.appendChild(layer);
+  layer.addEventListener("click", (ev) => {
+    if (ev.target === layer || ev.target.closest("#dhLogClose")) closeLog();
+    if (ev.target.closest("[data-dh-more]")) {
+      showCount += PAGE_SIZE;
+      rerender();
+      return;
+    }
+    if (ev.target.closest("[data-dh-retry]")) openLog(layer.getAttribute("data-farm") || "");
+  });
+  return layer;
+}
+function closeLog() {
+  const layer = document.getElementById("dhLogLayer");
+  if (layer) layer.classList.remove("show");
+}
+var openToken = 0;
+var renderedSig = "";
+var PAGE_SIZE = 30;
+var showCount = PAGE_SIZE;
+var lastList = [];
+var lastNotice = "";
+function renderList(body, list, notice) {
+  lastList = list;
+  lastNotice = notice;
+  if (!list.length) return false;
+  const sig = JSON.stringify([notice, showCount, list]);
+  if (sig === renderedSig && body.childElementCount) return true;
+  const asc = list.slice().sort((a, b) => a.day < b.day ? -1 : a.day > b.day ? 1 : 0);
+  const cards = asc.map((entry, i) => dayHtml(entry, i + 1)).reverse();
+  const more = cards.length > showCount ? `<div class="dh-hlog-more"><button type="button" class="dh-pop-log-btn" data-dh-more="1">Show more (${cards.length - showCount} older)</button></div>` : "";
+  body.innerHTML = (notice ? `<div class="dh-hlog-msg">${notice}</div>` : "") + cards.slice(0, showCount).join("") + more;
+  renderedSig = sig;
+  return true;
+}
+function rerender() {
+  const body = document.getElementById("dhLogBody");
+  if (!body) return;
+  const top = body.scrollTop;
+  renderList(body, lastList, lastNotice);
+  body.scrollTop = top;
+}
+async function openLog(trackKey) {
+  const farmId = currentFarmId();
+  const layer = ensureLayer();
+  const body = document.getElementById("dhLogBody");
+  layer.setAttribute("data-farm", trackKey || "");
+  layer.classList.add("show");
+  if (!farmId) {
+    renderedSig = "";
+    body.innerHTML = `<div class="dh-hlog-msg">Sync your Farm ID first to see your history.</div>`;
+    return;
+  }
+  const token = ++openToken;
+  showCount = PAGE_SIZE;
+  body.scrollTop = 0;
+  const cache = loadCache(farmId);
+  const hasCache = Object.keys(cache.days).length > 0;
+  if (hasCache) {
+    renderList(body, mergeLocalToday(cacheToList(cache), trackKey), "");
+    if (Date.now() - cache.at < CACHE_FRESH_MS) return;
+  } else {
+    renderedSig = "";
+    body.innerHTML = `<div class="dh-hlog-msg">Loading\u2026</div>`;
+  }
+  try {
+    await refreshCache(farmId, cache);
+  } catch (e) {
+    if (token !== openToken) return;
+    if (hasCache) return;
+    const local = mergeLocalToday([], trackKey);
+    if (!renderList(body, local, "Offline: showing today only.")) {
+      renderedSig = "";
+      body.innerHTML = `<div class="dh-hlog-msg">Couldn't load history. Check your connection.<br><button type="button" class="dh-pop-log-btn" data-dh-retry="1">Retry</button></div>`;
+    }
+    return;
+  }
+  if (token !== openToken) return;
+  const list = mergeLocalToday(cacheToList(cache), trackKey);
+  if (!renderList(body, list, "")) {
+    renderedSig = "";
+    body.innerHTML = `<div class="dh-hlog-msg">No history yet. Sync your farm to start recording.</div>`;
+  }
+}
+document.addEventListener("dh-open-log", (ev) => {
+  openLog(ev && ev.detail && ev.detail.farm ? String(ev.detail.farm) : "");
+});
+window.addEventListener("keydown", (ev) => {
+  if (ev.key !== "Escape") return;
+  const layer = document.getElementById("dhLogLayer");
+  if (!layer || !layer.classList.contains("show")) return;
+  ev.stopPropagation();
+  closeLog();
 }, true);
 
 // src/inprogress.js
@@ -28886,7 +29260,11 @@ function farmPanelSaveGameState(json, isFullSync) {
   farmPanelGameState = json || null;
   if (isFullSync) farmPanelStateIsCached = false;
   try {
-    if (json) dailyHarvestTrack(farmSyncExtractGameState(json), json.id || farmPanelGetLastInfo().id);
+    if (json) {
+      const trackFarmId = json.id || farmPanelGetLastInfo().id;
+      dailyHarvestTrack(farmSyncExtractGameState(json), trackFarmId);
+      if (isFullSync) harvestLogArm(trackFarmId);
+    }
   } catch (e) {
   }
   farmPanelHoneySnapshotMs = Date.now();
@@ -42410,7 +42788,7 @@ function describeSyncResult(result, isImport) {
   return `${verb} ${result.updated} of ${result.total} live prices \u{1F4B0}`;
 }
 var FARM_SYNC_FETCH_TIMEOUT_MS = 2e4;
-async function fetchWithTimeout(url, options, timeoutMs) {
+async function fetchWithTimeout2(url, options, timeoutMs) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs || FARM_SYNC_FETCH_TIMEOUT_MS);
   try {
@@ -42425,7 +42803,7 @@ async function fetchWithTimeout(url, options, timeoutMs) {
   }
 }
 async function fetchCommunityFarmDataOnce(farmId) {
-  const res = await fetchWithTimeout(SFL_COMMUNITY_API_BASE + encodeURIComponent(farmId), {
+  const res = await fetchWithTimeout2(SFL_COMMUNITY_API_BASE + encodeURIComponent(farmId), {
     cache: "no-store"
   });
   let json = null;
@@ -45655,6 +46033,7 @@ async function performFarmPanelSync(farmId) {
     if (affectionToolsResult.changed) touchAnimals = true;
     const budFertSpiceCrowMatched = !!(budResult.matched || fertResult.matched || spiceResult.matched || crowAoeResult.changed);
     const anythingChanged = JSON.stringify(selectedBoosts) !== prevSelectedBoostsSig || JSON.stringify(selectedSkills) !== prevSelectedSkillsSig || feePercent !== prevFeePercent || plotsResult.touched || !!budResult.matched || !!fertResult.matched || !!spiceResult.matched || !!crowAoeResult.changed;
+    harvestLogSetFarm(farmId);
     farmPanelSaveGameState(mergedFreshState, true);
     if (typeof invalidateCostCache === "function") invalidateCostCache();
     if (typeof syncCookingCountsFromInventory === "function") syncCookingCountsFromInventory(farmPanelGameState);

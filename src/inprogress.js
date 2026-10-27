@@ -8,6 +8,8 @@ import { $, hiveClockText, cookFoodIcon, getBoostIcon, getIcon, renderAnimalCard
 import { potionTrackFromState, digStreakTrackFromState } from "./calculator.js";
 import { dailyHarvestTrack, dailyHarvestBadgeHtml, dailyHarvestSetYield, dailyHarvestSetResolver } from "./daily_harvest.js";
 
+import { harvestLogArm } from "./harvest_log.js";
+
 export function farmPanelDetectNodeTier(resourceName, node) {
   const tiers = RESOURCE_NODE_TIERS[resourceName];
   if (!tiers) return null;
@@ -5436,7 +5438,11 @@ export function farmPanelSaveGameState(json, isFullSync) {
   farmPanelGameState = json || null;
   if (isFullSync) farmPanelStateIsCached = false;
   try {
-    if (json) dailyHarvestTrack(farmSyncExtractGameState(json), json.id || farmPanelGetLastInfo().id);
+    if (json) {
+      const trackFarmId = json.id || farmPanelGetLastInfo().id;
+      dailyHarvestTrack(farmSyncExtractGameState(json), trackFarmId);
+      if (isFullSync) harvestLogArm(trackFarmId);
+    }
   } catch (e) {}
   farmPanelHoneySnapshotMs = Date.now();
   const toStore = farmPanelGameState;

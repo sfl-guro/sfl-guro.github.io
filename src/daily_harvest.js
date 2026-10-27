@@ -337,7 +337,7 @@ function collectGroups(g, now) {
       if (!isActiveNode(patch, now)) return;
       const fruit = patch.fruit;
       if (!fruit || !fruit.name) return;
-      add(fruit.name, "key", id, numTs(fruit.harvestedAt), `${numTs(fruit.plantedAt)}|${numTs(fruit.harvestedAt)}`, undefined, undefined, undefined, false, fruit.baseDurationMs === undefined && fruit.harvestedAt ? fruit.boostedTime : 0);
+      add(fruit.name, "key", id, numTs(fruit.harvestedAt), `${numTs(fruit.plantedAt)}|${numTs(fruit.harvestedAt)}`, undefined, undefined, "fruit", false, fruit.baseDurationMs === undefined && fruit.harvestedAt ? fruit.boostedTime : 0);
     });
   }
   if (g.beehives && typeof g.beehives === "object") {
@@ -477,6 +477,7 @@ export function dailyHarvestTrack(g, farmId) {
       lastAt: 0,
       est: false
     };
+    if (grp.kind) st.kind = grp.kind;
     st.total = Math.max(st.total, ids.length);
     const cNow = counterFor(g, groupKey, grp.noCounter);
     const cPrev = typeof rec.counters[groupKey] === "number" ? rec.counters[groupKey] : null;
@@ -702,7 +703,18 @@ function resolvePending(st, groupKey) {
   return changed;
 }
 
+let yieldListener = null;
+
+export function dailyHarvestOnYield(fn) {
+  yieldListener = typeof fn === "function" ? fn : null;
+}
+
 export function dailyHarvestSetYield(groupKey, perNode, iconHtml, nodeQty, econ, farmId) {
+  if (yieldListener) {
+    try {
+      yieldListener();
+    } catch (e) {}
+  }
   const metaStore = freshStore();
   const metaFid = farmId ? String(farmId) : metaStore.__last || "";
   if (metaFarm !== metaFid) {
@@ -745,6 +757,45 @@ export function dailyHarvestSetYield(groupKey, perNode, iconHtml, nodeQty, econ,
     }
   });
   if (changed) saveStore();
+}
+
+const LOG_NODE_GROUPS = [ "Wood", "Stone", "Iron", "Gold", "Crimstone", "Oil" ];
+
+const LOG_KIND_OF = {
+  crop: "crop",
+  fruit: "fruit",
+  greenhouse: "greenhouse"
+};
+
+export function dailyHarvestTotals(farmId) {
+  const store = freshStore();
+  const rec = store[farmId ? String(farmId) : store.__last];
+  if (!rec || rec.day !== utcDay(Date.now()) || !rec.stats) return null;
+  const totals = {};
+  Object.keys(rec.stats).forEach(groupKey => {
+    const st = rec.stats[groupKey];
+    if (!st || !Array.isArray(st.log) || !st.log.length) return;
+    const logKind = LOG_NODE_GROUPS.includes(groupKey) ? "node" : LOG_KIND_OF[st.kind];
+    if (!logKind) return;
+    const per = yieldMeta[groupKey] && yieldMeta[groupKey].per || 0;
+    let amount = typeof st.dropped === "number" ? st.dropped : 0;
+    st.log.forEach(e => {
+      if (typeof e.y === "number") amount += e.y; else if (per) amount += e.n * per;
+    });
+    amount = Math.round(amount * 100) / 100;
+    if (amount > 0 && isFinite(amount)) totals[groupKey] = {
+      k: logKind,
+      a: amount
+    };
+  });
+  return {
+    day: rec.day,
+    totals: totals
+  };
+}
+
+function store0Last() {
+  return freshStore().__last || "";
 }
 
 export function dailyOrdinal(n) {
@@ -953,7 +1004,7 @@ function openDailyPop(badgeEl) {
   const safeNoun = escapeAttr(noun);
   const bodyText = kind === "animal" ? `Your ${safeNoun} produce has been ${meta.action} ${times} today. A round is counted once all of your ${safeNoun} animals (${info.need} of ${info.total}) have been ${meta.action}.` : `Your ${safeNoun} ${meta.unit} have been ${meta.action} ${times} today. A round is counted once all of them (${info.need} of ${info.total}) have been ${meta.action}.`;
   const now = Date.now();
-  const html = `<div class="dh-pop-back" id="dailyHarvestPop"><div class="dh-pop guro-frame dh-${kind}" role="dialog" aria-modal="true"><div class="dh-pop-top"><span class="dh-pop-top-title">Daily Harvest · UTC</span><button type="button" class="dh-pop-x" data-dh-close="1" aria-label="Close"></button></div><div class="dh-pop-head"><span class="dh-pop-icon guro-frame dh-icon">${iconHtml}</span><div class="dh-pop-headtext guro-frame"><div class="dh-pop-title dh-pop-title-solo">${escapeAttr(noun)}</div></div><span class="dh-pop-ord guro-frame">${info.estimated ? "~" : ""}${info.rounds}x</span></div><div class="dh-pop-main guro-frame">${meta.verb} <b>${times}</b> today</div><p class="dh-pop-text">${bodyText}</p><div class="dh-pop-stats guro-frame"><div class="dh-stat"><span>Accuracy</span><b>${info.estimated ? "Estimated" : "Exact"}</b></div><div class="dh-stat"><span>Next round</span><b>${info.nextProgress} / ${info.need}</b></div><div class="dh-stat"><span>Last completed</span><b>${formatClock(info.lastAt)}</b></div><div class="dh-stat"><span>Resets in</span><b>${formatResetIn(now)}</b></div></div>${logHtml(groupKey, info)}${info.estimated ? `<p class="dh-pop-text dh-pop-note">Includes harvests made between syncs, estimated from your lifetime activity counters.</p>` : ""}</div></div>`;
+  const html = `<div class="dh-pop-back" id="dailyHarvestPop"><div class="dh-pop guro-frame dh-${kind}" role="dialog" aria-modal="true"><div class="dh-pop-top"><span class="dh-pop-top-title">Daily Harvest · UTC</span><span class="dh-pop-top-acts"><button type="button" class="dh-pop-log-btn" data-dh-log="${escapeAttr(badgeEl.getAttribute("data-dh-farm") || store0Last())}">Log</button><button type="button" class="dh-pop-x" data-dh-close="1" aria-label="Close"></button></span></div><div class="dh-pop-head"><span class="dh-pop-icon guro-frame dh-icon">${iconHtml}</span><div class="dh-pop-headtext guro-frame"><div class="dh-pop-title dh-pop-title-solo">${escapeAttr(noun)}</div></div><span class="dh-pop-ord guro-frame">${info.estimated ? "~" : ""}${info.rounds}x</span></div><div class="dh-pop-main guro-frame">${meta.verb} <b>${times}</b> today</div><p class="dh-pop-text">${bodyText}</p><div class="dh-pop-stats guro-frame"><div class="dh-stat"><span>Accuracy</span><b>${info.estimated ? "Estimated" : "Exact"}</b></div><div class="dh-stat"><span>Next round</span><b>${info.nextProgress} / ${info.need}</b></div><div class="dh-stat"><span>Last completed</span><b>${formatClock(info.lastAt)}</b></div><div class="dh-stat"><span>Resets in</span><b>${formatResetIn(now)}</b></div></div>${logHtml(groupKey, info)}${info.estimated ? `<p class="dh-pop-text dh-pop-note">Includes harvests made between syncs, estimated from your lifetime activity counters.</p>` : ""}</div></div>`;
   document.body.insertAdjacentHTML("beforeend", html);
   document.documentElement.classList.add("dh-pop-lock");
 }
@@ -961,6 +1012,17 @@ function openDailyPop(badgeEl) {
 document.addEventListener("click", e => {
   const target = e.target;
   if (!target || !target.closest) return;
+  const logBtn = target.closest("[data-dh-log]");
+  if (logBtn) {
+    e.stopPropagation();
+    e.preventDefault();
+    document.dispatchEvent(new CustomEvent("dh-open-log", {
+      detail: {
+        farm: logBtn.getAttribute("data-dh-log") || ""
+      }
+    }));
+    return;
+  }
   if (target.closest("[data-dh-close]")) {
     e.stopPropagation();
     closeDailyPop();
