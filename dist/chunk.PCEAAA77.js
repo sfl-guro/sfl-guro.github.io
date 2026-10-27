@@ -5938,6 +5938,7 @@ var factionMarksScope = "today";
 var factionMarksCostMode = "buy";
 var factionMarksCalcMode = "manual";
 var factionMarksAutoBudget = 0;
+var factionMarksAutoTarget = "kitchen";
 var factionMarksAutoTimer = null;
 function factionMarksUnitCost(name) {
   try {
@@ -6173,6 +6174,11 @@ function factionMarksBodyHtml() {
     const trophyHtml = f === factionChampionFaction ? `<img class="fdm-champ-trophy" src="${FACTION_LEADERBOARD_ICON_SRC}" alt="Champion">` : "";
     return `<button type="button" class="fd-lb-tab fdm-faction-tab${f === st.faction ? " active" : ""}" data-act="faction" data-faction="${f}">${bannerHtml} ${escapeHtml(factionLeaderboardSingularLabel(f))}${trophyHtml}</button>`;
   }).join("");
+  const targetHtml = factionMarksCalcMode === "auto" ? `<div class="fdm-pair fdm-pair-3 fdm-target-pair">
+      <button type="button" data-act="autotarget" data-target="both" class="fd-lb-tab${factionMarksAutoTarget === "both" ? " active" : ""}">Both</button>
+      <button type="button" data-act="autotarget" data-target="kitchen" class="fd-lb-tab${factionMarksAutoTarget === "kitchen" ? " active" : ""}">Kitchen</button>
+      <button type="button" data-act="autotarget" data-target="pet" class="fd-lb-tab${factionMarksAutoTarget === "pet" ? " active" : ""}">Pet</button>
+    </div>` : "";
   const modeHtml = `<div class="fd-container fdm-gap">
     <div class="fd-container-head"><span class="fd-container-title">Calc Mode</span></div>
     <div class="fdm-pair">
@@ -6194,6 +6200,7 @@ function factionMarksBodyHtml() {
       </div>
       <button type="button" data-act="autoedit" class="fdm-budget-box guro-frame${factionMarksCalcMode === "auto" && factionMarksAutoBudget > 0 ? " has-value" : ""}" aria-label="Auto budget">${factionMarksCalcMode === "auto" && factionMarksAutoBudget > 0 ? `<span>${fmtInt(factionMarksAutoBudget)}</span>${factionMarksCostIconHtml()}` : `<span class="fdm-budget-empty">\u2014</span>`}</button>
     </div>
+    ${targetHtml}
   </div>`;
   const weekNote = calc.week ? `<div class="fd-week-info">Week view repeats your plan on each of the ${FACTION_MARKS_WEEK_DAYS} days, starting every day from 0 deliveries.</div>` : "";
   const allMarks = calc.kitchen.marks + calc.pet.marks;
@@ -6235,6 +6242,12 @@ function factionMarksAutoSolve(budget) {
   const perDay = budget / days;
   const groups = [];
   const collect = (kind, reqs, rows) => {
+    if (factionMarksAutoTarget !== "both" && factionMarksAutoTarget !== kind) {
+      reqs.forEach((r) => {
+        r.deliver = 0;
+      });
+      return;
+    }
     reqs.forEach((r, i) => {
       const row3 = rows[i];
       const unit = factionMarksUnitCost(r.item) * r.amount;
@@ -6472,6 +6485,11 @@ function factionMarksHandleClick(e) {
     factionMarksAutoReapply();
   } else if (act === "cost") {
     factionMarksCostMode = btn.dataset.cost === "collect" ? "collect" : "buy";
+    factionMarksAutoReapply();
+  } else if (act === "autotarget") {
+    const target = btn.dataset.target;
+    if (target === factionMarksAutoTarget) return;
+    factionMarksAutoTarget = target === "pet" || target === "both" ? target : "kitchen";
     factionMarksAutoReapply();
   } else if (act === "calcmode") {
     if (btn.dataset.calc === "auto") {
