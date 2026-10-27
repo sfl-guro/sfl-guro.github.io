@@ -15379,6 +15379,9 @@ body.app-dark:not(.sfl-theme) .dh-hlog-dayhead{ background:linear-gradient(90deg
 .dh-hlog-more{ text-align:center; padding:6px 0 10px; }
 
 .fdm-calc-row{ margin-top:8px; }
+.fdm-pair-3{ grid-template-columns:repeat(3,1fr); }
+.fdm-target-pair{ margin-top:8px; margin-bottom:0; }
+.fdm-target-pair .fd-lb-tab{ padding:6px 2px; font-size:8px; letter-spacing:0; white-space:nowrap; overflow:hidden; }
 .fdm-calc-row .fdm-calc-pair{ flex:1 1 0; }
 .fdm-budget-box{ flex:0 0 auto; min-width:78px; box-sizing:border-box; display:inline-flex; align-items:center; justify-content:center; gap:4px; padding:6px 8px; font-size:12px; font-weight:800; font-family:inherit; background:rgba(255,255,255,.55); color:inherit; cursor:pointer; }
 .fdm-budget-box.has-value{ background:var(--sun-deep,#8b5a2b); color:#fff; }
