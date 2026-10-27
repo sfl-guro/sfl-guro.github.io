@@ -81,7 +81,8 @@ function currentFarmId() {
 }
 
 async function pushTotals(trackKey) {
-  const farmId = currentFarmId();
+  const keyed = String(trackKey || "").trim();
+  const farmId = FARM_RE.test(keyed) ? keyed : currentFarmId();
   if (!farmId) return;
   const data = dailyHarvestTotals(trackKey);
   if (!data || !Object.keys(data.totals).length) return;
