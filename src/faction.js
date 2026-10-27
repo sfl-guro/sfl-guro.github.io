@@ -787,6 +787,7 @@ function factionChampionApply() {
   const st = factionMarksState;
   if (!st || st.championTouched) return;
   st.champion = !!factionChampionFaction && factionChampionFaction === st.faction;
+  factionMarksAutoReapply();
 }
 
 async function factionChampionEnsure() {
@@ -858,6 +859,12 @@ let factionMarksState = null;
 let factionMarksScope = "today";
 
 let factionMarksCostMode = "buy";
+
+let factionMarksCalcMode = "manual";
+
+let factionMarksAutoBudget = 0;
+
+let factionMarksAutoTimer = null;
 
 function factionMarksUnitCost(name) {
   try {
@@ -1120,6 +1127,14 @@ function factionMarksBodyHtml() {
         <button type="button" data-act="cost" data-cost="buy" class="fd-lb-tab${factionMarksCostMode === "buy" ? " active" : ""}">Buy</button>
       </div>
     </div>
+    <div class="fdm-inline fdm-calc-row">
+      <div class="fd-section-label">Calculator</div>
+      <div class="fdm-pair fdm-calc-pair">
+        <button type="button" data-act="calcmode" data-calc="manual" class="fd-lb-tab${factionMarksCalcMode === "manual" ? " active" : ""}">Manual</button>
+        <button type="button" data-act="calcmode" data-calc="auto" class="fd-lb-tab${factionMarksCalcMode === "auto" ? " active" : ""}">Auto</button>
+      </div>
+      <button type="button" data-act="autoedit" class="fdm-budget-box guro-frame${factionMarksCalcMode === "auto" && factionMarksAutoBudget > 0 ? " has-value" : ""}" aria-label="Auto budget">${factionMarksCalcMode === "auto" && factionMarksAutoBudget > 0 ? `<span>${fmtInt(factionMarksAutoBudget)}</span>${factionMarksCostIconHtml()}` : `<span class="fdm-budget-empty">—</span>`}</button>
+    </div>
   </div>`;
   const weekNote = calc.week ? `<div class="fd-week-info">Week view repeats your plan on each of the ${FACTION_MARKS_WEEK_DAYS} days, starting every day from 0 deliveries.</div>` : "";
   const allMarks = calc.kitchen.marks + calc.pet.marks;
@@ -1156,6 +1171,243 @@ function factionMarksRender() {
   factionChampionEnsure();
 }
 
+function factionMarksAutoSolve(budget) {
+  const st = factionMarksState;
+  const calc = factionMarksCompute();
+  const days = calc.days;
+  const perDay = budget / days;
+  const groups = [];
+  const collect = (kind, reqs, rows) => {
+    reqs.forEach((r, i) => {
+      const row = rows[i];
+      const unit = factionMarksUnitCost(r.item) * r.amount;
+      const base = row.base;
+      const mult = row.mult;
+      let cap = 999;
+      if (unit > 0) cap = Math.min(cap, Math.floor(perDay / unit + 1e-9));
+      else cap = Math.min(cap, Math.max(factionMarksFloorStart(base) - 1, 0));
+      const gains = [];
+      let acc = 0;
+      for (let n = 0; n < cap; n++) {
+        acc += Math.max(base - n * 2, 1) * mult;
+        gains.push(acc);
+      }
+      groups.push({ kind: kind, index: i, unit: unit, gains: gains, cap: cap });
+    });
+  };
+  collect("kitchen", st.kitchen, calc.kitchen.rows);
+  collect("pet", st.pet, calc.pet.rows);
+  const result = groups.map(() => 0);
+  const paid = groups.filter(g => g.unit > 0 && g.cap > 0);
+  groups.forEach((g, gi) => {
+    if (g.unit <= 0) result[gi] = g.cap;
+  });
+  if (paid.length) {
+    const scale = Math.min(100, Math.max(1, Math.floor(20000 / Math.max(perDay, 1))));
+    const W = Math.floor(perDay * scale + 1e-9);
+    const NEG = -1;
+    let dp = new Float64Array(W + 1);
+    const choices = [];
+    paid.forEach(g => {
+      const w = Math.max(1, Math.ceil(g.unit * scale - 1e-9));
+      const next = new Float64Array(W + 1);
+      const pick = new Uint16Array(W + 1);
+      const maxK = Math.min(g.cap, Math.floor(W / w));
+      for (let c = 0; c <= W; c++) {
+        let best = dp[c];
+        let bestK = 0;
+        const lim = Math.min(maxK, Math.floor(c / w));
+        for (let k = 1; k <= lim; k++) {
+          const v = dp[c - k * w] + g.gains[k - 1];
+          if (v > best + 1e-12) {
+            best = v;
+            bestK = k;
+          }
+        }
+        next[c] = best;
+        pick[c] = bestK;
+      }
+      dp = next;
+      choices.push({ g: g, w: w, pick: pick });
+    });
+    let c = W;
+    for (let j = choices.length - 1; j >= 0; j--) {
+      const k = choices[j].pick[c];
+      result[groups.indexOf(choices[j].g)] = k;
+      c -= k * choices[j].w;
+    }
+    let spent = 0;
+    paid.forEach(g => {
+      spent += result[groups.indexOf(g)] * g.unit;
+    });
+    let guard = 0;
+    while (guard++ < 5000) {
+      let bestGi = -1;
+      let bestRatio = 0;
+      paid.forEach(g => {
+        const gi = groups.indexOf(g);
+        const k = result[gi];
+        if (k >= g.cap) return;
+        if (spent + g.unit > perDay + 1e-9) return;
+        const gain = g.gains[k] - (k > 0 ? g.gains[k - 1] : 0);
+        const ratio = gain / g.unit;
+        if (ratio > bestRatio) {
+          bestRatio = ratio;
+          bestGi = gi;
+        }
+      });
+      if (bestGi < 0) break;
+      result[bestGi] += 1;
+      spent += groups[bestGi].unit;
+    }
+  }
+  groups.forEach((g, gi) => {
+    const list = g.kind === "pet" ? st.pet : st.kitchen;
+    list[g.index].deliver = result[gi];
+  });
+}
+
+function factionMarksAutoReapply() {
+  if (factionMarksCalcMode !== "auto" || !(factionMarksAutoBudget > 0) || !factionMarksState) return;
+  factionMarksAutoSolve(factionMarksAutoBudget);
+}
+
+function factionMarksAutoOverlayEl() {
+  let el = document.getElementById("factionMarksAutoLayer");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "factionMarksAutoLayer";
+    el.className = "fdm-auto-overlay";
+    el.addEventListener("click", factionMarksAutoOverlayClick);
+    el.addEventListener("keydown", e => {
+      if (e.key === "Enter" && e.target && e.target.id === "factionMarksAutoInput") {
+        e.preventDefault();
+        factionMarksAutoConfirm();
+      } else if (e.key === "Escape") {
+        factionMarksAutoClose();
+      }
+    });
+    document.body.appendChild(el);
+  }
+  return el;
+}
+
+function factionMarksAutoClose() {
+  const el = document.getElementById("factionMarksAutoLayer");
+  if (factionMarksAutoTimer) {
+    clearTimeout(factionMarksAutoTimer);
+    factionMarksAutoTimer = null;
+  }
+  if (el) {
+    el.classList.remove("show");
+    el.innerHTML = "";
+  }
+}
+
+function factionMarksAutoOpenInput() {
+  const el = factionMarksAutoOverlayEl();
+  const value = factionMarksAutoBudget > 0 ? factionMarksAutoBudget : "";
+  el.innerHTML = `<div class="fd-container guro-frame fdm-auto-card" role="dialog" aria-modal="true">
+    <div class="fdm-auto-title">Your Budget</div>
+    <div class="fdm-auto-text">Enter the total amount of Flower you are willing to spend on deliveries. GURO will calculate the combination of deliveries that earns the most Marks without exceeding your budget, counting only complete deliveries.</div>
+    <div class="fdm-auto-form">
+      <div class="fdm-auto-field">${factionMarksCostIconHtml()}<input type="number" min="1" step="1" inputmode="numeric" id="factionMarksAutoInput" class="fdm-count-input fdm-auto-input" placeholder="0" value="${value}"></div>
+      <button type="button" class="fd-lb-tab active fdm-auto-confirm" data-auto="confirm">Confirm</button>
+    </div>
+    <button type="button" class="fdm-auto-cancel" data-auto="cancel">Cancel</button>
+  </div>`;
+  el.classList.add("show");
+  const input = document.getElementById("factionMarksAutoInput");
+  if (input) setTimeout(() => {
+    input.focus();
+    const v = input.value;
+    input.value = "";
+    input.value = v;
+  }, 50);
+}
+
+function factionMarksAutoShowCooking() {
+  const el = factionMarksAutoOverlayEl();
+  el.innerHTML = `<div class="fd-container guro-frame fdm-auto-card fdm-auto-center" role="status" aria-live="polite">
+    <div class="fdm-auto-pot"><span></span><span></span><span></span></div>
+    <div class="fdm-auto-title">GURO is cooking the Math for You</div>
+    <div class="fdm-auto-text">Please wait while the best deliveries for your budget are calculated...</div>
+  </div>`;
+  el.classList.add("show");
+}
+
+function factionMarksAutoSummaryHtml() {
+  const st = factionMarksState;
+  const section = (label, reqs) => {
+    const lines = reqs.filter(r => r.deliver > 0).map(r => `<div class="fdm-auto-line"><span class="fdm-auto-amt">${fmtInt(r.amount)}</span>${factionDeliveryIconHtml(r.item)}<span class="fdm-auto-name">${escapeHtml(r.item)}</span><span class="fdm-auto-times">(${fmtInt(r.deliver)}x)</span></div>`).join("");
+    if (!lines) return "";
+    return `<div class="fdm-auto-cat">${label}</div>${lines}`;
+  };
+  const body = section("Kitchen", st.kitchen) + section("Pet", st.pet);
+  if (!body) return "";
+  const perDay = factionMarksScope === "week" ? " <span class=\"fdm-auto-per\">(per day, repeated for each of the " + FACTION_MARKS_WEEK_DAYS + " days)</span>" : "";
+  return `<div class="fdm-auto-sum"><div class="fdm-auto-sum-title">Deliver the following${perDay}</div>${body}</div>`;
+}
+
+function factionMarksAutoShowDone() {
+  const el = factionMarksAutoOverlayEl();
+  el.innerHTML = `<div class="fd-container guro-frame fdm-auto-card fdm-auto-done" role="status">
+    <div class="fdm-auto-title fdm-auto-center">I'm done cooking the Math!</div>
+    <div class="fdm-auto-text">I filled in the delivery counts that give the most Marks for your budget. You can see the number of deliveries for each item in the Kitchen and Pet lists, summarized below. Scroll down to the bottom to see your Total Marks for <b>${fmtInt(factionMarksAutoBudget)}</b> ${factionMarksCostIconHtml()}.</div>
+    ${factionMarksAutoSummaryHtml()}
+    <button type="button" class="fd-lb-tab active fdm-auto-confirm" data-auto="done">Got it</button>
+  </div>`;
+  el.classList.add("show");
+}
+
+function factionMarksAutoConfirm() {
+  const input = document.getElementById("factionMarksAutoInput");
+  const value = input ? Math.floor(Number(input.value) || 0) : 0;
+  if (!(value > 0)) {
+    if (input) {
+      input.classList.add("fdm-auto-invalid");
+      input.focus();
+    }
+    return;
+  }
+  factionMarksAutoShowCooking();
+  factionMarksAutoTimer = setTimeout(() => {
+    factionMarksAutoTimer = null;
+    factionMarksAutoBudget = value;
+    factionMarksCalcMode = "auto";
+    factionMarksAutoSolve(value);
+    factionMarksRender();
+    factionMarksAutoShowDone();
+  }, 1800);
+}
+
+function factionMarksAutoOverlayClick(e) {
+  const btn = e.target.closest("[data-auto]");
+  if (btn) {
+    const act = btn.dataset.auto;
+    if (act === "confirm") factionMarksAutoConfirm();
+    else if (act === "done") factionMarksAutoClose();
+    else if (act === "cancel") {
+      factionMarksAutoClose();
+      if (!(factionMarksAutoBudget > 0)) {
+        factionMarksCalcMode = "manual";
+        factionMarksRender();
+      }
+    }
+    return;
+  }
+  if (e.target.id === "factionMarksAutoLayer" && !factionMarksAutoTimer) {
+    const hasInput = !!document.getElementById("factionMarksAutoInput");
+    if (hasInput) {
+      factionMarksAutoClose();
+      if (!(factionMarksAutoBudget > 0)) {
+        factionMarksCalcMode = "manual";
+        factionMarksRender();
+      }
+    }
+  }
+}
+
 function factionMarksHandleClick(e) {
   const btn = e.target.closest("[data-act]");
   if (!btn || btn.tagName === "INPUT") return;
@@ -1167,23 +1419,47 @@ function factionMarksHandleClick(e) {
   if (act === "faction") {
     if (btn.dataset.faction === st.faction) return;
     factionMarksState = factionMarksBuildState(btn.dataset.faction);
+    factionMarksAutoReapply();
   } else if (act === "scope") {
     factionMarksScope = btn.dataset.scope;
+    factionMarksAutoReapply();
   } else if (act === "cost") {
     factionMarksCostMode = btn.dataset.cost === "collect" ? "collect" : "buy";
+    factionMarksAutoReapply();
+  } else if (act === "calcmode") {
+    if (btn.dataset.calc === "auto") {
+      if (factionMarksCalcMode === "auto") return;
+      factionMarksCalcMode = "auto";
+      factionMarksRender();
+      factionMarksAutoOpenInput();
+      return;
+    }
+    factionMarksCalcMode = "manual";
+  } else if (act === "autoedit") {
+    if (factionMarksCalcMode !== "auto") {
+      factionMarksCalcMode = "auto";
+      factionMarksRender();
+    }
+    factionMarksAutoOpenInput();
+    return;
   } else if (act === "wear") {
     const part = btn.dataset.part;
     if (part === "hat" && st.wear.crown) return;
     st.wear[part] = !st.wear[part];
+    factionMarksAutoReapply();
   } else if (act === "paw") {
     st.paw = !st.paw;
+    factionMarksAutoReapply();
   } else if (act === "champion") {
     st.champion = !st.champion;
     st.championTouched = true;
+    factionMarksAutoReapply();
   } else if (act === "rank") {
     st.emblems = FACTION_MARKS_RANKS[st.faction][Number(btn.dataset.idx)][1];
+    factionMarksAutoReapply();
   } else if (act === "reset") {
     factionMarksState = factionMarksBuildState(st.faction);
+    factionMarksAutoReapply();
   } else if (act === "inc" && req) {
     req.deliver = Math.min(req.deliver + 1, 999);
   } else if (act === "dec" && req) {
@@ -1204,6 +1480,7 @@ function factionMarksHandleChange(e) {
   const value = Math.max(0, Math.floor(Number(input.value) || 0));
   if (input.dataset.act === "emblems") {
     factionMarksState.emblems = value;
+    factionMarksAutoReapply();
   } else if (input.dataset.act === "deliver") {
     const list = input.dataset.kind === "pet" ? factionMarksState.pet : factionMarksState.kitchen;
     const req = list[Number(input.dataset.i)];

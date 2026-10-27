@@ -17379,7 +17379,7 @@ async function performFarmPanelSync(farmId) {
     const budFertSpiceCrowMatched = !!(budResult.matched || fertResult.matched || spiceResult.matched || crowAoeResult.changed);
     const anythingChanged = JSON.stringify(selectedBoosts) !== prevSelectedBoostsSig || JSON.stringify(selectedSkills) !== prevSelectedSkillsSig || feePercent !== prevFeePercent || plotsResult.touched || !!budResult.matched || !!fertResult.matched || !!spiceResult.matched || !!crowAoeResult.changed;
     harvestLogSetFarm(farmId);
-    farmPanelSaveGameState(mergedFreshState, true);
+    farmPanelSaveGameState(mergedFreshState, true, farmId);
     if (typeof invalidateCostCache === "function") invalidateCostCache();
     if (typeof syncCookingCountsFromInventory === "function") syncCookingCountsFromInventory(farmPanelGameState);
     __mark("  state prep");

@@ -5434,14 +5434,16 @@ function farmPanelSectionStorageKey(name) {
   return "hl_fpgs__" + name;
 }
 
-export function farmPanelSaveGameState(json, isFullSync) {
+export function farmPanelSaveGameState(json, isFullSync, syncedFarmId) {
   farmPanelGameState = json || null;
   if (isFullSync) farmPanelStateIsCached = false;
   try {
-    if (json) {
-      const trackFarmId = json.id || farmPanelGetLastInfo().id;
-      dailyHarvestTrack(farmSyncExtractGameState(json), trackFarmId);
-      if (isFullSync) harvestLogArm(trackFarmId);
+    if (json && isFullSync) {
+      const trackFarmId = String(syncedFarmId || json.id || farmPanelGetLastInfo().id || "");
+      if (trackFarmId) {
+        dailyHarvestTrack(farmSyncExtractGameState(json), trackFarmId);
+        harvestLogArm(trackFarmId);
+      }
     }
   } catch (e) {}
   farmPanelHoneySnapshotMs = Date.now();
