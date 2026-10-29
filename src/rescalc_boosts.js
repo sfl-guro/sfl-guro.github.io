@@ -40,6 +40,13 @@ function effectParts(b, ctx) {
   if (b.flowerExtraChance) add("Yield", `+${n2(b.flowerExtraChance)} flowers`);
   if (b.flowerExtraFlat) add("Yield", `+${n2(b.flowerExtraFlat)} flowers`);
   if (b.timeMult) add("Time", `×${b.timeMult} time`);
+  if (b.timeMultAll) add("Time", `×${b.timeMultAll} time`);
+  if (b.yieldMultAll) add("Yield", `×${b.yieldMultAll} yield`);
+  if (b.feedMult) add("Cost", `×${b.feedMult} feed`);
+  if (b.feedMultAll) add("Cost", `×${b.feedMultAll} feed`);
+  if (b.freeFeed) add("Cost", "free feed");
+  if (b.freeCure) add("Cost", "free medicine");
+  if (b.cureCostMult) add("Cost", `×${b.cureCostMult} medicine cost`);
   if (b.speedAdd) add("Time", `${signed(b.speedAdd)} speed`);
   if (b.flowerTimeMult) add("Time", `×${b.flowerTimeMult} flower time`);
   if (b.freeCost) add("Cost", b.scope === "saltGlobal" ? "free rake" : "free seeds");

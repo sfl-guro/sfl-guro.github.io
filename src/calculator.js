@@ -104,6 +104,7 @@ export const IMAGE_ICONS = {
   "Ascended Chicken": "data:image/webp;base64,UklGRkIBAABXRUJQVlA4TDYBAAAvF4AGEKegJLat6Muvd8lukfSiJVV+ARxDDaWRbDVYcDmpP6gscRRPO7SQGdW2lYoZiwjMpADR6eApqOAOXwiybSo2+oM9AAH//486zMlTSvZs4A2K9KhwjEUZwYpH0EnwX2dlCTtrVNSFrT43eAMYg8PYtqImBJevCe79F+v/iCW8G9F/Rm7bRpLlWX3qMz4PsfD9RdjNv/MGjB3aQolpSllU2SR4aGlxiUU61u9hjW6QHB3patxJnkPpAQM3IFUg/mADgS6pC9juXWZNbYiNqIAu4/auAYThYpQUjxQGK0BwGdN2LfGo8zBbWeSSpKtbYm8m99S1AWdn2evcciqos8sQOmlmOutcDhFQ59uzC639TbhXd3YFy0/2KPtWlCX6oU7cWo+8erDeEivxIqrSfHpO84sA",
   "Ascended Cow": "data:image/webp;base64,UklGRnwBAABXRUJQVlA4THABAAAvHMAHEG+gNADQhP8fo1mGSXNri3tDUdtIzmj5c1sE9dkPwqkJgIShGOmJoO+6DEABCbJtKjb6gz0A8P9/OuQo9yzLIU7mrUwbb9PkEOGSPJgBrm3tqZS/Gq2c3msIDiWtQ4I7yeA+VuNON9yS1t0fL7nzDN8f0f8JIGCGnDPkVgH6R5RUwDUSeLnjP1IhH33/j/sV6bMo72N8O679zOcd/2ljGeZDxj/O+JCZA+kYtxy3JmLiuLUixoEZsSV2mJnBqJ8nGHHs2mudDxCQri+I7q7OndZYgICZ2M5wQ3dX50A+MUsATN1wJYCBukzA2qwcrqkEZN022S2VOS2hs7UNQYcwwxLINAvrukXoXB4wTaJEwKYUMMysmgazBBRlFk4GhwnFpj0toaQ+EJbXeigNM6uD5hvr5FhJKIlD9iwUjWRWOue5kFFSSVMqw9hl5HMA2HXtFXXWQ1FnPZAjX/KAPBzwygxb12WQ89qH/B1kAw==",
   "Ascended Sheep": "data:image/webp;base64,UklGRoQBAABXRUJQVlA4THcBAAAvIMAHEI+gNrZt6M+Pd7t21C9UgtSIRdpQEttW9NXXO1sGaIyjBUEIgcT/gU0AAGlwreCagLhk1O2HINumYqM/2AMA+P891wbj1ZveIyyFcq/QLbE2ZexoXuMZezlrDLP/zj7qIQwOI9mKIveL4OKF+YcrHiHMRPR/AoaHp9JX+dJVz46rnh+4nu7rOYDrfrqe7ybFHZM7Tso7JkHJnIIMX0512pkyO1OdhtcN6mYiX2GzDrRHLq1upnzPZm1L63hdDuce0JuXw9ZdVIDZSFAhgbMHsKht8AABolQUBeMAGuAA6oHEv1SbpVnwH0cDdeiqR/ypW2lHoZWt/omj6fDQyJd7/uRow+Mxsqa6oSIpa4yPNFJHwA4x+ijShfLb5o2SLsQTL0CmL9cYfVYpKd9TKm8sdS4poyhS5hrjC4umLFel6PhKI2UVVWLsviMLKF8ZiSwKMX53+53JK76jU+pMjBrMlM7wSh2vRd9x+ZDnn/D6Fd8+4SkA",
+  "Beetle Sheep": "data:image/webp;base64,UklGRp4BAABXRUJQVlA4TJEBAAAvGMAGEH+gJLYVixZYFO6XgFykZFBUIALrtoaaSLaanzva2OOEwSSSYocEbKA0kq3mZ/8VwdMACkXP9BI7oAwIsm0qNvqDPQDA///oSyx55IREE0Vtf97r1Jq7VY+rzjR58Bpkc5BrbXviRl+YORWOzz83EDCVzpEU5kgOlfGoTMXMibxUe5mrVG63wo6pZWZm3jVcQ0T/JwCxU1NZSDxlWUtZ8U7P/ymx3i1djFP1k5dYjR+r8gGcLmnT5VaoqeJMTLRRf/wSaorGyFNH5ccv8kR0OB0IndyW41PyxLaTjoCjLkjB1fkRRyDgBJV7VDdIpQUCSr92O9rzcCwoUCsfGal1cP2pcgNsT4vSOihMVxrw4GmXElyJ10/TgKuvX/F1wx++ug0Atx4aY8zTmwUAXA0PzZpZe+q2AdTz9fCaWQtzdypc9Xxt7969e8PMTSDm4ZHI3kiLW9ipRMwdCZu9fm5TDHu499AzzmLqJeOvX3fxfjelElE9t4m5iSjVRcQ8RPXCJgIoyVTAlQRi46UCAAA=",
   "Ruins Flower": "data:image/webp;base64,UklGRjoBAABXRUJQVlA4TC4BAAAvD4AHEH+gJgCQhhYk4Ft6UsDSlrDFur12DTUBgDTw8W5MYQdzmNbbAubwXopi26DeyqeDsbNUThtVJJFDAQTZNhUb/cEeAPD/HyNK7JNC8nGzkrhN7UDtOA2HNLCsocpcvBqgStumuvnCySXEZf7cwQG/M3vORDI4KjODyqnLRFaxjy8zSZKkWtm60K4P7fQaIvo/AQAQgnL7UHV1E1Ldqp6fFP7wW8gPlKbDN9PTQGn//GhnGmxsql6fmILc2pmY3tmA/Kru7dV+A/Jrvlqb+KmsNb7nJ+LvzlKjUbG7cWfJaTTyVncNm38NJyvXYMeaDV3GwXl3TQiLdQ1hGF0vi3PDNCywuF3QLQ9YPJ3n3AMYyHLpAYAEF0NEQncDRCSihAgRaUTuIfoXVACGAA==",
   "Moon Hair": "data:image/png;base64,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",
   "Rice Shirt": "data:image/png;base64,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",
@@ -1657,7 +1658,7 @@ export function setAnimalAffectionCount(type, key, val) {
   saveAnimalAffectionCounts();
 }
 
-function setAnimalAffectionTool(key, val) {
+export function setAnimalAffectionTool(key, val) {
   if (!(key in ANIMAL_LOVE_ITEM_XP)) return;
   animalAffectionTools[key] = !!val;
   saveAnimalAffectionTools();
@@ -2015,6 +2016,10 @@ export function computeAnimalRealProgress(type, animal, now, readyAt) {
   };
 }
 
+function roundClaimProduce(n) {
+  return Math.round(Number((n * 100).toPrecision(12))) / 100;
+}
+
 export function computeAnimalYieldsForLevel(type, level, realFeedBuffName) {
   const cfg = ANIMAL_DATA[type];
   const lvl = Math.min(15, Math.max(1, parseInt(level) || 1));
@@ -2048,7 +2053,7 @@ export function computeAnimalYieldsForLevel(type, level, realFeedBuffName) {
     yieldMultAll: 1
   };
   yieldMultAllTotal *= spice.yieldMultAll;
-  const yields = [ Math.max(0, (lvlData.y[0] + yieldAdd[0]) * yieldMultAllTotal), Math.max(0, (lvlData.y[1] + yieldAdd[1]) * yieldMultAllTotal) ];
+  const yields = [ roundClaimProduce(Math.max(0, (lvlData.y[0] + yieldAdd[0]) * yieldMultAllTotal)), roundClaimProduce(Math.max(0, (lvlData.y[1] + yieldAdd[1]) * yieldMultAllTotal)) ];
   return {
     yields: yields,
     products: cfg.products
@@ -2661,7 +2666,20 @@ export const CROP_MACHINE_PACK_MAX = {
 
 const CROP_MACHINE_OIL_CAP_BASE = 48;
 
-export function getCropMachineOilCap() {
+const CROP_MACHINE_BASE_PLOTS = 10;
+
+export function getCropMachinePlots() {
+  let add = 0;
+  try {
+    if (isSkillActive("skill_field_extension_module")) {
+      const s = SKILL_BOOSTS.find(sk => sk.id === "skill_field_extension_module");
+      add = s && s.plotAdd || 0;
+    }
+  } catch (e) {}
+  return CROP_MACHINE_BASE_PLOTS + add;
+}
+
+export function getCropMachineOilCapHours() {
   let mult = 1;
   try {
     if (isSkillActive("skill_leak_proof_tank")) {
@@ -2670,6 +2688,21 @@ export function getCropMachineOilCap() {
     }
   } catch (e) {}
   return CROP_MACHINE_OIL_CAP_BASE * mult;
+}
+
+export function getCropMachineOilCap() {
+  let rate = 1;
+  try {
+    rate = computeCropMachineOilMult();
+  } catch (e) {}
+  return getCropMachineOilCapHours() * rate;
+}
+
+export function getCropMachinePackMax(name) {
+  const stock = BASE_STOCK_CROPS[name];
+  if (!stock) return CROP_MACHINE_PACK_MAX[name] || 0;
+  const boosted = typeof isBoostActive === "function" && isBoostActive("warehouse_stock") ? Math.ceil(stock * 1.2) : stock;
+  return Math.ceil(boosted * 2.5);
 }
 
 export const RESTOCK_GEM_COST = {
@@ -3976,7 +4009,11 @@ export function setAnimalCount(type, field, val) {
 
 let omnifeedEnabled = localStorage.getItem("hl_omnifeed_enabled") === "true";
 
-function setOmnifeedEnabled(val) {
+export function isOmnifeedEnabled() {
+  return omnifeedEnabled;
+}
+
+export function setOmnifeedEnabled(val) {
   omnifeedEnabled = !!val;
   localStorage.setItem("hl_omnifeed_enabled", String(omnifeedEnabled));
 }
@@ -4117,9 +4154,9 @@ function __memoWithTTL(cache, key, computeFn) {
   return result;
 }
 
-export function computeBoostedCropStats(cropName, baseYield, baseTimeSec, plotCountOverride, windowSec, includeBeeSwarm) {
-  const key = cropName + "|" + baseYield + "|" + baseTimeSec + "|" + plotCountOverride + "|" + windowSec + "|" + includeBeeSwarm;
-  return __memoWithTTL(__boostedCropStatsMemo, key, () => computeBoostedCropStatsUncached(cropName, baseYield, baseTimeSec, plotCountOverride, windowSec, includeBeeSwarm));
+export function computeBoostedCropStats(cropName, baseYield, baseTimeSec, plotCountOverride, windowSec, includeBeeSwarm, machineYield) {
+  const key = cropName + "|" + baseYield + "|" + baseTimeSec + "|" + plotCountOverride + "|" + windowSec + "|" + includeBeeSwarm + "|" + !!machineYield;
+  return __memoWithTTL(__boostedCropStatsMemo, key, () => computeBoostedCropStatsUncached(cropName, baseYield, baseTimeSec, plotCountOverride, windowSec, includeBeeSwarm, machineYield));
 }
 
 export function computeBoostedFruitStats(fruitName, baseYield, baseTimeSec, baseMinHarvest, nodeCountOverride, windowSec) {
@@ -4448,20 +4485,20 @@ function computeBoostedMachineTimeSec(baseTimeSec, windowSec) {
   return blendedCyclesPerDay > 0 ? Math.max(1, 86400 / blendedCyclesPerDay) : Math.max(1, baseTimeSec * alwaysTimeMult);
 }
 
-function computeCropMachineOilMult() {
-  let oilQtyMult = 1;
+export function computeCropMachineOilMult() {
+  let penalty = 0;
   let oilReducePct = 0;
   getActiveBoostsForCropMachine().forEach(b => {
-    if (b.oilQtyMult) oilQtyMult *= b.oilQtyMult;
+    if (b.oilQtyMult) penalty += b.oilQtyMult - 1;
     if (b.oilReducePct) oilReducePct += b.oilReducePct;
   });
-  return oilQtyMult * Math.max(0, 1 - oilReducePct);
+  return (1 + penalty) * Math.max(0, 1 - oilReducePct);
 }
 
 function getCropMachineYieldMultiplier(name) {
   const base = BASE_CROPS[name];
   if (!base) return 1;
-  const boosted = computeBoostedCropStats(name, 1, base.timeSec);
+  const boosted = computeBoostedCropStats(name, 1, base.timeSec, undefined, undefined, false, true);
   return boosted.yieldVal;
 }
 
@@ -4471,8 +4508,10 @@ export function computeCropMachineBatch(name, qty) {
   if (!base || !cropBase) return null;
   qty = Math.max(0, qty || 0);
   const ratio = base.seedQty > 0 ? qty / base.seedQty : 0;
-  const timeSec = computeBoostedMachineTimeSec(base.timeSec) * ratio;
-  const oilQty = base.oilQty * ratio * computeCropMachineOilMult();
+  const plots = getCropMachinePlots();
+  const timeSec = computeBoostedMachineTimeSec(base.timeSec) * ratio * CROP_MACHINE_BASE_PLOTS / plots;
+  const oilRate = computeCropMachineOilMult();
+  const oilQty = timeSec / 3600 * oilRate;
   const yieldMult = getCropMachineYieldMultiplier(name);
   const yieldQty = base.yieldQty * ratio * yieldMult;
   const seedCoinCost = (hasFreeCostBoost(name) ? 0 : cropBase.seedCost || 0) * qty;
@@ -4498,7 +4537,9 @@ export function computeCropMachineBatch(name, qty) {
     netSellFlower: netSellFlower,
     revenueFlower: revenueFlower,
     profitFlower: profitFlower,
-    yieldMult: yieldMult
+    yieldMult: yieldMult,
+    oilRate: oilRate,
+    plots: plots
   };
 }
 
@@ -6800,8 +6841,10 @@ const SKILL_MACHINE = [ {
   id: "skill_field_extension_module",
   name: "Field Extension Module",
   skillTier: 3,
-  notModeled: true,
-  note: "+5 plots added to the Crop Machine"
+  category: "cropmachine",
+  scope: "machineGlobal",
+  plotAdd: 5,
+  note: "+5 plots added to the Crop Machine (more plots = shorter pack time and less oil)"
 }, {
   id: "skill_efficiency_extension_module",
   name: "Efficiency Extension Module",
@@ -7741,9 +7784,9 @@ export const ASCENSION_RANK_DATA = {
     note: "Extra packs added to Crop Machine queue (now wired)"
   },
   skill_field_extension_module: {
-    field: null,
+    field: "plotAdd",
     values: [ 5, 7, 10 ],
-    note: "Extra plots added to Crop Machine — not wired yet"
+    note: "Extra plots added to the Crop Machine (now wired)"
   },
   skill_fish_smoking: {
     field: null,
@@ -9603,6 +9646,7 @@ const CROP_MACHINE_BOOSTS = [ {
   id: "tortoise_shrine_machine",
   name: "Tortoise Shrine (7d)",
   scope: "machineGlobal",
+  limitedBoostName: "Tortoise Shrine",
   timeMult: .9,
   note: "Temporary, 7 days · machine batch time"
 } ];
@@ -10065,6 +10109,14 @@ const ANIMAL_BOOSTS = [ {
   target: "sheep",
   timeMult: .8,
   note: "-20% sleep time (more cycles/day)"
+}, {
+  id: "beetle_sheep",
+  name: "Beetle Sheep",
+  category: "animals",
+  scope: "animalType",
+  target: "sheep",
+  timeMult: .925,
+  note: "-7.5% sleep time (more cycles/day)"
 }, {
   id: "longhorn_cowfish",
   name: "Longhorn Cowfish",
@@ -11262,9 +11314,9 @@ export function boostAffectsYieldOrTime(b, itemName) {
   return false;
 }
 
-function computeBoostedCropStatsUncached(cropName, baseYield, baseTimeSec, plotCountOverride, windowSec, includeBeeSwarm) {
+function computeBoostedCropStatsUncached(cropName, baseYield, baseTimeSec, plotCountOverride, windowSec, includeBeeSwarm, machineYield) {
   windowSec = windowSec || 86400;
-  const active = getActiveBoostsForCrop(cropName).filter(b => includeBeeSwarm || !b.beeSwarmStack && !b.debuffStack);
+  const active = getActiveBoostsForCrop(cropName).filter(b => includeBeeSwarm || !b.beeSwarmStack && !b.debuffStack).filter(b => !machineYield || !b.plotCap && !b.composterFertilizer && b.id !== "hoot");
   const cropTier = (BASE_CROPS[cropName] || {}).tier;
   let addSum = 0;
   let multBonusSum = 0;
@@ -13379,7 +13431,7 @@ export function computeAnimalTypeFigures(type, visited, levelOverride) {
   const requiredQtyPerFeed = REQUIRED_FOOD_QTY_MAP[type];
   const effectiveFeedQty = freeFeed ? 0 : Math.max(0, feedFig.noOfFeeds * requiredQtyPerFeed * feedMultTotal);
   const feedCostCoins = effectiveFeedQty * feedInfo.cost;
-  const yields = [ Math.max(0, (lvlData.y[0] + yieldAdd[0]) * yieldMultAllTotal), Math.max(0, (lvlData.y[1] + yieldAdd[1]) * yieldMultAllTotal) ];
+  const yields = [ roundClaimProduce(Math.max(0, (lvlData.y[0] + yieldAdd[0]) * yieldMultAllTotal)), roundClaimProduce(Math.max(0, (lvlData.y[1] + yieldAdd[1]) * yieldMultAllTotal)) ];
   const totalYieldUnits = yields[0] + yields[1];
   const curesPerLevel = getCuresPerLevelForType(type);
   const costPerCureFlower = cureFree ? 0 : computeMedicineCostFlower(visited) * cureCostMult;
@@ -17586,7 +17638,7 @@ export function cmModuleTagHtml(name) {
 }
 
 export function cmClampQty(name, qty) {
-  const max = CROP_MACHINE_PACK_MAX[name] || 0;
+  const max = getCropMachinePackMax(name);
   return Math.max(0, Math.min(qty, max));
 }
 
@@ -17810,7 +17862,7 @@ if ($("cmQtyRow")) {
       const mode = btn.dataset.cmqty;
       const base = BASE_CROP_MACHINE[cmSelectedCrop];
       if (!base) return;
-      const max = CROP_MACHINE_PACK_MAX[cmSelectedCrop] || 0;
+      const max = getCropMachinePackMax(cmSelectedCrop);
       if (mode === "all") cmQty = max; else if (mode === "+10") cmQty = Math.min(max, cmQty + 10); else if (mode === "-10") cmQty = Math.max(0, cmQty - 10);
       renderCmSelectedDetail();
       renderCmQtyControls();
@@ -17825,7 +17877,7 @@ if ($("cmAddBtn")) {
       toast(`🚜 Queue is full (${getCropMachineQueueSlots()}/${getCropMachineQueueSlots()} packs) — remove a pack first`);
       return;
     }
-    const max = CROP_MACHINE_PACK_MAX[cmSelectedCrop] || 0;
+    const max = getCropMachinePackMax(cmSelectedCrop);
     const qty = Math.min(cmQty, max);
     if (qty <= 0) return;
     cmQueue.push({
@@ -36734,7 +36786,7 @@ function profileTradableResourceRows(g) {
   return rows.sort((a, b) => b.value - a.value);
 }
 
-const COLLECTIBLE_BOOST_NAMES = [ "Alba", "Alien Chicken", "Ancient Tree", "Anemone Flower", "Apprentice Beaver", "Ascended Chicken", "Ascended Cow", "Ascended Idol", "Ascended Sheep", "Ascension Monument", "Astrolabe", "Astronaut Sheep", "Autumn Guardian", "Ayam Cemani", "Baby Cow", "Badger Shrine", "Bale", "Banana Chicken", "Bantam Shrine", "Barn Blueprint", "Basic Scarecrow", "Battle Fish", "Bear Shrine", "Beehive", "Black Bearry", "Blossom Hourglass", "Blossombeard", "Boar Shrine", "Butterfly", "Cabbage Boy", "Cabbage Girl", "Camel", "Cannonball", "Carrot Sword", "Chicken Coop", "Chicory", "Christmas Tree", "Cluckulator", "Collie Shrine", "Cornucopia", "Crab House", "Crim Peckster", "Crimson Carp", "Crimstone Clam", "Crystal Altar", "Deep Sea Slug", "Desert Gnome", "Desert Rose", "Dino Egg Trophy", "Dr Cow", "Dumbo Octopus", "Easter Bunny", "El Pollo Veloz", "Emerald Turtle", "Fairy Circle", "Farm Dog", "Farmer's Monument", "Fat Chicken", "Festive Tree", "Fisher's Hourglass", "Flamingo Chicken", "Flower Fox", "Foliant", "Foreman Beaver", "Fox Shrine", "Freya Fox", "Frozen Cow", "Frozen Sheep", "Fruit Tune Box", "Fruitful Blend", "Fused Stone Rock", "Genie Lamp", "Giant Artichoke", "Giant Gold Bone", "Giant Kale", "Giant Onion", "Giant Turnip", "Giant Yam", "Giant Zucchini", "Gilded Swordfish", "Gnome", "Gold Beetle", "Gold Egg", "Golden Cauliflower", "Golden Cow", "Golden Sheep", "Gourmet Hourglass", "Grain Grinder", "Grape Granny", "Greenhouse Glow", "Greenhouse Goodie", "Grinx's Hammer", "Groovy Gramophone", "Harvest Hourglass", "Heart of Davy Jones", "Honey Treat", "Hoot", "Hound Shrine", "Humming Bird", "Hungry Caterpillar", "Hungry Hare", "Immortal Pear", "Iron Beetle", "Iron Idol", "Janitor Chicken", "Jellyfish", "Karkinos", "Kernaldo", "King of Bears", "Knight Chicken", "Knowledge Crab", "Kuebiko", "Lab Grown Carrot", "Lab Grown Pumpkin", "Lab Grown Radish", "Lady Bug", "Laurie the Chuckle Crow", "Legendary Shrine", "Lemon Frog", "Lemon Shark", "Lemon Tea Bath", "Longhorn Cowfish", "Lunar Calendar", "Lunar Temple", "Macaw", "Magma Stone", "Mammoth", "Maneki Neko", "Maximus", "Meerkat", "Mermaid Sheep", "Miner's Monument", "Mole Shrine", "Moo-ver", "Mootant", "Moth Shrine", "Mushroom House", "Mysterious Parsnip", "Nana", "Nancy", "Nautilus", "Navigation Table", "Nugget", "Nurse Sheep", "Oaken", "Obie", "Observatory", "Obsidian Shrine", "Obsidian Turtle", "Orchard Hourglass", "Ore Hourglass", "Otty the Otter", "Pablo The Bunny", "Peeled Potato", "Pet Bowls", "Pharaoh Chicken", "Pharaoh Gnome", "Pink Dolphin", "Poppy", "Poseidon", "Poseidon's Throne", "Potent Potato", "Prime Gold Rock", "Pure Gold Rock", "Purple Trail", "Quarry", "Queen Bee", "Queen Cornelia", "Radiant Ray", "Radical Radish", "Rapid Root", "Reelmaster's Chair", "Refined Iron Rock", "Reinforced Stone Rock", "Reveling Lemon", "Rice Panda", "Rich Chicken", "Rock Golem", "Rocky the Mole", "Rooster", "Royal Crab Pot", "Ruins Flower", "Sacred Tree", "Salt Crystal Flower", "Salt Lick", "Salt Sculpture", "Salt Worker Gnome", "Scarecrow", "Scary Mike", "Sheaf of Plenty", "Sir Goldensnout", "Skill Shrimpy", "Sleepy Chicken", "Soil Krabby", "Soybliss", "Spa Cow", "Spa Sheep", "Sparrow Shrine", "Speed Chicken", "Speed Trap", "Spring Guardian", "Sprout Mix", "Sproutroot Surprise", "Squid Chicken", "Squirrel", "Squirrel Monkey", "Stag Shrine", "Stellar Sunflower", "Stone Beetle", "Summer Chicken", "Summer Guardian", "Super Star", "Super Totem", "Swiss Whiskers", "Teamwork Monument", "Tempered Iron Rock", "Tiki Totem", "Timber Hourglass", "Time Warp Totem", "Tin Turtle", "Tomato Bombard", "Tomato Clown", "Toolshed", "Tortoise Shrine", "Toucan Shrine", "Toxic Tuft", "Trading Shrine", "Treasure Map", "Tunnel Mole", "Turbo Sprout", "Turbofruit Mix", "Undead Rooster", "Vibraphone", "Victoria Sisters", "Vinny", "Volcano Gnome", "Walrus", "Warehouse", "Winged Vase", "Winter Guardian", "Wood Nymph Wendy", "Woodcutter's Monument", "Woody the Beaver" ];
+const COLLECTIBLE_BOOST_NAMES = [ "Alba", "Alien Chicken", "Ancient Tree", "Anemone Flower", "Apprentice Beaver", "Ascended Chicken", "Ascended Cow", "Ascended Idol", "Ascended Sheep", "Ascension Monument", "Astrolabe", "Astronaut Sheep", "Autumn Guardian", "Ayam Cemani", "Baby Cow", "Badger Shrine", "Bale", "Banana Chicken", "Bantam Shrine", "Barn Blueprint", "Beetle Sheep", "Basic Scarecrow", "Battle Fish", "Bear Shrine", "Beehive", "Black Bearry", "Blossom Hourglass", "Blossombeard", "Boar Shrine", "Butterfly", "Cabbage Boy", "Cabbage Girl", "Camel", "Cannonball", "Carrot Sword", "Chicken Coop", "Chicory", "Christmas Tree", "Cluckulator", "Collie Shrine", "Cornucopia", "Crab House", "Crim Peckster", "Crimson Carp", "Crimstone Clam", "Crystal Altar", "Deep Sea Slug", "Desert Gnome", "Desert Rose", "Dino Egg Trophy", "Dr Cow", "Dumbo Octopus", "Easter Bunny", "El Pollo Veloz", "Emerald Turtle", "Fairy Circle", "Farm Dog", "Farmer's Monument", "Fat Chicken", "Festive Tree", "Fisher's Hourglass", "Flamingo Chicken", "Flower Fox", "Foliant", "Foreman Beaver", "Fox Shrine", "Freya Fox", "Frozen Cow", "Frozen Sheep", "Fruit Tune Box", "Fruitful Blend", "Fused Stone Rock", "Genie Lamp", "Giant Artichoke", "Giant Gold Bone", "Giant Kale", "Giant Onion", "Giant Turnip", "Giant Yam", "Giant Zucchini", "Gilded Swordfish", "Gnome", "Gold Beetle", "Gold Egg", "Golden Cauliflower", "Golden Cow", "Golden Sheep", "Gourmet Hourglass", "Grain Grinder", "Grape Granny", "Greenhouse Glow", "Greenhouse Goodie", "Grinx's Hammer", "Groovy Gramophone", "Harvest Hourglass", "Heart of Davy Jones", "Honey Treat", "Hoot", "Hound Shrine", "Humming Bird", "Hungry Caterpillar", "Hungry Hare", "Immortal Pear", "Iron Beetle", "Iron Idol", "Janitor Chicken", "Jellyfish", "Karkinos", "Kernaldo", "King of Bears", "Knight Chicken", "Knowledge Crab", "Kuebiko", "Lab Grown Carrot", "Lab Grown Pumpkin", "Lab Grown Radish", "Lady Bug", "Laurie the Chuckle Crow", "Legendary Shrine", "Lemon Frog", "Lemon Shark", "Lemon Tea Bath", "Longhorn Cowfish", "Lunar Calendar", "Lunar Temple", "Macaw", "Magma Stone", "Mammoth", "Maneki Neko", "Maximus", "Meerkat", "Mermaid Sheep", "Miner's Monument", "Mole Shrine", "Moo-ver", "Mootant", "Moth Shrine", "Mushroom House", "Mysterious Parsnip", "Nana", "Nancy", "Nautilus", "Navigation Table", "Nugget", "Nurse Sheep", "Oaken", "Obie", "Observatory", "Obsidian Shrine", "Obsidian Turtle", "Orchard Hourglass", "Ore Hourglass", "Otty the Otter", "Pablo The Bunny", "Peeled Potato", "Pet Bowls", "Pharaoh Chicken", "Pharaoh Gnome", "Pink Dolphin", "Poppy", "Poseidon", "Poseidon's Throne", "Potent Potato", "Prime Gold Rock", "Pure Gold Rock", "Purple Trail", "Quarry", "Queen Bee", "Queen Cornelia", "Radiant Ray", "Radical Radish", "Rapid Root", "Reelmaster's Chair", "Refined Iron Rock", "Reinforced Stone Rock", "Reveling Lemon", "Rice Panda", "Rich Chicken", "Rock Golem", "Rocky the Mole", "Rooster", "Royal Crab Pot", "Ruins Flower", "Sacred Tree", "Salt Crystal Flower", "Salt Lick", "Salt Sculpture", "Salt Worker Gnome", "Scarecrow", "Scary Mike", "Sheaf of Plenty", "Sir Goldensnout", "Skill Shrimpy", "Sleepy Chicken", "Soil Krabby", "Soybliss", "Spa Cow", "Spa Sheep", "Sparrow Shrine", "Speed Chicken", "Speed Trap", "Spring Guardian", "Sprout Mix", "Sproutroot Surprise", "Squid Chicken", "Squirrel", "Squirrel Monkey", "Stag Shrine", "Stellar Sunflower", "Stone Beetle", "Summer Chicken", "Summer Guardian", "Super Star", "Super Totem", "Swiss Whiskers", "Teamwork Monument", "Tempered Iron Rock", "Tiki Totem", "Timber Hourglass", "Time Warp Totem", "Tin Turtle", "Tomato Bombard", "Tomato Clown", "Toolshed", "Tortoise Shrine", "Toucan Shrine", "Toxic Tuft", "Trading Shrine", "Treasure Map", "Tunnel Mole", "Turbo Sprout", "Turbofruit Mix", "Undead Rooster", "Vibraphone", "Victoria Sisters", "Vinny", "Volcano Gnome", "Walrus", "Warehouse", "Winged Vase", "Winter Guardian", "Wood Nymph Wendy", "Woodcutter's Monument", "Woody the Beaver" ];
 
 const WEARABLE_BOOST_NAMES = [ "Alchemist Apron", "Ancient Rod", "Ancient Shovel", "Angel Wings", "Angler Waders", "Architect Ruler", "Autumn's Embrace", "Banana Amulet", "Banana Onesie", "Beast Shoes", "Bee Suit", "Beekeeper Hat", "Beetroot Amulet", "Bionic Drill", "Black Sheep Onesie", "Blossom Ward", "Broccoli Hat", "Bubble Aura", "Bucket O' Worms", "Bumpkin Armor", "Bumpkin Crown", "Bumpkin Helmet", "Bumpkin Medallion", "Bumpkin Pants", "Bumpkin Quiver", "Bumpkin Sabatons", "Bumpkin Shield", "Bumpkin Sword", "Camel Onesie", "Carrot Amulet", "Cattlegrim", "Chef Apron", "Chicken Suit", "Corn Onesie", "Corn Silk Hair", "Cowbell Necklace", "Crab Hat", "Crab Trap", "Crimstone Amulet", "Crimstone Armor", "Crimstone Hammer", "Crimstone Spikes Hair", "Deep Sea Helm", "Deep Sea Salt Cave Background", "Dev Wrench", "Devil Wings", "Dream Scarf", "Eggplant Onesie", "Flower Crown", "Frozen Heart", "Fruit Picker Apron", "Goblin Armor", "Goblin Axe", "Goblin Crown", "Goblin Helmet", "Goblin Medallion", "Goblin Pants", "Goblin Quiver", "Goblin Sabatons", "Goblin Shield", "Golden Spatula", "Grape Pants", "Green Amulet", "Honeycomb Shield", "Hornet Mask", "Infernal Bullwhip", "Infernal Drill", "Infernal Pitchfork", "Ladybug Suit", "Lava Swimwear", "Lemon Shield", "Luminous Anglerfish Topper", "Luna's Crescent", "Luna's Hat", "Master Chef's Cleaver", "Medic Apron", "Merino Jumper", "Milk Apron", "Moon Hair", "Mushroom Hat", "Nightshade Armor", "Nightshade Crown", "Nightshade Helmet", "Nightshade Medallion", "Nightshade Pants", "Nightshade Quiver", "Nightshade Sabatons", "Nightshade Shield", "Nightshade Sword", "Non La Hat", "Obsidian Necklace", "Oil Can", "Oil Gallon", "Oil Overalls", "Olive Royalty Shirt", "Olive Shield", "Oracle Syringe", "Pan", "Parsnip", "Paw Aura", "Paw Shield", "Pickaxe Shark", "Pirate Potion", "Pistol Shrimp", "Red Pepper Onesie", "Rice Shirt", "Salt Bottle Onesie", "Saw Fish", "Shrimp Onesie", "Sickle", "Sol & Luna", "Solflare Aegis", "Squirrel Onesie", "Sunflorian Armor", "Sunflorian Crown", "Sunflorian Helmet", "Sunflorian Medallion", "Sunflorian Pants", "Sunflorian Quiver", "Sunflorian Sabatons", "Sunflorian Shield", "Sunflorian Sword", "Sunflower Amulet", "Sunflower Rod", "Sunflower Shield", "Surfer Hair", "Tofu Mask", "Training Whistle", "Trident", "Turd Topper", "Victoria's Apron", "Walrus Onesie", "White Sheep Onesie" ];
 
@@ -37466,7 +37518,7 @@ function simGreenhouseRow(name) {
 
 function simMachineRow(name) {
   const base = BASE_CROP_MACHINE[name];
-  const packSeeds = base ? CROP_MACHINE_PACK_MAX[name] || base.seedQty : 0;
+  const packSeeds = base ? getCropMachinePackMax(name) || base.seedQty : 0;
   const batch = base ? computeCropMachineBatch(name, packSeeds) : null;
   if (!batch) return null;
   const cycles = batch.timeSec > 0 ? 86400 / batch.timeSec : 0;

@@ -20,7 +20,9 @@ const KIND_ORDER = {
   node: 0,
   crop: 1,
   fruit: 2,
-  greenhouse: 3
+  greenhouse: 3,
+  animal: 4,
+  beehive: 5
 };
 
 let pendingFarm = "";

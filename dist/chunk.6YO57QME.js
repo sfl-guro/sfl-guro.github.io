@@ -371,6 +371,7 @@ __export(calculator_exports, {
   computeComposterFigures: () => computeComposterFigures,
   computeCrabFigures: () => computeCrabFigures,
   computeCropMachineBatch: () => computeCropMachineBatch,
+  computeCropMachineOilMult: () => computeCropMachineOilMult,
   computeCrustaceanFigures: () => computeCrustaceanFigures,
   computeDailyProfitAveragePanelLink: () => computeDailyProfitAveragePanelLink,
   computeDailyProfitAveragePanelYieldPerCycle: () => computeDailyProfitAveragePanelYieldPerCycle,
@@ -548,6 +549,9 @@ __export(calculator_exports, {
   getBuildDetailActiveEntries: () => getBuildDetailActiveEntries,
   getCookingCount: () => getCookingCount,
   getCropMachineOilCap: () => getCropMachineOilCap,
+  getCropMachineOilCapHours: () => getCropMachineOilCapHours,
+  getCropMachinePackMax: () => getCropMachinePackMax,
+  getCropMachinePlots: () => getCropMachinePlots,
   getCropMachineQueueSlots: () => getCropMachineQueueSlots,
   getCropPlotSunshowerSpeedMultiplier: () => getCropPlotSunshowerSpeedMultiplier,
   getCropSeasons: () => getCropSeasons,
@@ -637,6 +641,7 @@ __export(calculator_exports, {
   isFlowerVarietySeasonLocked: () => isFlowerVarietySeasonLocked,
   isFruitInSeason: () => isFruitInSeason,
   isFullMoonToday: () => isFullMoonToday,
+  isOmnifeedEnabled: () => isOmnifeedEnabled,
   isOvernightGroundCrop: () => isOvernightGroundCrop,
   isPetFoodChecked: () => isPetFoodChecked,
   isPowerHourExpiredSinceSync: () => isPowerHourExpiredSinceSync,
@@ -765,6 +770,7 @@ __export(calculator_exports, {
   selectedSkills: () => selectedSkills,
   selectedSwarmCrop: () => selectedSwarmCrop,
   setAnimalAffectionCount: () => setAnimalAffectionCount,
+  setAnimalAffectionTool: () => setAnimalAffectionTool,
   setAnimalCount: () => setAnimalCount,
   setAppDarkMode: () => setAppDarkMode,
   setAutoMaterialModes: () => setAutoMaterialModes,
@@ -789,6 +795,7 @@ __export(calculator_exports, {
   setMedicineIngredientMode: () => setMedicineIngredientMode,
   setNodeCount: () => setNodeCount,
   setNodeTierQty: () => setNodeTierQty,
+  setOmnifeedEnabled: () => setOmnifeedEnabled,
   setPetsFoodTab: () => setPetsFoodTab,
   setPlotCount: () => setPlotCount,
   setPreviewSeason: () => setPreviewSeason,
@@ -11818,7 +11825,7 @@ function renderCmSeedGrid() {
     return `<div class="cm-seed-btn${active ? " active" : ""}${locked ? " is-locked" : ""}" data-cm-seed="${name}">
       <span class="cm-seed-icon">${locked ? "\u{1F512}" : getIcon(name)}</span>
       <span class="cm-seed-name">${escapeHtml(name)}</span>
-      <span class="cm-seed-avail">${locked ? "Locked" : fmt(CROP_MACHINE_PACK_MAX[name]) + " max/pack"}</span>
+      <span class="cm-seed-avail">${locked ? "Locked" : fmt(getCropMachinePackMax(name)) + " max/pack"}</span>
     </div>`;
   }).join("");
   wrap.querySelectorAll("[data-cm-seed]").forEach((el) => {
@@ -11853,7 +11860,7 @@ function renderCmSelectedDetail() {
     <div class="lib-item-row" style="margin-top:6px;">
       <span class="lib-item-icon">${getIcon(name)}</span>
       <div class="lib-item-main">
-        <div class="lib-item-name">${escapeHtml(name)} Seed <span style="font-weight:400;color:var(--ink-soft);font-size:10.8px;">Max ${fmt(CROP_MACHINE_PACK_MAX[name])}/pack</span></div>
+        <div class="lib-item-name">${escapeHtml(name)} Seed <span style="font-weight:400;color:var(--ink-soft);font-size:10.8px;">Max ${fmt(getCropMachinePackMax(name))}/pack</span></div>
         <div class="lib-item-meta">Qty ${fmt(cmQty)} \xB7 Yield ${fmt(b.yieldQty)} \xB7 Time ${formatDuration(b.timeSec)} \xB7 Oil ${fmt(b.oilQty)}</div>
         ${packsSoFar > 0 ? `<div class="lib-item-meta" style="color:var(--ink-soft);">Already queued: ${fmt(queuedSoFar)} across ${packsSoFar} pack${packsSoFar === 1 ? "" : "s"} of ${name}</div>` : ""}
         ${ri.gemsTotal > 0 ? `<div class="lib-item-meta" style="color:#b45309;">${GEM_ICON} ${fmt(ri.restocksNeeded)} seed restock${ri.restocksNeeded === 1 ? "" : "s"} for this crop's total so far \xB7 ${fmt(ri.gemsTotal)} ${GEM_ICON} Gems \u2248 ${fmt(ri.flowerCost)} ${FLOWER_ICON}</div>` : ""}
@@ -12016,7 +12023,7 @@ function renderCropMachineMachine() {
   renderCmModules();
   renderCmSeedGrid();
   if (cmQty <= 0 && BASE_CROP_MACHINE[cmSelectedCrop]) {
-    __set_cmQty(cmClampQty(cmSelectedCrop, CROP_MACHINE_PACK_MAX[cmSelectedCrop] || BASE_CROP_MACHINE[cmSelectedCrop].seedQty));
+    __set_cmQty(cmClampQty(cmSelectedCrop, getCropMachinePackMax(cmSelectedCrop) || BASE_CROP_MACHINE[cmSelectedCrop].seedQty));
   }
   renderCmSelectedDetail();
   renderCmQtyControls();
@@ -23556,7 +23563,7 @@ var yieldListener = null;
 function dailyHarvestOnYield(fn) {
   yieldListener = typeof fn === "function" ? fn : null;
 }
-function dailyHarvestSetYield(groupKey, perNode, iconHtml2, nodeQty, econ, farmId) {
+function dailyHarvestSetYield(groupKey, perNode, iconHtml2, nodeQty, econ, farmId, products) {
   if (yieldListener) {
     try {
       yieldListener();
@@ -23577,8 +23584,21 @@ function dailyHarvestSetYield(groupKey, perNode, iconHtml2, nodeQty, econ, farmI
     icon: "",
     nodes: null,
     price: 0,
-    feeRate: 0
+    feeRate: 0,
+    products: null,
+    productName: ""
   });
+  if (Array.isArray(products)) {
+    const clean = products.filter((pr) => pr && typeof pr.name === "string" && pr.name).map((pr) => ({
+      name: pr.name,
+      per: typeof pr.per === "number" && isFinite(pr.per) && pr.per > 0 ? pr.per : 0,
+      icon: pr.icon || "",
+      price: typeof pr.price === "number" && isFinite(pr.price) && pr.price > 0 ? pr.price : 0,
+      feeRate: typeof pr.feeRate === "number" && isFinite(pr.feeRate) && pr.feeRate > 0 ? pr.feeRate : 0
+    }));
+    meta.products = clean.length > 1 ? clean : null;
+    meta.productName = clean.length === 1 ? clean[0].name : "";
+  }
   if (econ && typeof econ === "object") {
     meta.price = typeof econ.price === "number" && isFinite(econ.price) && econ.price > 0 ? econ.price : 0;
     meta.feeRate = typeof econ.feeRate === "number" && isFinite(econ.feeRate) && econ.feeRate > 0 ? econ.feeRate : 0;
@@ -23600,7 +23620,18 @@ function dailyHarvestSetYield(groupKey, perNode, iconHtml2, nodeQty, econ, farmI
   let changed = resolvePending(st, groupKey);
   if (meta.per) st.log.forEach((e) => {
     if (e.y === null || e.y === void 0) {
-      e.y = e.n * meta.per;
+      if (meta.products) {
+        e.p = {};
+        let sum = 0;
+        meta.products.forEach((pr) => {
+          const v = e.n * pr.per;
+          e.p[pr.name] = v;
+          sum += v;
+        });
+        e.y = sum;
+      } else {
+        e.y = e.n * meta.per;
+      }
       changed = true;
     }
   });
@@ -23612,6 +23643,39 @@ var LOG_KIND_OF = {
   fruit: "fruit",
   greenhouse: "greenhouse"
 };
+function addLogTotal(totals, name, kind, amount) {
+  const value = Math.round(amount * 100) / 100;
+  if (!(value > 0) || !isFinite(value)) return;
+  const cur = totals[name];
+  totals[name] = {
+    k: kind,
+    a: cur ? Math.round((cur.a + value) * 100) / 100 : value
+  };
+}
+function animalLogTotals(totals, groupKey, st) {
+  const meta = yieldMeta[groupKey];
+  if (!meta) return;
+  const dropped = typeof st.dropped === "number" ? st.dropped : 0;
+  if (meta.products) {
+    const products = meta.products;
+    const sumPer = products.reduce((sum, pr) => sum + pr.per, 0);
+    const parts = products.map((pr) => sumPer > 0 ? dropped * pr.per / sumPer : 0);
+    st.log.forEach((e) => {
+      splitEntryByProduct(e, products).forEach((v, i) => {
+        parts[i] += v;
+      });
+    });
+    products.forEach((pr, i) => addLogTotal(totals, pr.name, "animal", parts[i]));
+    return;
+  }
+  if (!meta.productName) return;
+  let amount = dropped;
+  st.log.forEach((e) => {
+    if (typeof e.y === "number") amount += e.y;
+    else if (meta.per) amount += e.n * meta.per;
+  });
+  addLogTotal(totals, meta.productName, "animal", amount);
+}
 function dailyHarvestTotals(farmId) {
   const store = freshStore();
   const rec = store[farmId ? String(farmId) : store.__last];
@@ -23620,7 +23684,13 @@ function dailyHarvestTotals(farmId) {
   Object.keys(rec.stats).forEach((groupKey) => {
     const st = rec.stats[groupKey];
     if (!st || !Array.isArray(st.log) || !st.log.length) return;
-    const logKind = LOG_NODE_GROUPS.includes(groupKey) ? "node" : LOG_KIND_OF[st.kind];
+    if (st.kind === "animal") {
+      animalLogTotals(totals, groupKey, st);
+      return;
+    }
+    let logKind = LOG_KIND_OF[st.kind];
+    if (groupKey === "Honey") logKind = "beehive";
+    if (LOG_NODE_GROUPS.includes(groupKey)) logKind = "node";
     if (!logKind) return;
     const per = yieldMeta[groupKey] && yieldMeta[groupKey].per || 0;
     let amount = typeof st.dropped === "number" ? st.dropped : 0;
@@ -23628,11 +23698,7 @@ function dailyHarvestTotals(farmId) {
       if (typeof e.y === "number") amount += e.y;
       else if (per) amount += e.n * per;
     });
-    amount = Math.round(amount * 100) / 100;
-    if (amount > 0 && isFinite(amount)) totals[groupKey] = {
-      k: logKind,
-      a: amount
-    };
+    addLogTotal(totals, groupKey, logKind, amount);
   });
   return {
     day: rec.day,
@@ -23772,13 +23838,69 @@ function formatLogYield(y) {
     maximumFractionDigits: 2
   });
 }
+function splitEntryByProduct(e, products) {
+  if (e.p && typeof e.p === "object") {
+    return products.map((pr) => typeof e.p[pr.name] === "number" ? e.p[pr.name] : 0);
+  }
+  const sumPer = products.reduce((sum, pr) => sum + pr.per, 0);
+  if (typeof e.y === "number") {
+    return products.map((pr) => sumPer > 0 ? e.y * pr.per / sumPer : 0);
+  }
+  return products.map((pr) => e.n * pr.per);
+}
+function multiYieldHtml(values, products) {
+  const lines = values.map((v, i) => v > 1e-9 ? `<span class="dh-log-yield">+${formatLogYield(v)}<span class="dh-log-ico">${products[i].icon}</span></span>` : "").join("");
+  return `<span class="dh-log-multi">${lines || "\u2014"}</span>`;
+}
+function logHtmlProducts(meta, info) {
+  const products = meta.products;
+  const sorted = info.log.slice().sort((a, b) => b.t - a.t);
+  if (!sorted.length) return "";
+  const totals = products.map(() => 0);
+  const sumPer = products.reduce((sum, pr) => sum + pr.per, 0);
+  products.forEach((pr, i) => {
+    totals[i] += sumPer > 0 ? (info.dropped || 0) * pr.per / sumPer : 0;
+  });
+  const merged = [];
+  sorted.forEach((e) => {
+    const parts = splitEntryByProduct(e, products);
+    parts.forEach((v, i) => {
+      totals[i] += v;
+    });
+    const last = merged[merged.length - 1];
+    if (last && last.t - e.t <= LOG_MERGE_GAP) {
+      parts.forEach((v, i) => {
+        last.parts[i] += v;
+      });
+      return;
+    }
+    merged.push({
+      t: e.t,
+      parts
+    });
+  });
+  const rows = merged.map((e) => `<div class="dh-log-row dh-log-row-multi"><span>${formatLogClock(e.t)}</span>${multiYieldHtml(e.parts, products)}</div>`).join("");
+  let gross = 0;
+  let fee = 0;
+  products.forEach((pr, i) => {
+    const g = totals[i] * pr.price;
+    gross += g;
+    fee += g * pr.feeRate;
+  });
+  const net = gross - fee;
+  const valueRows = gross > 0 ? `<div class="dh-log-row"><span>Gross</span><span class="dh-log-yield">${formatLogYield(gross)}<span class="dh-log-ico">${FLOWER_ICON}</span></span></div><div class="dh-log-row"><span>Net</span><span class="dh-log-yield">${formatLogYield(net)}<span class="dh-log-ico">${FLOWER_ICON}</span></span></div>` : "";
+  const sumHtml = `<div class="dh-log-sum"><div class="dh-log-row dh-log-row-multi dh-log-total"><span>Total</span>${multiYieldHtml(totals, products)}</div>${valueRows}</div>`;
+  return `<div class="dh-pop-log guro-frame"><div class="dh-log-head"><span>Time</span><span>Harvested</span></div><div class="dh-log-list">${rows}</div>${sumHtml}</div>`;
+}
 function logHtml(groupKey, info) {
   const meta = yieldMeta[groupKey] || {
     per: 0,
     icon: "",
     price: 0,
-    feeRate: 0
+    feeRate: 0,
+    products: null
   };
+  if (meta.products) return logHtmlProducts(meta, info);
   const sorted = info.log.slice().sort((a, b) => b.t - a.t);
   if (!sorted.length) return "";
   let total = info.dropped || 0;
@@ -23879,7 +24001,9 @@ var KIND_ORDER = {
   node: 0,
   crop: 1,
   fruit: 2,
-  greenhouse: 3
+  greenhouse: 3,
+  animal: 4,
+  beehive: 5
 };
 var pendingFarm = "";
 var settleTimer = null;
@@ -28576,10 +28700,17 @@ function farmPanelRenderAnimalMergedCard(card2) {
   const animalIcon = getIcon(card2.typeLabel);
   const dailyBadgeHtml = dailyHarvestBadgeHtml(card2.typeLabel, "animal", animalIcon, farmPanelDailyFarmId());
   const animalPerHead = card2.count > 0 ? card2.products.reduce((sum, p) => sum + p.totalYield, 0) / card2.count : 0;
+  const animalDailyProducts = card2.products.map((p) => ({
+    name: p.name,
+    per: card2.count > 0 ? p.totalYield / card2.count : 0,
+    icon: getIcon(p.name),
+    price: p.price,
+    feeRate: p.grossRevenue > 0 ? p.feeAmount / p.grossRevenue : 0
+  }));
   dailyHarvestSetYield(card2.typeLabel, animalPerHead, card2.products.length ? getIcon(card2.products[0].name) : "", null, {
     price: card2.avgPricePerUnit,
     feeRate: card2.gross > 0 ? card2.sellFee / card2.gross : 0
-  }, farmPanelDailyFarmId());
+  }, farmPanelDailyFarmId(), animalDailyProducts);
   const productChipsHtml = card2.products.map((p) => `
       <span class="animal-produce-chip">
         <span class="produce-yield">+${fmtAnimal(p.totalYield)}</span>
@@ -29893,6 +30024,7 @@ var IMAGE_ICONS = {
   "Ascended Chicken": "data:image/webp;base64,UklGRkIBAABXRUJQVlA4TDYBAAAvF4AGEKegJLat6Muvd8lukfSiJVV+ARxDDaWRbDVYcDmpP6gscRRPO7SQGdW2lYoZiwjMpADR6eApqOAOXwiybSo2+oM9AAH//486zMlTSvZs4A2K9KhwjEUZwYpH0EnwX2dlCTtrVNSFrT43eAMYg8PYtqImBJevCe79F+v/iCW8G9F/Rm7bRpLlWX3qMz4PsfD9RdjNv/MGjB3aQolpSllU2SR4aGlxiUU61u9hjW6QHB3patxJnkPpAQM3IFUg/mADgS6pC9juXWZNbYiNqIAu4/auAYThYpQUjxQGK0BwGdN2LfGo8zBbWeSSpKtbYm8m99S1AWdn2evcciqos8sQOmlmOutcDhFQ59uzC639TbhXd3YFy0/2KPtWlCX6oU7cWo+8erDeEivxIqrSfHpO84sA",
   "Ascended Cow": "data:image/webp;base64,UklGRnwBAABXRUJQVlA4THABAAAvHMAHEG+gNADQhP8fo1mGSXNri3tDUdtIzmj5c1sE9dkPwqkJgIShGOmJoO+6DEABCbJtKjb6gz0A8P9/OuQo9yzLIU7mrUwbb9PkEOGSPJgBrm3tqZS/Gq2c3msIDiWtQ4I7yeA+VuNON9yS1t0fL7nzDN8f0f8JIGCGnDPkVgH6R5RUwDUSeLnjP1IhH33/j/sV6bMo72N8O679zOcd/2ljGeZDxj/O+JCZA+kYtxy3JmLiuLUixoEZsSV2mJnBqJ8nGHHs2mudDxCQri+I7q7OndZYgICZ2M5wQ3dX50A+MUsATN1wJYCBukzA2qwcrqkEZN022S2VOS2hs7UNQYcwwxLINAvrukXoXB4wTaJEwKYUMMysmgazBBRlFk4GhwnFpj0toaQ+EJbXeigNM6uD5hvr5FhJKIlD9iwUjWRWOue5kFFSSVMqw9hl5HMA2HXtFXXWQ1FnPZAjX/KAPBzwygxb12WQ89qH/B1kAw==",
   "Ascended Sheep": "data:image/webp;base64,UklGRoQBAABXRUJQVlA4THcBAAAvIMAHEI+gNrZt6M+Pd7t21C9UgtSIRdpQEttW9NXXO1sGaIyjBUEIgcT/gU0AAGlwreCagLhk1O2HINumYqM/2AMA+P891wbj1ZveIyyFcq/QLbE2ZexoXuMZezlrDLP/zj7qIQwOI9mKIveL4OKF+YcrHiHMRPR/AoaHp9JX+dJVz46rnh+4nu7rOYDrfrqe7ybFHZM7Tso7JkHJnIIMX0512pkyO1OdhtcN6mYiX2GzDrRHLq1upnzPZm1L63hdDuce0JuXw9ZdVIDZSFAhgbMHsKht8AABolQUBeMAGuAA6oHEv1SbpVnwH0cDdeiqR/ypW2lHoZWt/omj6fDQyJd7/uRow+Mxsqa6oSIpa4yPNFJHwA4x+ijShfLb5o2SLsQTL0CmL9cYfVYpKd9TKm8sdS4poyhS5hrjC4umLFel6PhKI2UVVWLsviMLKF8ZiSwKMX53+53JK76jU+pMjBrMlM7wSh2vRd9x+ZDnn/D6Fd8+4SkA",
+  "Beetle Sheep": "data:image/webp;base64,UklGRp4BAABXRUJQVlA4TJEBAAAvGMAGEH+gJLYVixZYFO6XgFykZFBUIALrtoaaSLaanzva2OOEwSSSYocEbKA0kq3mZ/8VwdMACkXP9BI7oAwIsm0qNvqDPQDA///oSyx55IREE0Vtf97r1Jq7VY+rzjR58Bpkc5BrbXviRl+YORWOzz83EDCVzpEU5kgOlfGoTMXMibxUe5mrVG63wo6pZWZm3jVcQ0T/JwCxU1NZSDxlWUtZ8U7P/ymx3i1djFP1k5dYjR+r8gGcLmnT5VaoqeJMTLRRf/wSaorGyFNH5ccv8kR0OB0IndyW41PyxLaTjoCjLkjB1fkRRyDgBJV7VDdIpQUCSr92O9rzcCwoUCsfGal1cP2pcgNsT4vSOihMVxrw4GmXElyJ10/TgKuvX/F1wx++ug0Atx4aY8zTmwUAXA0PzZpZe+q2AdTz9fCaWQtzdypc9Xxt7969e8PMTSDm4ZHI3kiLW9ipRMwdCZu9fm5TDHu499AzzmLqJeOvX3fxfjelElE9t4m5iSjVRcQ8RPXCJgIoyVTAlQRi46UCAAA=",
   "Ruins Flower": "data:image/webp;base64,UklGRjoBAABXRUJQVlA4TC4BAAAvD4AHEH+gJgCQhhYk4Ft6UsDSlrDFur12DTUBgDTw8W5MYQdzmNbbAubwXopi26DeyqeDsbNUThtVJJFDAQTZNhUb/cEeAPD/HyNK7JNC8nGzkrhN7UDtOA2HNLCsocpcvBqgStumuvnCySXEZf7cwQG/M3vORDI4KjODyqnLRFaxjy8zSZKkWtm60K4P7fQaIvo/AQAQgnL7UHV1E1Ldqp6fFP7wW8gPlKbDN9PTQGn//GhnGmxsql6fmILc2pmY3tmA/Kru7dV+A/Jrvlqb+KmsNb7nJ+LvzlKjUbG7cWfJaTTyVncNm38NJyvXYMeaDV3GwXl3TQiLdQ1hGF0vi3PDNCywuF3QLQ9YPJ3n3AMYyHLpAYAEF0NEQncDRCSihAgRaUTuIfoXVACGAA==",
   "Moon Hair": "data:image/png;base64,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",
   "Rice Shirt": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACUAAAAoCAYAAAB5ADPdAAAK5klEQVR42s1Ya5BcxXX+Tnffe+ex0u5qH1rJigQqYaNdQYVaI0ACjwwCYxu7KuUsRcW4kmCHJJXgsgI2dhzXaPIjBRFB5k9CFgcsP4pEExIeZbAphDSOgqEUSSAjgggC9AhaafY5szM793b3OfkxuysJJCEJF5VT03Wr+vbc/vr0d56ED5B8Pq/Wr18v3/rTr348FP0EIBd5ZlFEpJQqW7bX3zv4w1/n83lVKBQYvwFRZ7OGiIRi/5koDD7hvGcA2jMTgPka+sm7b7vtsvXr14uI0EcDats2AEAS2yRJEiFq7ktElFjLYRBcAIV/JKLZdx9W9BnekQho29NZ82d9a/COppWG6POemZVSCkSYBiIsUv6PXbsHAVDpHAFMa1d1d3ervr4+1dfXp8ypFm4eGNA3F4u+efDXEuA1fPOPbpsKtcFEpQLtPHRgICJQRMo5xwQImgP5XM6gVOIC8IEcI6LZ/83OnQ4QALz07a90VJLGWkmSP9h6lD4WLrrgkqmJcUkaDSIiCMCBMcraZA+9deDTUTZL92zZMjLzrYGBAb25WOTpjeS9ez1wxx3R6Lx52bFDRy6b19Z2FxMxoBSdCtDTX7/p6kwQ3QrCwFTiWlrTUXhwuIZXahmY+T2wtRoa9TpIEUAKlFhP7x4cDwKtrePHsynz3GRddty/ffsbs1acy5nXurulWCz6zZs367179woq8Y1BZH46Wh4Os9lsRiAwJjiuqRlAT339i7fMCYMfEKlswzoAAmbxgVY0NFZXe+O5QGsHhB2SJAbYg8pl6PokQARFhFArJN6/7Rz/WxhkNnKS1O/Zvn1sZh/09uqbC4Xku39+57WZlsyW8bFRMUHIMyyjpi+CKhTAz3zjdz5vgMcBGAYcRLQHQAQCA0Gg8G65hkNVwURqHmq1BKpeQSquAlqLiGD6x4HWhiAgUN0yvx4Ewb2uUT+6Yft/lQDgr9bdfUmg1Zfrk9W7WIDs3LlamIWUalJ588CATrVPRVFG/yIdBFcnzrvDI1MmHWnMz0bghBEHzXMYTfCOcazSwKUrqnjrXcHzLwJGMYgIWhNIAHhh0cBoQ9ScUKE11KibqJFZcfkzEBERrMpmMj0jw2Vm75U2xisi7dnHems+Z276+6f5K6uW39gSheti73hoLA52vzWOxW1pjLUqHOphLKgQGACzwMXAZde3oveWbiz/ZAeG9zvohkI6pVGbtHChgm3TNDXmeNyK70oraljHlEqHQUfP8nQ6vVyAlsrEGNs4hjaaoyDUSRwPu4b7ktmGEm/N/340NTp+t/U+9B58sFyHsEBpgnHAi50ONmuw4k0NNUcjOWIBsWDJQhmH5QszWKjSUFmFtw/V8OwShhmyiA5Yvbgt1ACDAC/Mvlqp8FS9BgDaWoswDJUigk3sfZb5Xx/48UMvmUIBvGpd5bPp0KxmYRkaa6hjEzFiBiwJFnuFtXsMHr3CYeky4AufibB3RwrDr5SxbMUUakMOlSGN3ls60OPreO5Zg3krNXo3eTxr7RNdpKre4/fSQaC9NrBaa/YeIoJUGIJZdlvv/+XvfvAP9864EfNqfiD833F7RxAoHqslcqhc1w0vGGl4aBASEhgBDBGqVeDQk8ew4svd2OO6sP2RMhwFuPhLnVjYPob/3lRHzaTEiFAKxDzZ+JO/3btr6M5PX/UIC6dtmP4EIN+DiAuMUcz8SqXOtzz4kweP5fN5BQCFQsGbw2P+d8NAX1WLHRikJxuORxtM89OGWAACNV01M4JMhAnVhcO/GMGl13Xi16Mh2i5Mobuzin1bLHx3F8x4BQ1pesqwJWrP53LDha2l56c9z8/y69b9sFKpgIyhoclabdNPNjUGBgZ0oVDwM+7JGPh0RDol5HmoPImRmlOZQCNlCCwy6/dZFEJKcMla4MhoDw4+M4S+ZROwTuOdX3Zg8Y3dSL09Ct4GzMZl732hVHK39/cHa5cu5YFikWnjxtH3xj4i8ifOmSHOImIFK15GwKipZN9cJCmjzBKlSICmqowRVCdD7Hqogktv9yj3LsDPH80i265w+R/Ogd9/BL96TIN6NKiZ78xusmDnTn/zzp0MAAKhZnQTEGgm9p0k5nVuq2qJkLjEm45WvXBO1z+rfa8uMlp/9cDRGnemQ62IwBbItgkWXr4A7/xyBBdeUcGqNRWketJo7G+gfKwFyz6Xgt49gdG6w9B4A51zovcHYJCcJuwez6eUkuu1eMA1iOMGnLUtAjIAMFpN4FnAJLABQDWPeVLG/Ou6sP8Fi/pojOGXJzAynMGya1PIjA5DecKkeFSmLOZG55nkmSD8mvMeAkUMeIKqEtACAIEmiAY6vcJvv0XY0k341c80aN8RLPpcF159Yz7elUW44NoQw08cRfGlEEcuAj61P2gy/XxBWYSMIMsmmqNiCar11IUboNQuZvbOC1WnLLJpjS8cjdAyKnjqygC7/jNE9HYZN3z2KFZecQyVreP4+RtZlFYTrq0E6NpjIRoIzxOVIVIKgA+CUAvwwOBgoZ7r7x/sZPcdCLIHXx7mlrRRYAHvAN7sYRyZNHhse4w5nRbiaxgbTuNAikAHBDuOkByuxwALK6oDAArnCgqAEKDqk5NDKlSbAeCydHouyLdoRXBeqDWtm1cJ4ON1wBrABVn4yaYhLWhjLBFAJgHXQWpJdwStlImtU4/vAfLnCMw4m/hMOoOJJN70/Uceeu32/v6AnDsSpGhjqOnWOrNvz5iOvsWtAcu0Qcu07cwYkDTzXiLAEFWykWkkjh/vyKrDf9mfV1QoyDlpyiaxclG6mm1tfR4AxpYu5cFicQrAX9yztr8Q+4gPlmvPjFTsauucB9Epiw2BuFQQmIZz93+x/+L7c/c9XMNZ5OinJnpiuVGfnBuF0Y++943vrO7t7ZXpOETffm7nxIYXXqhqpZz3AucFnk8ebmY4gfeCxPHU1RseruZzOXVGZ3QmTUVhaBpTdUdE851zxWO7X126qVRqAKABQBcBBpolHRHgWd5bqU5XJYBSgNbQAtD62Ys9D00lzt4XhZEJlIJLksF6d7ed1pT0nlA2iQiiQKN/WTv6l7XjkxfNw4olrQgMITTNmjaxDOtE6DzBzILa+E+D37TWfhdEm5n0o8Xp8ur9nAGMIvS0p9DTnsL8tgiLuzJYtbwT1/R1ondxKz7Wkcbi9syHrpANANz/8ODfnDh5ukaFALBOTqoao6Cppd/qzKAtE2GingAA1qwBCqXz1NRs0TgwoM+GmDPcoplYL83hWJA4hmX+zWiqWCz64of8EOGEPOojaAV95PL/EpQ5gcS0Ppc72VuXyyrf1cWTiM/6YoRF5XM5MzWa1vlcrmk4pZI/F59lTuCEoFRyp1p0V+5KezynPl2fqfkMAlUvlEoOJbiT25TN1sBZ8VOa/JRv5VYu0iq1MvExSGnSx5N6EchfE6g3HWq+5pIudRpUPhuF+sBw7acvvl7+90wqUM4yewD3bXvhsXMymtv7+4PBnTvtumuu/OOObObBahxDE8H54yqx3sOLINCEjtPluNOnq8eMqdg3u0wCMATi5dmJOH7wf3bsempNPs8f1LA1C266yWPnTlIiL9eSeAgiPVbY9bSniGaIQM1OlABo9mFPiwutGcPtLUZmqzMijoy+oeFS1y2/4IaL7ywU3swD6kxdPjrhKXdec9WnNNHXMmlz6+reeaxJaTmF8zwj0d8fhoUgzESalLv4ug1P7vug9vb/AXSBewDL8ybjAAAAAElFTkSuQmCC",
@@ -31739,6 +31871,9 @@ function computeAnimalRealProgress(type, animal, now, readyAt) {
     noOfFeeds
   };
 }
+function roundClaimProduce(n) {
+  return Math.round(Number((n * 100).toPrecision(12))) / 100;
+}
 function computeAnimalYieldsForLevel(type, level, realFeedBuffName) {
   const cfg = ANIMAL_DATA[type];
   const lvl = Math.min(15, Math.max(1, parseInt(level) || 1));
@@ -31772,7 +31907,7 @@ function computeAnimalYieldsForLevel(type, level, realFeedBuffName) {
     yieldMultAll: 1
   };
   yieldMultAllTotal *= spice.yieldMultAll;
-  const yields = [Math.max(0, (lvlData.y[0] + yieldAdd[0]) * yieldMultAllTotal), Math.max(0, (lvlData.y[1] + yieldAdd[1]) * yieldMultAllTotal)];
+  const yields = [roundClaimProduce(Math.max(0, (lvlData.y[0] + yieldAdd[0]) * yieldMultAllTotal)), roundClaimProduce(Math.max(0, (lvlData.y[1] + yieldAdd[1]) * yieldMultAllTotal))];
   return {
     yields,
     products: cfg.products
@@ -32365,7 +32500,19 @@ var CROP_MACHINE_PACK_MAX = {
   Broccoli: 450
 };
 var CROP_MACHINE_OIL_CAP_BASE = 48;
-function getCropMachineOilCap() {
+var CROP_MACHINE_BASE_PLOTS = 10;
+function getCropMachinePlots() {
+  let add = 0;
+  try {
+    if (isSkillActive("skill_field_extension_module")) {
+      const s = SKILL_BOOSTS.find((sk) => sk.id === "skill_field_extension_module");
+      add = s && s.plotAdd || 0;
+    }
+  } catch (e) {
+  }
+  return CROP_MACHINE_BASE_PLOTS + add;
+}
+function getCropMachineOilCapHours() {
   let mult = 1;
   try {
     if (isSkillActive("skill_leak_proof_tank")) {
@@ -32375,6 +32522,20 @@ function getCropMachineOilCap() {
   } catch (e) {
   }
   return CROP_MACHINE_OIL_CAP_BASE * mult;
+}
+function getCropMachineOilCap() {
+  let rate = 1;
+  try {
+    rate = computeCropMachineOilMult();
+  } catch (e) {
+  }
+  return getCropMachineOilCapHours() * rate;
+}
+function getCropMachinePackMax(name) {
+  const stock = BASE_STOCK_CROPS[name];
+  if (!stock) return CROP_MACHINE_PACK_MAX[name] || 0;
+  const boosted = typeof isBoostActive === "function" && isBoostActive("warehouse_stock") ? Math.ceil(stock * 1.2) : stock;
+  return Math.ceil(boosted * 2.5);
 }
 var RESTOCK_GEM_COST = {
   seeds: 15,
@@ -33564,6 +33725,9 @@ function setAnimalCount(type, field, val) {
   saveAnimalCounts();
 }
 var omnifeedEnabled = localStorage.getItem("hl_omnifeed_enabled") === "true";
+function isOmnifeedEnabled() {
+  return omnifeedEnabled;
+}
 function setOmnifeedEnabled(val) {
   omnifeedEnabled = !!val;
   localStorage.setItem("hl_omnifeed_enabled", String(omnifeedEnabled));
@@ -33674,9 +33838,9 @@ function __memoWithTTL(cache, key, computeFn) {
   });
   return result;
 }
-function computeBoostedCropStats(cropName, baseYield, baseTimeSec, plotCountOverride, windowSec, includeBeeSwarm) {
-  const key = cropName + "|" + baseYield + "|" + baseTimeSec + "|" + plotCountOverride + "|" + windowSec + "|" + includeBeeSwarm;
-  return __memoWithTTL(__boostedCropStatsMemo, key, () => computeBoostedCropStatsUncached(cropName, baseYield, baseTimeSec, plotCountOverride, windowSec, includeBeeSwarm));
+function computeBoostedCropStats(cropName, baseYield, baseTimeSec, plotCountOverride, windowSec, includeBeeSwarm, machineYield) {
+  const key = cropName + "|" + baseYield + "|" + baseTimeSec + "|" + plotCountOverride + "|" + windowSec + "|" + includeBeeSwarm + "|" + !!machineYield;
+  return __memoWithTTL(__boostedCropStatsMemo, key, () => computeBoostedCropStatsUncached(cropName, baseYield, baseTimeSec, plotCountOverride, windowSec, includeBeeSwarm, machineYield));
 }
 function computeBoostedFruitStats(fruitName, baseYield, baseTimeSec, baseMinHarvest, nodeCountOverride, windowSec) {
   const key = fruitName + "|" + baseYield + "|" + baseTimeSec + "|" + baseMinHarvest + "|" + nodeCountOverride + "|" + windowSec;
@@ -33994,18 +34158,18 @@ function computeBoostedMachineTimeSec(baseTimeSec, windowSec) {
   return blendedCyclesPerDay > 0 ? Math.max(1, 86400 / blendedCyclesPerDay) : Math.max(1, baseTimeSec * alwaysTimeMult);
 }
 function computeCropMachineOilMult() {
-  let oilQtyMult = 1;
+  let penalty = 0;
   let oilReducePct = 0;
   getActiveBoostsForCropMachine().forEach((b) => {
-    if (b.oilQtyMult) oilQtyMult *= b.oilQtyMult;
+    if (b.oilQtyMult) penalty += b.oilQtyMult - 1;
     if (b.oilReducePct) oilReducePct += b.oilReducePct;
   });
-  return oilQtyMult * Math.max(0, 1 - oilReducePct);
+  return (1 + penalty) * Math.max(0, 1 - oilReducePct);
 }
 function getCropMachineYieldMultiplier(name) {
   const base = BASE_CROPS[name];
   if (!base) return 1;
-  const boosted = computeBoostedCropStats(name, 1, base.timeSec);
+  const boosted = computeBoostedCropStats(name, 1, base.timeSec, void 0, void 0, false, true);
   return boosted.yieldVal;
 }
 function computeCropMachineBatch(name, qty) {
@@ -34014,8 +34178,10 @@ function computeCropMachineBatch(name, qty) {
   if (!base || !cropBase) return null;
   qty = Math.max(0, qty || 0);
   const ratio = base.seedQty > 0 ? qty / base.seedQty : 0;
-  const timeSec = computeBoostedMachineTimeSec(base.timeSec) * ratio;
-  const oilQty = base.oilQty * ratio * computeCropMachineOilMult();
+  const plots = getCropMachinePlots();
+  const timeSec = computeBoostedMachineTimeSec(base.timeSec) * ratio * CROP_MACHINE_BASE_PLOTS / plots;
+  const oilRate = computeCropMachineOilMult();
+  const oilQty = timeSec / 3600 * oilRate;
   const yieldMult = getCropMachineYieldMultiplier(name);
   const yieldQty = base.yieldQty * ratio * yieldMult;
   const seedCoinCost = (hasFreeCostBoost(name) ? 0 : cropBase.seedCost || 0) * qty;
@@ -34041,7 +34207,9 @@ function computeCropMachineBatch(name, qty) {
     netSellFlower,
     revenueFlower,
     profitFlower,
-    yieldMult
+    yieldMult,
+    oilRate,
+    plots
   };
 }
 function computeMachineRestockGems(name, totalQty) {
@@ -36300,8 +36468,10 @@ var SKILL_MACHINE = [{
   id: "skill_field_extension_module",
   name: "Field Extension Module",
   skillTier: 3,
-  notModeled: true,
-  note: "+5 plots added to the Crop Machine"
+  category: "cropmachine",
+  scope: "machineGlobal",
+  plotAdd: 5,
+  note: "+5 plots added to the Crop Machine (more plots = shorter pack time and less oil)"
 }, {
   id: "skill_efficiency_extension_module",
   name: "Efficiency Extension Module",
@@ -37231,9 +37401,9 @@ var ASCENSION_RANK_DATA = {
     note: "Extra packs added to Crop Machine queue (now wired)"
   },
   skill_field_extension_module: {
-    field: null,
+    field: "plotAdd",
     values: [5, 7, 10],
-    note: "Extra plots added to Crop Machine \u2014 not wired yet"
+    note: "Extra plots added to the Crop Machine (now wired)"
   },
   skill_fish_smoking: {
     field: null,
@@ -39009,6 +39179,7 @@ var CROP_MACHINE_BOOSTS = [{
   id: "tortoise_shrine_machine",
   name: "Tortoise Shrine (7d)",
   scope: "machineGlobal",
+  limitedBoostName: "Tortoise Shrine",
   timeMult: 0.9,
   note: "Temporary, 7 days \xB7 machine batch time"
 }];
@@ -39467,6 +39638,14 @@ var ANIMAL_BOOSTS = [{
   target: "sheep",
   timeMult: 0.8,
   note: "-20% sleep time (more cycles/day)"
+}, {
+  id: "beetle_sheep",
+  name: "Beetle Sheep",
+  category: "animals",
+  scope: "animalType",
+  target: "sheep",
+  timeMult: 0.925,
+  note: "-7.5% sleep time (more cycles/day)"
 }, {
   id: "longhorn_cowfish",
   name: "Longhorn Cowfish",
@@ -40567,9 +40746,9 @@ function boostAffectsYieldOrTime(b, itemName) {
   if (b.flowerTimeMult) return true;
   return false;
 }
-function computeBoostedCropStatsUncached(cropName, baseYield, baseTimeSec, plotCountOverride, windowSec, includeBeeSwarm) {
+function computeBoostedCropStatsUncached(cropName, baseYield, baseTimeSec, plotCountOverride, windowSec, includeBeeSwarm, machineYield) {
   windowSec = windowSec || 86400;
-  const active = getActiveBoostsForCrop(cropName).filter((b) => includeBeeSwarm || !b.beeSwarmStack && !b.debuffStack);
+  const active = getActiveBoostsForCrop(cropName).filter((b) => includeBeeSwarm || !b.beeSwarmStack && !b.debuffStack).filter((b) => !machineYield || !b.plotCap && !b.composterFertilizer && b.id !== "hoot");
   const cropTier = (BASE_CROPS[cropName] || {}).tier;
   let addSum = 0;
   let multBonusSum = 0;
@@ -42553,7 +42732,7 @@ function computeAnimalTypeFigures(type, visited, levelOverride) {
   const requiredQtyPerFeed = REQUIRED_FOOD_QTY_MAP[type];
   const effectiveFeedQty = freeFeed ? 0 : Math.max(0, feedFig.noOfFeeds * requiredQtyPerFeed * feedMultTotal);
   const feedCostCoins = effectiveFeedQty * feedInfo.cost;
-  const yields = [Math.max(0, (lvlData.y[0] + yieldAdd[0]) * yieldMultAllTotal), Math.max(0, (lvlData.y[1] + yieldAdd[1]) * yieldMultAllTotal)];
+  const yields = [roundClaimProduce(Math.max(0, (lvlData.y[0] + yieldAdd[0]) * yieldMultAllTotal)), roundClaimProduce(Math.max(0, (lvlData.y[1] + yieldAdd[1]) * yieldMultAllTotal))];
   const totalYieldUnits = yields[0] + yields[1];
   const curesPerLevel = getCuresPerLevelForType(type);
   const costPerCureFlower = cureFree ? 0 : computeMedicineCostFlower(visited) * cureCostMult;
@@ -46518,7 +46697,7 @@ function cmModuleTagHtml(name) {
   return `<span class="module-tag${cls}">${mod === "Base" ? "Base" : "Module " + mod}</span>`;
 }
 function cmClampQty(name, qty) {
-  const max = CROP_MACHINE_PACK_MAX[name] || 0;
+  const max = getCropMachinePackMax(name);
   return Math.max(0, Math.min(qty, max));
 }
 var expandedFlowers = /* @__PURE__ */ new Set();
@@ -46710,7 +46889,7 @@ if ($("cmQtyRow")) {
       const mode = btn.dataset.cmqty;
       const base = BASE_CROP_MACHINE[cmSelectedCrop];
       if (!base) return;
-      const max = CROP_MACHINE_PACK_MAX[cmSelectedCrop] || 0;
+      const max = getCropMachinePackMax(cmSelectedCrop);
       if (mode === "all") cmQty = max;
       else if (mode === "+10") cmQty = Math.min(max, cmQty + 10);
       else if (mode === "-10") cmQty = Math.max(0, cmQty - 10);
@@ -46726,7 +46905,7 @@ if ($("cmAddBtn")) {
       toast(`\u{1F69C} Queue is full (${getCropMachineQueueSlots()}/${getCropMachineQueueSlots()} packs) \u2014 remove a pack first`);
       return;
     }
-    const max = CROP_MACHINE_PACK_MAX[cmSelectedCrop] || 0;
+    const max = getCropMachinePackMax(cmSelectedCrop);
     const qty = Math.min(cmQty, max);
     if (qty <= 0) return;
     cmQueue.push({
@@ -64957,7 +65136,7 @@ function profileTradableResourceRows(g) {
   });
   return rows.sort((a, b) => b.value - a.value);
 }
-var COLLECTIBLE_BOOST_NAMES = ["Alba", "Alien Chicken", "Ancient Tree", "Anemone Flower", "Apprentice Beaver", "Ascended Chicken", "Ascended Cow", "Ascended Idol", "Ascended Sheep", "Ascension Monument", "Astrolabe", "Astronaut Sheep", "Autumn Guardian", "Ayam Cemani", "Baby Cow", "Badger Shrine", "Bale", "Banana Chicken", "Bantam Shrine", "Barn Blueprint", "Basic Scarecrow", "Battle Fish", "Bear Shrine", "Beehive", "Black Bearry", "Blossom Hourglass", "Blossombeard", "Boar Shrine", "Butterfly", "Cabbage Boy", "Cabbage Girl", "Camel", "Cannonball", "Carrot Sword", "Chicken Coop", "Chicory", "Christmas Tree", "Cluckulator", "Collie Shrine", "Cornucopia", "Crab House", "Crim Peckster", "Crimson Carp", "Crimstone Clam", "Crystal Altar", "Deep Sea Slug", "Desert Gnome", "Desert Rose", "Dino Egg Trophy", "Dr Cow", "Dumbo Octopus", "Easter Bunny", "El Pollo Veloz", "Emerald Turtle", "Fairy Circle", "Farm Dog", "Farmer's Monument", "Fat Chicken", "Festive Tree", "Fisher's Hourglass", "Flamingo Chicken", "Flower Fox", "Foliant", "Foreman Beaver", "Fox Shrine", "Freya Fox", "Frozen Cow", "Frozen Sheep", "Fruit Tune Box", "Fruitful Blend", "Fused Stone Rock", "Genie Lamp", "Giant Artichoke", "Giant Gold Bone", "Giant Kale", "Giant Onion", "Giant Turnip", "Giant Yam", "Giant Zucchini", "Gilded Swordfish", "Gnome", "Gold Beetle", "Gold Egg", "Golden Cauliflower", "Golden Cow", "Golden Sheep", "Gourmet Hourglass", "Grain Grinder", "Grape Granny", "Greenhouse Glow", "Greenhouse Goodie", "Grinx's Hammer", "Groovy Gramophone", "Harvest Hourglass", "Heart of Davy Jones", "Honey Treat", "Hoot", "Hound Shrine", "Humming Bird", "Hungry Caterpillar", "Hungry Hare", "Immortal Pear", "Iron Beetle", "Iron Idol", "Janitor Chicken", "Jellyfish", "Karkinos", "Kernaldo", "King of Bears", "Knight Chicken", "Knowledge Crab", "Kuebiko", "Lab Grown Carrot", "Lab Grown Pumpkin", "Lab Grown Radish", "Lady Bug", "Laurie the Chuckle Crow", "Legendary Shrine", "Lemon Frog", "Lemon Shark", "Lemon Tea Bath", "Longhorn Cowfish", "Lunar Calendar", "Lunar Temple", "Macaw", "Magma Stone", "Mammoth", "Maneki Neko", "Maximus", "Meerkat", "Mermaid Sheep", "Miner's Monument", "Mole Shrine", "Moo-ver", "Mootant", "Moth Shrine", "Mushroom House", "Mysterious Parsnip", "Nana", "Nancy", "Nautilus", "Navigation Table", "Nugget", "Nurse Sheep", "Oaken", "Obie", "Observatory", "Obsidian Shrine", "Obsidian Turtle", "Orchard Hourglass", "Ore Hourglass", "Otty the Otter", "Pablo The Bunny", "Peeled Potato", "Pet Bowls", "Pharaoh Chicken", "Pharaoh Gnome", "Pink Dolphin", "Poppy", "Poseidon", "Poseidon's Throne", "Potent Potato", "Prime Gold Rock", "Pure Gold Rock", "Purple Trail", "Quarry", "Queen Bee", "Queen Cornelia", "Radiant Ray", "Radical Radish", "Rapid Root", "Reelmaster's Chair", "Refined Iron Rock", "Reinforced Stone Rock", "Reveling Lemon", "Rice Panda", "Rich Chicken", "Rock Golem", "Rocky the Mole", "Rooster", "Royal Crab Pot", "Ruins Flower", "Sacred Tree", "Salt Crystal Flower", "Salt Lick", "Salt Sculpture", "Salt Worker Gnome", "Scarecrow", "Scary Mike", "Sheaf of Plenty", "Sir Goldensnout", "Skill Shrimpy", "Sleepy Chicken", "Soil Krabby", "Soybliss", "Spa Cow", "Spa Sheep", "Sparrow Shrine", "Speed Chicken", "Speed Trap", "Spring Guardian", "Sprout Mix", "Sproutroot Surprise", "Squid Chicken", "Squirrel", "Squirrel Monkey", "Stag Shrine", "Stellar Sunflower", "Stone Beetle", "Summer Chicken", "Summer Guardian", "Super Star", "Super Totem", "Swiss Whiskers", "Teamwork Monument", "Tempered Iron Rock", "Tiki Totem", "Timber Hourglass", "Time Warp Totem", "Tin Turtle", "Tomato Bombard", "Tomato Clown", "Toolshed", "Tortoise Shrine", "Toucan Shrine", "Toxic Tuft", "Trading Shrine", "Treasure Map", "Tunnel Mole", "Turbo Sprout", "Turbofruit Mix", "Undead Rooster", "Vibraphone", "Victoria Sisters", "Vinny", "Volcano Gnome", "Walrus", "Warehouse", "Winged Vase", "Winter Guardian", "Wood Nymph Wendy", "Woodcutter's Monument", "Woody the Beaver"];
+var COLLECTIBLE_BOOST_NAMES = ["Alba", "Alien Chicken", "Ancient Tree", "Anemone Flower", "Apprentice Beaver", "Ascended Chicken", "Ascended Cow", "Ascended Idol", "Ascended Sheep", "Ascension Monument", "Astrolabe", "Astronaut Sheep", "Autumn Guardian", "Ayam Cemani", "Baby Cow", "Badger Shrine", "Bale", "Banana Chicken", "Bantam Shrine", "Barn Blueprint", "Beetle Sheep", "Basic Scarecrow", "Battle Fish", "Bear Shrine", "Beehive", "Black Bearry", "Blossom Hourglass", "Blossombeard", "Boar Shrine", "Butterfly", "Cabbage Boy", "Cabbage Girl", "Camel", "Cannonball", "Carrot Sword", "Chicken Coop", "Chicory", "Christmas Tree", "Cluckulator", "Collie Shrine", "Cornucopia", "Crab House", "Crim Peckster", "Crimson Carp", "Crimstone Clam", "Crystal Altar", "Deep Sea Slug", "Desert Gnome", "Desert Rose", "Dino Egg Trophy", "Dr Cow", "Dumbo Octopus", "Easter Bunny", "El Pollo Veloz", "Emerald Turtle", "Fairy Circle", "Farm Dog", "Farmer's Monument", "Fat Chicken", "Festive Tree", "Fisher's Hourglass", "Flamingo Chicken", "Flower Fox", "Foliant", "Foreman Beaver", "Fox Shrine", "Freya Fox", "Frozen Cow", "Frozen Sheep", "Fruit Tune Box", "Fruitful Blend", "Fused Stone Rock", "Genie Lamp", "Giant Artichoke", "Giant Gold Bone", "Giant Kale", "Giant Onion", "Giant Turnip", "Giant Yam", "Giant Zucchini", "Gilded Swordfish", "Gnome", "Gold Beetle", "Gold Egg", "Golden Cauliflower", "Golden Cow", "Golden Sheep", "Gourmet Hourglass", "Grain Grinder", "Grape Granny", "Greenhouse Glow", "Greenhouse Goodie", "Grinx's Hammer", "Groovy Gramophone", "Harvest Hourglass", "Heart of Davy Jones", "Honey Treat", "Hoot", "Hound Shrine", "Humming Bird", "Hungry Caterpillar", "Hungry Hare", "Immortal Pear", "Iron Beetle", "Iron Idol", "Janitor Chicken", "Jellyfish", "Karkinos", "Kernaldo", "King of Bears", "Knight Chicken", "Knowledge Crab", "Kuebiko", "Lab Grown Carrot", "Lab Grown Pumpkin", "Lab Grown Radish", "Lady Bug", "Laurie the Chuckle Crow", "Legendary Shrine", "Lemon Frog", "Lemon Shark", "Lemon Tea Bath", "Longhorn Cowfish", "Lunar Calendar", "Lunar Temple", "Macaw", "Magma Stone", "Mammoth", "Maneki Neko", "Maximus", "Meerkat", "Mermaid Sheep", "Miner's Monument", "Mole Shrine", "Moo-ver", "Mootant", "Moth Shrine", "Mushroom House", "Mysterious Parsnip", "Nana", "Nancy", "Nautilus", "Navigation Table", "Nugget", "Nurse Sheep", "Oaken", "Obie", "Observatory", "Obsidian Shrine", "Obsidian Turtle", "Orchard Hourglass", "Ore Hourglass", "Otty the Otter", "Pablo The Bunny", "Peeled Potato", "Pet Bowls", "Pharaoh Chicken", "Pharaoh Gnome", "Pink Dolphin", "Poppy", "Poseidon", "Poseidon's Throne", "Potent Potato", "Prime Gold Rock", "Pure Gold Rock", "Purple Trail", "Quarry", "Queen Bee", "Queen Cornelia", "Radiant Ray", "Radical Radish", "Rapid Root", "Reelmaster's Chair", "Refined Iron Rock", "Reinforced Stone Rock", "Reveling Lemon", "Rice Panda", "Rich Chicken", "Rock Golem", "Rocky the Mole", "Rooster", "Royal Crab Pot", "Ruins Flower", "Sacred Tree", "Salt Crystal Flower", "Salt Lick", "Salt Sculpture", "Salt Worker Gnome", "Scarecrow", "Scary Mike", "Sheaf of Plenty", "Sir Goldensnout", "Skill Shrimpy", "Sleepy Chicken", "Soil Krabby", "Soybliss", "Spa Cow", "Spa Sheep", "Sparrow Shrine", "Speed Chicken", "Speed Trap", "Spring Guardian", "Sprout Mix", "Sproutroot Surprise", "Squid Chicken", "Squirrel", "Squirrel Monkey", "Stag Shrine", "Stellar Sunflower", "Stone Beetle", "Summer Chicken", "Summer Guardian", "Super Star", "Super Totem", "Swiss Whiskers", "Teamwork Monument", "Tempered Iron Rock", "Tiki Totem", "Timber Hourglass", "Time Warp Totem", "Tin Turtle", "Tomato Bombard", "Tomato Clown", "Toolshed", "Tortoise Shrine", "Toucan Shrine", "Toxic Tuft", "Trading Shrine", "Treasure Map", "Tunnel Mole", "Turbo Sprout", "Turbofruit Mix", "Undead Rooster", "Vibraphone", "Victoria Sisters", "Vinny", "Volcano Gnome", "Walrus", "Warehouse", "Winged Vase", "Winter Guardian", "Wood Nymph Wendy", "Woodcutter's Monument", "Woody the Beaver"];
 var WEARABLE_BOOST_NAMES = ["Alchemist Apron", "Ancient Rod", "Ancient Shovel", "Angel Wings", "Angler Waders", "Architect Ruler", "Autumn's Embrace", "Banana Amulet", "Banana Onesie", "Beast Shoes", "Bee Suit", "Beekeeper Hat", "Beetroot Amulet", "Bionic Drill", "Black Sheep Onesie", "Blossom Ward", "Broccoli Hat", "Bubble Aura", "Bucket O' Worms", "Bumpkin Armor", "Bumpkin Crown", "Bumpkin Helmet", "Bumpkin Medallion", "Bumpkin Pants", "Bumpkin Quiver", "Bumpkin Sabatons", "Bumpkin Shield", "Bumpkin Sword", "Camel Onesie", "Carrot Amulet", "Cattlegrim", "Chef Apron", "Chicken Suit", "Corn Onesie", "Corn Silk Hair", "Cowbell Necklace", "Crab Hat", "Crab Trap", "Crimstone Amulet", "Crimstone Armor", "Crimstone Hammer", "Crimstone Spikes Hair", "Deep Sea Helm", "Deep Sea Salt Cave Background", "Dev Wrench", "Devil Wings", "Dream Scarf", "Eggplant Onesie", "Flower Crown", "Frozen Heart", "Fruit Picker Apron", "Goblin Armor", "Goblin Axe", "Goblin Crown", "Goblin Helmet", "Goblin Medallion", "Goblin Pants", "Goblin Quiver", "Goblin Sabatons", "Goblin Shield", "Golden Spatula", "Grape Pants", "Green Amulet", "Honeycomb Shield", "Hornet Mask", "Infernal Bullwhip", "Infernal Drill", "Infernal Pitchfork", "Ladybug Suit", "Lava Swimwear", "Lemon Shield", "Luminous Anglerfish Topper", "Luna's Crescent", "Luna's Hat", "Master Chef's Cleaver", "Medic Apron", "Merino Jumper", "Milk Apron", "Moon Hair", "Mushroom Hat", "Nightshade Armor", "Nightshade Crown", "Nightshade Helmet", "Nightshade Medallion", "Nightshade Pants", "Nightshade Quiver", "Nightshade Sabatons", "Nightshade Shield", "Nightshade Sword", "Non La Hat", "Obsidian Necklace", "Oil Can", "Oil Gallon", "Oil Overalls", "Olive Royalty Shirt", "Olive Shield", "Oracle Syringe", "Pan", "Parsnip", "Paw Aura", "Paw Shield", "Pickaxe Shark", "Pirate Potion", "Pistol Shrimp", "Red Pepper Onesie", "Rice Shirt", "Salt Bottle Onesie", "Saw Fish", "Shrimp Onesie", "Sickle", "Sol & Luna", "Solflare Aegis", "Squirrel Onesie", "Sunflorian Armor", "Sunflorian Crown", "Sunflorian Helmet", "Sunflorian Medallion", "Sunflorian Pants", "Sunflorian Quiver", "Sunflorian Sabatons", "Sunflorian Shield", "Sunflorian Sword", "Sunflower Amulet", "Sunflower Rod", "Sunflower Shield", "Surfer Hair", "Tofu Mask", "Training Whistle", "Trident", "Turd Topper", "Victoria's Apron", "Walrus Onesie", "White Sheep Onesie"];
 var MARKETPLACE_WEARABLE_NAMES = ["2026 Tiara", "404 Chic Boots", "404 Chic Skirt", "404 Chic Top", "Abyssal Angler Hat", "Acorn Hat", "Admin Fools Tools", "Adventurer's Suit", "Adventurer's Torch", "Aether Specs", "Alchemist Apron", "Amber Amulet", "Amberfall Suit", "Ancient Goblin Sword", "Ancient Rod", "Ancient Shovel", "Ancient War Hammer", "Angel Wings", "Angler Waders", "Angry Mouth", "Ankh Shirt", "Antique Dress", "Architect Ruler", "Artist Scarf", "Ascension Staff", "Ascension Wings", "Ash Ponytail", "Auction Megaphone", "Auctioneer Slacks", "Autumn's Embrace", "Baby Teeth", "Banana Amulet", "Banana Onesie", "Basic Hair", "Bat Wings", "Beach Sarong", "Beach Trunks", "Bear Onesie", "Beast Shoes", "Bee Smoker", "Bee Suit", "Bee Wings", "Beehive Staff", "Beekeeper Hat", "Beekeeper Suit", "Beetroot Amulet", "Beige Farmer Potion", "Bidder's Brocade", "Big Smile", "Big Wink Eyes", "Bionic Drill", "Birthday Hat", "Black Farmer Boots", "Black Sheep Onesie", "Blacksmith Hair", "Bloomwarden Suit", "Blossom Dumbo", "Blossom Ward", "Blue Blossom Shirt", "Blue Farmer Shirt", "Blue Jelly Shoes", "Blue Monarch Dress", "Blue Monarch Shirt", "Blue Rose Dress", "Blue Slime Shirt", "Blue Suspenders", "Boater Hat", "Brasil Jersey", "Broccoli Hat", "Brown Boots", "Brown Long Hair", "Brown Rancher Hair", "Brown Suspenders", "Brush Back Hair", "Bubble Aura", "Bucket O' Worms", "Bumpkin Armor", "Bumpkin Art Competition Merch", "Bumpkin Boots", "Bumpkin Crown", "Bumpkin Eyes", "Bumpkin Helmet", "Bumpkin Medallion", "Bumpkin Pants", "Bumpkin Puppet", "Bumpkin Quiver", "Bumpkin Sabatons", "Bumpkin Shield", "Bumpkin Smile", "Bumpkin Sword", "Bunny Mask", "Bunny Onesie", "Bunny Pants", "Butterfly Aura", "Butterfly Wings", "Buzz Cut", "Camel Onesie", "Candy Cane", "Candy Halbred", "Cap n Bells", "Cardboard Wings", "Carrot Amulet", "Carrot Pitchfork", "Cemetery Background", "Chef Apron", "Chef Hat", "Chef Shirt", "Chemist Potion", "Chic Gala Blouse", "Chicken Hat", "Chicken Suit", "China Town Background", "Christmas Background", "Clam Shell Hat", "Clown Shirt", "Club Polo", "Coconut Mask", "Coin Aura", "Coin Head", "Comfy Xmas Pants", "Comfy Xmas Sweater", "Companion Cap", "Cookie Shield", "Cool Glasses", "Corn Onesie", "Corn Silk Hair", "Cowbell Necklace", "Cowboy Boots", "Cowboy Hat", "Cowboy Shirt", "Cowboy Trouser", "Cowgirl Skirt", "Cozy Hoodie", "Cozy Reindeer Onesie", "Crab Claw", "Crab Hat", "Crab Trap", "Crimson Skirt", "Crimstone Amulet", "Crimstone Armor", "Crimstone Boots", "Crimstone Hammer", "Crimstone Pants", "Crimstone Spikes Hair", "Crow Wings", "Crumple Crown", "Crystal Shoes", "Cupid Dress", "Cupid Hair", "Cupid Sandals", "Daisy Tee", "Dark Brown Farmer Potion", "Dark Enchantment Gown", "Dawn Breaker Background", "Dawn Breaker Tee", "Dawn Lamp", "Deep Sea Helm", "Deep Sea Salt Cave Background", "Desert Background", "Desert Camel Background", "Desert Merchant Shoes", "Desert Merchant Suit", "Desert Merchant Turban", "Dev Wrench", "Developer Hoodie", "Devil Wings", "Diamond Patterned Vest", "Diamond Snow Aura", "Dino Onesie", "Double Harvest Cap", "Dream Scarf", "Earn Alliance Sombrero", "Easter Apron", "Eggplant Onesie", "Elf Hat", "Elf Potion", "Elf Shoes", "Elf Suit", "Embersteel Suit", "Explorer Hair", "Explorer Hat", "Explorer Shirt", "Explorer Shorts", "Fairy Sandals", "Fancy Pants", "Fancy Top", "Fanged Smile", "Farm Background", "Farmer Hat", "Farmer Overalls", "Farmer Pants", "Farmer Pitchfork", "Faulty Barrier Background", "Feather Hat", "Festival of Colors Background", "Fire Hair", "Fire Shirt", "Fish Hook Hat", "Fish Hook Vest", "Fish Hook Waders", "Fish Pro Vest", "Fish Trap", "Fishing Hat", "Fishing Pants", "Fishing Spear", "Flip Flops", "Flower Bouquet", "Flower Crown", "Flower Mask", "Forest Background", "Fossil Armor", "Fossil Head", "Fossil Pants", "Fox Hat", "Frank Onesie", "Fresh Catch Vest", "Frizzy Bob Cut", "Frog Onesie", "Frost Sword", "Frozen Heart", "Fruit Bowl", "Fruit Picker Apron", "Fruit Picker Shirt", "Full Bloom Shirt", "Fun Eyes", "Gam3s Cap", "Garbage Bin Hat", "Gardening Overalls", "Gift Giver", "Giggle Eyes", "Gingerbread Onesie", "Glacial Plume", "Glacierguard Suit", "Glitch Aura", "Gloomy Dumbo", "Goblin Armor", "Goblin Axe", "Goblin Crown", "Goblin Helmet", "Goblin Medallion", "Goblin Pants", "Goblin Potion", "Goblin Puppet", "Goblin Quiver", "Goblin Retreat Background", "Goblin Sabatons", "Goblin Shield", "Gold Teeth", "Golden Seedling", "Golden Spatula", "Golden Wings", "Goth Hair", "Gothic Twilight", "Grape Pants", "Grave Diggers Shovel", "Green Amulet", "Green Monarch Dress", "Green Monarch Shirt", "Green Slime Hair", "Grey Merch Hoodie", "Greyed Glory", "Grumpy Cat", "Grumpy Eyes", "Halloween Deathscythe", "Handheld Bunny", "Harry's Hat", "Hawaiian Shirt", "Hoary Chin", "Holiday Feast Background", "Honeycomb Shield", "Hornet Mask", "Imp Costume", "Infected Potion", "Infernal Bullwhip", "Infernal Bumpkin Potion", "Infernal Drill", "Infernal Goblin Potion", "Infernal Horns", "Infernal Pitchfork", "Infernal Rod", "Infernal Smile", "Jack O'Sweets", "Jail Background", "Kingdom Background", "Knight Gambit", "Koi Fish Hat", "Ladybug Suit", "Lava Swimwear", "Leather Shoes", "Lemon Shield", "Lifeguard Hat", "Lifeguard Pants", "Lifeguard Shirt", "Light Brown Farmer Potion", "Light Brown Worried Farmer Potion", "Lion Dance Mask", "Locust King Onesie", "Locust Onesie", "Love Bear Onesie", "Love Charm Shirt", "Love Heart Onesie", "Love Puff Aura", "Love Quiver", "Love's Topper", "Lucky Red Hat", "Lucky Red Suit", "Lumberjack Overalls", "Luminous Anglerfish Topper", "Luna's Crescent", "Luna's Hat", "Luscious Hair", "Luvvy Head", "Maiden Skirt", "Maiden Top", "Maple Dumbo", "Marble Pants", "Master Chef's Cleaver", "Medic Apron", "Merch Bucket Hat", "Merch Coffee Mug", "Merch Hoodie", "Merch Tee", "Merino Jumper", "Mermaid Potion", "Milk Apron", "Moon Hair", "Moonseeker Hand Puppet", "Moonseeker Potion", "Mountain View Background", "Mushroom Hat", "Mushroom Lamp", "Mushroom Lights Background", "Mushroom Pants", "Mushroom Shield", "Mushroom Shoes", "Mushroom Sweater", "Neon Noiz Jacket", "Neon Noiz Pants", "Neon Noiz Shoes", "Neutral Mouth", "New Years Crown", "New Years Tiara", "Nightshade Armor", "Nightshade Crown", "Nightshade Helmet", "Nightshade Medallion", "Nightshade Pants", "Nightshade Quiver", "Nightshade Sabatons", "Nightshade Shield", "Nightshade Sword", "Non La Hat", "Normal Fish Hat", "Northern Lights Background", "Obsidian Necklace", "Oil Can", "Oil Gallon", "Oil Overalls", "Oil Protection Hat", "Old Shoes", "Olive Royalty Shirt", "Olive Shield", "Onion Leek", "Oracle Syringe", "Orange Monarch Dress", "Orange Monarch Shirt", "Ox Costume", "Paint Splattered Hair", "Paint Splattered Overalls", "Paint Splattered Shirt", "Paint Spray Can", "Painter's Cap", "Pale Potion", "Parlour Hair", "Parsnip Horns", "Paw Aura", "Paw Shield", "Peasant Skirt", "Peg Leg", "Pet Specialist Hat", "Pet Specialist Pants", "Pet Specialist Shirt", "Pharaoh Headdress", "Pickaxe Shark", "Pineapple Shirt", "Pink Ponytail", "Pirate General Coat", "Pirate Hat", "Pirate Leather Polo", "Pirate Pants", "Pirate Potion", "Pirate Scimitar", "Pistol Shrimp", "Pixel Perfect Hoodie", "Polkastarter Shirt", "Potato Suit", "Project Dignity Hoodie", "Propeller Hat", "Pumpkin Hat", "Pumpkin Head", "Pumpkin Plaza Background", "Pumpkin Shirt", "Queen Bee Crown", "Queen's Crown", "Raccoon Onesie", "Radiant Dumbo", "Rainbow Wings", "Rancher Hair", "Rash Vest", "Recycle Shirt", "Red Farmer Shirt", "Red Jelly Pants", "Red Long Hair", "Red Pepper Onesie", "Reel Fishing Vest", "Reindeer Antlers", "Reindeer Mask", "Reindeer Suit", "Relaxed Eyes", "Research Uniform", "Rice Shirt", "Rock Hammer", "Rocket Onesie", "Rose Dress", "Royal Braids", "Royal Dress", "Royal Robe", "Royal Scepter", "SFL Office Background", "SFL T-Shirt", "Sad Slime Hat", "Sad Slime Pants", "Sad Slime Slippers", "Sakura Shirt", "Salt Bottle Onesie", "Santa Beard", "Santa Hat", "Santa Suit", "Saw Fish", "Scarab Wings", "Scared Eyes", "Seashore Background", "Seaside Tank Top", "Seedling Hat", "Sequence Hat", "Sequence Shirt", "Shark Onesie", "Shepherd Staff", "Short Shorts", "Shrimp Onesie", "Silver Streaks", "Skinning Knife", "Skull Hat", "Skull Shirt", "Sky Island Background", "Sleeping Otter", "Slime Aura", "Slime Hat", "Slime Splattered Shirt", "Slime Wall Background", "Slime Wings", "Snowman Mask", "Snowman Onesie", "Sol & Luna", "Solflare Aegis", "Soybean Onesie", "Spa Hat", "Spa Robe", "Spa Slippers", "Space Background", "Speed Boots", "Spooky Coat", "Squid Hat", "Squirrel Monkey Potion", "Squirrel Onesie", "St Patricks Hat", "Stockeye Salmon Onesie", "Straw Hat", "Streamer Hat", "Streamer Helmet", "Stretched Jeans", "Striped Blue Shirt", "Striped Red Shirt", "Striped Yellow Shirt", "Summer Top", "Sun Scarab Amulet", "Sun Spots", "Sunburst Potion", "Sunflorian Armor", "Sunflorian Crown", "Sunflorian Helmet", "Sunflorian Medallion", "Sunflorian Pants", "Sunflorian Quiver", "Sunflorian Sabatons", "Sunflorian Shield", "Sunflorian Sword", "Sunflower Amulet", "Sunflower Rod", "Sunflower Shield", "Surfer Hair", "Surprised Eyes", "Swamp Armor", "Swamp Lily Hat", "Swamp Pants", "Sweet Devil Dress", "Sweet Devil Horns", "Sweet Devil Wings", "Tackle Box", "Tangerine Hair", "Tattered Jacket", "Tattered Slacks", "Teal Mohawk", "Tiger Onesie", "Tiki Armor", "Tiki Mask", "Tiki Pants", "Tofu Mask", "Tomato Apron", "Training Whistle", "Traveller's Backpack", "Traveller's Pants", "Traveller's Shirt", "Trial Tee", "Trick and Treat", "Tropical Sarong", "Turd Topper", "Two-toned Layered", "Ugly Christmas Sweater", "Underworld Stimpack", "Unicorn Hat", "Unicorn Horn", "Valentine's Field Background", "Valoria Wreath", "Victoria's Apron", "Victorian Hat", "Walrus Onesie", "Warrior Helmet", "Warrior Pants", "Warrior Shirt", "Water Gourd", "Water Gun", "Wavy Pants", "Weather Hat", "Whale Hat", "White Long Hair", "White Sheep Onesie", "White Turtle Neck", "Wink Eyes", "Winter Jacket", "Wise Beard", "Wise Book", "Wise Hair", "Wise Robes", "Wise Slacks", "Wise Staff", "Wisp Aura", "Witch's Broom", "Witches' Eve Tee", "Witching Wardrobe", "Wooly Dress", "Xmas Top Hat", "Yellow Boots", "Yellow Farmer Shirt", "Yellow Slime Puppet"];
 function profileCollectibleBoostNameSet() {
@@ -65586,7 +65765,7 @@ function simGreenhouseRow(name) {
 }
 function simMachineRow(name) {
   const base = BASE_CROP_MACHINE[name];
-  const packSeeds = base ? CROP_MACHINE_PACK_MAX[name] || base.seedQty : 0;
+  const packSeeds = base ? getCropMachinePackMax(name) || base.seedQty : 0;
   const batch = base ? computeCropMachineBatch(name, packSeeds) : null;
   if (!batch) return null;
   const cycles = batch.timeSec > 0 ? 86400 / batch.timeSec : 0;
@@ -70158,6 +70337,7 @@ export {
   draftToggleBoost,
   renderSkillPanel,
   renderBoostPanel,
+  renderAnimalsList,
   getIcon,
   getBoostIconSkillFallback,
   getBoostIconAnyFallback,
@@ -70167,6 +70347,10 @@ export {
   renderHoneyList,
   renderCookingPanel,
   ui_exports,
+  saveCmQueue,
+  saveCmOilTank,
+  saveAnimalSicknessEstimate,
+  saveSpiceUsage,
   loadBaseCropsIfNeeded,
   loadBaseHoneyIfNeeded,
   loadBaseSaltMarketIfNeeded,
@@ -70175,6 +70359,7 @@ export {
   getItemCostByName,
   getMaterialUnitCostCoins,
   getActiveShrineDailyCost,
+  marketItems,
   getRestockGemCostIndividual,
   hasFreeSaltRakeCost,
   getCropCostCoins,
@@ -70195,6 +70380,13 @@ export {
   toast,
   fmt,
   escapeHtml,
+  FEED_RECIPE,
+  ANIMAL_DATA,
+  ANIMAL_LOVE_ITEM_XP,
+  animalAffectionTools,
+  setAnimalAffectionCount,
+  setAnimalAffectionTool,
+  computeAnimalAffectionSummary,
   BASE_CROPS,
   BASE_FRUITS,
   BASE_STOCK_CROPS,
@@ -70203,6 +70395,12 @@ export {
   BASE_STOCK_FLOWERS,
   BASE_GREENHOUSE,
   BASE_STOCK_TOOLS,
+  BASE_CROP_MACHINE,
+  getCropMachineQueueSlots,
+  getCropMachinePlots,
+  getCropMachineOilCapHours,
+  getCropMachineOilCap,
+  getCropMachinePackMax,
   computeBoostedStock,
   FLOWER_VARIETIES,
   RESOURCE_DATA,
@@ -70227,6 +70425,8 @@ export {
   setFruitCount,
   getGreenhouseCount,
   setGreenhouseCount,
+  cmQueue,
+  cmOilTank,
   getHiveCount,
   setHiveCount,
   selectedHoneyFlower,
@@ -70237,10 +70437,24 @@ export {
   hasManualMaterialMode,
   getMaterialMode,
   setMaterialMode,
+  getAnimalCount,
+  setAnimalCount,
+  isOmnifeedEnabled,
+  setOmnifeedEnabled,
+  getBoostedMedicineRecipe,
+  getMedicineIngredientMode,
+  setMedicineIngredientMode,
+  animalSicknessEstimate,
+  getSicknessEstimate,
   computeBoostedCropStats,
   computeBoostedFruitStats,
   computeBoostedGreenhouseStats,
   CROPS_GLOBAL_EXCLUDED_FROM_GREENHOUSE,
+  computeCropMachineOilMult,
+  computeCropMachineBatch,
+  computeMachineRestockGems,
+  CM_MODULE_SKILL_IDS,
+  isCropMachineUnlocked,
   isFlowerVarietySeasonLocked,
   computeHiveEconomics,
   computeResourceFigures,
@@ -70250,6 +70464,8 @@ export {
   computeObsidianWeeklyProfit,
   SKILL_CATEGORY_META,
   BOOSTS,
+  spiceUsage,
+  SPICE_ANIMAL_TYPES,
   isSkillActive,
   isSkillDraftDirty,
   updateSkillSaveBarState,
@@ -70257,6 +70473,7 @@ export {
   isBoostActive,
   isBoostDraftActive,
   isBoostDraftDirty,
+  getActiveBoostsForCrop,
   getEffectiveYieldAdd,
   formatDuration,
   feePercent,
@@ -70265,9 +70482,13 @@ export {
   findTool,
   getInstantRegrowSources,
   getInstantRegrowChance,
+  getSpiceLickDurationHarvests,
   getBoostedToolRecipe,
   coinsToFlower,
   simulateStockCycles,
+  getKaleMixKaleQty,
+  computeAnimalTypeFigures,
+  computeAnimalWeeklyFigures,
   FARM_LEVEL_NODES,
   MUTANT_TYPE_EMOJI,
   setSkillCategory,
@@ -70286,10 +70507,14 @@ export {
   farmLevelMaxNodes,
   setSaltFarmLevel,
   computeSaltFarmFigures,
+  spiceMaterialMode,
+  setSpiceMaterialMode,
+  computeSpiceFigures,
   runDeferredInitialRender,
   __deferredInitialRenderCallbacks,
   setAppDarkMode,
   __set_currentSeason,
+  __set_cmOilTank,
   __set___deferredInitialRenderDone,
   calculator_exports
 };
