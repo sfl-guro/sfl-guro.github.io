@@ -791,19 +791,23 @@ const LOG_KIND_OF = {
   greenhouse: "greenhouse"
 };
 
-function addLogTotal(totals, name, kind, amount) {
+function addLogTotal(totals, name, kind, amount, rounds) {
   const value = Math.round(amount * 100) / 100;
   if (!(value > 0) || !isFinite(value)) return;
   const cur = totals[name];
-  totals[name] = {
+  const entry = {
     k: kind,
     a: cur ? Math.round((cur.a + value) * 100) / 100 : value
   };
+  const c = Math.max(cur && cur.c || 0, Number.isFinite(rounds) ? Math.floor(rounds) : 0);
+  if (c > 0) entry.c = c;
+  totals[name] = entry;
 }
 
 function animalLogTotals(totals, groupKey, st) {
   const meta = yieldMeta[groupKey];
   if (!meta) return;
+  const rounds = roundsFromStats(st).rounds;
   const dropped = typeof st.dropped === "number" ? st.dropped : 0;
   if (meta.products) {
     const products = meta.products;
@@ -814,7 +818,7 @@ function animalLogTotals(totals, groupKey, st) {
         parts[i] += v;
       });
     });
-    products.forEach((pr, i) => addLogTotal(totals, pr.name, "animal", parts[i]));
+    products.forEach((pr, i) => addLogTotal(totals, pr.name, "animal", parts[i], rounds));
     return;
   }
   if (!meta.productName) return;
@@ -822,7 +826,7 @@ function animalLogTotals(totals, groupKey, st) {
   st.log.forEach(e => {
     if (typeof e.y === "number") amount += e.y; else if (meta.per) amount += e.n * meta.per;
   });
-  addLogTotal(totals, meta.productName, "animal", amount);
+  addLogTotal(totals, meta.productName, "animal", amount, rounds);
 }
 
 export function dailyHarvestTotals(farmId) {
@@ -846,7 +850,7 @@ export function dailyHarvestTotals(farmId) {
     st.log.forEach(e => {
       if (typeof e.y === "number") amount += e.y; else if (per) amount += e.n * per;
     });
-    addLogTotal(totals, groupKey, logKind, amount);
+    addLogTotal(totals, groupKey, logKind, amount, roundsFromStats(st).rounds);
   });
   return {
     day: rec.day,

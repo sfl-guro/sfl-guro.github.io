@@ -97,6 +97,104 @@ export let farmPanelExpandedNames = new Set;
 
 export let farmPanelInProgressCategoryFilter = "all";
 
+const FARM_PANEL_HIDDEN_CARDS_KEY = "guro_growing_hidden_cards";
+
+const FARM_PANEL_RESOURCE_CARDS = [ "Wood", "Stone", "Iron", "Gold", "Crimstone", "Oil", "Salt", "Sunstone" ];
+
+const farmPanelCookingCards = () => [ ...COOKING_BUILDINGS, "Fish Market", "Aging Shed", "Fermentation Rack", "Spice Rack" ];
+
+function farmPanelLoadHiddenCards() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(FARM_PANEL_HIDDEN_CARDS_KEY) || "[]");
+    return new Set(Array.isArray(raw) ? raw.filter(k => typeof k === "string") : []);
+  } catch (e) {
+    return new Set;
+  }
+}
+
+export let farmPanelHiddenCards = farmPanelLoadHiddenCards();
+
+export function farmPanelCardCatalog() {
+  const cats = farmPanelFilterCategories().filter(c => c.id !== "all");
+  const cardsFor = id => {
+    if (id === "crops") return Object.keys(BASE_CROPS).map(n => ({
+      id: n,
+      label: n,
+      icon: getIcon(n)
+    }));
+    if (id === "fruits") return Object.keys(BASE_FRUITS).map(n => ({
+      id: n,
+      label: n,
+      icon: getIcon(n)
+    }));
+    if (id === "greenhouse") return Object.keys(BASE_GREENHOUSE).map(n => ({
+      id: n,
+      label: n,
+      icon: getIcon(n)
+    }));
+    if (id === "beehive") return [ "Honey", ...Object.keys(FLOWER_VARIETIES) ].map(n => ({
+      id: n,
+      label: n,
+      icon: getIcon(n)
+    }));
+    if (id === "resources") return FARM_PANEL_RESOURCE_CARDS.map(n => ({
+      id: n,
+      label: getNodeLabel(n),
+      icon: getNodeIconHtml(n)
+    }));
+    if (id === "animals") return Object.keys(ANIMAL_DATA).map(n => ({
+      id: n,
+      label: ANIMAL_DATA[n].label,
+      icon: getIcon(ANIMAL_DATA[n].label)
+    }));
+    if (id === "cooking") return farmPanelCookingCards().map(n => ({
+      id: n,
+      label: n,
+      icon: COOKING_BUILDING_ICONS[n] || getIcon(n)
+    }));
+    return [ {
+      id: "pete",
+      label: "Pumpkin Pete Quest",
+      icon: farmPanelPeteIconHtml()
+    } ];
+  };
+  return cats.map(c => ({
+    id: c.id,
+    label: c.label,
+    cards: cardsFor(c.id).map(card => ({
+      key: `${c.id}:${card.id}`,
+      label: card.label,
+      icon: card.icon
+    }))
+  }));
+}
+
+export function farmPanelSetHiddenCards(keys) {
+  farmPanelHiddenCards = new Set(keys || []);
+  try {
+    localStorage.setItem(FARM_PANEL_HIDDEN_CARDS_KEY, JSON.stringify([ ...farmPanelHiddenCards ]));
+  } catch (e) {}
+  if (!farmPanelCategoryVisible(farmPanelInProgressCategoryFilter)) farmPanelInProgressCategoryFilter = "all";
+}
+
+export function farmPanelCategoryVisible(id) {
+  if (id === "all") return true;
+  const group = farmPanelCardCatalog().find(g => g.id === id);
+  if (!group) return true;
+  return group.cards.some(c => !farmPanelHiddenCards.has(c.key));
+}
+
+export function farmPanelRowCardKey(row) {
+  const cat = farmPanelRowFilterCategory(row);
+  let id = row.name;
+  if (row.isAnimalMerged) id = row.typeKey; else if (row.isCookingCard) id = row.cookingBuilding; else if (row.isPeteQuestCard) id = "pete";
+  return `${cat}:${id}`;
+}
+
+export function farmPanelRowVisible(row) {
+  return !farmPanelHiddenCards.has(farmPanelRowCardKey(row));
+}
+
 let farmPanelRenderAtMs = 0;
 
 let farmPanelUserScrolling = false;
@@ -4543,7 +4641,7 @@ function guroValueBlockHtml(gross, fee, fmtFn) {
   return `<div class="guro-value-block"><div class="guro-market-value"><span class="guro-market-label">Market value</span><span class="guro-market-amount">${guroSignedAmount(grossVal, fmtFn)} ${FLOWER_ICON}</span></div><div class="guro-net-line"><span class="guro-net-label">Net</span><span class="guro-net-amount">${guroSignedAmount(netVal, fmtFn)} ${FLOWER_ICON}</span></div></div>`;
 }
 
-export function farmPanelRenderCategoryFilterBar() {
+export function farmPanelFilterCategories() {
   const cats = [ {
     id: "all",
     label: "All",
@@ -4590,6 +4688,16 @@ export function farmPanelRenderCategoryFilterBar() {
     name: "Pete's Quest",
     icon: farmPanelPeteIconHtml()
   } ];
+  return cats;
+}
+
+export function farmPanelRowFilterCategory(row) {
+  if (row && row.isCookingCard) return "cooking";
+  return farmPanelCardCategory(row);
+}
+
+export function farmPanelRenderCategoryFilterBar() {
+  const cats = farmPanelFilterCategories().filter(c => c.id === "all" || farmPanelCategoryVisible(c.id));
   const btns = cats.map(c => `<button type="button" class="fp-filter-btn${farmPanelInProgressCategoryFilter === c.id ? " active" : ""}${c.id === "all" ? " has-label" : ""}" data-fp-filter-btn="${c.id}" title="${c.label}"><span class="fp-filter-icon">${c.icon}</span><span class="fp-filter-name">${c.id === "all" ? `<span class="fp-n-s">All</span><span class="fp-n-l">${c.name}</span>` : c.name}</span></button>`).join("");
   return `<div class="fp-filter-bar">${btns}</div>`;
 }

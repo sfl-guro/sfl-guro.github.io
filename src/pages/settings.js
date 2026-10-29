@@ -1,3 +1,7 @@
+import { farmPanelCardCatalog, farmPanelHiddenCards, farmPanelSetHiddenCards } from "../inprogress.js";
+
+import { renderFarmPanelTabContent } from "../ui.js";
+
 let rootEl = null;
 
 let calc = null;
@@ -17,6 +21,12 @@ let currentRatio = () => ({
 let listening = false;
 
 let restockMode = () => "shared";
+
+let growDraft = null;
+
+let growBtnState = "idle";
+
+let growSaveTimer = null;
 
 let applyRestockMode = () => {};
 
@@ -65,6 +75,87 @@ function modesHtml() {
     </div>`;
 }
 
+function growAllKeys() {
+  return farmPanelCardCatalog().flatMap(g => g.cards.map(c => c.key));
+}
+
+function growSavedVisible() {
+  return growAllKeys().filter(k => !farmPanelHiddenCards.has(k));
+}
+
+function growIsDirty() {
+  const saved = growSavedVisible();
+  return saved.length !== growDraft.size || saved.some(k => !growDraft.has(k));
+}
+
+function growCardHtml(c) {
+  const on = growDraft.has(c.key);
+  return `<label class="st-grow-card guro-frame${on ? " is-on" : ""}">
+    <span class="st-grow-name"><span class="st-grow-icon">${c.icon}</span><span class="st-grow-text">${c.label}</span></span>
+    <input type="checkbox" data-st-grow="${c.key}"${on ? " checked" : ""} aria-label="${c.label}">
+  </label>`;
+}
+
+function growGroupHtml(g) {
+  return `<div class="st-grow-group">
+    <div class="st-label st-grow-group-label">${g.label}</div>
+    <div class="st-grow-list">${g.cards.map(growCardHtml).join("")}</div>
+  </div>`;
+}
+
+function growBtnHtml() {
+  if (growBtnState === "saving") return `<span class="st-save-spinner"></span> Saving…`;
+  if (growBtnState === "saved") return `<span class="st-save-check">✔</span> Saved`;
+  return "Save";
+}
+
+function growHtml() {
+  if (!growDraft) growDraft = new Set(growSavedVisible());
+  const dirty = growIsDirty();
+  const cls = growBtnState === "saving" ? " is-saving" : growBtnState === "saved" ? " is-saved" : dirty ? " is-dirty" : "";
+  const disabled = growBtnState === "saving" || growBtnState === "saved" || !dirty ? " disabled" : "";
+  return `<div class="st-outer guro-frame st-grow-outer">
+      <div class="st-inner guro-frame">
+        <div class="st-label">Growing Display Settings</div>
+        <p class="st-grow-note">Adding a check to the check box will display the card in the Growing Panel. Removing the check hides it. Hidden cards are still computed and still included in the Logs, they are only hidden from the display. Click Save to apply your changes.</p>
+        ${farmPanelCardCatalog().map(growGroupHtml).join("")}
+        <div class="st-save-row"><button type="button" class="st-save-btn guro-frame${cls}" data-st-grow-save${disabled}>${growBtnHtml()}</button></div>
+      </div>
+    </div>`;
+}
+
+function growSyncUi() {
+  if (!rootEl) return;
+  rootEl.querySelectorAll("[data-st-grow]").forEach(box => {
+    const card = box.closest(".st-grow-card");
+    if (card) card.classList.toggle("is-on", box.checked);
+  });
+  const btn = rootEl.querySelector("[data-st-grow-save]");
+  if (!btn) return;
+  const dirty = growIsDirty();
+  btn.classList.toggle("is-dirty", dirty && growBtnState === "idle");
+  btn.disabled = growBtnState !== "idle" || !dirty;
+}
+
+function growSave() {
+  if (growBtnState !== "idle" || !growIsDirty()) return;
+  growBtnState = "saving";
+  render();
+  clearTimeout(growSaveTimer);
+  growSaveTimer = setTimeout(() => {
+    farmPanelSetHiddenCards(growAllKeys().filter(k => !growDraft.has(k)));
+    try {
+      renderFarmPanelTabContent();
+    } catch (e) {}
+    growBtnState = "saved";
+    render();
+    growSaveTimer = setTimeout(() => {
+      growBtnState = "idle";
+      render();
+    }, 1100);
+  }, 450);
+}
+
 function render() {
   if (!rootEl) return;
   const sel = loadSelection();
@@ -79,12 +170,18 @@ function render() {
       </div>
     </div>
     ${modesHtml()}
+    ${growHtml()}
   </div>`;
 }
 
 function onChange(e) {
   const t = e.target;
   if (!t || !t.dataset) return;
+  if (t.dataset.stGrow != null) {
+    if (t.checked) growDraft.add(t.dataset.stGrow); else growDraft.delete(t.dataset.stGrow);
+    growSyncUi();
+    return;
+  }
   if (t.dataset.stMode != null) {
     applyRestockMode(t.dataset.stMode);
     render();
@@ -93,6 +190,11 @@ function onChange(e) {
   if (t.dataset.stPack == null) return;
   setSelection(t.dataset.stPack);
   render();
+}
+
+function onClick(e) {
+  const btn = e.target && e.target.closest ? e.target.closest("[data-st-grow-save]") : null;
+  if (btn) growSave();
 }
 
 function refresh() {
@@ -110,7 +212,10 @@ export function mount(root, api) {
   currentRatio = gp.currentRatio;
   restockMode = () => api.prices.restockCostMode;
   applyRestockMode = mode => api.calc.applyRestockCostMode(mode === "individual" ? "individual" : "shared");
+  growDraft = null;
+  growBtnState = "idle";
   root.addEventListener("change", onChange);
+  root.addEventListener("click", onClick);
   try {
     if (!(typeof api.prices.marketplaceFlowerUsdPrice === "number" && api.prices.marketplaceFlowerUsdPrice > 0)) api.prices.refreshMarketplaceFlowerUsdPrice();
   } catch (e) {}
@@ -121,7 +226,30 @@ export function mount(root, api) {
   render();
 }
 
+export function canLeave(nextId, api) {
+  if (!rootEl || !growDraft || !growIsDirty()) return true;
+  try {
+    api.calc.toast("⚠️ Save your changes first");
+  } catch (e) {}
+  const btn = rootEl.querySelector("[data-st-grow-save]");
+  if (btn) {
+    btn.scrollIntoView({
+      behavior: "smooth",
+      block: "center"
+    });
+    btn.classList.remove("is-nudge");
+    void btn.offsetWidth;
+    btn.classList.add("is-nudge");
+    setTimeout(() => btn.classList.remove("is-nudge"), 1300);
+  }
+  return false;
+}
+
 export function unmount() {
-  if (rootEl) rootEl.removeEventListener("change", onChange);
+  if (rootEl) {
+    rootEl.removeEventListener("change", onChange);
+    rootEl.removeEventListener("click", onClick);
+  }
+  clearTimeout(growSaveTimer);
   rootEl = null;
 }
