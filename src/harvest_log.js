@@ -163,7 +163,7 @@ function sortedNames(totals) {
 }
 
 function dayHtml(entry, number) {
-  const rows = sortedNames(entry.totals).map(name => `<div class="dh-hlog-row"><span class="dh-hlog-amt">×${fmtAmount(entry.totals[name].a)}</span><span class="dh-hlog-ico">${getIcon(name)}</span><span class="dh-hlog-name">${esc(name)}</span></div>`).join("");
+  const rows = sortedNames(entry.totals).map(name => `<div class="dh-hlog-row"><span class="dh-hlog-amt">+${fmtAmount(entry.totals[name].a)}</span><span class="dh-hlog-ico">${getIcon(name)}</span><span class="dh-hlog-name">${esc(name)}</span>${entry.totals[name].c > 0 ? `<span class="dh-hlog-count">Harvested ${entry.totals[name].c}x</span>` : ""}</div>`).join("");
   return `<div class="dh-hlog-day guro-frame"><div class="dh-hlog-dayhead"><span class="dh-hlog-no">#${number}</span><span class="dh-hlog-date">${dateLabel(entry.day)}</span></div>${rows}</div>`;
 }
 
@@ -184,7 +184,15 @@ function mergeLocalToday(days, farmId) {
   }
   Object.keys(local.totals).forEach(name => {
     const cur = today.totals[name];
-    if (!cur || local.totals[name].a > cur.a) today.totals[name] = local.totals[name];
+    if (!cur || local.totals[name].a > cur.a) {
+      today.totals[name] = Object.assign({}, local.totals[name], {
+        c: Math.max(local.totals[name].c || 0, cur && cur.c || 0) || undefined
+      });
+    } else if ((local.totals[name].c || 0) > (cur.c || 0)) {
+      today.totals[name] = Object.assign({}, cur, {
+        c: local.totals[name].c
+      });
+    }
   });
   return out;
 }

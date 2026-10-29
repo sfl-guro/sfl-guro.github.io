@@ -1562,6 +1562,8 @@ __export(inprogress_exports, {
   __set_farmPanelTabContentDirty: () => __set_farmPanelTabContentDirty,
   farmPanelAOEExtent: () => farmPanelAOEExtent,
   farmPanelActiveTab: () => farmPanelActiveTab,
+  farmPanelCardCatalog: () => farmPanelCardCatalog,
+  farmPanelCategoryVisible: () => farmPanelCategoryVisible,
   farmPanelCheckTurtleAOEBonus: () => farmPanelCheckTurtleAOEBonus,
   farmPanelComputeEconomics: () => farmPanelComputeEconomics,
   farmPanelComputeExactCrimstoneYield: () => farmPanelComputeExactCrimstoneYield,
@@ -1579,6 +1581,7 @@ __export(inprogress_exports, {
   farmPanelDetectNodeTier: () => farmPanelDetectNodeTier,
   farmPanelExpandedNames: () => farmPanelExpandedNames,
   farmPanelField: () => farmPanelField,
+  farmPanelFilterCategories: () => farmPanelFilterCategories,
   farmPanelGameState: () => farmPanelGameState,
   farmPanelGetBoostedYieldStats: () => farmPanelGetBoostedYieldStats,
   farmPanelGetCollectiblePosition: () => farmPanelGetCollectiblePosition,
@@ -1590,6 +1593,7 @@ __export(inprogress_exports, {
   farmPanelGnomeAOEBonus: () => farmPanelGnomeAOEBonus,
   farmPanelGnomeComboPresent: () => farmPanelGnomeComboPresent,
   farmPanelGrowTimeSec: () => farmPanelGrowTimeSec,
+  farmPanelHiddenCards: () => farmPanelHiddenCards,
   farmPanelInProgressCategoryFilter: () => farmPanelInProgressCategoryFilter,
   farmPanelIsWithinTurtleAOE: () => farmPanelIsWithinTurtleAOE,
   farmPanelLoadCachedGameState: () => farmPanelLoadCachedGameState,
@@ -1600,9 +1604,13 @@ __export(inprogress_exports, {
   farmPanelRenderMoneyTreeBonusCard: () => farmPanelRenderMoneyTreeBonusCard,
   farmPanelRenderMutantAlertCard: () => farmPanelRenderMutantAlertCard,
   farmPanelRenderStockRow: () => farmPanelRenderStockRow,
+  farmPanelRowCardKey: () => farmPanelRowCardKey,
+  farmPanelRowFilterCategory: () => farmPanelRowFilterCategory,
   farmPanelRowIsReady: () => farmPanelRowIsReady,
+  farmPanelRowVisible: () => farmPanelRowVisible,
   farmPanelSaveGameState: () => farmPanelSaveGameState,
   farmPanelSaveLastInfo: () => farmPanelSaveLastInfo,
+  farmPanelSetHiddenCards: () => farmPanelSetHiddenCards,
   farmPanelStateIsCached: () => farmPanelStateIsCached,
   farmPanelSyncInFlight: () => farmPanelSyncInFlight,
   farmPanelTabContentDirty: () => farmPanelTabContentDirty
@@ -10558,7 +10566,9 @@ function renderFarmPanelTabContent() {
       if (details) innerScrolls[card2.getAttribute("data-search")] = details.scrollTop;
     });
     if (farmPanelActiveTab === "inprogress") {
-      const rows = farmPanelComputeInProgress(farmPanelGameState);
+      const allRows = farmPanelComputeInProgress(farmPanelGameState);
+      const rows = allRows.filter(farmPanelRowVisible);
+      if (!farmPanelCategoryVisible(farmPanelInProgressCategoryFilter)) __set_farmPanelInProgressCategoryFilter("all");
       const mutantAlerts = farmPanelDetectActiveMutants(farmPanelGameState);
       const mutantHtml = mutantAlerts.map(farmPanelRenderMutantAlertCard).join("");
       const moneyTreeBonus = farmPanelDetectMoneyTreeBonus(farmPanelGameState);
@@ -10571,8 +10581,8 @@ function renderFarmPanelTabContent() {
       }
       const readyCardsHtml = rows.filter(farmPanelRowIsReady).map(farmPanelRenderInProgressRow).join("");
       const growingCardsHtml = rows.filter((r) => !farmPanelRowIsReady(r)).map(farmPanelRenderInProgressRow).join("");
-      const emptyAllHtml = rows.length ? "" : hasAlerts ? "" : `<div class="farm-panel-empty">Nothing currently growing, recharging, or ready to harvest right now.</div>`;
-      const peteEmptyHtml = rows.some((r) => r.isPeteQuestCard) ? "" : `<div class="fp-pete-empty"><span class="fp-quest-guide-trigger" data-pete-guide-trigger>How to set up the Telegram Quest Bot</span></div>`;
+      const emptyAllHtml = rows.length ? "" : hasAlerts ? "" : allRows.length ? `<div class="farm-panel-empty">All Growing cards are hidden. You can show them again in Settings > Growing Display Settings.</div>` : `<div class="farm-panel-empty">Nothing currently growing, recharging, or ready to harvest right now.</div>`;
+      const peteEmptyHtml = rows.some((r) => r.isPeteQuestCard) || !farmPanelCategoryVisible("pete") ? "" : `<div class="fp-pete-empty"><span class="fp-quest-guide-trigger" data-pete-guide-trigger>How to set up the Telegram Quest Bot</span></div>`;
       wrap.innerHTML = cachedNoteHtml + mutantHtml + moneyTreeHtml + emptyAllHtml + `<div class="fp-inprogress-list" data-fp-filter="${farmPanelInProgressCategoryFilter}"><section class="guro-grow-section is-ready"><div class="guro-section-label">Ready to Harvest</div><div class="guro-section-list">${readyCardsHtml}</div><div class="guro-section-empty">Nothing ready to harvest here.</div></section><section class="guro-grow-section is-growing"><div class="guro-section-label">Growing</div><div class="guro-section-list">${growingCardsHtml}${peteEmptyHtml}</div><div class="guro-section-empty">Nothing growing here.</div></section></div>`;
       if (filterBarWrap) attachFarmPanelCategoryFilterBar(filterBarWrap, wrap);
       __set_farmPanelRenderAtMs(Date.now());
@@ -23643,18 +23653,22 @@ var LOG_KIND_OF = {
   fruit: "fruit",
   greenhouse: "greenhouse"
 };
-function addLogTotal(totals, name, kind, amount) {
+function addLogTotal(totals, name, kind, amount, rounds) {
   const value = Math.round(amount * 100) / 100;
   if (!(value > 0) || !isFinite(value)) return;
   const cur = totals[name];
-  totals[name] = {
+  const entry = {
     k: kind,
     a: cur ? Math.round((cur.a + value) * 100) / 100 : value
   };
+  const c = Math.max(cur && cur.c || 0, Number.isFinite(rounds) ? Math.floor(rounds) : 0);
+  if (c > 0) entry.c = c;
+  totals[name] = entry;
 }
 function animalLogTotals(totals, groupKey, st) {
   const meta = yieldMeta[groupKey];
   if (!meta) return;
+  const rounds = roundsFromStats(st).rounds;
   const dropped = typeof st.dropped === "number" ? st.dropped : 0;
   if (meta.products) {
     const products = meta.products;
@@ -23665,7 +23679,7 @@ function animalLogTotals(totals, groupKey, st) {
         parts[i] += v;
       });
     });
-    products.forEach((pr, i) => addLogTotal(totals, pr.name, "animal", parts[i]));
+    products.forEach((pr, i) => addLogTotal(totals, pr.name, "animal", parts[i], rounds));
     return;
   }
   if (!meta.productName) return;
@@ -23674,7 +23688,7 @@ function animalLogTotals(totals, groupKey, st) {
     if (typeof e.y === "number") amount += e.y;
     else if (meta.per) amount += e.n * meta.per;
   });
-  addLogTotal(totals, meta.productName, "animal", amount);
+  addLogTotal(totals, meta.productName, "animal", amount, rounds);
 }
 function dailyHarvestTotals(farmId) {
   const store = freshStore();
@@ -23698,7 +23712,7 @@ function dailyHarvestTotals(farmId) {
       if (typeof e.y === "number") amount += e.y;
       else if (per) amount += e.n * per;
     });
-    addLogTotal(totals, groupKey, logKind, amount);
+    addLogTotal(totals, groupKey, logKind, amount, roundsFromStats(st).rounds);
   });
   return {
     day: rec.day,
@@ -24130,7 +24144,7 @@ function sortedNames(totals) {
   });
 }
 function dayHtml(entry, number) {
-  const rows = sortedNames(entry.totals).map((name) => `<div class="dh-hlog-row"><span class="dh-hlog-amt">\xD7${fmtAmount(entry.totals[name].a)}</span><span class="dh-hlog-ico">${getIcon(name)}</span><span class="dh-hlog-name">${esc(name)}</span></div>`).join("");
+  const rows = sortedNames(entry.totals).map((name) => `<div class="dh-hlog-row"><span class="dh-hlog-amt">+${fmtAmount(entry.totals[name].a)}</span><span class="dh-hlog-ico">${getIcon(name)}</span><span class="dh-hlog-name">${esc(name)}</span>${entry.totals[name].c > 0 ? `<span class="dh-hlog-count">Harvested ${entry.totals[name].c}x</span>` : ""}</div>`).join("");
   return `<div class="dh-hlog-day guro-frame"><div class="dh-hlog-dayhead"><span class="dh-hlog-no">#${number}</span><span class="dh-hlog-date">${dateLabel(entry.day)}</span></div>${rows}</div>`;
 }
 function mergeLocalToday(days, farmId) {
@@ -24150,7 +24164,15 @@ function mergeLocalToday(days, farmId) {
   }
   Object.keys(local.totals).forEach((name) => {
     const cur = today.totals[name];
-    if (!cur || local.totals[name].a > cur.a) today.totals[name] = local.totals[name];
+    if (!cur || local.totals[name].a > cur.a) {
+      today.totals[name] = Object.assign({}, local.totals[name], {
+        c: Math.max(local.totals[name].c || 0, cur && cur.c || 0) || void 0
+      });
+    } else if ((local.totals[name].c || 0) > (cur.c || 0)) {
+      today.totals[name] = Object.assign({}, cur, {
+        c: local.totals[name].c
+      });
+    }
   });
   return out;
 }
@@ -24383,6 +24405,97 @@ var farmPanelTabContentDirty = false;
 var farmPanelActiveTab = "inprogress";
 var farmPanelExpandedNames = /* @__PURE__ */ new Set();
 var farmPanelInProgressCategoryFilter = "all";
+var FARM_PANEL_HIDDEN_CARDS_KEY = "guro_growing_hidden_cards";
+var FARM_PANEL_RESOURCE_CARDS = ["Wood", "Stone", "Iron", "Gold", "Crimstone", "Oil", "Salt", "Sunstone"];
+var farmPanelCookingCards = () => [...COOKING_BUILDINGS, "Fish Market", "Aging Shed", "Fermentation Rack", "Spice Rack"];
+function farmPanelLoadHiddenCards() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(FARM_PANEL_HIDDEN_CARDS_KEY) || "[]");
+    return new Set(Array.isArray(raw) ? raw.filter((k) => typeof k === "string") : []);
+  } catch (e) {
+    return /* @__PURE__ */ new Set();
+  }
+}
+var farmPanelHiddenCards = farmPanelLoadHiddenCards();
+function farmPanelCardCatalog() {
+  const cats = farmPanelFilterCategories().filter((c) => c.id !== "all");
+  const cardsFor = (id) => {
+    if (id === "crops") return Object.keys(BASE_CROPS).map((n) => ({
+      id: n,
+      label: n,
+      icon: getIcon(n)
+    }));
+    if (id === "fruits") return Object.keys(BASE_FRUITS).map((n) => ({
+      id: n,
+      label: n,
+      icon: getIcon(n)
+    }));
+    if (id === "greenhouse") return Object.keys(BASE_GREENHOUSE).map((n) => ({
+      id: n,
+      label: n,
+      icon: getIcon(n)
+    }));
+    if (id === "beehive") return ["Honey", ...Object.keys(FLOWER_VARIETIES)].map((n) => ({
+      id: n,
+      label: n,
+      icon: getIcon(n)
+    }));
+    if (id === "resources") return FARM_PANEL_RESOURCE_CARDS.map((n) => ({
+      id: n,
+      label: getNodeLabel(n),
+      icon: getNodeIconHtml(n)
+    }));
+    if (id === "animals") return Object.keys(ANIMAL_DATA).map((n) => ({
+      id: n,
+      label: ANIMAL_DATA[n].label,
+      icon: getIcon(ANIMAL_DATA[n].label)
+    }));
+    if (id === "cooking") return farmPanelCookingCards().map((n) => ({
+      id: n,
+      label: n,
+      icon: COOKING_BUILDING_ICONS[n] || getIcon(n)
+    }));
+    return [{
+      id: "pete",
+      label: "Pumpkin Pete Quest",
+      icon: farmPanelPeteIconHtml()
+    }];
+  };
+  return cats.map((c) => ({
+    id: c.id,
+    label: c.label,
+    cards: cardsFor(c.id).map((card2) => ({
+      key: `${c.id}:${card2.id}`,
+      label: card2.label,
+      icon: card2.icon
+    }))
+  }));
+}
+function farmPanelSetHiddenCards(keys) {
+  farmPanelHiddenCards = new Set(keys || []);
+  try {
+    localStorage.setItem(FARM_PANEL_HIDDEN_CARDS_KEY, JSON.stringify([...farmPanelHiddenCards]));
+  } catch (e) {
+  }
+  if (!farmPanelCategoryVisible(farmPanelInProgressCategoryFilter)) farmPanelInProgressCategoryFilter = "all";
+}
+function farmPanelCategoryVisible(id) {
+  if (id === "all") return true;
+  const group = farmPanelCardCatalog().find((g) => g.id === id);
+  if (!group) return true;
+  return group.cards.some((c) => !farmPanelHiddenCards.has(c.key));
+}
+function farmPanelRowCardKey(row3) {
+  const cat = farmPanelRowFilterCategory(row3);
+  let id = row3.name;
+  if (row3.isAnimalMerged) id = row3.typeKey;
+  else if (row3.isCookingCard) id = row3.cookingBuilding;
+  else if (row3.isPeteQuestCard) id = "pete";
+  return `${cat}:${id}`;
+}
+function farmPanelRowVisible(row3) {
+  return !farmPanelHiddenCards.has(farmPanelRowCardKey(row3));
+}
 var farmPanelRenderAtMs = 0;
 var farmPanelUserScrolling = false;
 var farmPanelScrollIdleTimer = null;
@@ -28620,7 +28733,7 @@ function guroValueBlockHtml(gross, fee, fmtFn) {
   const netVal = grossVal - (fee || 0);
   return `<div class="guro-value-block"><div class="guro-market-value"><span class="guro-market-label">Market value</span><span class="guro-market-amount">${guroSignedAmount(grossVal, fmtFn)} ${FLOWER_ICON}</span></div><div class="guro-net-line"><span class="guro-net-label">Net</span><span class="guro-net-amount">${guroSignedAmount(netVal, fmtFn)} ${FLOWER_ICON}</span></div></div>`;
 }
-function farmPanelRenderCategoryFilterBar() {
+function farmPanelFilterCategories() {
   const cats = [{
     id: "all",
     label: "All",
@@ -28667,6 +28780,14 @@ function farmPanelRenderCategoryFilterBar() {
     name: "Pete's Quest",
     icon: farmPanelPeteIconHtml()
   }];
+  return cats;
+}
+function farmPanelRowFilterCategory(row3) {
+  if (row3 && row3.isCookingCard) return "cooking";
+  return farmPanelCardCategory(row3);
+}
+function farmPanelRenderCategoryFilterBar() {
+  const cats = farmPanelFilterCategories().filter((c) => c.id === "all" || farmPanelCategoryVisible(c.id));
   const btns = cats.map((c) => `<button type="button" class="fp-filter-btn${farmPanelInProgressCategoryFilter === c.id ? " active" : ""}${c.id === "all" ? " has-label" : ""}" data-fp-filter-btn="${c.id}" title="${c.label}"><span class="fp-filter-icon">${c.icon}</span><span class="fp-filter-name">${c.id === "all" ? `<span class="fp-n-s">All</span><span class="fp-n-l">${c.name}</span>` : c.name}</span></button>`).join("");
   return `<div class="fp-filter-bar">${btns}</div>`;
 }
@@ -70343,6 +70464,7 @@ export {
   getBoostIconAnyFallback,
   getBoostIcon,
   renderFarmPanelInfo,
+  renderFarmPanelTabContent,
   renderLibraryLists,
   renderHoneyList,
   renderCookingPanel,
@@ -70367,6 +70489,9 @@ export {
   getGreenhouseSeedCoins,
   prices_exports,
   farmPanelGameState,
+  farmPanelHiddenCards,
+  farmPanelCardCatalog,
+  farmPanelSetHiddenCards,
   farmPanelGetMarketPriceFlower,
   farmPanelDetectActiveMutants,
   farmPanelDetectMoneyTreeBonus,
