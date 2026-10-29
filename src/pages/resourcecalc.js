@@ -4,6 +4,8 @@ import { mountGreenhouseCalculator, unmountGreenhouseCalculator, greenhouseCalcu
 import { mountResourcesCalculator, unmountResourcesCalculator, resourcesCalculatorCanLeave } from "../rescalc_resources.js";
 import { mountSaltCalculator, unmountSaltCalculator, saltCalculatorCanLeave } from "../rescalc_salt.js";
 import { mountObsidianCalculator, unmountObsidianCalculator, obsidianCalculatorCanLeave } from "../rescalc_obsidian.js";
+import { mountAnimalsCalculator, unmountAnimalsCalculator, animalsCalculatorCanLeave } from "../rescalc_animals.js";
+import { mountCropMachineCalculator, unmountCropMachineCalculator, cropMachineCalculatorCanLeave } from "../rescalc_cropmachine.js";
 import { mountHoneyCalculator, unmountHoneyCalculator, honeyCalculatorCanLeave } from "../rescalc_honey.js";
 
 const CALCULATORS = [ {
@@ -48,6 +50,18 @@ const CALCULATORS = [ {
   mount: mountHoneyCalculator,
   unmount: unmountHoneyCalculator,
   canLeave: honeyCalculatorCanLeave
+}, {
+  id: "animals",
+  label: "Animals Calculator",
+  mount: mountAnimalsCalculator,
+  unmount: unmountAnimalsCalculator,
+  canLeave: animalsCalculatorCanLeave
+}, {
+  id: "cropmachine",
+  label: "Crop Machine Calculator",
+  mount: mountCropMachineCalculator,
+  unmount: unmountCropMachineCalculator,
+  canLeave: cropMachineCalculatorCanLeave
 } ];
 
 let rootEl = null;

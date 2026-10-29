@@ -4626,10 +4626,17 @@ function farmPanelRenderAnimalMergedCard(card) {
   const animalIcon = getIcon(card.typeLabel);
   const dailyBadgeHtml = dailyHarvestBadgeHtml(card.typeLabel, "animal", animalIcon, farmPanelDailyFarmId());
   const animalPerHead = card.count > 0 ? card.products.reduce((sum, p) => sum + p.totalYield, 0) / card.count : 0;
+  const animalDailyProducts = card.products.map(p => ({
+    name: p.name,
+    per: card.count > 0 ? p.totalYield / card.count : 0,
+    icon: getIcon(p.name),
+    price: p.price,
+    feeRate: p.grossRevenue > 0 ? p.feeAmount / p.grossRevenue : 0
+  }));
   dailyHarvestSetYield(card.typeLabel, animalPerHead, card.products.length ? getIcon(card.products[0].name) : "", null, {
     price: card.avgPricePerUnit,
     feeRate: card.gross > 0 ? card.sellFee / card.gross : 0
-  }, farmPanelDailyFarmId());
+  }, farmPanelDailyFarmId(), animalDailyProducts);
   const productChipsHtml = card.products.map(p => `\n      <span class="animal-produce-chip">\n        <span class="produce-yield">+${fmtAnimal(p.totalYield)}</span>\n        <span class="produce-icon">${getIcon(p.name)}</span>\n        <span class="produce-name">${escapeHtml(p.name)}</span>\n      </span>`).join("");
   const valueBlockHtml = guroValueBlockHtml(card.gross, card.sellFee, fmtAnimal);
   const productDetailRows = card.products.map(p => renderAnimalCardProductDetailRow(getIcon(p.name), p.name, p.totalYield, p.grossRevenue, p.feeAmount)).join("");

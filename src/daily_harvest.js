@@ -709,7 +709,7 @@ export function dailyHarvestOnYield(fn) {
   yieldListener = typeof fn === "function" ? fn : null;
 }
 
-export function dailyHarvestSetYield(groupKey, perNode, iconHtml, nodeQty, econ, farmId) {
+export function dailyHarvestSetYield(groupKey, perNode, iconHtml, nodeQty, econ, farmId, products) {
   if (yieldListener) {
     try {
       yieldListener();
@@ -729,8 +729,21 @@ export function dailyHarvestSetYield(groupKey, perNode, iconHtml, nodeQty, econ,
     icon: "",
     nodes: null,
     price: 0,
-    feeRate: 0
+    feeRate: 0,
+    products: null,
+    productName: ""
   });
+  if (Array.isArray(products)) {
+    const clean = products.filter(pr => pr && typeof pr.name === "string" && pr.name).map(pr => ({
+      name: pr.name,
+      per: typeof pr.per === "number" && isFinite(pr.per) && pr.per > 0 ? pr.per : 0,
+      icon: pr.icon || "",
+      price: typeof pr.price === "number" && isFinite(pr.price) && pr.price > 0 ? pr.price : 0,
+      feeRate: typeof pr.feeRate === "number" && isFinite(pr.feeRate) && pr.feeRate > 0 ? pr.feeRate : 0
+    }));
+    meta.products = clean.length > 1 ? clean : null;
+    meta.productName = clean.length === 1 ? clean[0].name : "";
+  }
   if (econ && typeof econ === "object") {
     meta.price = typeof econ.price === "number" && isFinite(econ.price) && econ.price > 0 ? econ.price : 0;
     meta.feeRate = typeof econ.feeRate === "number" && isFinite(econ.feeRate) && econ.feeRate > 0 ? econ.feeRate : 0;
@@ -752,7 +765,18 @@ export function dailyHarvestSetYield(groupKey, perNode, iconHtml, nodeQty, econ,
   let changed = resolvePending(st, groupKey);
   if (meta.per) st.log.forEach(e => {
     if (e.y === null || e.y === undefined) {
-      e.y = e.n * meta.per;
+      if (meta.products) {
+        e.p = {};
+        let sum = 0;
+        meta.products.forEach(pr => {
+          const v = e.n * pr.per;
+          e.p[pr.name] = v;
+          sum += v;
+        });
+        e.y = sum;
+      } else {
+        e.y = e.n * meta.per;
+      }
       changed = true;
     }
   });
@@ -767,6 +791,40 @@ const LOG_KIND_OF = {
   greenhouse: "greenhouse"
 };
 
+function addLogTotal(totals, name, kind, amount) {
+  const value = Math.round(amount * 100) / 100;
+  if (!(value > 0) || !isFinite(value)) return;
+  const cur = totals[name];
+  totals[name] = {
+    k: kind,
+    a: cur ? Math.round((cur.a + value) * 100) / 100 : value
+  };
+}
+
+function animalLogTotals(totals, groupKey, st) {
+  const meta = yieldMeta[groupKey];
+  if (!meta) return;
+  const dropped = typeof st.dropped === "number" ? st.dropped : 0;
+  if (meta.products) {
+    const products = meta.products;
+    const sumPer = products.reduce((sum, pr) => sum + pr.per, 0);
+    const parts = products.map(pr => sumPer > 0 ? dropped * pr.per / sumPer : 0);
+    st.log.forEach(e => {
+      splitEntryByProduct(e, products).forEach((v, i) => {
+        parts[i] += v;
+      });
+    });
+    products.forEach((pr, i) => addLogTotal(totals, pr.name, "animal", parts[i]));
+    return;
+  }
+  if (!meta.productName) return;
+  let amount = dropped;
+  st.log.forEach(e => {
+    if (typeof e.y === "number") amount += e.y; else if (meta.per) amount += e.n * meta.per;
+  });
+  addLogTotal(totals, meta.productName, "animal", amount);
+}
+
 export function dailyHarvestTotals(farmId) {
   const store = freshStore();
   const rec = store[farmId ? String(farmId) : store.__last];
@@ -775,18 +833,20 @@ export function dailyHarvestTotals(farmId) {
   Object.keys(rec.stats).forEach(groupKey => {
     const st = rec.stats[groupKey];
     if (!st || !Array.isArray(st.log) || !st.log.length) return;
-    const logKind = LOG_NODE_GROUPS.includes(groupKey) ? "node" : LOG_KIND_OF[st.kind];
+    if (st.kind === "animal") {
+      animalLogTotals(totals, groupKey, st);
+      return;
+    }
+    let logKind = LOG_KIND_OF[st.kind];
+    if (groupKey === "Honey") logKind = "beehive";
+    if (LOG_NODE_GROUPS.includes(groupKey)) logKind = "node";
     if (!logKind) return;
     const per = yieldMeta[groupKey] && yieldMeta[groupKey].per || 0;
     let amount = typeof st.dropped === "number" ? st.dropped : 0;
     st.log.forEach(e => {
       if (typeof e.y === "number") amount += e.y; else if (per) amount += e.n * per;
     });
-    amount = Math.round(amount * 100) / 100;
-    if (amount > 0 && isFinite(amount)) totals[groupKey] = {
-      k: logKind,
-      a: amount
-    };
+    addLogTotal(totals, groupKey, logKind, amount);
   });
   return {
     day: rec.day,
@@ -949,13 +1009,72 @@ function formatLogYield(y) {
   });
 }
 
+function splitEntryByProduct(e, products) {
+  if (e.p && typeof e.p === "object") {
+    return products.map(pr => typeof e.p[pr.name] === "number" ? e.p[pr.name] : 0);
+  }
+  const sumPer = products.reduce((sum, pr) => sum + pr.per, 0);
+  if (typeof e.y === "number") {
+    return products.map(pr => sumPer > 0 ? e.y * pr.per / sumPer : 0);
+  }
+  return products.map(pr => e.n * pr.per);
+}
+
+function multiYieldHtml(values, products) {
+  const lines = values.map((v, i) => v > 1e-9 ? `<span class="dh-log-yield">+${formatLogYield(v)}<span class="dh-log-ico">${products[i].icon}</span></span>` : "").join("");
+  return `<span class="dh-log-multi">${lines || "—"}</span>`;
+}
+
+function logHtmlProducts(meta, info) {
+  const products = meta.products;
+  const sorted = info.log.slice().sort((a, b) => b.t - a.t);
+  if (!sorted.length) return "";
+  const totals = products.map(() => 0);
+  const sumPer = products.reduce((sum, pr) => sum + pr.per, 0);
+  products.forEach((pr, i) => {
+    totals[i] += sumPer > 0 ? (info.dropped || 0) * pr.per / sumPer : 0;
+  });
+  const merged = [];
+  sorted.forEach(e => {
+    const parts = splitEntryByProduct(e, products);
+    parts.forEach((v, i) => {
+      totals[i] += v;
+    });
+    const last = merged[merged.length - 1];
+    if (last && last.t - e.t <= LOG_MERGE_GAP) {
+      parts.forEach((v, i) => {
+        last.parts[i] += v;
+      });
+      return;
+    }
+    merged.push({
+      t: e.t,
+      parts: parts
+    });
+  });
+  const rows = merged.map(e => `<div class="dh-log-row dh-log-row-multi"><span>${formatLogClock(e.t)}</span>${multiYieldHtml(e.parts, products)}</div>`).join("");
+  let gross = 0;
+  let fee = 0;
+  products.forEach((pr, i) => {
+    const g = totals[i] * pr.price;
+    gross += g;
+    fee += g * pr.feeRate;
+  });
+  const net = gross - fee;
+  const valueRows = gross > 0 ? `<div class="dh-log-row"><span>Gross</span><span class="dh-log-yield">${formatLogYield(gross)}<span class="dh-log-ico">${FLOWER_ICON}</span></span></div><div class="dh-log-row"><span>Net</span><span class="dh-log-yield">${formatLogYield(net)}<span class="dh-log-ico">${FLOWER_ICON}</span></span></div>` : "";
+  const sumHtml = `<div class="dh-log-sum"><div class="dh-log-row dh-log-row-multi dh-log-total"><span>Total</span>${multiYieldHtml(totals, products)}</div>${valueRows}</div>`;
+  return `<div class="dh-pop-log guro-frame"><div class="dh-log-head"><span>Time</span><span>Harvested</span></div><div class="dh-log-list">${rows}</div>${sumHtml}</div>`;
+}
+
 function logHtml(groupKey, info) {
   const meta = yieldMeta[groupKey] || {
     per: 0,
     icon: "",
     price: 0,
-    feeRate: 0
+    feeRate: 0,
+    products: null
   };
+  if (meta.products) return logHtmlProducts(meta, info);
   const sorted = info.log.slice().sort((a, b) => b.t - a.t);
   if (!sorted.length) return "";
   let total = info.dropped || 0;

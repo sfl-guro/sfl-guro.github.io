@@ -13,7 +13,7 @@ import {
   prices_exports,
   setAppDarkMode,
   ui_exports
-} from "./chunk.PCEAAA77.js";
+} from "./chunk.6YO57QME.js";
 import {
   KEY_ICON_DATA,
   NAV_ICON_DATA
@@ -169,13 +169,13 @@ var PAGES = [{
   path: "/experience-calculator",
   label: "Experience Calculator",
   root: "cookingPanel",
-  load: () => import("./experiencecalc.AVW37LW3.js")
+  load: () => import("./experiencecalc.RLX5HOXF.js")
 }, {
   id: "beginnerguide",
   path: "/beginner-guide",
   label: "Beginner Guide",
   root: "beginnerPanel",
-  load: () => import("./beginnerguide.3IKTFG3V.js")
+  load: () => import("./beginnerguide.ZU6VN6ES.js")
 }, {
   id: "fishing",
   path: "/fishing",
@@ -193,7 +193,7 @@ var PAGES = [{
   path: "/resource-calculators",
   label: "Resource Calculators",
   root: "pageResourceCalc",
-  load: () => import("./resourcecalc.SZKBPUTI.js")
+  load: () => import("./resourcecalc.AYDM66OC.js")
 }, {
   id: "sflbubbles",
   path: "/sflbubbleschart",
@@ -211,7 +211,7 @@ var PAGES = [{
   path: "/userguide",
   label: "User Guide",
   root: "pageUserGuide",
-  load: () => import("./userguide.YNT6B2AT.js")
+  load: () => import("./userguide.ESOG7CED.js")
 }, {
   id: "profile",
   path: "/profile",
