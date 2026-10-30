@@ -112,7 +112,9 @@ function carryCook(c) {
   return {
     prev: c && c.prev && typeof c.prev === "object" ? c.prev : {},
     ctr: c && c.ctr && typeof c.ctr === "object" ? c.ctr : {},
+    hint: c && c.hint && typeof c.hint === "object" ? c.hint : {},
     totals: {},
+    bld: {},
     known: !!(c && c.known)
   };
 }
@@ -120,6 +122,62 @@ function carryCook(c) {
 function cookCounterNow(activity, key) {
   const v = activity ? Number(activity[key]) : NaN;
   return Number.isFinite(v) && v > 0 ? v : 0;
+}
+
+const COOK_LOG_CAP = 200;
+
+const COOK_NO_ESTIMATE = {
+  "Fermentation Rack": true,
+  "Aging Shed": true
+};
+
+const COOK_ESTIMATE_CAP = 500;
+
+let iconProvider = null;
+
+export function dailyHarvestSetIconProvider(fn) {
+  iconProvider = typeof fn === "function" ? fn : null;
+}
+
+function addCookEntry(cook, building, name, amount, count, price, fee, at, estimated) {
+  const t = cook.totals[name] || (cook.totals[name] = {
+    a: 0,
+    c: 0,
+    p: 0,
+    f: 0
+  });
+  t.a += amount;
+  t.c += count;
+  if (price > 0) {
+    t.p = price;
+    t.f = fee || 0;
+  }
+  const bld = cook.bld[building] || (cook.bld[building] = {
+    est: false,
+    items: {}
+  });
+  const it = bld.items[name] || (bld.items[name] = {
+    a: 0,
+    c: 0,
+    p: 0,
+    f: 0,
+    log: []
+  });
+  it.a += amount;
+  it.c += count;
+  if (price > 0) {
+    it.p = price;
+    it.f = fee || 0;
+  }
+  const entry = {
+    t: at,
+    a: amount,
+    n: count
+  };
+  if (estimated) entry.e = 1;
+  it.log.push(entry);
+  if (it.log.length > COOK_LOG_CAP) it.log.splice(0, it.log.length - COOK_LOG_CAP);
+  if (estimated) bld.est = true;
 }
 
 function trackCooking(g, rec, fresh, now) {
@@ -133,6 +191,8 @@ function trackCooking(g, rec, fresh, now) {
   if (!res || !Array.isArray(res.slots) || !Array.isArray(res.present)) return;
   const activity = res.activity && typeof res.activity === "object" ? res.activity : null;
   const cook = rec.cook || (rec.cook = carryCook(null));
+  if (!cook.bld || typeof cook.bld !== "object") cook.bld = {};
+  if (!cook.hint || typeof cook.hint !== "object") cook.hint = {};
   const start = utcDayStart(now);
   const present = new Set(res.present);
   const cur = {};
@@ -141,7 +201,7 @@ function trackCooking(g, rec, fresh, now) {
     if (!sl || !sl.name) return;
     const base = `${sl.building}|${sl.name}|${sl.readyAt}`;
     seen[base] = (seen[base] || 0) + 1;
-    cur[`${base}|${seen[base]}`] = {
+    const entry = {
       b: sl.building,
       name: sl.name,
       amount: sl.amount,
@@ -150,59 +210,57 @@ function trackCooking(g, rec, fresh, now) {
       fee: sl.feeRate || 0,
       k: Array.isArray(sl.keys) ? sl.keys : []
     };
+    cur[`${base}|${seen[base]}`] = entry;
+    if (entry.k.length) cook.hint[entry.k.join("|")] = {
+      b: entry.b,
+      name: entry.name,
+      amount: entry.amount,
+      price: entry.price,
+      fee: entry.fee,
+      k: entry.k
+    };
   });
   const prevCtr = cook.ctr && typeof cook.ctr === "object" ? cook.ctr : null;
+  const budget = {};
+  const deltaOf = keys => keys.reduce((sum, k) => sum + Math.max(0, cookCounterNow(activity, k) - prevCtr[k]), 0);
   if (cook.known) {
     const gone = Object.keys(cook.prev).filter(key => !cur[key]).map(key => cook.prev[key]).filter(p => p && present.has(p.b) && typeof p.amount === "number" && p.amount > 0);
     gone.sort((a, b) => (a.readyAt <= now ? 0 : 1) - (b.readyAt <= now ? 0 : 1) || a.readyAt - b.readyAt);
-    const budget = {};
     gone.forEach(p => {
       const keys = Array.isArray(p.k) ? p.k : [];
       const gated = !!(activity && prevCtr && keys.length && keys.every(k => typeof prevCtr[k] === "number"));
       if (gated) {
         const id = keys.join("|");
-        if (budget[id] === undefined) budget[id] = keys.reduce((sum, k) => sum + Math.max(0, cookCounterNow(activity, k) - prevCtr[k]), 0);
+        if (budget[id] === undefined) budget[id] = deltaOf(keys);
         if (budget[id] <= 0) return;
         budget[id] -= 1;
         if (fresh && !(p.readyAt >= start && p.readyAt <= now)) return;
       } else if (!(p.readyAt <= now) || fresh && !(p.readyAt >= start)) {
         return;
       }
-      const t = cook.totals[p.name] || (cook.totals[p.name] = {
-        a: 0,
-        c: 0,
-        p: 0,
-        f: 0
-      });
-      t.a += p.amount;
-      t.c += 1;
-      if (p.price > 0) {
-        t.p = p.price;
-        t.f = p.fee || 0;
-      }
+      addCookEntry(cook, p.b, p.name, p.amount, 1, p.price, p.fee, now, false);
     });
+    if (!fresh && activity && prevCtr) {
+      Object.keys(cook.hint).forEach(id => {
+        const h = cook.hint[id];
+        if (!h || COOK_NO_ESTIMATE[h.b] || !present.has(h.b) || !(h.amount > 0)) return;
+        const keys = Array.isArray(h.k) ? h.k : [];
+        if (!keys.length || !keys.every(k => typeof prevCtr[k] === "number")) return;
+        const left = Math.min(Math.floor(budget[id] !== undefined ? budget[id] : deltaOf(keys)), COOK_ESTIMATE_CAP);
+        if (left > 0) addCookEntry(cook, h.b, h.name, h.amount * left, left, h.price, h.fee, now, true);
+      });
+    }
   }
   const instant = Array.isArray(res.instant) ? res.instant : [];
   if (cook.known && !fresh && activity && prevCtr) {
     instant.forEach(e => {
       if (!e || !e.key || typeof e.amountAt !== "function" || typeof prevCtr[e.key] !== "number") return;
       const from = Math.floor(prevCtr[e.key]);
-      const to = Math.min(Math.floor(cookCounterNow(activity, e.key)), from + 500);
+      const to = Math.min(Math.floor(cookCounterNow(activity, e.key)), from + COOK_ESTIMATE_CAP);
       for (let n = from; n < to; n++) {
         const amount = e.amountAt(n);
         if (!(amount > 0)) continue;
-        const t = cook.totals[e.name] || (cook.totals[e.name] = {
-          a: 0,
-          c: 0,
-          p: 0,
-          f: 0
-        });
-        t.a += amount;
-        t.c += 1;
-        if (e.price > 0) {
-          t.p = e.price;
-          t.f = e.feeRate || 0;
-        }
+        addCookEntry(cook, e.building || "Kitchen", e.name, amount, 1, e.price, e.feeRate || 0, now, false);
       }
     });
   }
@@ -223,6 +281,13 @@ function trackCooking(g, rec, fresh, now) {
   });
   if (activity) instant.forEach(e => {
     if (e && e.key) ctr[e.key] = cookCounterNow(activity, e.key);
+  });
+  Object.keys(cook.hint).forEach(id => {
+    const h = cook.hint[id];
+    if (!h) return;
+    (Array.isArray(h.k) ? h.k : []).forEach(k => {
+      if (activity && present.has(h.b)) ctr[k] = cookCounterNow(activity, k); else if (ctr[k] === undefined && prevCtr && typeof prevCtr[k] === "number") ctr[k] = prevCtr[k];
+    });
   });
   cook.prev = Object.assign(kept, cur);
   cook.ctr = ctr;
@@ -796,6 +861,27 @@ export function dailyHarvestInfo(groupKey, farmId) {
   };
 }
 
+export function dailyCookingInfo(building, farmId) {
+  const store = freshStore();
+  const rec = store[farmId ? String(farmId) : store.__last];
+  if (!rec || rec.day !== utcDay(Date.now())) return null;
+  const bld = rec.cook && rec.cook.bld ? rec.cook.bld[building] : null;
+  if (!bld || !bld.items) return null;
+  const items = Object.keys(bld.items).filter(name => bld.items[name] && bld.items[name].c > 0).map(name => ({
+    name: name,
+    item: bld.items[name]
+  }));
+  if (!items.length) return null;
+  items.sort((a, b) => b.item.c - a.item.c || a.name.localeCompare(b.name));
+  const lastAt = items.reduce((max, e) => e.item.log.reduce((m, l) => Math.max(m, l.t || 0), max), 0);
+  return {
+    rounds: items.reduce((sum, e) => sum + e.item.c, 0),
+    estimated: !!bld.est,
+    lastAt: lastAt,
+    items: items
+  };
+}
+
 function resolvePending(st, groupKey) {
   if (!st.pend || !pendResolver) return false;
   let changed = false;
@@ -1089,6 +1175,12 @@ const KIND_META = {
     action: "collected",
     unit: "animals",
     palette: [ "#ffffff", "#f5d36b", "#ffb347" ]
+  },
+  cooking: {
+    verb: "Collected",
+    action: "collected",
+    unit: "slots",
+    palette: [ "#ffb347", "#fff3a0", "#e43b44" ]
   }
 };
 
@@ -1117,7 +1209,7 @@ function escapeAttr(s) {
 
 export function dailyHarvestBadgeHtml(groupKey, kind, iconHtml, farmId) {
   if (!KIND_META[kind]) return "";
-  const info = dailyHarvestInfo(groupKey, farmId);
+  const info = kind === "cooking" ? dailyCookingInfo(groupKey, farmId) : dailyHarvestInfo(groupKey, farmId);
   if (!info) return "";
   return `<span class="daily-harvest-badge guro-frame dh-${kind}" role="button" tabindex="0" data-dh-key="${escapeAttr(groupKey)}" data-dh-kind="${kind}" data-dh-farm="${escapeAttr(farmId || "")}"><span class="dh-ord">${info.estimated ? "~" : ""}${info.rounds}x</span><span class="dh-icon">${iconHtml || ""}${effectSvg(kind)}</span></span>`;
 }
@@ -1258,9 +1350,59 @@ function closeDailyPop() {
   document.documentElement.classList.remove("dh-pop-lock");
 }
 
+function cookingItemLogHtml(entry) {
+  const it = entry.item;
+  const icon = iconProvider ? iconProvider(entry.name) : "";
+  const sorted = it.log.slice().sort((a, b) => b.t - a.t);
+  const merged = [];
+  sorted.forEach(e => {
+    const last = merged[merged.length - 1];
+    if (last && last.t - e.t <= LOG_MERGE_GAP) {
+      last.a += e.a;
+      if (e.e) last.e = 1;
+      return;
+    }
+    merged.push({
+      t: e.t,
+      a: e.a,
+      e: e.e ? 1 : 0
+    });
+  });
+  const rows = merged.map(e => `<div class="dh-log-row"><span>${formatLogClock(e.t)}</span><span class="dh-log-yield">${e.e ? "~" : ""}+${formatLogYield(e.a)}<span class="dh-log-ico">${icon}</span></span></div>`).join("");
+  const gross = it.a * it.p;
+  const net = gross - gross * it.f;
+  const valueRows = gross > 0 ? `<div class="dh-log-row"><span>Gross</span><span class="dh-log-yield">${formatLogYield(gross)}<span class="dh-log-ico">${FLOWER_ICON}</span></span></div><div class="dh-log-row"><span>Net</span><span class="dh-log-yield">${formatLogYield(net)}<span class="dh-log-ico">${FLOWER_ICON}</span></span></div>` : "";
+  const head = `<div class="dh-log-head"><span class="dh-log-yield"><span class="dh-log-ico">${icon}</span>${escapeAttr(entry.name)}</span><span>${it.c}x</span></div>`;
+  const sumHtml = `<div class="dh-log-sum"><div class="dh-log-row dh-log-total"><span>Total</span><span class="dh-log-yield">+${formatLogYield(it.a)}<span class="dh-log-ico">${icon}</span></span></div>${valueRows}</div>`;
+  return `<div class="dh-pop-log guro-frame">${head}<div class="dh-log-list">${rows}</div>${sumHtml}</div>`;
+}
+
+function openCookingPop(badgeEl) {
+  const building = badgeEl.getAttribute("data-dh-key");
+  const meta = KIND_META.cooking;
+  const info = dailyCookingInfo(building, badgeEl.getAttribute("data-dh-farm") || "");
+  if (!info) return;
+  closeDailyPop();
+  const iconEl = badgeEl.querySelector(".dh-icon");
+  const iconHtml = iconEl ? iconEl.innerHTML : "";
+  const times = `${info.estimated ? "~" : ""}${info.rounds}x`;
+  const safeName = escapeAttr(building);
+  const bodyText = `Your ${safeName} has finished and handed over ${times} today. Each finished cook that is collected counts as one harvest, and every item below keeps its own record.`;
+  const now = Date.now();
+  const itemsHtml = info.items.map(cookingItemLogHtml).join("");
+  const farm = badgeEl.getAttribute("data-dh-farm") || store0Last();
+  const html = `<div class="dh-pop-back" id="dailyHarvestPop"><div class="dh-pop guro-frame dh-cooking" role="dialog" aria-modal="true"><div class="dh-pop-top"><span class="dh-pop-top-title">Daily Harvest · UTC</span><span class="dh-pop-top-acts"><button type="button" class="dh-pop-log-btn" data-dh-log="${escapeAttr(farm)}">Log</button><button type="button" class="dh-pop-x" data-dh-close="1" aria-label="Close"></button></span></div><div class="dh-pop-head"><span class="dh-pop-icon guro-frame dh-icon">${iconHtml}</span><div class="dh-pop-headtext guro-frame"><div class="dh-pop-title dh-pop-title-solo">${safeName}</div></div><span class="dh-pop-ord guro-frame">${times}</span></div><div class="dh-pop-main guro-frame">${meta.verb} <b>${times}</b> today</div><p class="dh-pop-text">${bodyText}</p><div class="dh-pop-stats guro-frame"><div class="dh-stat"><span>Accuracy</span><b>${info.estimated ? "Estimated" : "Exact"}</b></div><div class="dh-stat"><span>Items</span><b>${info.items.length}</b></div><div class="dh-stat"><span>Last collected</span><b>${formatClock(info.lastAt)}</b></div><div class="dh-stat"><span>Resets in</span><b>${formatResetIn(now)}</b></div></div>${itemsHtml}${info.estimated ? `<p class="dh-pop-text dh-pop-note">Rows marked with ~ were collected between syncs and are estimated from your lifetime activity counters.</p>` : ""}</div></div>`;
+  document.body.insertAdjacentHTML("beforeend", html);
+  document.documentElement.classList.add("dh-pop-lock");
+}
+
 function openDailyPop(badgeEl) {
   const groupKey = badgeEl.getAttribute("data-dh-key");
   const kind = badgeEl.getAttribute("data-dh-kind");
+  if (kind === "cooking") {
+    openCookingPop(badgeEl);
+    return;
+  }
   const meta = KIND_META[kind];
   const info = dailyHarvestInfo(groupKey, badgeEl.getAttribute("data-dh-farm") || "");
   if (!meta || !info) return;

@@ -1,10 +1,10 @@
 import { dailyHarvestTotals, dailyHarvestOnYield } from "./daily_harvest.js";
 
-import { getIcon } from "./ui.js";
+import { getIcon, cookFoodIcon } from "./ui.js";
 
 import { ICON_DATA } from "./icon_data.js";
 
-import { FLOWER_ICON } from "./calculator.js";
+import { FLOWER_ICON, COOKING_FOOD_IMAGES } from "./calculator.js";
 
 const HARVEST_LOG_BASE = "https://sfl-harvest-log.bossweki.workers.dev";
 
@@ -190,6 +190,11 @@ function netOf(e) {
   return round4(round4(e.a * e.p) * (1 - fee));
 }
 
+function itemIcon(name, kind) {
+  if (kind === "cooking" && COOKING_FOOD_IMAGES[name]) return cookFoodIcon(name);
+  return getIcon(name);
+}
+
 function flowerHtml() {
   return `<span class="dh-hlog-fl">${FLOWER_ICON}</span>`;
 }
@@ -219,7 +224,7 @@ function dayHtml(entry, number) {
     if (net !== null) totalNet += net;
     const value = net !== null ? `<span class="dh-hlog-val"><span class="dh-hlog-price">(${fmtPrice(e.p)}${flowerHtml()}/U)</span><span class="dh-hlog-net">(+${fmtFlower(net)}${flowerHtml()})</span></span>` : "";
     const count = e.c > 0 ? `<span class="dh-hlog-count"><span class="dh-hlog-h" role="button" tabindex="0" data-dh-h="1" aria-label="${e.k === "cooking" ? "Collected" : "Harvested"}">${e.k === "cooking" ? "C" : "H"}<span class="dh-hlog-tip">${e.k === "cooking" ? "Collected" : "Harvested"}</span></span>${e.c}x</span>` : "";
-    return `<div class="dh-hlog-row"><span class="dh-hlog-amt">+${fmtAmount(e.a)}</span><span class="dh-hlog-ico">${getIcon(name)}</span><span class="dh-hlog-name">${esc(name)}</span>${value}${count}</div>`;
+    return `<div class="dh-hlog-row"><span class="dh-hlog-amt">+${fmtAmount(e.a)}</span><span class="dh-hlog-ico">${itemIcon(name, e.k)}</span><span class="dh-hlog-name">${esc(name)}</span>${value}${count}</div>`;
   }).join("");
   const total = totalNet > 0 ? `<div class="dh-hlog-gain"><span>Total Gained:</span><span class="dh-hlog-gain-val">+${totalNet.toLocaleString("en-US", {
     minimumFractionDigits: 2,
