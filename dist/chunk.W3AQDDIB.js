@@ -9346,9 +9346,9 @@ function renderBaseStockTables() {
       const base = data[name];
       const boosted = computeBoostedStock(base, kind, name);
       const changed = Math.abs(boosted - base) > 1e-3;
-      const itemIcon2 = IMAGE_ICONS[name] ? getIcon(name) : icon;
+      const itemIcon3 = IMAGE_ICONS[name] ? getIcon(name) : icon;
       return `<div class="lib-item-row" style="padding:5px 8px;">
-        <span class="lib-item-icon" style="font-size:15.6px;">${itemIcon2}</span>
+        <span class="lib-item-icon" style="font-size:15.6px;">${itemIcon3}</span>
         <div class="lib-item-main">
           <div class="lib-item-name" style="font-size:12.6px;">${escapeHtml(name)}</div>
         </div>
@@ -9362,9 +9362,9 @@ function renderBaseStockTables() {
       const base = BASE_STOCK_FLOWERS[name];
       const boosted = computeBoostedStock(base, "seed", name);
       const changed = Math.abs(boosted - base) > 1e-3;
-      const itemIcon2 = IMAGE_ICONS[name + " Seed"] ? getIcon(name + " Seed") : FLOWER_SEED_ICONS[name] || "\u{1F331}";
+      const itemIcon3 = IMAGE_ICONS[name + " Seed"] ? getIcon(name + " Seed") : FLOWER_SEED_ICONS[name] || "\u{1F331}";
       return `<div class="lib-item-row" style="padding:5px 8px;">
-        <span class="lib-item-icon" style="font-size:15.6px;">${itemIcon2}</span>
+        <span class="lib-item-icon" style="font-size:15.6px;">${itemIcon3}</span>
         <div class="lib-item-main">
           <div class="lib-item-name" style="font-size:12.6px;">${escapeHtml(name)}</div>
         </div>
@@ -23038,13 +23038,65 @@ function carryCook(c) {
   return {
     prev: c && c.prev && typeof c.prev === "object" ? c.prev : {},
     ctr: c && c.ctr && typeof c.ctr === "object" ? c.ctr : {},
+    hint: c && c.hint && typeof c.hint === "object" ? c.hint : {},
     totals: {},
+    bld: {},
     known: !!(c && c.known)
   };
 }
 function cookCounterNow(activity, key) {
   const v = activity ? Number(activity[key]) : NaN;
   return Number.isFinite(v) && v > 0 ? v : 0;
+}
+var COOK_LOG_CAP = 200;
+var COOK_NO_ESTIMATE = {
+  "Fermentation Rack": true,
+  "Aging Shed": true
+};
+var COOK_ESTIMATE_CAP = 500;
+var iconProvider = null;
+function dailyHarvestSetIconProvider(fn) {
+  iconProvider = typeof fn === "function" ? fn : null;
+}
+function addCookEntry(cook, building, name, amount, count, price, fee, at, estimated) {
+  const t = cook.totals[name] || (cook.totals[name] = {
+    a: 0,
+    c: 0,
+    p: 0,
+    f: 0
+  });
+  t.a += amount;
+  t.c += count;
+  if (price > 0) {
+    t.p = price;
+    t.f = fee || 0;
+  }
+  const bld = cook.bld[building] || (cook.bld[building] = {
+    est: false,
+    items: {}
+  });
+  const it = bld.items[name] || (bld.items[name] = {
+    a: 0,
+    c: 0,
+    p: 0,
+    f: 0,
+    log: []
+  });
+  it.a += amount;
+  it.c += count;
+  if (price > 0) {
+    it.p = price;
+    it.f = fee || 0;
+  }
+  const entry = {
+    t: at,
+    a: amount,
+    n: count
+  };
+  if (estimated) entry.e = 1;
+  it.log.push(entry);
+  if (it.log.length > COOK_LOG_CAP) it.log.splice(0, it.log.length - COOK_LOG_CAP);
+  if (estimated) bld.est = true;
 }
 function trackCooking(g, rec, fresh, now) {
   if (!cookProvider) return;
@@ -23057,6 +23109,8 @@ function trackCooking(g, rec, fresh, now) {
   if (!res || !Array.isArray(res.slots) || !Array.isArray(res.present)) return;
   const activity = res.activity && typeof res.activity === "object" ? res.activity : null;
   const cook = rec.cook || (rec.cook = carryCook(null));
+  if (!cook.bld || typeof cook.bld !== "object") cook.bld = {};
+  if (!cook.hint || typeof cook.hint !== "object") cook.hint = {};
   const start = utcDayStart(now);
   const present = new Set(res.present);
   const cur = {};
@@ -23065,7 +23119,7 @@ function trackCooking(g, rec, fresh, now) {
     if (!sl || !sl.name) return;
     const base = `${sl.building}|${sl.name}|${sl.readyAt}`;
     seen[base] = (seen[base] || 0) + 1;
-    cur[`${base}|${seen[base]}`] = {
+    const entry = {
       b: sl.building,
       name: sl.name,
       amount: sl.amount,
@@ -23074,59 +23128,57 @@ function trackCooking(g, rec, fresh, now) {
       fee: sl.feeRate || 0,
       k: Array.isArray(sl.keys) ? sl.keys : []
     };
+    cur[`${base}|${seen[base]}`] = entry;
+    if (entry.k.length) cook.hint[entry.k.join("|")] = {
+      b: entry.b,
+      name: entry.name,
+      amount: entry.amount,
+      price: entry.price,
+      fee: entry.fee,
+      k: entry.k
+    };
   });
   const prevCtr = cook.ctr && typeof cook.ctr === "object" ? cook.ctr : null;
+  const budget = {};
+  const deltaOf = (keys) => keys.reduce((sum, k) => sum + Math.max(0, cookCounterNow(activity, k) - prevCtr[k]), 0);
   if (cook.known) {
     const gone = Object.keys(cook.prev).filter((key) => !cur[key]).map((key) => cook.prev[key]).filter((p) => p && present.has(p.b) && typeof p.amount === "number" && p.amount > 0);
     gone.sort((a, b) => (a.readyAt <= now ? 0 : 1) - (b.readyAt <= now ? 0 : 1) || a.readyAt - b.readyAt);
-    const budget = {};
     gone.forEach((p) => {
       const keys = Array.isArray(p.k) ? p.k : [];
       const gated = !!(activity && prevCtr && keys.length && keys.every((k) => typeof prevCtr[k] === "number"));
       if (gated) {
         const id = keys.join("|");
-        if (budget[id] === void 0) budget[id] = keys.reduce((sum, k) => sum + Math.max(0, cookCounterNow(activity, k) - prevCtr[k]), 0);
+        if (budget[id] === void 0) budget[id] = deltaOf(keys);
         if (budget[id] <= 0) return;
         budget[id] -= 1;
         if (fresh && !(p.readyAt >= start && p.readyAt <= now)) return;
       } else if (!(p.readyAt <= now) || fresh && !(p.readyAt >= start)) {
         return;
       }
-      const t = cook.totals[p.name] || (cook.totals[p.name] = {
-        a: 0,
-        c: 0,
-        p: 0,
-        f: 0
-      });
-      t.a += p.amount;
-      t.c += 1;
-      if (p.price > 0) {
-        t.p = p.price;
-        t.f = p.fee || 0;
-      }
+      addCookEntry(cook, p.b, p.name, p.amount, 1, p.price, p.fee, now, false);
     });
+    if (!fresh && activity && prevCtr) {
+      Object.keys(cook.hint).forEach((id) => {
+        const h = cook.hint[id];
+        if (!h || COOK_NO_ESTIMATE[h.b] || !present.has(h.b) || !(h.amount > 0)) return;
+        const keys = Array.isArray(h.k) ? h.k : [];
+        if (!keys.length || !keys.every((k) => typeof prevCtr[k] === "number")) return;
+        const left = Math.min(Math.floor(budget[id] !== void 0 ? budget[id] : deltaOf(keys)), COOK_ESTIMATE_CAP);
+        if (left > 0) addCookEntry(cook, h.b, h.name, h.amount * left, left, h.price, h.fee, now, true);
+      });
+    }
   }
   const instant = Array.isArray(res.instant) ? res.instant : [];
   if (cook.known && !fresh && activity && prevCtr) {
     instant.forEach((e) => {
       if (!e || !e.key || typeof e.amountAt !== "function" || typeof prevCtr[e.key] !== "number") return;
       const from = Math.floor(prevCtr[e.key]);
-      const to = Math.min(Math.floor(cookCounterNow(activity, e.key)), from + 500);
+      const to = Math.min(Math.floor(cookCounterNow(activity, e.key)), from + COOK_ESTIMATE_CAP);
       for (let n = from; n < to; n++) {
         const amount = e.amountAt(n);
         if (!(amount > 0)) continue;
-        const t = cook.totals[e.name] || (cook.totals[e.name] = {
-          a: 0,
-          c: 0,
-          p: 0,
-          f: 0
-        });
-        t.a += amount;
-        t.c += 1;
-        if (e.price > 0) {
-          t.p = e.price;
-          t.f = e.feeRate || 0;
-        }
+        addCookEntry(cook, e.building || "Kitchen", e.name, amount, 1, e.price, e.feeRate || 0, now, false);
       }
     });
   }
@@ -23147,6 +23199,14 @@ function trackCooking(g, rec, fresh, now) {
   });
   if (activity) instant.forEach((e) => {
     if (e && e.key) ctr[e.key] = cookCounterNow(activity, e.key);
+  });
+  Object.keys(cook.hint).forEach((id) => {
+    const h = cook.hint[id];
+    if (!h) return;
+    (Array.isArray(h.k) ? h.k : []).forEach((k) => {
+      if (activity && present.has(h.b)) ctr[k] = cookCounterNow(activity, k);
+      else if (ctr[k] === void 0 && prevCtr && typeof prevCtr[k] === "number") ctr[k] = prevCtr[k];
+    });
   });
   cook.prev = Object.assign(kept, cur);
   cook.ctr = ctr;
@@ -23683,6 +23743,26 @@ function dailyHarvestInfo(groupKey, farmId) {
     log: Array.isArray(st.log) ? st.log : []
   };
 }
+function dailyCookingInfo(building, farmId) {
+  const store = freshStore();
+  const rec = store[farmId ? String(farmId) : store.__last];
+  if (!rec || rec.day !== utcDay(Date.now())) return null;
+  const bld = rec.cook && rec.cook.bld ? rec.cook.bld[building] : null;
+  if (!bld || !bld.items) return null;
+  const items = Object.keys(bld.items).filter((name) => bld.items[name] && bld.items[name].c > 0).map((name) => ({
+    name,
+    item: bld.items[name]
+  }));
+  if (!items.length) return null;
+  items.sort((a, b) => b.item.c - a.item.c || a.name.localeCompare(b.name));
+  const lastAt = items.reduce((max, e) => e.item.log.reduce((m, l) => Math.max(m, l.t || 0), max), 0);
+  return {
+    rounds: items.reduce((sum, e) => sum + e.item.c, 0),
+    estimated: !!bld.est,
+    lastAt,
+    items
+  };
+}
 function resolvePending(st, groupKey) {
   if (!st.pend || !pendResolver) return false;
   let changed = false;
@@ -23960,6 +24040,12 @@ var KIND_META = {
     action: "collected",
     unit: "animals",
     palette: ["#ffffff", "#f5d36b", "#ffb347"]
+  },
+  cooking: {
+    verb: "Collected",
+    action: "collected",
+    unit: "slots",
+    palette: ["#ffb347", "#fff3a0", "#e43b44"]
   }
 };
 var KIND_NOUN = {
@@ -23983,7 +24069,7 @@ function escapeAttr(s) {
 }
 function dailyHarvestBadgeHtml(groupKey, kind, iconHtml2, farmId) {
   if (!KIND_META[kind]) return "";
-  const info = dailyHarvestInfo(groupKey, farmId);
+  const info = kind === "cooking" ? dailyCookingInfo(groupKey, farmId) : dailyHarvestInfo(groupKey, farmId);
   if (!info) return "";
   return `<span class="daily-harvest-badge guro-frame dh-${kind}" role="button" tabindex="0" data-dh-key="${escapeAttr(groupKey)}" data-dh-kind="${kind}" data-dh-farm="${escapeAttr(farmId || "")}"><span class="dh-ord">${info.estimated ? "~" : ""}${info.rounds}x</span><span class="dh-icon">${iconHtml2 || ""}${effectSvg(kind)}</span></span>`;
 }
@@ -24113,9 +24199,57 @@ function closeDailyPop() {
   if (el) el.remove();
   document.documentElement.classList.remove("dh-pop-lock");
 }
+function cookingItemLogHtml(entry) {
+  const it = entry.item;
+  const icon = iconProvider ? iconProvider(entry.name) : "";
+  const sorted = it.log.slice().sort((a, b) => b.t - a.t);
+  const merged = [];
+  sorted.forEach((e) => {
+    const last = merged[merged.length - 1];
+    if (last && last.t - e.t <= LOG_MERGE_GAP) {
+      last.a += e.a;
+      if (e.e) last.e = 1;
+      return;
+    }
+    merged.push({
+      t: e.t,
+      a: e.a,
+      e: e.e ? 1 : 0
+    });
+  });
+  const rows = merged.map((e) => `<div class="dh-log-row"><span>${formatLogClock(e.t)}</span><span class="dh-log-yield">${e.e ? "~" : ""}+${formatLogYield(e.a)}<span class="dh-log-ico">${icon}</span></span></div>`).join("");
+  const gross = it.a * it.p;
+  const net = gross - gross * it.f;
+  const valueRows = gross > 0 ? `<div class="dh-log-row"><span>Gross</span><span class="dh-log-yield">${formatLogYield(gross)}<span class="dh-log-ico">${FLOWER_ICON}</span></span></div><div class="dh-log-row"><span>Net</span><span class="dh-log-yield">${formatLogYield(net)}<span class="dh-log-ico">${FLOWER_ICON}</span></span></div>` : "";
+  const head = `<div class="dh-log-head"><span class="dh-log-yield"><span class="dh-log-ico">${icon}</span>${escapeAttr(entry.name)}</span><span>${it.c}x</span></div>`;
+  const sumHtml = `<div class="dh-log-sum"><div class="dh-log-row dh-log-total"><span>Total</span><span class="dh-log-yield">+${formatLogYield(it.a)}<span class="dh-log-ico">${icon}</span></span></div>${valueRows}</div>`;
+  return `<div class="dh-pop-log guro-frame">${head}<div class="dh-log-list">${rows}</div>${sumHtml}</div>`;
+}
+function openCookingPop(badgeEl) {
+  const building = badgeEl.getAttribute("data-dh-key");
+  const meta = KIND_META.cooking;
+  const info = dailyCookingInfo(building, badgeEl.getAttribute("data-dh-farm") || "");
+  if (!info) return;
+  closeDailyPop();
+  const iconEl = badgeEl.querySelector(".dh-icon");
+  const iconHtml2 = iconEl ? iconEl.innerHTML : "";
+  const times = `${info.estimated ? "~" : ""}${info.rounds}x`;
+  const safeName = escapeAttr(building);
+  const bodyText = `Your ${safeName} has finished and handed over ${times} today. Each finished cook that is collected counts as one harvest, and every item below keeps its own record.`;
+  const now = Date.now();
+  const itemsHtml = info.items.map(cookingItemLogHtml).join("");
+  const farm = badgeEl.getAttribute("data-dh-farm") || store0Last();
+  const html = `<div class="dh-pop-back" id="dailyHarvestPop"><div class="dh-pop guro-frame dh-cooking" role="dialog" aria-modal="true"><div class="dh-pop-top"><span class="dh-pop-top-title">Daily Harvest \xB7 UTC</span><span class="dh-pop-top-acts"><button type="button" class="dh-pop-log-btn" data-dh-log="${escapeAttr(farm)}">Log</button><button type="button" class="dh-pop-x" data-dh-close="1" aria-label="Close"></button></span></div><div class="dh-pop-head"><span class="dh-pop-icon guro-frame dh-icon">${iconHtml2}</span><div class="dh-pop-headtext guro-frame"><div class="dh-pop-title dh-pop-title-solo">${safeName}</div></div><span class="dh-pop-ord guro-frame">${times}</span></div><div class="dh-pop-main guro-frame">${meta.verb} <b>${times}</b> today</div><p class="dh-pop-text">${bodyText}</p><div class="dh-pop-stats guro-frame"><div class="dh-stat"><span>Accuracy</span><b>${info.estimated ? "Estimated" : "Exact"}</b></div><div class="dh-stat"><span>Items</span><b>${info.items.length}</b></div><div class="dh-stat"><span>Last collected</span><b>${formatClock(info.lastAt)}</b></div><div class="dh-stat"><span>Resets in</span><b>${formatResetIn(now)}</b></div></div>${itemsHtml}${info.estimated ? `<p class="dh-pop-text dh-pop-note">Rows marked with ~ were collected between syncs and are estimated from your lifetime activity counters.</p>` : ""}</div></div>`;
+  document.body.insertAdjacentHTML("beforeend", html);
+  document.documentElement.classList.add("dh-pop-lock");
+}
 function openDailyPop(badgeEl) {
   const groupKey = badgeEl.getAttribute("data-dh-key");
   const kind = badgeEl.getAttribute("data-dh-kind");
+  if (kind === "cooking") {
+    openCookingPop(badgeEl);
+    return;
+  }
   const meta = KIND_META[kind];
   const info = dailyHarvestInfo(groupKey, badgeEl.getAttribute("data-dh-farm") || "");
   if (!meta || !info) return;
@@ -24331,6 +24465,10 @@ function netOf(e) {
   const fee = e.f > 0 && e.f < 1 ? e.f : 0;
   return round4(round4(e.a * e.p) * (1 - fee));
 }
+function itemIcon(name, kind) {
+  if (kind === "cooking" && COOKING_FOOD_IMAGES[name]) return cookFoodIcon(name);
+  return getIcon(name);
+}
 function flowerHtml() {
   return `<span class="dh-hlog-fl">${FLOWER_ICON}</span>`;
 }
@@ -24357,7 +24495,7 @@ function dayHtml(entry, number) {
     if (net !== null) totalNet += net;
     const value = net !== null ? `<span class="dh-hlog-val"><span class="dh-hlog-price">(${fmtPrice(e.p)}${flowerHtml()}/U)</span><span class="dh-hlog-net">(+${fmtFlower(net)}${flowerHtml()})</span></span>` : "";
     const count = e.c > 0 ? `<span class="dh-hlog-count"><span class="dh-hlog-h" role="button" tabindex="0" data-dh-h="1" aria-label="${e.k === "cooking" ? "Collected" : "Harvested"}">${e.k === "cooking" ? "C" : "H"}<span class="dh-hlog-tip">${e.k === "cooking" ? "Collected" : "Harvested"}</span></span>${e.c}x</span>` : "";
-    return `<div class="dh-hlog-row"><span class="dh-hlog-amt">+${fmtAmount(e.a)}</span><span class="dh-hlog-ico">${getIcon(name)}</span><span class="dh-hlog-name">${esc(name)}</span>${value}${count}</div>`;
+    return `<div class="dh-hlog-row"><span class="dh-hlog-amt">+${fmtAmount(e.a)}</span><span class="dh-hlog-ico">${itemIcon(name, e.k)}</span><span class="dh-hlog-name">${esc(name)}</span>${value}${count}</div>`;
   }).join("");
   const total = totalNet > 0 ? `<div class="dh-hlog-gain"><span>Total Gained:</span><span class="dh-hlog-gain-val">+${totalNet.toLocaleString("en-US", {
     minimumFractionDigits: 2,
@@ -27299,36 +27437,6 @@ function farmPanelComputeInProgressRaw(json, opts) {
       });
     });
   }
-  const agingShed = farmPanelField(g, "agingShed");
-  const fermentationJobs = agingShed && agingShed.racks && Array.isArray(agingShed.racks.fermentation) ? agingShed.racks.fermentation : [];
-  if (fermentationJobs.length && typeof computeBaitFigures === "function") {
-    const toTs = (v) => typeof v === "number" ? v : typeof v === "string" && v.trim() && !isNaN(Number(v)) ? Number(v) : null;
-    fermentationJobs.forEach((job) => {
-      if (!job || typeof job !== "object" || typeof job.recipe !== "string") return;
-      const baitName = Object.keys(BAIT_RECIPE_NAME_MATCH).find((name) => BAIT_RECIPE_NAME_MATCH[name].test(job.recipe));
-      if (!baitName) return;
-      const readyAt = toTs(job.readyAt);
-      const startedAt = toTs(job.startedAt);
-      let ready, remainingSec;
-      if (readyAt != null) {
-        remainingSec = Math.max(0, (readyAt - now) / 1e3);
-        ready = remainingSec <= 0;
-      } else if (startedAt != null) {
-        ready = false;
-        remainingSec = null;
-      } else {
-        ready = false;
-        remainingSec = null;
-      }
-      const fig = computeBaitFigures(baitName);
-      rows.push({
-        name: baitName,
-        qty: fig.expectedOutput,
-        ready,
-        remainingSec
-      });
-    });
-  }
   rows.sort((a, b) => (a.remainingSec ?? 0) - (b.remainingSec ?? 0));
   if (mapMode) {
     const numberGroups = /* @__PURE__ */ new Map();
@@ -29611,6 +29719,7 @@ function farmPanelRenderCookingCard(row3) {
   const showCountdown = row3.soonestSec != null && row3.readyCount < row3.slotCount;
   const statusLine = baseStatus;
   const statusFoldHtml = guroStatusFoldHtml("Cooking", showCountdown ? row3.soonestSec : null);
+  const dailyBadgeHtml = dailyHarvestBadgeHtml(building, "cooking", buildingIcon, farmPanelDailyFarmId());
   const productChipHtml = row3.productGroups.map((p) => `
       <span class="animal-produce-chip">
         <span class="produce-yield">+${fmt(p.amount)}</span>
@@ -29642,7 +29751,7 @@ function farmPanelRenderCookingCard(row3) {
         </div>
       </div>
       <div class="card-collapsed-profit">
-        ${statusBadgeHtml}
+        <span class="harvest-stack">${dailyBadgeHtml}${statusBadgeHtml}</span>
         <span class="chev">\u25BE</span>
       </div>
       ${statusFoldHtml}
@@ -29738,6 +29847,7 @@ function farmPanelResolveHarvestPending(groupKey, pend) {
 }
 dailyHarvestSetResolver(farmPanelResolveHarvestPending);
 dailyHarvestSetCookingProvider(farmPanelCookingLogSlots);
+dailyHarvestSetIconProvider(cookingFoodOrFishIcon);
 function farmPanelDailyFarmId() {
   const stateId = farmPanelGameState && farmPanelGameState.id;
   return String(stateId || farmPanelGetLastInfo().id || "");
@@ -70121,7 +70231,7 @@ function flowerCost(coins) {
   const text = v >= 100 ? fmtInt(v) : v >= 1 ? v.toFixed(2) : v.toFixed(4);
   return `${text}${FLOWER_ICON}`;
 }
-function itemIcon(c) {
+function itemIcon2(c) {
   if (c.kind === "fish") return getIcon(c.stage === "aged" ? c.name : c.name);
   return cookFoodIcon(c.name);
 }
@@ -70135,9 +70245,9 @@ function levelAfter(st, add) {
 function eatLine(c, st) {
   const lvl = levelAfter(st, c.xpDay);
   const n = Math.floor(c.per24);
-  if (c.kind === "fish") return `Fish ${fmtInt(c.per24)}\xD7 a day and eat the ${itemIcon(c)} <strong>${escapeHtml(itemLabel(c))}</strong> (${fmtInt(c.xp)} EXP each)`;
-  if (c.per24 >= 2) return `Cook <strong class="bg-hl">${fmtInt(n)}\xD7 ${itemIcon(c)} ${escapeHtml(c.name)}</strong> in the ${escapeHtml(c.building)} over 24 hours (${fmtInt(c.xp)} EXP each)`;
-  return `Keep one ${itemIcon(c)} <strong class="bg-hl">${escapeHtml(c.name)}</strong> cooking non-stop in the ${escapeHtml(c.building)} (1 every ${formatDuration(c.time)}, ${fmtInt(c.xp)} EXP each)`;
+  if (c.kind === "fish") return `Fish ${fmtInt(c.per24)}\xD7 a day and eat the ${itemIcon2(c)} <strong>${escapeHtml(itemLabel(c))}</strong> (${fmtInt(c.xp)} EXP each)`;
+  if (c.per24 >= 2) return `Cook <strong class="bg-hl">${fmtInt(n)}\xD7 ${itemIcon2(c)} ${escapeHtml(c.name)}</strong> in the ${escapeHtml(c.building)} over 24 hours (${fmtInt(c.xp)} EXP each)`;
+  return `Keep one ${itemIcon2(c)} <strong class="bg-hl">${escapeHtml(c.name)}</strong> cooking non-stop in the ${escapeHtml(c.building)} (1 every ${formatDuration(c.time)}, ${fmtInt(c.xp)} EXP each)`;
 }
 function planLevelLine(plan, st) {
   const lvl = levelAfter(st, plan.xpDay);
@@ -70633,7 +70743,7 @@ function levelSimCard(c, st, isBest, isTop) {
   const fishNote = fish && c.setup && c.setup.buy ? `<div class="bg-mini">Fish cannot be bought. "Buy" means buying the tradable bait and chum used to catch them. The rod and any non-tradable chum are priced from what it costs you to make them. This follows the Buy / Collect setting in your Fishing panel, and Salt follows the Cooking panel.</div>` : "";
   const expOne = fish ? c.xp : c.xp / Math.max(c.foods, 1);
   const unitRow = `<div class="bg-sim-stat bg-lsim-unit"><span class="bg-lsim-unit-exp">${fmtInt(expOne)} EXP</span></div>`;
-  return `<div class="fd-container is-own bg-lsim-card"><div class="bg-lsim-head"><span class="bg-lsim-title">${itemIcon(c)} <strong>${escapeHtml(itemLabel(c))}</strong></span>${tags ? `<span class="bg-lsim-tags">${tags}</span>` : ""}</div>${unitRow}<div class="fd-section-label">${fish ? "Catch and aging supplies for 24h" : "Ingredients for 24h"}</div><div class="bgx-costs">${fish ? fishSimChips(c, st) : cookSimChips(c)}</div>${fishNote}${stats}${wholeNote}${avg}<div class="bg-sim-stat bg-sim-strong bg-lsim-out"><span>24hr Output</span><span>\xD7${lvNum(output)} ${escapeHtml(unitName)}</span></div><div class="bg-mini bg-lsim-exp">+${fmtInt(c.xpDay)} EXP \u2192 Level ${fmtInt(lvl)}</div><div class="bg-sim-stat bg-sim-strong bg-lsim-cost"><span>Total cost</span><span>${flowerCost(c.costDay)}</span></div></div>`;
+  return `<div class="fd-container is-own bg-lsim-card"><div class="bg-lsim-head"><span class="bg-lsim-title">${itemIcon2(c)} <strong>${escapeHtml(itemLabel(c))}</strong></span>${tags ? `<span class="bg-lsim-tags">${tags}</span>` : ""}</div>${unitRow}<div class="fd-section-label">${fish ? "Catch and aging supplies for 24h" : "Ingredients for 24h"}</div><div class="bgx-costs">${fish ? fishSimChips(c, st) : cookSimChips(c)}</div>${fishNote}${stats}${wholeNote}${avg}<div class="bg-sim-stat bg-sim-strong bg-lsim-out"><span>24hr Output</span><span>\xD7${lvNum(output)} ${escapeHtml(unitName)}</span></div><div class="bg-mini bg-lsim-exp">+${fmtInt(c.xpDay)} EXP \u2192 Level ${fmtInt(lvl)}</div><div class="bg-sim-stat bg-sim-strong bg-lsim-cost"><span>Total cost</span><span>${flowerCost(c.costDay)}</span></div></div>`;
 }
 function levelSimInner(key, sel) {
   const a = bgSimCtx;
@@ -70860,7 +70970,7 @@ function optionRow(c, st, a, labels, planUse) {
   const per = c.kind === "fish" ? `${fmtInt(c.per24)} fish / 24h \xB7 ages in ${formatDuration(c.agingTime)}` : c.per24 >= 2 ? `${fmtInt(Math.floor(c.per24))}\xD7 / 24h \xB7 ${formatDuration(c.time)} each` : `1 every ${formatDuration(c.time)}`;
   const prime = c.kind === "fish" && c.primeXp ? ` \xB7 prime aged ${fmtInt(c.primeXp)} EXP` : "";
   const ing = c.parts && c.parts.length ? `<div class="fd-section-label">Ingredients for 24h</div><div class="bgx-costs">${ingredientChips(c, c.kind === "cook" ? dayMult(c) : 1, true)}</div>` : "";
-  return row2(`<span class="fd-item-main">${itemIcon(c)} <strong>${escapeHtml(itemLabel(c))}</strong> ${best} ${tag}<span class="bg-why">${fmtInt(c.xp)} EXP each \xB7 ${flowerCost(c.cost)} each \xB7 ${per}${prime}</span><span class="bg-why">24h: <strong class="bg-hl">+${fmtInt(c.xpDay)} EXP</strong> \u2192 <strong class="bg-hl">Level ${fmtInt(lvl)}</strong> \xB7 cost ${flowerCost(c.costDay)}</span>${ing}</span>`);
+  return row2(`<span class="fd-item-main">${itemIcon2(c)} <strong>${escapeHtml(itemLabel(c))}</strong> ${best} ${tag}<span class="bg-why">${fmtInt(c.xp)} EXP each \xB7 ${flowerCost(c.cost)} each \xB7 ${per}${prime}</span><span class="bg-why">24h: <strong class="bg-hl">+${fmtInt(c.xpDay)} EXP</strong> \u2192 <strong class="bg-hl">Level ${fmtInt(lvl)}</strong> \xB7 cost ${flowerCost(c.costDay)}</span>${ing}</span>`);
 }
 function statsHtml(a) {
   const st = a.st;
