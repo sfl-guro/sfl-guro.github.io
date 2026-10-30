@@ -24,6 +24,12 @@ var evaluateGoals = () => ({
 });
 var sftCandidates = () => [];
 var sftPrice = () => null;
+var loadSource = () => ({
+  balance: true,
+  inventory: true
+});
+var saveSource = () => {
+};
 var SEARCH_ICON = `<svg class="pf-search-icon" viewBox="0 0 12 12" width="14" height="14" shape-rendering="crispEdges" aria-hidden="true"><path fill="currentColor" d="M3 1h4v1h1v1h1v4H8v1H7v1H3V8H2V7H1V3h1V2h1zm1 1v1H3v1H2v2h1v1h1v1h2V8h1V7h1V4H8V3H7V2zM8 8h1v1h1v1h1v1h-1v-1H9V9H8z"/></svg>`;
 var rootEl = null;
 var query = "";
@@ -75,7 +81,7 @@ function render() {
   if (!rootEl) return;
   const keep = rootEl.querySelector("#pfSearchInput");
   const hadFocus = keep && document.activeElement === keep;
-  const { inv, chain, total, goals } = evaluateGoals();
+  const { inv, chain, total, goals, source } = evaluateGoals();
   const invRows = inv.rows.length ? inv.rows.map(inventoryRowHtml).join("") : `<div class="pf-empty">${inv.ready ? "No tradable resources found" : "Sync a Farm ID to see your inventory"}</div>`;
   const priceRows = goals.length ? goals.map(goalPriceRowHtml).join("") : `<div class="pf-empty">No SFT added yet</div>`;
   const cards = goals.length ? goals.map((g) => goalTileHtml(g, total)).join("") : `<div class="pf-empty">Add an SFT to track your goal</div>`;
@@ -95,6 +101,10 @@ function render() {
     </div>
     <div class="pf-box pf-main guro-frame">
       <div class="pf-title">SFT GOAL</div>
+      <div class="pf-source-row">
+        <label class="pf-source-opt"><span>Balance</span><input type="checkbox" class="pf-source-check" data-pf-source="balance"${source.balance ? " checked" : ""}></label>
+        <label class="pf-source-opt"><span>Inventory</span><input type="checkbox" class="pf-source-check" data-pf-source="inventory"${source.inventory ? " checked" : ""}></label>
+      </div>
       <div class="pf-add-row">
         <div class="pf-search-wrap">
           <div class="pf-search guro-frame">${SEARCH_ICON}<input type="text" id="pfSearchInput" placeholder="Search collectibles or wearables" autocomplete="off" value="${escapeHtml(query)}"></div>
@@ -170,6 +180,15 @@ function onClick(e) {
     renderMenuOnly();
   }
 }
+function onChange(e) {
+  const box = e.target.closest && e.target.closest("[data-pf-source]");
+  if (!box) return;
+  const src = loadSource();
+  src[box.dataset.pfSource] = box.checked;
+  saveSource(src);
+  render();
+  window.dispatchEvent(new Event("guroGoalsChanged"));
+}
 function onInput(e) {
   if (e.target.id !== "pfSearchInput") return;
   query = e.target.value;
@@ -196,19 +215,22 @@ async function mount(root, api) {
   FLOWER_ICON = api.calc.FLOWER_ICON;
   escapeHtml = api.calc.escapeHtml;
   getIcon = api.ui.getIcon;
-  const goals = await import("./sft_goals.7BRUD4YV.js");
+  const goals = await import("./sft_goals.COL7LZ5E.js");
   goals.bindApi(api);
   loadGoals = goals.loadGoals;
   saveGoals = goals.saveGoals;
   evaluateGoals = goals.evaluateGoals;
   sftCandidates = goals.sftCandidates;
   sftPrice = goals.sftPrice;
+  loadSource = goals.loadSource;
+  saveSource = goals.saveSource;
   rootEl = root;
   query = "";
   picked = null;
   menuOpen = false;
   root.addEventListener("click", onClick);
   root.addEventListener("input", onInput);
+  root.addEventListener("change", onChange);
   root.addEventListener("focusin", onFocusIn);
   root.addEventListener("keydown", onKey);
   if (!listenersOn) {
@@ -226,6 +248,7 @@ function unmount() {
   if (!rootEl) return;
   rootEl.removeEventListener("click", onClick);
   rootEl.removeEventListener("input", onInput);
+  rootEl.removeEventListener("change", onChange);
   rootEl.removeEventListener("focusin", onFocusIn);
   rootEl.removeEventListener("keydown", onKey);
   rootEl = null;

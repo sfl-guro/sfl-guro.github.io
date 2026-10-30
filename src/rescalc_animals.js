@@ -240,7 +240,7 @@ function tileProductHtml(pr) {
 
 function tilesHtml(rows) {
   if (!rows.length) return `<div class="rc-empty">No animals selected yet. Tick an animal above to include it in the calculation.</div>`;
-  return `<div class="rc-tiles-wrap guro-frame"><div class="rc-tiles">${rows.map(r => {
+  return `<div class="rc-tiles-wrap guro-frame"><div class="rc-tiles rc-tiles-animals">${rows.map(r => {
     const good = r.net >= 0;
     return `<div class="rc-tile rc-tile-animal guro-frame ${good ? "is-profit" : "is-loss"}" data-rc-tile="${esc(r.type)}"><span class="rc-tile-icon">${iconOf(r.type)}</span><span class="rc-tile-prods">${r.productRows.map(tileProductHtml).join("")}</span></div>`;
   }).join("")}</div></div>`;

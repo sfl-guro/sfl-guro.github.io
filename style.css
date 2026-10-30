@@ -15505,7 +15505,7 @@ html body .rcm-slot-x{ appearance:none; -webkit-appearance:none; position:absolu
 .rcm-bar{ box-sizing:border-box; height:18px; padding:2px; background:var(--parchment, #f2d9a0); }
 .rcm-bar-fill{ height:100%; background-color:var(--sun-deep); }
 
-.rc-tiles{ grid-template-columns:repeat(auto-fill, minmax(210px, 1fr)); justify-content:stretch; }
+.rc-tiles.rc-tiles-animals{ grid-template-columns:repeat(auto-fill, minmax(210px, 1fr)); justify-content:stretch; }
 .rc-tile.rc-tile-animal{ height:auto; min-height:78px; flex-direction:row; align-items:center; justify-content:flex-start; gap:8px; padding:8px; overflow:visible; }
 .rc-tile-animal .rc-tile-icon{ flex:0 0 auto; width:28px; height:28px; }
 .rc-tile-animal .rc-tile-icon img{ max-width:28px; max-height:28px; }
@@ -15573,3 +15573,9 @@ html body .dig-god-card .dig-god-chip{
 #guroPageTitle:has(#digGodToggleBtn) .es-mode-btn{ flex:0 0 auto; padding-left:4px !important; padding-right:4px !important; min-width:0 !important; }
 #guroPageTitle:has(#digGodToggleBtn) .dig-data-toggle{ padding-left:5px !important; padding-right:5px !important; font-size:9.5px; }
 .dig-god-card{ overscroll-behavior:contain; }
+
+.pf-source-row{ display:flex; align-items:center; gap:18px; margin:6px 0 8px; }
+.pf-source-opt{ display:inline-flex; align-items:center; gap:8px; font-family:var(--pixel-font); font-size:11px; letter-spacing:.4px; text-transform:uppercase; color:var(--ink); cursor:pointer; }
+.pf-source-check{ width:18px; height:18px; margin:0; cursor:pointer; accent-color:#3b8a3b; }
+
+.rc-req-chip{ display:inline-flex; align-items:center; gap:3px; white-space:nowrap; }

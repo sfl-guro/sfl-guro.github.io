@@ -2,7 +2,7 @@ import {
   api,
   initNav,
   initRouter
-} from "./chunk.UOL2RMCS.js";
+} from "./chunk.LHTSFPDG.js";
 import {
   initGemPacks
 } from "./chunk.F7REBWYF.js";
@@ -25,7 +25,7 @@ import {
   runDeferredInitialRender,
   setPreviewSeason,
   toast
-} from "./chunk.Q6JNQHAZ.js";
+} from "./chunk.R5EAGT7E.js";
 import "./chunk.LPEVZJ4B.js";
 import {
   ICON_DATA
@@ -218,7 +218,7 @@ async function scanGoals() {
   if (!bootDone) return;
   let fresh = [];
   try {
-    const mod = await import("./sft_goals.7BRUD4YV.js");
+    const mod = await import("./sft_goals.COL7LZ5E.js");
     mod.bindApi(api);
     fresh = mod.takeNewlyReachedGoals();
   } catch (e) {
