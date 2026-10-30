@@ -5,6 +5,7 @@ import {
 import {
   ANIMAL_DATA,
   ANIMAL_LOVE_ITEM_XP,
+  BASE_COMPOSTERS,
   BASE_CROPS,
   BASE_CROP_MACHINE,
   BASE_FRUITS,
@@ -32,6 +33,7 @@ import {
   RESOURCE_NODE_TIERS,
   SCULPTURE_EFFECTS_LIST,
   SCULPTURE_LEVELS,
+  SEASON_COMPOST_REQUIREMENTS,
   SEASON_EMOJI,
   SEASON_ORDER,
   SPICE_ANIMAL_TYPES,
@@ -48,6 +50,7 @@ import {
   computeBoostedFruitStats,
   computeBoostedGreenhouseStats,
   computeBoostedStock,
+  computeComposterFigures,
   computeCropMachineBatch,
   computeCropMachineOilMult,
   computeHiveEconomics,
@@ -165,7 +168,7 @@ import {
   toast,
   updateCalcSummary,
   updateSkillSaveBarState
-} from "./chunk.Q6JNQHAZ.js";
+} from "./chunk.R5EAGT7E.js";
 import "./chunk.LPEVZJ4B.js";
 import "./chunk.VR6FV3KR.js";
 import "./chunk.AS3VMXOQ.js";
@@ -5594,7 +5597,7 @@ function tileProductHtml(pr) {
 }
 function tilesHtml7(rows) {
   if (!rows.length) return `<div class="rc-empty">No animals selected yet. Tick an animal above to include it in the calculation.</div>`;
-  return `<div class="rc-tiles-wrap guro-frame"><div class="rc-tiles">${rows.map((r) => {
+  return `<div class="rc-tiles-wrap guro-frame"><div class="rc-tiles rc-tiles-animals">${rows.map((r) => {
     const good = r.net >= 0;
     return `<div class="rc-tile rc-tile-animal guro-frame ${good ? "is-profit" : "is-loss"}" data-rc-tile="${esc8(r.type)}"><span class="rc-tile-icon">${iconOf(r.type)}</span><span class="rc-tile-prods">${r.productRows.map(tileProductHtml).join("")}</span></div>`;
   }).join("")}</div></div>`;
@@ -6989,20 +6992,55 @@ function cropMachineCalculatorCanLeave() {
   return true;
 }
 
-// src/rescalc_honey.js
-var MAX_ROWS = 40;
+// src/rescalc_composters.js
+var STORE_KEY9 = "guro_rc_composters_v1";
+var MAX_CUSTOM_CYCLES8 = 1e5;
+var MODES7 = [{
+  id: "cycle",
+  label: "Per Cycle Mode"
+}, {
+  id: "24h",
+  label: "24Hrs Mode"
+}];
 var host9 = null;
+var state9 = null;
 var popup9 = null;
 var overlayEl9 = null;
 var promptEl9 = null;
 var restoreFns9 = [];
-var hivesDraft = null;
 var listening9 = false;
 var detailsOpen9 = false;
-var openMenu = null;
 var savedSkillCategory9 = null;
 function esc10(s) {
   return escapeHtml(String(s));
+}
+function loadState9() {
+  const base = {
+    mode: "cycle",
+    season: normalizeSeason(previewSeason),
+    selected: [],
+    cycles: {}
+  };
+  try {
+    const raw = JSON.parse(localStorage.getItem(STORE_KEY9) || "null");
+    if (raw && typeof raw === "object") {
+      if (raw.mode === "24h" || raw.mode === "cycle") base.mode = raw.mode;
+      if (SEASON_ORDER.includes(raw.season)) base.season = raw.season;
+      if (Array.isArray(raw.selected)) base.selected = raw.selected.filter((n) => BASE_COMPOSTERS[n]);
+      if (raw.cycles && typeof raw.cycles === "object") Object.keys(raw.cycles).forEach((k) => {
+        const v = Math.floor(Number(raw.cycles[k]));
+        if (BASE_COMPOSTERS[k] && isFinite(v) && v > 0) base.cycles[k] = Math.min(v, MAX_CUSTOM_CYCLES8);
+      });
+    }
+  } catch (e) {
+  }
+  return base;
+}
+function saveState9() {
+  try {
+    localStorage.setItem(STORE_KEY9, JSON.stringify(state9));
+  } catch (e) {
+  }
 }
 function n210(n) {
   if (!isFinite(n)) return "\u2014";
@@ -7020,14 +7058,611 @@ function fl9(n) {
     maximumFractionDigits: max
   });
 }
+function flowerHtml9(n) {
+  return `${fl9(n)}${FLOWER_ICON}`;
+}
+function ingredientMode(item) {
+  return getMaterialMode("Composter", item) === "buy" ? "buy" : "collect";
+}
+function ingredientFlower(item) {
+  return coinsToFlower(getMaterialUnitCostCoins(item, ingredientMode(item), /* @__PURE__ */ new Set()));
+}
+function composterNames() {
+  return Object.keys(BASE_COMPOSTERS);
+}
+function seasonReqs(name) {
+  const bySeason = SEASON_COMPOST_REQUIREMENTS[state9.season];
+  return bySeason && bySeason[name] || [];
+}
+function defaultCycles4(name) {
+  const fig = computeComposterFigures(name);
+  return fig.timeVal > 0 ? Math.round(86400 / fig.timeVal) : 0;
+}
+function compute8(name) {
+  const fig = computeComposterFigures(name);
+  const reqs = seasonReqs(name);
+  const costCycle = reqs.reduce((sum, r) => sum + (r.qty || 0) * ingredientFlower(r.item), 0);
+  const outputCycle = fig.outputQty;
+  const custom = state9.cycles[name] > 0 ? state9.cycles[name] : 0;
+  const cycles = state9.mode === "24h" ? custom > 0 ? custom : defaultCycles4(name) : 1;
+  return {
+    name,
+    fertilizer: fig.fertilizer,
+    wormName: fig.wormName,
+    timeSec: fig.timeVal,
+    baseTimeSec: BASE_COMPOSTERS[name].timeSec,
+    outputCycle,
+    wormCycle: fig.wormAvg,
+    reqs,
+    costCycle,
+    unitCost: outputCycle > 0 ? costCycle / outputCycle : 0,
+    activeBoosts: fig.activeBoosts,
+    mode: state9.mode,
+    cycles,
+    cyclesCustom: state9.mode === "24h" && custom > 0,
+    totalOutput: outputCycle * cycles,
+    totalWorms: fig.wormAvg * cycles,
+    totalCost: costCycle * cycles,
+    totalTimeSec: fig.timeVal * cycles
+  };
+}
+function computeAll7() {
+  return state9.selected.filter((n) => BASE_COMPOSTERS[n]).map(compute8);
+}
+function totalsOf6(rows) {
+  const t = {
+    cost: 0,
+    output: 0,
+    worms: 0
+  };
+  rows.forEach((r) => {
+    t.cost += r.totalCost;
+    t.output += r.totalOutput;
+    t.worms += r.totalWorms;
+  });
+  return t;
+}
+function seasonCardsHtml5() {
+  return SEASON_ORDER.map((s) => {
+    const on = state9.season === s;
+    const icon = SEASON_EMOJI[s];
+    return `<button type="button" class="rc-season guro-frame${on ? " is-on" : ""}" data-rc-season="${s}" aria-pressed="${on ? "true" : "false"}">${icon}<span class="rc-season-name">${s}</span></button>`;
+  }).join("");
+}
+function composterCellsHtml() {
+  return composterNames().map((n) => {
+    const on = state9.selected.includes(n);
+    return `<label class="rc-crop guro-frame${on ? " is-on" : ""}"><span class="rc-crop-icon">${getIcon(n)}</span><span class="rc-crop-name">${esc10(n)}</span><input type="checkbox" data-rc-composter="${esc10(n)}"${on ? " checked" : ""} aria-label="${esc10(n)}"></label>`;
+  }).join("");
+}
+function tilesHtml8(rows) {
+  if (!rows.length) return `<div class="rc-empty">No composters selected yet. Tick a composter above to include it in the calculation.</div>`;
+  return `<div class="rc-tiles-wrap guro-frame"><div class="rc-tiles">${rows.map((r) => `<div class="rc-tile guro-frame is-profit" data-rc-tile="${esc10(r.name)}"><span class="rc-tile-icon">${getIcon(r.name)}</span><span class="rc-tile-yield">+${n210(r.totalOutput)}${getIcon(r.fertilizer)}</span><span class="rc-tile-net">${fl9(r.totalCost)}${FLOWER_ICON}</span></div>`).join("")}</div></div>`;
+}
+function valueBoxHtml9(label, html, extra) {
+  return `<div class="rc-val guro-frame${extra ? " " + extra : ""}"><span class="rc-val-label">${label}</span><span class="rc-val-num">${html}</span></div>`;
+}
+function valuesHtml9(rows) {
+  const t = totalsOf6(rows);
+  const unit = t.output > 0 ? t.cost / t.output : 0;
+  return `<div class="rc-values">
+    ${valueBoxHtml9("Ingredient Cost", flowerHtml9(t.cost))}
+    ${valueBoxHtml9("Fertiliser Output", n210(t.output))}
+    ${valueBoxHtml9("Worms (bait)", `~${n210(t.worms)}`)}
+  </div>
+  <div class="rc-net-row">
+    ${valueBoxHtml9("Cost / Fertiliser", flowerHtml9(unit), "rc-val-net")}
+    <button type="button" class="rc-linktext" data-rc-open="computation"${rows.length ? "" : " disabled"}>Computation</button>
+  </div>`;
+}
+function modeNoteHtml8() {
+  const text = state9.mode === "cycle" ? "Per Cycle Mode: shows the cost and output of one compost cycle for each selected composter." : "24Hrs Mode: runs each composter back to back for 24 hours. Use Edit in the computation to set your own cycle count.";
+  return `<div class="rc-details-row"><button type="button" class="rc-linktext" data-rc-details aria-expanded="${detailsOpen9 ? "true" : "false"}">Details</button></div>${detailsOpen9 ? `<div class="rc-note">${text}</div>` : ""}`;
+}
+function pickerHtml9() {
+  return `<section class="rc-block guro-frame" aria-label="Composter Calculator">
+    <div class="rc-block-title">Composter Calculator</div>
+    <div class="rc-seasons" id="rcSeasons">${seasonCardsHtml5()}</div>
+    <div class="rc-crops" id="rcCrops">${composterCellsHtml()}</div>
+  </section>`;
+}
+function resultsHtml9() {
+  const rows = computeAll7();
+  return `<section class="rc-block guro-frame" aria-label="Composter results">
+    <div class="rc-modes" role="group" aria-label="Calculation mode">${MODES7.map((m) => `<button type="button" class="rc-mode guro-frame${state9.mode === m.id ? " is-on" : ""}" data-rc-mode="${m.id}" aria-pressed="${state9.mode === m.id ? "true" : "false"}">${m.label}</button>`).join("")}</div>
+    <div class="rc-tools">
+      <button type="button" class="rc-tool guro-frame" data-rc-open="skills">Skills</button>
+      <button type="button" class="rc-tool guro-frame" data-rc-open="boost">Boost</button>
+    </div>
+    ${modeNoteHtml8()}
+    <div id="rcResults">${tilesHtml8(rows)}${valuesHtml9(rows)}</div>
+  </section>`;
+}
+function render9() {
+  if (!host9) return;
+  const scroller = document.scrollingElement;
+  const y = scroller ? scroller.scrollTop : 0;
+  host9.innerHTML = pickerHtml9() + resultsHtml9();
+  if (scroller) scroller.scrollTop = y;
+}
+function refreshResults9() {
+  if (!host9) return;
+  const picker = host9.querySelector("#rcCrops");
+  if (!picker) {
+    render9();
+    return;
+  }
+  const blocks = host9.querySelectorAll(".rc-block");
+  if (blocks[1]) {
+    const tmp = document.createElement("div");
+    tmp.innerHTML = resultsHtml9();
+    blocks[1].replaceWith(tmp.firstElementChild);
+  }
+  if (popup9 === "computation") renderOverlayBody9();
+}
+function effectParts7(b) {
+  const out = [];
+  const time = [];
+  const worm = [];
+  if (b.fertAdd) out.push(`${b.fertAdd > 0 ? "+" : ""}${n210(b.fertAdd)} fertiliser`);
+  if (b.timeMult) time.push(`\xD7${b.timeMult} time`);
+  if (b.wormAdd) worm.push(`${b.wormAdd > 0 ? "+" : ""}${n210(b.wormAdd)} worms`);
+  return {
+    output: out,
+    time,
+    worm
+  };
+}
+function appliedBoostHtml8(row) {
+  const groups = {
+    output: [],
+    time: [],
+    worm: []
+  };
+  row.activeBoosts.forEach((b) => {
+    const p = effectParts7(b);
+    ["output", "time", "worm"].forEach((k) => {
+      if (p[k].length) groups[k].push(`<div class="rc-boost-row">${getBoostIconSkillFallback(b.name)}<span class="rc-boost-name">${esc10(b.name)}</span><span class="rc-boost-eff">${esc10(p[k].join(", "))}</span></div>`);
+    });
+  });
+  const section = (label, items) => items.length ? `<div class="rc-boost-group"><div class="rc-boost-label">${label}</div>${items.join("")}</div>` : "";
+  const body = section("Output Boost", groups.output) + section("Time Boost", groups.time) + section("Worm Boost", groups.worm);
+  return `<div class="rc-group"><div class="rc-comp-sub">Applied Boost</div>${body || `<div class="rc-boost-none">No boost applied</div>`}</div>`;
+}
+function kv9(label, html, cls) {
+  return `<div class="rc-kv${cls ? " " + cls : ""}"><span class="rc-kv-label">${label}</span><span class="rc-kv-val">${html}</span></div>`;
+}
+function totalCycleHtml8(r) {
+  const val = n210(r.cycles);
+  if (r.mode !== "24h") return val;
+  return `<span class="rc-cycle-val"><span>${val}${r.cyclesCustom ? ` <span class="rc-kv-sub">Custom</span>` : ""}</span><button type="button" class="rc-edit-link" data-rc-edit-cycle="${esc10(r.name)}">Edit</button></span>`;
+}
+function reqLineHtml(r) {
+  if (!r.reqs.length) return "\u2014";
+  return r.reqs.map((q) => `<span class="rc-req-chip">${getIcon(q.item)} ${n210(q.qty)}\xD7 ${esc10(q.item)}</span>`).join(" + ");
+}
+function ingredientConfigHtml(r) {
+  if (!r.reqs.length) return "";
+  const rows = r.reqs.map((q) => {
+    const mode = ingredientMode(q.item);
+    const btn = (m, label) => `<button type="button" class="es-mode-btn es-toolcfg-tbtn${mode === m ? " active" : ""}" data-rc-cmode="${esc10(q.item)}" data-rc-cmode-val="${m}">${label}</button>`;
+    return `<div class="rc-tool-mat"><span class="rc-tool-mat-item"><span class="rc-tool-mat-qty">${n210(q.qty)}</span>${getIcon(q.item)}<span class="rc-tool-mat-name">${esc10(q.item)}</span><span class="rc-kv-sub">${flowerHtml9(q.qty * ingredientFlower(q.item))}</span></span><span class="es-toolcfg-tog">${btn("collect", "Collect")}${btn("buy", "Buy")}</span></div>`;
+  }).join("");
+  return `<div class="rc-group"><div class="rc-comp-sub">Ingredient Config</div><div class="rc-tool-cfg">${rows}</div></div>`;
+}
+function computationCardHtml8(r) {
+  const fert = getIcon(r.fertilizer);
+  const worm = getIcon(r.wormName);
+  const timeChanged = Math.round(r.timeSec) !== Math.round(r.baseTimeSec);
+  const modeLabel = r.mode === "cycle" ? "Per Cycle Mode" : "24Hrs Mode";
+  return `<article class="rc-comp-card guro-frame">
+    <header class="rc-comp-head"><span class="rc-comp-icon">${getIcon(r.name)}</span><span class="rc-comp-name">${esc10(r.name)}</span><span class="rc-comp-nodes">${fert} ${esc10(r.fertilizer)}</span></header>
+    <div class="rc-group"><div class="rc-kv-grid">
+      ${kv9(`${esc10(state9.season)} Requirements`, reqLineHtml(r), "rc-kv-wide")}
+      ${kv9("Time / Cycle", `${esc10(formatDuration(r.timeSec))}${timeChanged ? `<span class="rc-kv-sub">${esc10(formatDuration(r.baseTimeSec))} base</span>` : ""}`, "rc-kv-wide")}
+      ${kv9("Ingredient Cost / Cycle", flowerHtml9(r.costCycle))}
+      ${kv9("Output / Cycle", `${n210(r.outputCycle)}${fert}`)}
+      ${kv9("Worms / Cycle", `~${n210(r.wormCycle)}${worm}`)}
+      ${kv9("Cost / Fertiliser", flowerHtml9(r.unitCost))}
+    </div></div>
+    <div class="rc-group"><div class="rc-comp-sub">${modeLabel}</div>
+    <div class="rc-kv-grid">
+      ${kv9("Total Cycle", totalCycleHtml8(r))}
+      ${kv9("Total Time", esc10(formatDuration(r.totalTimeSec)))}
+      ${kv9("Total Output", `${n210(r.totalOutput)}${fert}`)}
+      ${kv9("Total Worms", `~${n210(r.totalWorms)}${worm}`)}
+      ${kv9("Total Ingredient Cost", flowerHtml9(r.totalCost), "rc-kv-wide rc-kv-net")}
+    </div></div>
+    ${ingredientConfigHtml(r)}
+    ${appliedBoostHtml8(r)}
+  </article>`;
+}
+function computationBodyHtml9() {
+  const rows = computeAll7();
+  if (!rows.length) return `<div class="rc-empty">No composters selected.</div>`;
+  return rows.map(computationCardHtml8).join("");
+}
+function boostBodyHtml9() {
+  if (!state9.selected.length) return `<div class="rc-empty">Select at least one composter to see the boosts that affect it.</div>`;
+  const subjects = state9.selected.map((n) => ({
+    name: n,
+    icon: getIcon(n),
+    tier: ""
+  }));
+  const boosts = BOOSTS.filter((b) => b.category === "composter" && b.source !== "skill" && !b.hiddenFromOwnPanel);
+  const appliesTo = (b, s) => {
+    if (b.scope === "composterGlobal") return true;
+    if (b.scope === "composter") return b.target === s.name;
+    return false;
+  };
+  const html = boostsBySubjectHtml({
+    subjects,
+    boosts,
+    appliesTo,
+    unit: "composters",
+    allLabel: "Boost for All Selected Composters"
+  });
+  return `<div class="rc-pop-hint">Boosts that affect ${state9.selected.length > 1 ? "your selected composters" : esc10(state9.selected[0])}. Tap a boost to switch it on or off, then press Save.</div>${html || `<div class="rc-empty">No boosts found.</div>`}`;
+}
+function popupTitle9() {
+  if (popup9 === "skills") return "Composter Skills";
+  if (popup9 === "boost") return "Composter Boosts";
+  return "Computation";
+}
+function popupBodyHtml9() {
+  if (popup9 === "boost") return boostBodyHtml9();
+  if (popup9 === "computation") return computationBodyHtml9();
+  return `<div class="rc-pop-hint">All composter skills from the Skill Tree. Changes here also change the Skill Tree. Press Save to apply them.</div><div id="rcSkillSlot"></div>`;
+}
+function borrow9(id, slotId) {
+  const el = document.getElementById(id);
+  const slot = document.getElementById(slotId);
+  if (!el || !slot) return;
+  const parent = el.parentNode;
+  const next = el.nextSibling;
+  slot.appendChild(el);
+  restoreFns9.push(() => {
+    if (!parent) return;
+    if (next && next.parentNode === parent) parent.insertBefore(el, next);
+    else parent.appendChild(el);
+  });
+}
+function releaseBorrowed9() {
+  while (restoreFns9.length) restoreFns9.pop()();
+}
+function setupBorrowed9() {
+  if (popup9 === "skills") {
+    savedSkillCategory9 = skillCategory;
+    setSkillCategory("compost");
+    borrow9("ascensionBar", "rcAscSlot");
+    borrow9("skillListWrap", "rcSkillSlot");
+    borrow9("skillSaveBar", "rcSaveSlot");
+    renderSkillPanel();
+    renderAscensionBar();
+    updateSkillSaveBarState();
+  } else if (popup9 === "boost") {
+    borrow9("skillSaveBar", "rcSaveSlot");
+    updateSkillSaveBarState();
+  }
+}
+function teardownBorrowed9() {
+  releaseBorrowed9();
+  if (savedSkillCategory9 != null) {
+    setSkillCategory(savedSkillCategory9);
+    savedSkillCategory9 = null;
+    renderSkillPanel();
+  }
+}
+function footerHtml9() {
+  if (popup9 === "skills" || popup9 === "boost") return `<div id="rcSaveSlot"></div>`;
+  return "";
+}
+function overlayHtml9() {
+  return `<div class="rc-pop guro-frame${popup9 === "computation" ? " rc-pop-comp" : ""}" role="dialog" aria-modal="true" aria-label="${popupTitle9()}">
+    <div class="rc-pop-head"><span class="rc-pop-title">${popupTitle9()}</span><button type="button" class="rc-pop-close" data-rc-close aria-label="Close">\u2715</button></div>
+    <div class="rc-pop-body" id="rcPopBody">${popupBodyHtml9()}</div>
+    <div class="rc-pop-foot">${footerHtml9()}</div>
+  </div>`;
+}
+function renderOverlayBody9() {
+  if (!overlayEl9) return;
+  const body = overlayEl9.querySelector("#rcPopBody");
+  if (!body) return;
+  if (popup9 === "skills") return;
+  const top = body.scrollTop;
+  body.innerHTML = popupBodyHtml9();
+  body.scrollTop = top;
+  updateSkillSaveBarState();
+}
+function isPopupDirty9() {
+  if (popup9 === "skills" || popup9 === "boost") return isSkillDraftDirty() || isBoostDraftDirty();
+  return false;
+}
+function openPopup9(kind) {
+  if (popup9) return;
+  popup9 = kind;
+  overlayEl9 = document.createElement("div");
+  overlayEl9.className = "rc-overlay";
+  overlayEl9.innerHTML = overlayHtml9();
+  document.body.appendChild(overlayEl9);
+  document.body.classList.add("rc-no-scroll");
+  const slot = overlayEl9.querySelector("#rcSkillSlot");
+  if (kind === "skills" && slot) {
+    const asc = document.createElement("div");
+    asc.id = "rcAscSlot";
+    slot.parentNode.insertBefore(asc, slot);
+  }
+  setupBorrowed9();
+}
+function destroyPopup9() {
+  teardownBorrowed9();
+  if (overlayEl9) overlayEl9.remove();
+  overlayEl9 = null;
+  popup9 = null;
+  document.body.classList.remove("rc-no-scroll");
+}
+function showPrompt9(message, buttons) {
+  if (promptEl9) promptEl9.remove();
+  promptEl9 = document.createElement("div");
+  promptEl9.className = "rc-overlay rc-overlay-top";
+  promptEl9.innerHTML = `<div class="rc-prompt guro-frame" role="alertdialog" aria-modal="true"><p class="rc-prompt-text">${esc10(message)}</p><div class="rc-prompt-actions">${buttons.map((b, i) => `<button type="button" class="rc-prompt-btn guro-frame" data-rc-prompt="${i}">${esc10(b.label)}</button>`).join("")}</div></div>`;
+  promptEl9.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-rc-prompt]");
+    if (!btn) return;
+    const b = buttons[Number(btn.getAttribute("data-rc-prompt"))];
+    promptEl9.remove();
+    promptEl9 = null;
+    if (b && b.run) b.run();
+  });
+  document.body.appendChild(promptEl9);
+  const first = promptEl9.querySelector("button");
+  if (first) first.focus();
+}
+function closePopup9(force) {
+  if (!popup9) return;
+  if (!force && isPopupDirty9()) {
+    showPrompt9("You have unsaved changes. Save them first, or discard them to close.", [{
+      label: "Keep Editing"
+    }, {
+      label: "Discard",
+      run: () => {
+        discardSkillBoostDrafts();
+        destroyPopup9();
+        refreshResults9();
+      }
+    }]);
+    return;
+  }
+  const wasComputation = popup9 === "computation";
+  destroyPopup9();
+  if (!wasComputation) refreshResults9();
+}
+function closeCycleEditor8() {
+  if (promptEl9) promptEl9.remove();
+  promptEl9 = null;
+}
+function openCycleEditor8(name) {
+  if (promptEl9) promptEl9.remove();
+  const current = state9.cycles[name] > 0 ? state9.cycles[name] : "";
+  const fallback = defaultCycles4(name);
+  promptEl9 = document.createElement("div");
+  promptEl9.className = "rc-overlay rc-overlay-top";
+  promptEl9.innerHTML = `<div class="rc-prompt rc-cycle-edit guro-frame" role="dialog" aria-modal="true" aria-label="Editing Cycle"><div class="rc-cycle-edit-label">Editing Cycle</div><div class="rc-cycle-edit-row"><input type="number" min="0" max="${MAX_CUSTOM_CYCLES8}" step="1" inputmode="numeric" class="rc-cycle-input guro-frame" data-rc-cycle-input value="${current}" placeholder="${fallback}" aria-label="Cycle count"><button type="button" class="rc-prompt-btn guro-frame" data-rc-cycle-save>Save</button></div></div>`;
+  promptEl9.addEventListener("click", (e) => {
+    if (e.target === promptEl9) {
+      closeCycleEditor8();
+      return;
+    }
+    if (e.target.closest("[data-rc-cycle-save]")) saveCycleEdit8(name);
+  });
+  promptEl9.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      saveCycleEdit8(name);
+    }
+  });
+  document.body.appendChild(promptEl9);
+  const input = promptEl9.querySelector("[data-rc-cycle-input]");
+  if (input) {
+    input.focus();
+    input.select();
+  }
+}
+function saveCycleEdit8(name) {
+  if (!promptEl9) return;
+  const input = promptEl9.querySelector("[data-rc-cycle-input]");
+  const btn = promptEl9.querySelector("[data-rc-cycle-save]");
+  if (!input || btn && btn.disabled) return;
+  const value = input.value === "" ? 0 : Math.floor(Number(input.value));
+  if (btn) btn.disabled = true;
+  input.disabled = true;
+  const chip = document.createElement("div");
+  chip.className = "bg-sim-saving guro-frame";
+  chip.innerHTML = `<span class="bg-sim-spin"></span><span class="bg-sim-saving-text">Saving...</span>`;
+  document.body.appendChild(chip);
+  setTimeout(() => {
+    if (isFinite(value) && value > 0) state9.cycles[name] = Math.min(value, MAX_CUSTOM_CYCLES8);
+    else delete state9.cycles[name];
+    saveState9();
+    closeCycleEditor8();
+    refreshResults9();
+    chip.classList.add("is-done");
+    chip.innerHTML = `<span class="bg-sim-tick">\u2713</span><span class="bg-sim-saving-text">Saved</span>`;
+    setTimeout(() => chip.remove(), 900);
+  }, 700);
+}
+function toggleComposter(name, input) {
+  const idx = state9.selected.indexOf(name);
+  if (idx >= 0) state9.selected.splice(idx, 1);
+  else state9.selected.push(name);
+  saveState9();
+  const label = input ? input.closest(".rc-crop") : null;
+  if (label) label.classList.toggle("is-on", state9.selected.includes(name));
+  refreshResults9();
+}
+function setMode7(id) {
+  if (id === state9.mode) return;
+  state9.mode = id;
+  saveState9();
+  refreshResults9();
+}
+function onClick9(e) {
+  const details = e.target.closest("[data-rc-details]");
+  if (details) {
+    detailsOpen9 = !detailsOpen9;
+    refreshResults9();
+    return;
+  }
+  const season = e.target.closest("[data-rc-season]");
+  if (season) {
+    state9.season = season.getAttribute("data-rc-season");
+    saveState9();
+    const seasons = host9.querySelector("#rcSeasons");
+    if (seasons) seasons.innerHTML = seasonCardsHtml5();
+    refreshResults9();
+    return;
+  }
+  const mode = e.target.closest("[data-rc-mode]");
+  if (mode) {
+    setMode7(mode.getAttribute("data-rc-mode"));
+    return;
+  }
+  const open = e.target.closest("[data-rc-open]");
+  if (open && !open.disabled) openPopup9(open.getAttribute("data-rc-open"));
+}
+function onChange7(e) {
+  const t = e.target;
+  if (t && t.dataset && t.dataset.rcComposter != null) toggleComposter(t.dataset.rcComposter, t);
+}
+function onDocClick9(e) {
+  if (!overlayEl9) return;
+  if (promptEl9 && promptEl9.contains(e.target)) return;
+  if (e.target === overlayEl9 || e.target.closest("[data-rc-close]")) {
+    closePopup9(false);
+    return;
+  }
+  if (!overlayEl9.contains(e.target)) return;
+  const cmode = e.target.closest("[data-rc-cmode]");
+  if (cmode && popup9 === "computation") {
+    setMaterialMode("Composter", cmode.getAttribute("data-rc-cmode"), cmode.getAttribute("data-rc-cmode-val"));
+    invalidateCostCache();
+    renderOverlayBody9();
+    refreshResults9();
+    return;
+  }
+  const editCycle = e.target.closest("[data-rc-edit-cycle]");
+  if (editCycle && popup9 === "computation") {
+    openCycleEditor8(editCycle.getAttribute("data-rc-edit-cycle"));
+    return;
+  }
+  const row = e.target.closest("[data-boost-id]");
+  if (row && popup9 === "boost" && overlayEl9.contains(row)) {
+    draftToggleBoost(row.getAttribute("data-boost-id"));
+    renderOverlayBody9();
+  }
+}
+function onKey9(e) {
+  if (e.key !== "Escape") return;
+  if (promptEl9) {
+    promptEl9.remove();
+    promptEl9 = null;
+    return;
+  }
+  if (popup9) closePopup9(false);
+}
+function onBoostsChanged9() {
+  if (!host9) return;
+  invalidateCostCache();
+  if (popup9 === "boost") renderOverlayBody9();
+  refreshResults9();
+}
+function onExternalChange9() {
+  if (!host9) return;
+  refreshResults9();
+}
+function mountComposterCalculator(root) {
+  host9 = root;
+  invalidateCostCache();
+  state9 = loadState9();
+  detailsOpen9 = false;
+  host9.addEventListener("click", onClick9);
+  host9.addEventListener("change", onChange7);
+  document.addEventListener("click", onDocClick9);
+  document.addEventListener("keydown", onKey9);
+  window.addEventListener("guroBoostsChanged", onBoostsChanged9);
+  window.addEventListener("guroPricesUpdated", onExternalChange9);
+  listening9 = true;
+  render9();
+}
+function unmountComposterCalculator() {
+  if (popup9) destroyPopup9();
+  if (promptEl9) {
+    promptEl9.remove();
+    promptEl9 = null;
+  }
+  if (host9) {
+    host9.removeEventListener("click", onClick9);
+    host9.removeEventListener("change", onChange7);
+    host9.innerHTML = "";
+  }
+  if (listening9) {
+    document.removeEventListener("click", onDocClick9);
+    document.removeEventListener("keydown", onKey9);
+    window.removeEventListener("guroBoostsChanged", onBoostsChanged9);
+    window.removeEventListener("guroPricesUpdated", onExternalChange9);
+    listening9 = false;
+  }
+  host9 = null;
+}
+function composterCalculatorCanLeave() {
+  if (!popup9) return true;
+  if (isPopupDirty9()) {
+    toast("\u26A0\uFE0F Save your changes first");
+    return false;
+  }
+  destroyPopup9();
+  return true;
+}
+
+// src/rescalc_honey.js
+var MAX_ROWS = 40;
+var host10 = null;
+var popup10 = null;
+var overlayEl10 = null;
+var promptEl10 = null;
+var restoreFns10 = [];
+var hivesDraft = null;
+var listening10 = false;
+var detailsOpen10 = false;
+var openMenu = null;
+var savedSkillCategory10 = null;
+function esc11(s) {
+  return escapeHtml(String(s));
+}
+function n211(n) {
+  if (!isFinite(n)) return "\u2014";
+  return n.toLocaleString(void 0, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2
+  });
+}
+function fl10(n) {
+  if (!isFinite(n)) return "\u2014";
+  const a = Math.abs(n);
+  const max = a >= 1e3 ? 0 : a >= 1 ? 2 : 4;
+  return n.toLocaleString(void 0, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: max
+  });
+}
 function signed10(n, f) {
   const r = f(Math.abs(n));
   if (n > 0 && r !== "0") return "+" + r;
   if (n < 0 && r !== "0") return "-" + r;
   return r;
 }
-function flowerHtml9(n) {
-  return `${fl9(n)}${FLOWER_ICON}`;
+function flowerHtml10(n) {
+  return `${fl10(n)}${FLOWER_ICON}`;
 }
 function flowerNameIcon(name) {
   const v = FLOWER_VARIETIES[name];
@@ -7052,7 +7687,7 @@ function getEcon() {
   loadBaseHoneyIfNeeded();
   return computeHiveEconomics();
 }
-function totalsOf6(e) {
+function totalsOf7(e) {
   const s = getActiveShrineDailyCost(e.hiveStats.activeBoosts, e.flowerStats.activeBoosts);
   const gross = e.grossRevenuePerHiveDay * e.hives;
   const fee = gross - e.revenuePerHiveDay * e.hives;
@@ -7073,20 +7708,20 @@ function totalsOf6(e) {
   };
 }
 function ddButtonHtml(kind, icon, label) {
-  return `<button type="button" class="rc-dd-btn guro-frame" data-rc-dd-toggle="${kind}" aria-haspopup="listbox" aria-expanded="${openMenu === kind ? "true" : "false"}"><span class="rc-dd-icon">${icon}</span><span class="rc-dd-label">${esc10(label)}</span><span class="rc-dd-chev">\u25BE</span></button>`;
+  return `<button type="button" class="rc-dd-btn guro-frame" data-rc-dd-toggle="${kind}" aria-haspopup="listbox" aria-expanded="${openMenu === kind ? "true" : "false"}"><span class="rc-dd-icon">${icon}</span><span class="rc-dd-label">${esc11(label)}</span><span class="rc-dd-chev">\u25BE</span></button>`;
 }
 function flowerMenuHtml(kind) {
   const options = Object.keys(FLOWER_VARIETIES).map((n) => {
     const locked = isFlowerVarietySeasonLocked(n);
     const on = n === selectedHoneyFlower;
-    return `<div class="rc-dd-opt${on ? " is-on" : ""}${locked ? " is-locked" : ""}" role="option" tabindex="0" aria-selected="${on ? "true" : "false"}" data-rc-dd-pick="${kind}" data-rc-value="${esc10(n)}"><span class="rc-dd-icon">${flowerNameIcon(n)}</span><span class="rc-dd-label">${esc10(n)}</span>${locked ? `<span class="rc-dd-lock">\u{1F512}</span>` : ""}</div>`;
+    return `<div class="rc-dd-opt${on ? " is-on" : ""}${locked ? " is-locked" : ""}" role="option" tabindex="0" aria-selected="${on ? "true" : "false"}" data-rc-dd-pick="${kind}" data-rc-value="${esc11(n)}"><span class="rc-dd-icon">${flowerNameIcon(n)}</span><span class="rc-dd-label">${esc11(n)}</span>${locked ? `<span class="rc-dd-lock">\u{1F512}</span>` : ""}</div>`;
   }).join("");
   return `<div class="rc-dd-menu guro-frame" role="listbox">${options}</div>`;
 }
 function cropMenuHtml() {
   const options = Object.keys(BASE_CROPS).map((n) => {
     const on = n === selectedSwarmCrop;
-    return `<div class="rc-dd-opt${on ? " is-on" : ""}" role="option" tabindex="0" aria-selected="${on ? "true" : "false"}" data-rc-dd-pick="crop" data-rc-value="${esc10(n)}"><span class="rc-dd-icon">${getIcon(n)}</span><span class="rc-dd-label">${esc10(n)}</span></div>`;
+    return `<div class="rc-dd-opt${on ? " is-on" : ""}" role="option" tabindex="0" aria-selected="${on ? "true" : "false"}" data-rc-dd-pick="crop" data-rc-value="${esc11(n)}"><span class="rc-dd-icon">${getIcon(n)}</span><span class="rc-dd-label">${esc11(n)}</span></div>`;
   }).join("");
   return `<div class="rc-dd-menu guro-frame" role="listbox">${options}</div>`;
 }
@@ -7098,7 +7733,7 @@ function cropPickerHtml() {
   const name = selectedSwarmCrop;
   return `<div class="rc-dd rc-dd-inline" data-rc-dd="crop">${ddButtonHtml("crop", getIcon(name), name)}${openMenu === "crop" ? cropMenuHtml() : ""}</div>`;
 }
-function pickerHtml9() {
+function pickerHtml10() {
   return `<section class="rc-block guro-frame" aria-label="Honey Calculator">
     <div class="rc-block-title">Honey Calculator</div>
     <div class="rc-field">
@@ -7111,88 +7746,88 @@ function pickerHtml9() {
 function tileHtml(icon, yieldText, netHtml, good, key) {
   return `<div class="rc-tile guro-frame ${good ? "is-profit" : "is-loss"}" data-rc-tile="${key}"><span class="rc-tile-icon">${icon}</span><span class="rc-tile-yield">${yieldText}</span><span class="rc-tile-net">${netHtml}</span></div>`;
 }
-function tilesHtml8(e, t) {
+function tilesHtml9(e, t) {
   if (!(e.hives > 0)) return `<div class="rc-empty">You have 0 hives. Open Hives above and enter your hive count.</div>`;
-  const honeyTile = tileHtml(getIcon("Honey"), signed10(t.honey, n210), `${fl9(t.honeyGross)}${FLOWER_ICON}`, true, "honey");
-  const flowerTile = tileHtml(flowerNameIcon(selectedHoneyFlower), signed10(t.flowers, n210), `-${fl9(t.cost + t.restock)}${FLOWER_ICON}`, false, "flower");
+  const honeyTile = tileHtml(getIcon("Honey"), signed10(t.honey, n211), `${fl10(t.honeyGross)}${FLOWER_ICON}`, true, "honey");
+  const flowerTile = tileHtml(flowerNameIcon(selectedHoneyFlower), signed10(t.flowers, n211), `-${fl10(t.cost + t.restock)}${FLOWER_ICON}`, false, "flower");
   return `<div class="rc-tiles-wrap guro-frame"><div class="rc-tiles">${honeyTile}${flowerTile}</div></div>`;
 }
-function valueBoxHtml9(label, html, extra) {
+function valueBoxHtml10(label, html, extra) {
   return `<div class="rc-val guro-frame${extra ? " " + extra : ""}"><span class="rc-val-label">${label}</span><span class="rc-val-num">${html}</span></div>`;
 }
-function valuesHtml9(t) {
-  const feeBox = (feePercent || 0) > 0 ? valueBoxHtml9("Market Fee", flowerHtml9(t.fee)) : "";
+function valuesHtml10(t) {
+  const feeBox = (feePercent || 0) > 0 ? valueBoxHtml10("Market Fee", flowerHtml10(t.fee)) : "";
   return `<div class="rc-values">
-    ${valueBoxHtml9("Gross", flowerHtml9(t.gross))}
-    ${valueBoxHtml9("Flower Cost", flowerHtml9(t.cost))}
-    ${valueBoxHtml9("Shrine Cost", flowerHtml9(t.shrine))}
-    ${valueBoxHtml9("Restock Cost", flowerHtml9(t.restock))}
+    ${valueBoxHtml10("Gross", flowerHtml10(t.gross))}
+    ${valueBoxHtml10("Flower Cost", flowerHtml10(t.cost))}
+    ${valueBoxHtml10("Shrine Cost", flowerHtml10(t.shrine))}
+    ${valueBoxHtml10("Restock Cost", flowerHtml10(t.restock))}
     ${feeBox}
   </div>
   <div class="rc-net-row">
-    ${valueBoxHtml9("Net", `<span class="${t.net >= 0 ? "is-profit" : "is-loss"}">${signed10(t.net, fl9)}${FLOWER_ICON}</span>`, "rc-val-net")}
+    ${valueBoxHtml10("Net", `<span class="${t.net >= 0 ? "is-profit" : "is-loss"}">${signed10(t.net, fl10)}${FLOWER_ICON}</span>`, "rc-val-net")}
     <button type="button" class="rc-linktext" data-rc-open="computation">Computation</button>
   </div>`;
 }
-function modeNoteHtml8(e) {
+function modeNoteHtml9(e) {
   const warn = !(e.hives > 0) ? `<div class="rc-note is-warn">You have 0 hives, so every result is 0. Open Hives above and enter your hive count.</div>` : "";
   const text = "24Hrs: every hive is full of honey once a day (more often with speed boosts), the flower is replanted all day and every restock needed is paid for.";
-  return `<div class="rc-details-row"><button type="button" class="rc-linktext" data-rc-details aria-expanded="${detailsOpen9 ? "true" : "false"}">Details</button></div>${detailsOpen9 ? `<div class="rc-note">${text}</div>` : ""}${warn}`;
+  return `<div class="rc-details-row"><button type="button" class="rc-linktext" data-rc-details aria-expanded="${detailsOpen10 ? "true" : "false"}">Details</button></div>${detailsOpen10 ? `<div class="rc-note">${text}</div>` : ""}${warn}`;
 }
-function resultsHtml9() {
+function resultsHtml10() {
   const e = getEcon();
-  const t = totalsOf6(e);
+  const t = totalsOf7(e);
   return `<section class="rc-block guro-frame" aria-label="Honey results">
     <div class="rc-tools">
       <button type="button" class="rc-tool guro-frame" data-rc-open="skills">Skills</button>
       <button type="button" class="rc-tool guro-frame" data-rc-open="boost">Boost</button>
       <button type="button" class="rc-tool guro-frame" data-rc-open="hives">Hives</button>
     </div>
-    ${modeNoteHtml8(e)}
-    <div id="rcResults">${tilesHtml8(e, t)}${valuesHtml9(t)}</div>
+    ${modeNoteHtml9(e)}
+    <div id="rcResults">${tilesHtml9(e, t)}${valuesHtml10(t)}</div>
   </section>`;
 }
-function render9() {
-  if (!host9) return;
+function render10() {
+  if (!host10) return;
   const scroller = document.scrollingElement;
   const y = scroller ? scroller.scrollTop : 0;
-  host9.innerHTML = pickerHtml9() + resultsHtml9();
+  host10.innerHTML = pickerHtml10() + resultsHtml10();
   if (scroller) scroller.scrollTop = y;
 }
-function refreshResults9() {
-  if (!host9) return;
-  const blocks = host9.querySelectorAll(".rc-block");
+function refreshResults10() {
+  if (!host10) return;
+  const blocks = host10.querySelectorAll(".rc-block");
   if (blocks.length < 2) {
-    render9();
+    render10();
     return;
   }
   const tmp = document.createElement("div");
-  tmp.innerHTML = resultsHtml9();
+  tmp.innerHTML = resultsHtml10();
   blocks[1].replaceWith(tmp.firstElementChild);
-  if (popup9 === "computation") renderOverlayBody9();
+  if (popup10 === "computation") renderOverlayBody10();
 }
 function refreshAll() {
-  render9();
-  if (popup9 === "computation") renderOverlayBody9();
+  render10();
+  if (popup10 === "computation") renderOverlayBody10();
 }
-function kv9(label, html, cls) {
+function kv10(label, html, cls) {
   return `<div class="rc-kv${cls ? " " + cls : ""}"><span class="rc-kv-label">${label}</span><span class="rc-kv-val">${html}</span></div>`;
 }
 function effectText(b) {
   const parts = [];
-  if (b.speedAdd) parts.push(`${b.speedAdd > 0 ? "+" : ""}${n210(b.speedAdd)} speed`);
-  if (b.honeyYieldAdd) parts.push(`${b.honeyYieldAdd > 0 ? "+" : ""}${n210(b.honeyYieldAdd)} honey`);
-  if (b.swarmChanceAdd) parts.push(`+${n210(b.swarmChanceAdd * 100)}% swarm chance`);
+  if (b.speedAdd) parts.push(`${b.speedAdd > 0 ? "+" : ""}${n211(b.speedAdd)} speed`);
+  if (b.honeyYieldAdd) parts.push(`${b.honeyYieldAdd > 0 ? "+" : ""}${n211(b.honeyYieldAdd)} honey`);
+  if (b.swarmChanceAdd) parts.push(`+${n211(b.swarmChanceAdd * 100)}% swarm chance`);
   if (b.swarmChanceMult) parts.push(`\xD7${b.swarmChanceMult} swarm chance`);
   if (b.flowerTimeMult) parts.push(`\xD7${b.flowerTimeMult} flower time`);
-  if (b.flowerExtraChance) parts.push(`+${n210(b.flowerExtraChance)} flowers`);
-  if (b.flowerExtraFlat) parts.push(`+${n210(b.flowerExtraFlat)} flowers`);
+  if (b.flowerExtraChance) parts.push(`+${n211(b.flowerExtraChance)} flowers`);
+  if (b.flowerExtraFlat) parts.push(`+${n211(b.flowerExtraFlat)} flowers`);
   return parts.join(", ");
 }
 function boostRowsHtml(list) {
-  return list.map((b) => `<div class="rc-boost-row">${getBoostIconAnyFallback(b.name)}<span class="rc-boost-name">${esc10(b.name)}</span><span class="rc-boost-eff">${esc10(effectText(b))}</span></div>`).join("");
+  return list.map((b) => `<div class="rc-boost-row">${getBoostIconAnyFallback(b.name)}<span class="rc-boost-name">${esc11(b.name)}</span><span class="rc-boost-eff">${esc11(effectText(b))}</span></div>`).join("");
 }
-function appliedBoostHtml8(e) {
+function appliedBoostHtml9(e) {
   const hive = e.hiveStats.activeBoosts.filter((b) => effectText(b));
   const flower = e.flowerStats.activeBoosts.filter((b) => effectText(b));
   const section = (label, items) => items.length ? `<div class="rc-boost-group"><div class="rc-boost-label">${label}</div>${boostRowsHtml(items)}</div>` : "";
@@ -7220,7 +7855,7 @@ function swarmTableHtml(e) {
     <div class="rc-sw-wrap"><table class="rc-sw-grid"><thead><tr><th>Swarms</th><th>Chance</th><th>Crop Yield</th><th>Value</th></tr></thead><tbody>${body}</tbody></table></div>${note}`;
 }
 function swarmBonusHtml(e) {
-  const crop = esc10(selectedSwarmCrop);
+  const crop = esc11(selectedSwarmCrop);
   const pollen = isSkillActive("skill_pollen_power_up") ? " (0.2 base + Pollen Power Up)" : "";
   return `<div class="rc-group rc-swarm">
     <div class="rc-swarm-head"><span class="rc-swarm-icon">${swarmIcon()}</span><span class="rc-swarm-title">Bee Swarm bonus</span></div>
@@ -7235,27 +7870,27 @@ function calculatorCardHtml(e) {
   const feeNote = feePercent > 0 ? `<span class="rc-kv-sub">(${fmt(e.netHoneySell)}${FLOWER_ICON} after ${feePercent}% fee)</span>` : "";
   const formula = e.flowerStats.expectedYield > 1 ? `<span class="rc-kv-sub">(${fmt(e.flowerCostFlower)}${FLOWER_ICON} \xF7 ${fmt(e.flowerStats.expectedYield)} expected flowers/cycle = ${fmt(e.costPerFlower)}${FLOWER_ICON}/flower)</span>` : "";
   return `<article class="rc-comp-card guro-frame">
-    <header class="rc-comp-head"><span class="rc-comp-icon">${getIcon("Honey")}</span><span class="rc-comp-name">Honey Calculator</span><span class="rc-comp-nodes">${getIcon("Beehive")} ${n210(e.hives)}</span></header>
+    <header class="rc-comp-head"><span class="rc-comp-icon">${getIcon("Honey")}</span><span class="rc-comp-name">Honey Calculator</span><span class="rc-comp-nodes">${getIcon("Beehive")} ${n211(e.hives)}</span></header>
     <div class="rc-group"><div class="rc-kv-grid">
-      ${kv9("Honey Speed", fmt(e.hiveStats.speed))}
-      ${kv9("Time To Full Hive", esc10(formatDuration(e.hiveStats.timeToFullSec)))}
-      ${kv9("Honey / Hive / Day", fmt(e.hiveStats.honeyPerHiveDay))}
-      ${kv9("Swarm Chance / Fill", `${(e.hiveStats.swarmChance * 100).toFixed(2)}%`)}
+      ${kv10("Honey Speed", fmt(e.hiveStats.speed))}
+      ${kv10("Time To Full Hive", esc11(formatDuration(e.hiveStats.timeToFullSec)))}
+      ${kv10("Honey / Hive / Day", fmt(e.hiveStats.honeyPerHiveDay))}
+      ${kv10("Swarm Chance / Fill", `${(e.hiveStats.swarmChance * 100).toFixed(2)}%`)}
     </div></div>
-    ${appliedBoostHtml8(e)}
+    ${appliedBoostHtml9(e)}
     <div class="rc-group"><div class="rc-comp-sub">Active Flower</div>
       ${flowerPickerHtml("popflower")}
       <div class="rc-kv-grid">
-        ${kv9("Replants / Day", fmt(e.replantsPerDay))}
-        ${kv9("Average Yield", `${fmt(e.flowerStats.expectedYield)} <span class="rc-kv-sub">flowers/cycle</span>`)}
-        ${kv9("Cost / Hive / Day", `${fmt(e.costPerHiveDay)}${FLOWER_ICON}${formula}`, "rc-kv-wide")}
-        ${kv9("Seed Restock Cost / Hive / Day", `${e.flowerRestockCost > 0 ? "+" + fmt(e.flowerRestockCost) : "0"}${FLOWER_ICON}`, "rc-kv-wide")}
+        ${kv10("Replants / Day", fmt(e.replantsPerDay))}
+        ${kv10("Average Yield", `${fmt(e.flowerStats.expectedYield)} <span class="rc-kv-sub">flowers/cycle</span>`)}
+        ${kv10("Cost / Hive / Day", `${fmt(e.costPerHiveDay)}${FLOWER_ICON}${formula}`, "rc-kv-wide")}
+        ${kv10("Seed Restock Cost / Hive / Day", `${e.flowerRestockCost > 0 ? "+" + fmt(e.flowerRestockCost) : "0"}${FLOWER_ICON}`, "rc-kv-wide")}
       </div>
     </div>
     <div class="rc-group"><div class="rc-comp-sub">Honey Sell Price</div>
       <div class="rc-kv-grid">
-        ${kv9("Honey Sell Price", `${fmt(e.honeySellFlower)}${FLOWER_ICON}${feeNote}`, "rc-kv-wide")}
-        ${kv9("Revenue / Hive / Day", `${fmt(e.hiveStats.honeyPerHiveDay * e.netHoneySell)}${FLOWER_ICON}`, "rc-kv-wide")}
+        ${kv10("Honey Sell Price", `${fmt(e.honeySellFlower)}${FLOWER_ICON}${feeNote}`, "rc-kv-wide")}
+        ${kv10("Revenue / Hive / Day", `${fmt(e.hiveStats.honeyPerHiveDay * e.netHoneySell)}${FLOWER_ICON}`, "rc-kv-wide")}
       </div>
     </div>
     ${swarmBonusHtml(e)}
@@ -7263,28 +7898,28 @@ function calculatorCardHtml(e) {
 }
 function profitCardHtml(e, t) {
   const perHive = e.hives > 0 ? t.net / e.hives : 0;
-  const shrineNames = t.shrines.length ? `<span class="rc-kv-sub">${esc10(t.shrines.map((s) => s.name).join(", "))}</span>` : "";
+  const shrineNames = t.shrines.length ? `<span class="rc-kv-sub">${esc11(t.shrines.map((s) => s.name).join(", "))}</span>` : "";
   return `<article class="rc-comp-card guro-frame">
-    <header class="rc-comp-head"><span class="rc-comp-icon">${getIcon("Honey")}</span><span class="rc-comp-name">Honey 24hr Profitability</span><span class="rc-comp-nodes">${getIcon("Beehive")} ${n210(e.hives)}</span></header>
+    <header class="rc-comp-head"><span class="rc-comp-icon">${getIcon("Honey")}</span><span class="rc-comp-name">Honey 24hr Profitability</span><span class="rc-comp-nodes">${getIcon("Beehive")} ${n211(e.hives)}</span></header>
     <div class="rc-group"><div class="rc-comp-sub">24Hrs Profit / Loss \u2014 ${fmt(e.hives)} hives</div>
     <div class="rc-kv-grid">
-      ${kv9("Total Honey", `${signed10(t.honey, n210)}${getIcon("Honey")}`)}
-      ${kv9("Total Gross", `${signed10(t.gross, fl9)}${FLOWER_ICON}`)}
-      ${kv9("Flower Cost", flowerHtml9(t.cost))}
-      ${kv9("Seed Restock Cost", flowerHtml9(t.restock))}
-      ${kv9("Shrine Cost", `${flowerHtml9(t.shrine)}${shrineNames}`)}
-      ${feePercent > 0 ? kv9("Market Fee", flowerHtml9(t.fee)) : ""}
-      ${kv9("Profit / Hive / Day", `<span class="${perHive >= 0 ? "is-profit" : "is-loss"}">${signed10(perHive, fl9)}${FLOWER_ICON}</span>`, "rc-kv-wide")}
-      ${kv9(`Total / ${fmt(e.hives)} Hives / Day`, `<span class="${t.net >= 0 ? "is-profit" : "is-loss"}">${signed10(t.net, fl9)}${FLOWER_ICON}</span>`, "rc-kv-wide rc-kv-net")}
+      ${kv10("Total Honey", `${signed10(t.honey, n211)}${getIcon("Honey")}`)}
+      ${kv10("Total Gross", `${signed10(t.gross, fl10)}${FLOWER_ICON}`)}
+      ${kv10("Flower Cost", flowerHtml10(t.cost))}
+      ${kv10("Seed Restock Cost", flowerHtml10(t.restock))}
+      ${kv10("Shrine Cost", `${flowerHtml10(t.shrine)}${shrineNames}`)}
+      ${feePercent > 0 ? kv10("Market Fee", flowerHtml10(t.fee)) : ""}
+      ${kv10("Profit / Hive / Day", `<span class="${perHive >= 0 ? "is-profit" : "is-loss"}">${signed10(perHive, fl10)}${FLOWER_ICON}</span>`, "rc-kv-wide")}
+      ${kv10(`Total / ${fmt(e.hives)} Hives / Day`, `<span class="${t.net >= 0 ? "is-profit" : "is-loss"}">${signed10(t.net, fl10)}${FLOWER_ICON}</span>`, "rc-kv-wide rc-kv-net")}
     </div></div>
   </article>`;
 }
-function computationBodyHtml9() {
+function computationBodyHtml10() {
   const e = getEcon();
-  const t = totalsOf6(e);
+  const t = totalsOf7(e);
   return calculatorCardHtml(e) + profitCardHtml(e, t);
 }
-function boostBodyHtml9() {
+function boostBodyHtml10() {
   const flower = selectedHoneyFlower;
   const subjects = [{
     name: "Hives",
@@ -7307,151 +7942,151 @@ function boostBodyHtml9() {
     noteSkip: /./,
     allLabel: "Boost for All"
   });
-  return `<div class="rc-pop-hint">Boosts that affect your hives and ${esc10(flower)}. Tap a boost to switch it on or off, then press Save.</div>${html || `<div class="rc-empty">No boosts found.</div>`}`;
+  return `<div class="rc-pop-hint">Boosts that affect your hives and ${esc11(flower)}. Tap a boost to switch it on or off, then press Save.</div>${html || `<div class="rc-empty">No boosts found.</div>`}`;
 }
 function hivesBodyHtml() {
   const value = hivesDraft == null ? getHiveCount() : hivesDraft;
   return `<div class="rc-pop-hint">Every hive uses the same flower and the same boosts. Change your hive count here, then press Save.</div>
   <label class="rc-node-row guro-frame"><span class="rc-node-icon">${getIcon("Beehive")}</span><span class="rc-node-text"><span class="rc-node-name">Beehive</span><span class="rc-node-used">Used by: Honey, Bee Swarm</span></span><input type="number" min="0" step="1" inputmode="numeric" data-rc-hives value="${value ? value : ""}" placeholder="0"></label>`;
 }
-function popupTitle9() {
-  if (popup9 === "skills") return "Honey Skills";
-  if (popup9 === "boost") return "Honey Boosts";
-  if (popup9 === "hives") return "Hives";
+function popupTitle10() {
+  if (popup10 === "skills") return "Honey Skills";
+  if (popup10 === "boost") return "Honey Boosts";
+  if (popup10 === "hives") return "Hives";
   return "Computation";
 }
-function popupBodyHtml9() {
-  if (popup9 === "boost") return boostBodyHtml9();
-  if (popup9 === "hives") return hivesBodyHtml();
-  if (popup9 === "computation") return computationBodyHtml9();
+function popupBodyHtml10() {
+  if (popup10 === "boost") return boostBodyHtml10();
+  if (popup10 === "hives") return hivesBodyHtml();
+  if (popup10 === "computation") return computationBodyHtml10();
   return `<div class="rc-pop-hint">Bees and Flowers skills from the Skill Tree. Changes here also change the Skill Tree. Press Save to apply them.</div><div id="rcSkillSlot"></div>`;
 }
-function borrow9(id, slotId) {
+function borrow10(id, slotId) {
   const el = document.getElementById(id);
   const slot = document.getElementById(slotId);
   if (!el || !slot) return;
   const parent = el.parentNode;
   const next = el.nextSibling;
   slot.appendChild(el);
-  restoreFns9.push(() => {
+  restoreFns10.push(() => {
     if (!parent) return;
     if (next && next.parentNode === parent) parent.insertBefore(el, next);
     else parent.appendChild(el);
   });
 }
-function releaseBorrowed9() {
-  while (restoreFns9.length) restoreFns9.pop()();
+function releaseBorrowed10() {
+  while (restoreFns10.length) restoreFns10.pop()();
 }
-function setupBorrowed9() {
-  if (popup9 === "skills") {
-    savedSkillCategory9 = skillCategory;
+function setupBorrowed10() {
+  if (popup10 === "skills") {
+    savedSkillCategory10 = skillCategory;
     setSkillCategory("bees");
-    borrow9("ascensionBar", "rcAscSlot");
-    borrow9("skillListWrap", "rcSkillSlot");
-    borrow9("skillSaveBar", "rcSaveSlot");
+    borrow10("ascensionBar", "rcAscSlot");
+    borrow10("skillListWrap", "rcSkillSlot");
+    borrow10("skillSaveBar", "rcSaveSlot");
     renderSkillPanel();
     renderAscensionBar();
     updateSkillSaveBarState();
-  } else if (popup9 === "boost") {
-    borrow9("skillSaveBar", "rcSaveSlot");
+  } else if (popup10 === "boost") {
+    borrow10("skillSaveBar", "rcSaveSlot");
     updateSkillSaveBarState();
   }
 }
-function teardownBorrowed9() {
-  releaseBorrowed9();
-  if (savedSkillCategory9 != null) {
-    setSkillCategory(savedSkillCategory9);
-    savedSkillCategory9 = null;
+function teardownBorrowed10() {
+  releaseBorrowed10();
+  if (savedSkillCategory10 != null) {
+    setSkillCategory(savedSkillCategory10);
+    savedSkillCategory10 = null;
     renderSkillPanel();
   }
 }
-function footerHtml9() {
-  if (popup9 === "hives") return `<button type="button" class="rc-save guro-frame" id="rcNodesSave">Save Changes</button>`;
-  if (popup9 === "skills" || popup9 === "boost") return `<div id="rcSaveSlot"></div>`;
+function footerHtml10() {
+  if (popup10 === "hives") return `<button type="button" class="rc-save guro-frame" id="rcNodesSave">Save Changes</button>`;
+  if (popup10 === "skills" || popup10 === "boost") return `<div id="rcSaveSlot"></div>`;
   return "";
 }
-function overlayHtml9() {
-  return `<div class="rc-pop guro-frame${popup9 === "computation" ? " rc-pop-comp" : ""}" role="dialog" aria-modal="true" aria-label="${popupTitle9()}">
-    <div class="rc-pop-head"><span class="rc-pop-title">${popupTitle9()}</span><button type="button" class="rc-pop-close" data-rc-close aria-label="Close">\u2715</button></div>
-    <div class="rc-pop-body" id="rcPopBody">${popupBodyHtml9()}</div>
-    <div class="rc-pop-foot">${footerHtml9()}</div>
+function overlayHtml10() {
+  return `<div class="rc-pop guro-frame${popup10 === "computation" ? " rc-pop-comp" : ""}" role="dialog" aria-modal="true" aria-label="${popupTitle10()}">
+    <div class="rc-pop-head"><span class="rc-pop-title">${popupTitle10()}</span><button type="button" class="rc-pop-close" data-rc-close aria-label="Close">\u2715</button></div>
+    <div class="rc-pop-body" id="rcPopBody">${popupBodyHtml10()}</div>
+    <div class="rc-pop-foot">${footerHtml10()}</div>
   </div>`;
 }
-function renderOverlayBody9() {
-  if (!overlayEl9) return;
-  const body = overlayEl9.querySelector("#rcPopBody");
+function renderOverlayBody10() {
+  if (!overlayEl10) return;
+  const body = overlayEl10.querySelector("#rcPopBody");
   if (!body) return;
-  if (popup9 === "skills") return;
+  if (popup10 === "skills") return;
   const top = body.scrollTop;
-  body.innerHTML = popupBodyHtml9();
+  body.innerHTML = popupBodyHtml10();
   body.scrollTop = top;
   updateSkillSaveBarState();
 }
-function isPopupDirty9() {
-  if (popup9 === "skills" || popup9 === "boost") return isSkillDraftDirty() || isBoostDraftDirty();
-  if (popup9 === "hives") return hivesDraft != null && Number(hivesDraft) !== (getHiveCount() || 0);
+function isPopupDirty10() {
+  if (popup10 === "skills" || popup10 === "boost") return isSkillDraftDirty() || isBoostDraftDirty();
+  if (popup10 === "hives") return hivesDraft != null && Number(hivesDraft) !== (getHiveCount() || 0);
   return false;
 }
-function openPopup9(kind) {
-  if (popup9) return;
-  popup9 = kind;
+function openPopup10(kind) {
+  if (popup10) return;
+  popup10 = kind;
   hivesDraft = null;
   openMenu = null;
-  overlayEl9 = document.createElement("div");
-  overlayEl9.className = "rc-overlay";
-  overlayEl9.innerHTML = overlayHtml9();
-  document.body.appendChild(overlayEl9);
+  overlayEl10 = document.createElement("div");
+  overlayEl10.className = "rc-overlay";
+  overlayEl10.innerHTML = overlayHtml10();
+  document.body.appendChild(overlayEl10);
   document.body.classList.add("rc-no-scroll");
-  const slot = overlayEl9.querySelector("#rcSkillSlot");
+  const slot = overlayEl10.querySelector("#rcSkillSlot");
   if (kind === "skills" && slot) {
     const asc = document.createElement("div");
     asc.id = "rcAscSlot";
     slot.parentNode.insertBefore(asc, slot);
   }
-  setupBorrowed9();
+  setupBorrowed10();
 }
-function destroyPopup9() {
-  teardownBorrowed9();
-  if (overlayEl9) overlayEl9.remove();
-  overlayEl9 = null;
-  popup9 = null;
+function destroyPopup10() {
+  teardownBorrowed10();
+  if (overlayEl10) overlayEl10.remove();
+  overlayEl10 = null;
+  popup10 = null;
   hivesDraft = null;
   openMenu = null;
   document.body.classList.remove("rc-no-scroll");
 }
-function closePopup9(force) {
-  if (!popup9) return;
-  if (!force && isPopupDirty9()) {
-    showPrompt9("You have unsaved changes. Save them first, or discard them to close.", [{
+function closePopup10(force) {
+  if (!popup10) return;
+  if (!force && isPopupDirty10()) {
+    showPrompt10("You have unsaved changes. Save them first, or discard them to close.", [{
       label: "Keep Editing"
     }, {
       label: "Discard",
       run: () => {
         discardSkillBoostDrafts();
-        destroyPopup9();
+        destroyPopup10();
         refreshAll();
       }
     }]);
     return;
   }
-  destroyPopup9();
+  destroyPopup10();
   refreshAll();
 }
-function showPrompt9(message, buttons) {
-  if (promptEl9) promptEl9.remove();
-  promptEl9 = document.createElement("div");
-  promptEl9.className = "rc-overlay rc-overlay-top";
-  promptEl9.innerHTML = `<div class="rc-prompt guro-frame" role="alertdialog" aria-modal="true"><p class="rc-prompt-text">${esc10(message)}</p><div class="rc-prompt-actions">${buttons.map((b, i) => `<button type="button" class="rc-prompt-btn guro-frame" data-rc-prompt="${i}">${esc10(b.label)}</button>`).join("")}</div></div>`;
-  promptEl9.addEventListener("click", (e) => {
+function showPrompt10(message, buttons) {
+  if (promptEl10) promptEl10.remove();
+  promptEl10 = document.createElement("div");
+  promptEl10.className = "rc-overlay rc-overlay-top";
+  promptEl10.innerHTML = `<div class="rc-prompt guro-frame" role="alertdialog" aria-modal="true"><p class="rc-prompt-text">${esc11(message)}</p><div class="rc-prompt-actions">${buttons.map((b, i) => `<button type="button" class="rc-prompt-btn guro-frame" data-rc-prompt="${i}">${esc11(b.label)}</button>`).join("")}</div></div>`;
+  promptEl10.addEventListener("click", (e) => {
     const btn = e.target.closest("[data-rc-prompt]");
     if (!btn) return;
     const b = buttons[Number(btn.getAttribute("data-rc-prompt"))];
-    promptEl9.remove();
-    promptEl9 = null;
+    promptEl10.remove();
+    promptEl10 = null;
     if (b && b.run) b.run();
   });
-  document.body.appendChild(promptEl9);
-  const first = promptEl9.querySelector("button");
+  document.body.appendChild(promptEl10);
+  const first = promptEl10.querySelector("button");
   if (first) first.focus();
 }
 function saveHives() {
@@ -7463,8 +8098,8 @@ function saveHives() {
   updateCalcSummary();
   hivesDraft = null;
   toast("\u2705 Hive count saved");
-  renderOverlayBody9();
-  refreshResults9();
+  renderOverlayBody10();
+  refreshResults10();
 }
 function pickFlower(name) {
   if (!FLOWER_VARIETIES[name]) return;
@@ -7503,50 +8138,50 @@ function handleDropdown(e) {
   }
   return false;
 }
-function onClick9(e) {
+function onClick10(e) {
   const details = e.target.closest("[data-rc-details]");
   if (details) {
-    detailsOpen9 = !detailsOpen9;
-    refreshResults9();
+    detailsOpen10 = !detailsOpen10;
+    refreshResults10();
     return;
   }
   const open = e.target.closest("[data-rc-open]");
-  if (open && !open.disabled) openPopup9(open.getAttribute("data-rc-open"));
+  if (open && !open.disabled) openPopup10(open.getAttribute("data-rc-open"));
 }
-function onDocClick9(e) {
-  if (!host9) return;
-  if (promptEl9 && promptEl9.contains(e.target)) return;
+function onDocClick10(e) {
+  if (!host10) return;
+  if (promptEl10 && promptEl10.contains(e.target)) return;
   if (handleDropdown(e)) return;
-  if (!overlayEl9) return;
-  if (e.target === overlayEl9 || e.target.closest("[data-rc-close]")) {
-    closePopup9(false);
+  if (!overlayEl10) return;
+  if (e.target === overlayEl10 || e.target.closest("[data-rc-close]")) {
+    closePopup10(false);
     return;
   }
-  if (!overlayEl9.contains(e.target)) return;
+  if (!overlayEl10.contains(e.target)) return;
   if (e.target.closest("#rcNodesSave")) {
     saveHives();
     return;
   }
   const row = e.target.closest("[data-boost-id]");
-  if (row && popup9 === "boost" && overlayEl9.contains(row)) {
+  if (row && popup10 === "boost" && overlayEl10.contains(row)) {
     draftToggleBoost(row.getAttribute("data-boost-id"));
-    renderOverlayBody9();
+    renderOverlayBody10();
   }
 }
 function onDocInput8(e) {
   const t = e.target;
   if (t && t.dataset && t.dataset.rcHives != null) hivesDraft = t.value === "" ? 0 : Number(t.value);
 }
-function onKey9(e) {
+function onKey10(e) {
   if ((e.key === "Enter" || e.key === " ") && e.target && e.target.closest && e.target.closest("[data-rc-dd-pick]")) {
     e.preventDefault();
     e.target.closest("[data-rc-dd-pick]").click();
     return;
   }
   if (e.key !== "Escape") return;
-  if (promptEl9) {
-    promptEl9.remove();
-    promptEl9 = null;
+  if (promptEl10) {
+    promptEl10.remove();
+    promptEl10 = null;
     return;
   }
   if (openMenu) {
@@ -7554,64 +8189,64 @@ function onKey9(e) {
     refreshAll();
     return;
   }
-  if (popup9) closePopup9(false);
+  if (popup10) closePopup10(false);
 }
-function onBoostsChanged9() {
-  if (!host9) return;
+function onBoostsChanged10() {
+  if (!host10) return;
   invalidateCostCache();
-  if (popup9 === "boost") renderOverlayBody9();
-  refreshResults9();
+  if (popup10 === "boost") renderOverlayBody10();
+  refreshResults10();
 }
-function onExternalChange9() {
-  if (!host9) return;
-  refreshResults9();
+function onExternalChange10() {
+  if (!host10) return;
+  refreshResults10();
 }
 function mountHoneyCalculator(root) {
-  host9 = root;
+  host10 = root;
   invalidateCostCache();
-  detailsOpen9 = false;
+  detailsOpen10 = false;
   openMenu = null;
   syncGemRatio7();
-  host9.addEventListener("click", onClick9);
-  document.addEventListener("click", onDocClick9);
+  host10.addEventListener("click", onClick10);
+  document.addEventListener("click", onDocClick10);
   document.addEventListener("input", onDocInput8);
-  document.addEventListener("keydown", onKey9);
-  window.addEventListener("guroBoostsChanged", onBoostsChanged9);
-  window.addEventListener("guroGemPackChanged", onExternalChange9);
-  window.addEventListener("guroPricesUpdated", onExternalChange9);
-  listening9 = true;
-  render9();
+  document.addEventListener("keydown", onKey10);
+  window.addEventListener("guroBoostsChanged", onBoostsChanged10);
+  window.addEventListener("guroGemPackChanged", onExternalChange10);
+  window.addEventListener("guroPricesUpdated", onExternalChange10);
+  listening10 = true;
+  render10();
 }
 function unmountHoneyCalculator() {
   invalidateCostCache();
-  if (popup9) destroyPopup9();
-  if (promptEl9) {
-    promptEl9.remove();
-    promptEl9 = null;
+  if (popup10) destroyPopup10();
+  if (promptEl10) {
+    promptEl10.remove();
+    promptEl10 = null;
   }
-  if (host9) {
-    host9.removeEventListener("click", onClick9);
-    host9.innerHTML = "";
+  if (host10) {
+    host10.removeEventListener("click", onClick10);
+    host10.innerHTML = "";
   }
-  if (listening9) {
-    document.removeEventListener("click", onDocClick9);
+  if (listening10) {
+    document.removeEventListener("click", onDocClick10);
     document.removeEventListener("input", onDocInput8);
-    document.removeEventListener("keydown", onKey9);
-    window.removeEventListener("guroBoostsChanged", onBoostsChanged9);
-    window.removeEventListener("guroGemPackChanged", onExternalChange9);
-    window.removeEventListener("guroPricesUpdated", onExternalChange9);
-    listening9 = false;
+    document.removeEventListener("keydown", onKey10);
+    window.removeEventListener("guroBoostsChanged", onBoostsChanged10);
+    window.removeEventListener("guroGemPackChanged", onExternalChange10);
+    window.removeEventListener("guroPricesUpdated", onExternalChange10);
+    listening10 = false;
   }
-  host9 = null;
+  host10 = null;
   openMenu = null;
 }
 function honeyCalculatorCanLeave() {
-  if (!popup9) return true;
-  if (isPopupDirty9()) {
+  if (!popup10) return true;
+  if (isPopupDirty10()) {
     toast("\u26A0\uFE0F Save your changes first");
     return false;
   }
-  destroyPopup9();
+  destroyPopup10();
   return true;
 }
 
@@ -7634,6 +8269,12 @@ var CALCULATORS = [{
   mount: mountGreenhouseCalculator,
   unmount: unmountGreenhouseCalculator,
   canLeave: greenhouseCalculatorCanLeave
+}, {
+  id: "composters",
+  label: "Composter Calculator",
+  mount: mountComposterCalculator,
+  unmount: unmountComposterCalculator,
+  canLeave: composterCalculatorCanLeave
 }, {
   id: "resources",
   label: "Mining Calculator",
@@ -7699,16 +8340,16 @@ function showCalculator(id) {
   if (activeCalc && activeCalc.unmount) activeCalc.unmount();
   activeId = next.id;
   activeCalc = next;
-  const host10 = rootEl.querySelector("#rcDisplayHost");
-  host10.innerHTML = "";
-  next.mount(host10);
+  const host11 = rootEl.querySelector("#rcDisplayHost");
+  host11.innerHTML = "";
+  next.mount(host11);
   rootEl.querySelectorAll(".rc-link").forEach((b) => {
     const on = b.getAttribute("data-rc-calc") === activeId;
     b.classList.toggle("is-active", on);
     b.setAttribute("aria-pressed", on ? "true" : "false");
   });
 }
-function onClick10(e) {
+function onClick11(e) {
   const link = e.target.closest("[data-rc-calc]");
   if (!link) return;
   const id = link.getAttribute("data-rc-calc");
@@ -7719,7 +8360,7 @@ function onClick10(e) {
 function mount(root) {
   rootEl = root;
   root.innerHTML = shellHtml();
-  root.addEventListener("click", onClick10);
+  root.addEventListener("click", onClick11);
   activeCalc = null;
   showCalculator(activeId);
 }
@@ -7727,7 +8368,7 @@ function unmount() {
   if (activeCalc && activeCalc.unmount) activeCalc.unmount();
   activeCalc = null;
   if (rootEl) {
-    rootEl.removeEventListener("click", onClick10);
+    rootEl.removeEventListener("click", onClick11);
     rootEl.innerHTML = "";
   }
   rootEl = null;

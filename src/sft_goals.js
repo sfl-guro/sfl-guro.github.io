@@ -8,6 +8,31 @@ const GOALS_KEY = "hl_sft_goals";
 
 const DONE_KEY = "hl_sft_goals_notified";
 
+const SOURCE_KEY = "hl_sft_goals_source";
+
+export function loadSource() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(SOURCE_KEY) || "null");
+    if (raw && typeof raw === "object") return {
+      balance: raw.balance !== false,
+      inventory: raw.inventory !== false
+    };
+  } catch (e) {}
+  return {
+    balance: true,
+    inventory: true
+  };
+}
+
+export function saveSource(src) {
+  try {
+    localStorage.setItem(SOURCE_KEY, JSON.stringify({
+      balance: !!src.balance,
+      inventory: !!src.inventory
+    }));
+  } catch (e) {}
+}
+
 export function loadGoals() {
   try {
     const raw = JSON.parse(localStorage.getItem(GOALS_KEY) || "[]");
@@ -184,7 +209,8 @@ export function goalProgress(net, price) {
 export function evaluateGoals() {
   const inv = computeInventory();
   const chain = computeChainHistory();
-  const total = inv.net + chain.balance;
+  const source = loadSource();
+  const total = (source.inventory ? inv.net : 0) + (source.balance ? chain.balance : 0);
   const goals = loadGoals().map(g => {
     const price = sftPrice(g.name);
     const prog = goalProgress(total, price);
@@ -199,6 +225,7 @@ export function evaluateGoals() {
     inv: inv,
     chain: chain,
     total: total,
+    source: source,
     goals: goals
   };
 }

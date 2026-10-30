@@ -7,6 +7,30 @@ function bindApi(api) {
 }
 var GOALS_KEY = "hl_sft_goals";
 var DONE_KEY = "hl_sft_goals_notified";
+var SOURCE_KEY = "hl_sft_goals_source";
+function loadSource() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(SOURCE_KEY) || "null");
+    if (raw && typeof raw === "object") return {
+      balance: raw.balance !== false,
+      inventory: raw.inventory !== false
+    };
+  } catch (e) {
+  }
+  return {
+    balance: true,
+    inventory: true
+  };
+}
+function saveSource(src) {
+  try {
+    localStorage.setItem(SOURCE_KEY, JSON.stringify({
+      balance: !!src.balance,
+      inventory: !!src.inventory
+    }));
+  } catch (e) {
+  }
+}
 function loadGoals() {
   try {
     const raw = JSON.parse(localStorage.getItem(GOALS_KEY) || "[]");
@@ -171,7 +195,8 @@ function goalProgress(net, price) {
 function evaluateGoals() {
   const inv = computeInventory();
   const chain = computeChainHistory();
-  const total = inv.net + chain.balance;
+  const source = loadSource();
+  const total = (source.inventory ? inv.net : 0) + (source.balance ? chain.balance : 0);
   const goals = loadGoals().map((g) => {
     const price = sftPrice(g.name);
     const prog = goalProgress(total, price);
@@ -186,6 +211,7 @@ function evaluateGoals() {
     inv,
     chain,
     total,
+    source,
     goals
   };
 }
@@ -207,7 +233,9 @@ export {
   evaluateGoals,
   goalProgress,
   loadGoals,
+  loadSource,
   saveGoals,
+  saveSource,
   sftCandidates,
   sftPrice,
   takeNewlyReachedGoals
