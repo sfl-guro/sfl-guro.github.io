@@ -23653,7 +23653,7 @@ var LOG_KIND_OF = {
   fruit: "fruit",
   greenhouse: "greenhouse"
 };
-function addLogTotal(totals, name, kind, amount, rounds) {
+function addLogTotal(totals, name, kind, amount, rounds, price, feeRate) {
   const value = Math.round(amount * 100) / 100;
   if (!(value > 0) || !isFinite(value)) return;
   const cur = totals[name];
@@ -23663,6 +23663,12 @@ function addLogTotal(totals, name, kind, amount, rounds) {
   };
   const c = Math.max(cur && cur.c || 0, Number.isFinite(rounds) ? Math.floor(rounds) : 0);
   if (c > 0) entry.c = c;
+  const p = typeof price === "number" && isFinite(price) && price > 0 ? price : cur && cur.p || 0;
+  if (p > 0) {
+    entry.p = Math.round(p * 1e6) / 1e6;
+    const f = typeof feeRate === "number" && isFinite(feeRate) && feeRate > 0 && feeRate < 1 ? feeRate : cur && cur.f || 0;
+    entry.f = Math.round(f * 1e6) / 1e6;
+  }
   totals[name] = entry;
 }
 function animalLogTotals(totals, groupKey, st) {
@@ -23679,7 +23685,7 @@ function animalLogTotals(totals, groupKey, st) {
         parts[i] += v;
       });
     });
-    products.forEach((pr, i) => addLogTotal(totals, pr.name, "animal", parts[i], rounds));
+    products.forEach((pr, i) => addLogTotal(totals, pr.name, "animal", parts[i], rounds, pr.price, pr.feeRate));
     return;
   }
   if (!meta.productName) return;
@@ -23688,7 +23694,7 @@ function animalLogTotals(totals, groupKey, st) {
     if (typeof e.y === "number") amount += e.y;
     else if (meta.per) amount += e.n * meta.per;
   });
-  addLogTotal(totals, meta.productName, "animal", amount, rounds);
+  addLogTotal(totals, meta.productName, "animal", amount, rounds, meta.price, meta.feeRate);
 }
 function dailyHarvestTotals(farmId) {
   const store = freshStore();
@@ -23712,7 +23718,8 @@ function dailyHarvestTotals(farmId) {
       if (typeof e.y === "number") amount += e.y;
       else if (per) amount += e.n * per;
     });
-    addLogTotal(totals, groupKey, logKind, amount, roundsFromStats(st).rounds);
+    const gm = yieldMeta[groupKey];
+    addLogTotal(totals, groupKey, logKind, amount, roundsFromStats(st).rounds, gm && gm.price, gm && gm.feeRate);
   });
   return {
     day: rec.day,
@@ -24143,9 +24150,60 @@ function sortedNames(totals) {
     return a.localeCompare(b);
   });
 }
+function fmtFlower(n) {
+  return n.toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 4
+  });
+}
+function fmtPrice(p) {
+  return p.toLocaleString("en-US", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: p < 1e-4 ? 6 : 4
+  });
+}
+function round4(n) {
+  return Math.round(n * 1e4) / 1e4;
+}
+function netOf(e) {
+  if (!(e.p > 0)) return null;
+  if (typeof e.n === "number" && isFinite(e.n)) return e.n;
+  const fee = e.f > 0 && e.f < 1 ? e.f : 0;
+  return round4(round4(e.a * e.p) * (1 - fee));
+}
+function flowerHtml() {
+  return `<span class="dh-hlog-fl">${FLOWER_ICON}</span>`;
+}
+function taxLabel(list) {
+  const days = list.slice().sort((a, b) => a.day < b.day ? 1 : a.day > b.day ? -1 : 0);
+  for (const d of days) {
+    const names = Object.keys(d.totals);
+    for (const name of names) {
+      const e = d.totals[name];
+      if (e && e.p > 0 && e.f > 0) return `${parseFloat((e.f * 100).toFixed(2))}%`;
+    }
+  }
+  return "";
+}
+function taxNoteHtml(list) {
+  const tax = taxLabel(list);
+  return `Total Gained and item values are net: Gross \u2212 Tax${tax ? ` (current tax ${tax})` : ""}.`;
+}
 function dayHtml(entry, number) {
-  const rows = sortedNames(entry.totals).map((name) => `<div class="dh-hlog-row"><span class="dh-hlog-amt">+${fmtAmount(entry.totals[name].a)}</span><span class="dh-hlog-ico">${getIcon(name)}</span><span class="dh-hlog-name">${esc(name)}</span>${entry.totals[name].c > 0 ? `<span class="dh-hlog-count">Harvested ${entry.totals[name].c}x</span>` : ""}</div>`).join("");
-  return `<div class="dh-hlog-day guro-frame"><div class="dh-hlog-dayhead"><span class="dh-hlog-no">#${number}</span><span class="dh-hlog-date">${dateLabel(entry.day)}</span></div>${rows}</div>`;
+  let totalNet = 0;
+  const rows = sortedNames(entry.totals).map((name) => {
+    const e = entry.totals[name];
+    const net = netOf(e);
+    if (net !== null) totalNet += net;
+    const value = net !== null ? `<span class="dh-hlog-val"><span class="dh-hlog-price">(${fmtPrice(e.p)}${flowerHtml()}/U)</span><span class="dh-hlog-net">(+${fmtFlower(net)}${flowerHtml()})</span></span>` : "";
+    const count = e.c > 0 ? `<span class="dh-hlog-count"><span class="dh-hlog-h" role="button" tabindex="0" data-dh-h="1" aria-label="Harvested">H<span class="dh-hlog-tip">Harvested</span></span>${e.c}x</span>` : "";
+    return `<div class="dh-hlog-row"><span class="dh-hlog-amt">+${fmtAmount(e.a)}</span><span class="dh-hlog-ico">${getIcon(name)}</span><span class="dh-hlog-name">${esc(name)}</span>${value}${count}</div>`;
+  }).join("");
+  const total = totalNet > 0 ? `<div class="dh-hlog-gain"><span>Total Gained:</span><span class="dh-hlog-gain-val">+${totalNet.toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })}${flowerHtml()}</span></div>` : "";
+  return `<div class="dh-hlog-day guro-frame"><div class="dh-hlog-dayhead"><span class="dh-hlog-no">#${number}</span><span class="dh-hlog-date">${dateLabel(entry.day)}</span></div>${rows}${total}</div>`;
 }
 function mergeLocalToday(days, farmId) {
   const local = dailyHarvestTotals(farmId);
@@ -24164,15 +24222,24 @@ function mergeLocalToday(days, farmId) {
   }
   Object.keys(local.totals).forEach((name) => {
     const cur = today.totals[name];
-    if (!cur || local.totals[name].a > cur.a) {
-      today.totals[name] = Object.assign({}, local.totals[name], {
-        c: Math.max(local.totals[name].c || 0, cur && cur.c || 0) || void 0
-      });
-    } else if ((local.totals[name].c || 0) > (cur.c || 0)) {
-      today.totals[name] = Object.assign({}, cur, {
-        c: local.totals[name].c
-      });
+    const loc = local.totals[name];
+    if (!cur) {
+      today.totals[name] = Object.assign({}, loc);
+      return;
     }
+    const a = Math.max(cur.a, loc.a);
+    const c = Math.max(cur.c || 0, loc.c || 0);
+    const next = {
+      k: loc.a > cur.a ? loc.k : cur.k,
+      a
+    };
+    if (c > 0) next.c = c;
+    const src = loc.p > 0 ? loc : cur;
+    if (src.p > 0) {
+      next.p = src.p;
+      next.f = src.f || 0;
+    }
+    today.totals[name] = next;
   });
   return out;
 }
@@ -24235,9 +24302,17 @@ function ensureLayer() {
   if (layer) return layer;
   layer = document.createElement("div");
   layer.id = "dhLogLayer";
-  layer.innerHTML = `<div class="dh-log-outer guro-frame" role="dialog" aria-modal="true"><button type="button" class="guro-reward-close" id="dhLogClose" aria-label="Close"><img src="${ICON_DATA["close.png"]}" alt="Close"></button><div class="dh-hlog-title">Daily Harvest History Log</div><div class="dh-hlog-sub">Total harvested per UTC day, newest first. Saved from your Farm ID syncs.</div><div class="dh-hlog-body" id="dhLogBody"></div></div>`;
+  layer.innerHTML = `<div class="dh-log-outer guro-frame" role="dialog" aria-modal="true"><button type="button" class="guro-reward-close" id="dhLogClose" aria-label="Close"><img src="${ICON_DATA["close.png"]}" alt="Close"></button><div class="dh-hlog-title">Daily Harvest History Log</div><div class="dh-hlog-sub">Total harvested per UTC day, newest first. Saved from your Farm ID syncs.</div><div class="dh-hlog-tax" id="dhLogTax"></div><div class="dh-hlog-body" id="dhLogBody"></div></div>`;
   document.body.appendChild(layer);
   layer.addEventListener("click", (ev) => {
+    const hBadge = ev.target.closest("[data-dh-h]");
+    layer.querySelectorAll(".dh-hlog-h.open").forEach((el) => {
+      if (el !== hBadge) el.classList.remove("open");
+    });
+    if (hBadge) {
+      hBadge.classList.toggle("open");
+      return;
+    }
     if (ev.target === layer || ev.target.closest("#dhLogClose")) closeLog();
     if (ev.target.closest("[data-dh-more]")) {
       showCount += PAGE_SIZE;
@@ -24263,6 +24338,8 @@ function renderList(body, list, notice) {
   lastNotice = notice;
   if (!list.length) return false;
   const sig = JSON.stringify([notice, showCount, list]);
+  const taxEl = document.getElementById("dhLogTax");
+  if (taxEl) taxEl.textContent = taxNoteHtml(list);
   if (sig === renderedSig && body.childElementCount) return true;
   const asc = list.slice().sort((a, b) => a.day < b.day ? -1 : a.day > b.day ? 1 : 0);
   const cards = asc.map((entry, i) => dayHtml(entry, i + 1)).reverse();
@@ -70637,6 +70714,7 @@ export {
   computeSpiceFigures,
   runDeferredInitialRender,
   __deferredInitialRenderCallbacks,
+  digSolveBoard,
   setAppDarkMode,
   __set_currentSeason,
   __set_cmOilTank,
