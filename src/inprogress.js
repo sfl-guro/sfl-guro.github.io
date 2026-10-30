@@ -1,4 +1,4 @@
-import { ICONS, NPC_ICONS, ALL_ANIMAL_PRODUCTS, ANIMAL_BASE_CYCLE_SEC, ANIMAL_DATA, ANIMAL_PRODUCT_LOOKUP, ASCENSION_RANK_DATA, BAIT_RECIPES, BAIT_RECIPE_NAME_MATCH, BASE_CROPS, BASE_FRUITS, BASE_GREENHOUSE, BASE_STOCK_TOOLS, BEE_SWARM_ICON, BOOSTS, CALENDAR_SEASONAL_BOOSTS, COIN_ICON, COOKING_BUILDINGS, COOKING_BUILDING_ICONS, COOKING_CAKE_DISHES, COOKING_FOOD_IMAGES, COOKING_RECIPES, CRIMSTONE_KNOWN_IDS, CROPS_GLOBAL_EXCLUDED_FROM_GREENHOUSE, CROP_AOE_RANKS, CROP_HARVEST_SEC, CROP_KNOWN_IDS, CROP_PRNG_EXCLUDE, FARM_LEVEL_NODES, FARM_PANEL_SCROLL_IDLE_MS, FEED_LABELS, FERMENTATION_BAIT_FAMILIES, FERMENTATION_SPICE_KNOWN_IDS, FERMENTATION_STATIC_RECIPES, FISH_AGING_KNOWN_IDS, FISH_SALT_DATA, FLOWER_ICON, FLOWER_SEEDS, FLOWER_VARIETIES, FOOD_KNOWN_IDS, FRUIT_KNOWN_IDS, FRUIT_PRNG_EXCLUDE, GAMESTATE_SECTION_KEYS, GEM_ICON, GOLD_KNOWN_IDS, IMAGE_ICONS, IRON_KNOWN_IDS, MUTANT_TYPE_EMOJI, OIL_BONUS_DROP_AMOUNT, OIL_SINGLE_HARVEST_BASE, PATCH_FRUIT_ONLY_GLOBAL_BOOSTS_EXCLUDED_FROM_GREENHOUSE, RCM_GREENHOUSE_ICON_HTML, REQUIRED_FOOD_QTY_MAP, RESOURCE_DATA, RESOURCE_NODE_TIERS, SALT_BASE_CHARGE_CAP, SALT_BASE_TIME_SEC, SALT_BASE_YIELD, SALT_KNOWN_ID, SPICE_RECIPES, SPICE_STATIC_RECIPES, STONE_KNOWN_IDS, SYNODIC_MONTH_DAYS, TREE_KNOWN_IDS, __farmPanelSaveGameStateHandle, __gameStateSectionLenSigs, __set___farmPanelSaveGameStateHandle, __set___gameStateSectionLenSigs, allResourceBudBoostEntries, applyFarmBoostsOnly, applyFarmSkillsOnly, coinPerFlower, coinsToFlower, computeAgedFishFigures, computeAnimalFeedFigures, computeAnimalRealProgress, computeAnimalTypeFigures, computeAnimalYieldsForLevel, computeBaitFigures, computeBoostedCropStats, computeBoostedStock, computeBoostedFlowerVarietyStats, computeBoostedFruitStats, computeBoostedGreenhouseStats, computeBoostedLavaPitStats, computeBoostedResourceStats, computeComposterFigures, computeDestroyedCropPlotIds, computeHiveStats, computeHoneyRestockBreakdown, computeQtyRestockGems, computeSpiceFigures, currentSeason, escapeHtml, farmIdPromptStartSync, farmSyncExtractBudTraits, farmSyncExtractGameState, farmSyncExtractPetTraits, farmSyncFindBagByNameHeuristic, farmSyncGetAnimalRecords, farmSyncGetCoords, farmSyncGetPetRecords, farmSyncPickActivePlacedInstances, feePercent, fmt, fmtAnimal, fmtAnimalCost, fullMoonSeedStockQty, getActiveAnimalBoosts, getActiveBoostsForHive, getActiveFeedInfo, getActiveSaltRechargeMult, getActiveSaltYieldBonus, getActiveSeasonGuardianName, getAnimalLevelFromXp, getAscensionRank, getBeeSwarmPerSwarmYield, getCropPlotSunshowerSpeedMultiplier, getCurrentChapterMutantSet, getCurrentChapterName, getEffectiveYieldAdd, getNodeIconHtml, getNodeLabel, getPowerHourWindow, getSpiceLickDurationHarvests, isBoostActive, isCropInSeason, isOvernightGroundCrop, isSkillActive, onDeferredInitialRenderDone, parseYieldBoostAmount, resourceBuds, saltSculptureLevel, sculptureEffects, sflPrngChance, syncCookingCountsFromInventory } from "./calculator.js";
+import { ICONS, NPC_ICONS, ALL_ANIMAL_PRODUCTS, ANIMAL_BASE_CYCLE_SEC, ANIMAL_DATA, ANIMAL_PRODUCT_LOOKUP, ASCENSION_RANK_DATA, BAIT_RECIPES, BAIT_RECIPE_NAME_MATCH, BASE_CROPS, BASE_FRUITS, BASE_GREENHOUSE, BASE_STOCK_TOOLS, BEE_SWARM_ICON, BOOSTS, CALENDAR_SEASONAL_BOOSTS, COIN_ICON, COOKING_BUILDINGS, COOKING_BUILDING_ICONS, COOKING_CAKE_DISHES, COOKING_FOOD_IMAGES, COOKING_RECIPES, CRIMSTONE_KNOWN_IDS, CROPS_GLOBAL_EXCLUDED_FROM_GREENHOUSE, CROP_AOE_RANKS, CROP_HARVEST_SEC, CROP_KNOWN_IDS, CROP_PRNG_EXCLUDE, FARM_LEVEL_NODES, FARM_PANEL_SCROLL_IDLE_MS, FEED_LABELS, FERMENTATION_BAIT_FAMILIES, FERMENTATION_SPICE_KNOWN_IDS, FERMENTATION_STATIC_RECIPES, FISH_AGING_KNOWN_IDS, FISH_SALT_DATA, FLOWER_ICON, FLOWER_SEEDS, FLOWER_VARIETIES, FOOD_KNOWN_IDS, FRUIT_KNOWN_IDS, FRUIT_PRNG_EXCLUDE, GAMESTATE_SECTION_KEYS, GEM_ICON, GOLD_KNOWN_IDS, IMAGE_ICONS, IRON_KNOWN_IDS, MUTANT_TYPE_EMOJI, OIL_BONUS_DROP_AMOUNT, OIL_SINGLE_HARVEST_BASE, PATCH_FRUIT_ONLY_GLOBAL_BOOSTS_EXCLUDED_FROM_GREENHOUSE, RCM_GREENHOUSE_ICON_HTML, REQUIRED_FOOD_QTY_MAP, RESOURCE_DATA, RESOURCE_NODE_TIERS, SALT_BASE_CHARGE_CAP, SALT_BASE_TIME_SEC, SALT_BASE_YIELD, SALT_KNOWN_ID, SPICE_RECIPES, SPICE_STATIC_RECIPES, STONE_KNOWN_IDS, SYNODIC_MONTH_DAYS, TREE_KNOWN_IDS, __farmPanelSaveGameStateHandle, __gameStateSectionLenSigs, __set___farmPanelSaveGameStateHandle, __set___gameStateSectionLenSigs, allResourceBudBoostEntries, applyFarmBoostsOnly, applyFarmSkillsOnly, coinPerFlower, coinsToFlower, computeAgedFishFigures, computeAnimalFeedFigures, computeAnimalRealProgress, computeAnimalTypeFigures, computeAnimalYieldsForLevel, computeBaitFigures, computeBoostedCropStats, computeBoostedStock, computeBoostedFlowerVarietyStats, computeBoostedFruitStats, computeBoostedGreenhouseStats, computeBoostedLavaPitStats, computeBoostedResourceStats, computeComposterFigures, composterRollWorms, BASE_COMPOSTERS, previewSeason, computeDestroyedCropPlotIds, computeHiveStats, computeHoneyRestockBreakdown, computeQtyRestockGems, computeSpiceFigures, currentSeason, escapeHtml, farmIdPromptStartSync, farmSyncExtractBudTraits, farmSyncExtractGameState, farmSyncExtractPetTraits, farmSyncFindBagByNameHeuristic, farmSyncGetAnimalRecords, farmSyncGetCoords, farmSyncGetPetRecords, farmSyncPickActivePlacedInstances, feePercent, fmt, fmtAnimal, fmtAnimalCost, fullMoonSeedStockQty, getActiveAnimalBoosts, getActiveBoostsForHive, getActiveFeedInfo, getActiveSaltRechargeMult, getActiveSaltYieldBonus, getActiveSeasonGuardianName, getAnimalLevelFromXp, getAscensionRank, getBeeSwarmPerSwarmYield, getCropPlotSunshowerSpeedMultiplier, getCurrentChapterMutantSet, getCurrentChapterName, getEffectiveYieldAdd, getNodeIconHtml, getNodeLabel, getPowerHourWindow, getSpiceLickDurationHarvests, isBoostActive, isCropInSeason, isOvernightGroundCrop, isSkillActive, onDeferredInitialRenderDone, parseYieldBoostAmount, resourceBuds, saltSculptureLevel, sculptureEffects, sflPrngChance, syncCookingCountsFromInventory } from "./calculator.js";
 
 import { SFL_COMMUNITY_PROXY_BASE, SFL_NFT_PRICE_API, SFL_PROXY_BASE, computeRestockCost24h, cookingCostMode, cookingIngredientUnitCostCoins, fishSaltCostFlower, getActiveShrineDailyCostStable, getItemCostByName, getRestockGemCost, restocksForMode, getSpiceCostPerUseFlower, hasFreeSaltRakeCost, honeyCostFlowerForSpiceRack, marketItems, pickledVegCost, refinedSaltUnitCostFlower, saltCostFlowerForSpiceRack } from "./prices.js";
 
@@ -6,7 +6,7 @@ import { getPumpkinPeteQuest } from "./pete_quests.js";
 
 import { $, hiveClockText, cookFoodIcon, getBoostIcon, getIcon, renderAnimalCardProductDetailRow, renderAnimalYieldGroupsList, renderBeehiveListHtml, renderCardProductDetailRow, renderCostNetInfoTrigger, renderCrimstoneInstantMineBoostHtml, renderCrimstoneNodeYieldList, renderFarmPanelTabContent, renderFruitHarvestsLeftHtml, renderGoldInstantMineBoostHtml, renderNodeTierYieldList, renderOilNodeYieldList, renderPlantYieldNodeList, renderSaltNodeYieldList, renderSeaBlessedBoostHtml, renderTotalsBreakdown, renderTurnaroundBoostHtml } from "./ui.js";
 import { potionTrackFromState, digStreakTrackFromState } from "./calculator.js";
-import { dailyHarvestTrack, dailyHarvestBadgeHtml, dailyHarvestSetYield, dailyHarvestSetResolver } from "./daily_harvest.js";
+import { dailyHarvestTrack, dailyHarvestBadgeHtml, dailyHarvestSetYield, dailyHarvestSetResolver, dailyHarvestSetCookingProvider } from "./daily_harvest.js";
 
 import { harvestLogArm } from "./harvest_log.js";
 
@@ -147,6 +147,11 @@ export function farmPanelCardCatalog() {
       label: ANIMAL_DATA[n].label,
       icon: getIcon(ANIMAL_DATA[n].label)
     }));
+    if (id === "composters") return FARM_PANEL_COMPOSTER_NAMES.map(n => ({
+      id: n,
+      label: n,
+      icon: getIcon(n)
+    }));
     if (id === "cooking") return farmPanelCookingCards().map(n => ({
       id: n,
       label: n,
@@ -187,7 +192,7 @@ export function farmPanelCategoryVisible(id) {
 export function farmPanelRowCardKey(row) {
   const cat = farmPanelRowFilterCategory(row);
   let id = row.name;
-  if (row.isAnimalMerged) id = row.typeKey; else if (row.isCookingCard) id = row.cookingBuilding; else if (row.isPeteQuestCard) id = "pete";
+  if (row.isAnimalMerged) id = row.typeKey; else if (row.isComposterCard) id = row.composterName; else if (row.isCookingCard) id = row.cookingBuilding; else if (row.isPeteQuestCard) id = "pete";
   return `${cat}:${id}`;
 }
 
@@ -3940,6 +3945,7 @@ function farmPanelBuildSpiceCard(agingShed, farmActivity) {
     if (job.recipe === "Refined Salt") costFlower = saltCostFlowerForSpiceRack() * SPICE_RECIPES["Refined Salt"].saltQty; else if (job.recipe === "Salt Lick") costFlower = refinedSaltUnitCostFlower() * SPICE_RECIPES["Salt Lick"].refinedSaltQty; else if (job.recipe === "Honey Treat") costFlower = refinedSaltUnitCostFlower() * SPICE_RECIPES["Honey Treat"].refinedSaltQty + honeyCostFlowerForSpiceRack() * SPICE_RECIPES["Honey Treat"].honeyQty;
     return {
       name: outputName,
+      recipe: job.recipe,
       amount: amount,
       readyAt: typeof job.readyAt === "number" ? job.readyAt : 0,
       stampedAgerLevel: stampedAgerLevel,
@@ -4001,8 +4007,258 @@ function farmPanelBuildSpiceCard(agingShed, farmActivity) {
   };
 }
 
-function farmPanelComputeCookingCards(json) {
+const FARM_PANEL_COMPOSTER_NAMES = [ "Compost Bin", "Turbo Composter", "Premium Composter" ];
+
+const FARM_PANEL_COMPOSTER_CHAIN_LENGTH = 5;
+
+function fmtCompost(n) {
+  if (!isFinite(n)) return "—";
+  return (Math.round(n * 100) / 100).toLocaleString(undefined, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2
+  });
+}
+
+function farmPanelComposterFarmId(json) {
+  const fromInfo = Number(farmPanelGetLastInfo().id);
+  if (Number.isFinite(fromInfo) && fromInfo > 0) return fromInfo;
+  const fromJson = Number(json && json.id);
+  return Number.isFinite(fromJson) && fromJson > 0 ? fromJson : null;
+}
+
+function farmPanelComposterBoostParts(fig, count) {
+  const base = BASE_COMPOSTERS[fig.name];
+  const fertParts = [];
+  const wormParts = [];
+  const timeParts = [];
+  fig.activeBoosts.forEach(b => {
+    if (b.fertMult) {
+      fertParts.push({
+        name: b.name,
+        note: `×${b.fertMult} base`,
+        total: base.output * (b.fertMult - 1) * count
+      });
+    }
+    if (b.fertAdd) {
+      fertParts.push({
+        name: b.name,
+        note: null,
+        total: b.fertAdd * count
+      });
+    }
+    if (b.wormBaseMult) {
+      wormParts.push({
+        name: b.name,
+        note: `×${b.wormBaseMult} base`,
+        total: null
+      });
+    }
+    if (b.wormAdd) {
+      wormParts.push({
+        name: b.name,
+        note: null,
+        total: b.wormAdd * count
+      });
+    }
+    if (b.timeMult) {
+      const pct = (1 - b.timeMult) * 100;
+      timeParts.push({
+        name: b.name,
+        pct: pct
+      });
+    }
+  });
+  return {
+    fertParts: fertParts,
+    wormParts: wormParts,
+    timeParts: timeParts
+  };
+}
+
+function farmPanelComputeComposterCards(json) {
   const g = farmSyncExtractGameState(json);
+  const buildings = farmPanelField(g, "buildings");
+  if (!buildings || typeof buildings !== "object") return [];
+  const farmActivity = farmPanelField(g, "farmActivity") || {};
+  const farmId = farmPanelComposterFarmId(json);
+  const now = Date.now();
+  const cards = [];
+  FARM_PANEL_COMPOSTER_NAMES.forEach(name => {
+    const base = BASE_COMPOSTERS[name];
+    const instances = Array.isArray(buildings[name]) ? buildings[name] : [];
+    const active = instances.filter(b => b && b.coordinates && b.producing && typeof b.producing.readyAt === "number");
+    if (!base || !active.length) return;
+    const fig = computeComposterFigures(name);
+    fig.name = name;
+    const fertilizer = base.fertilizer;
+    const wormName = base.wormName;
+    const sorted = active.slice().sort((a, b) => a.producing.readyAt - b.producing.readyAt);
+    const counterKey = `${wormName} Collected`;
+    const startCounter = typeof farmActivity[counterKey] === "number" ? farmActivity[counterKey] : 0;
+    const cycles = sorted.map((inst, idx) => {
+      const items = inst.producing.items || {};
+      const fertQty = typeof items[fertilizer] === "number" ? items[fertilizer] : Number(items[fertilizer]) || fig.outputQty;
+      const remainingSec = Math.max(0, (inst.producing.readyAt - now) / 1e3);
+      const roll = farmId != null ? composterRollWorms(name, farmId, startCounter + idx, fig) : null;
+      return {
+        fertQty: fertQty,
+        readyAt: inst.producing.readyAt,
+        startedAt: inst.producing.startedAt,
+        remainingSec: remainingSec,
+        ready: inst.producing.readyAt <= now,
+        roll: roll
+      };
+    });
+    const count = cycles.length;
+    const readyCount = cycles.filter(c => c.ready).length;
+    const growing = cycles.filter(c => !c.ready);
+    const soonestSec = growing.length ? Math.min(...growing.map(c => c.remainingSec)) : null;
+    const fertTotal = cycles.reduce((s, c) => s + c.fertQty, 0);
+    const wormExact = farmId != null;
+    const wormTotal = wormExact ? cycles.reduce((s, c) => s + c.roll.worms, 0) : fig.wormAvg * count;
+    const chain = [];
+    if (wormExact) {
+      for (let i = 0; i < FARM_PANEL_COMPOSTER_CHAIN_LENGTH; i++) {
+        const r = composterRollWorms(name, farmId, startCounter + i, fig);
+        chain.push(r);
+      }
+    }
+    const costFlower = coinsToFlower(fig.ingredientCostCoins) * count;
+    const expectedFert = fig.outputQty * count;
+    const parts = farmPanelComposterBoostParts(fig, count);
+    cards.push({
+      isComposterCard: true,
+      composterName: name,
+      searchKey: name.toLowerCase().replace(/\s+/g, "-"),
+      fertilizer: fertilizer,
+      wormName: wormName,
+      count: count,
+      readyCount: readyCount,
+      soonestSec: soonestSec,
+      noEtaCount: 0,
+      fertTotal: fertTotal,
+      expectedFert: expectedFert,
+      fertMismatch: Math.abs(expectedFert - fertTotal) > 1e-9,
+      wormTotal: wormTotal,
+      wormExact: wormExact,
+      wormMin: fig.wormMin * count,
+      wormMax: fig.wormMax * count,
+      wormAvg: fig.wormAvg * count,
+      wormCounterKey: counterKey,
+      wormCounterStart: startCounter,
+      wormChain: chain,
+      cycles: cycles,
+      cycleTimeSec: fig.timeVal,
+      baseCycleTimeSec: base.timeSec,
+      reqs: fig.reqs,
+      costFlower: costFlower,
+      unitCostFlower: fertTotal > 0 ? costFlower / fertTotal : 0,
+      boostParts: parts,
+      activeBoosts: fig.activeBoosts,
+      profit: -costFlower
+    });
+  });
+  return cards;
+}
+
+function farmPanelComputeCookingCards(json) {
+  return farmPanelComputeCookingCardsFromState(farmSyncExtractGameState(json));
+}
+
+function farmPanelCookingCounterKeys(building, sl) {
+  if (building === "Fish Market") return [ `${sl.name} Processed` ];
+  if (building === "Aging Shed") return sl.fish ? [ `Aged ${sl.fish} Collected`, `Prime Aged ${sl.fish} Collected` ] : [];
+  if (building === "Fermentation Rack") return [ `${sl.name} Fermented` ];
+  if (building === "Spice Rack") return sl.recipe ? [ `${sl.recipe} Spiced` ] : [];
+  return [ `${sl.name} Cooked` ];
+}
+
+const COOKING_INSTANT_RECIPES = {
+  "Furikake Sprinkle": "Fire Pit",
+  "Surimi Rice Bowl": "Kitchen",
+  "Creamy Crab Bite": "Kitchen",
+  "Crimstone Infused Fish Oil": "Kitchen"
+};
+
+function farmPanelInstantCookEntries(g, buildings) {
+  const farmId = Number(farmPanelGetLastInfo().id);
+  if (!Number.isFinite(farmId) || farmId <= 0) return [];
+  const bumpkin = farmPanelField(g, "bumpkin");
+  const nomRaw = Math.floor(Number(bumpkin && bumpkin.skills ? bumpkin.skills["Double Nom"] : 0));
+  const nom = Number.isFinite(nomRaw) ? Math.min(Math.max(nomRaw, 0), 3) : 0;
+  const masterChefActive = isBoostActive("master_chefs_cleaver");
+  const fieryChance = cookingSkillRankValue("skill_fiery_jackpot");
+  const out = [];
+  Object.keys(COOKING_INSTANT_RECIPES).forEach(name => {
+    const building = COOKING_INSTANT_RECIPES[name];
+    if (!Array.isArray(buildings[building])) return;
+    const itemId = FOOD_KNOWN_IDS[name];
+    if (!itemId) return;
+    out.push({
+      building: building,
+      name: name,
+      key: `${name} Cooked`,
+      price: farmPanelGetMarketPriceFlower(name) || 0,
+      feeRate: (feePercent || 0) / 100,
+      amountAt: counter => {
+        let amount = 1 + (nom ? DOUBLE_NOM_FOOD_BONUS[nom - 1] : 0);
+        if (building === "Fire Pit" && fieryChance != null && fieryChance > 0 && sflPrngChance({
+          farmId: farmId,
+          itemId: itemId,
+          counter: counter,
+          chance: fieryChance,
+          criticalHitName: "Fiery Jackpot"
+        })) amount += 1;
+        if (masterChefActive && sflPrngChance({
+          farmId: farmId,
+          itemId: itemId,
+          counter: counter,
+          chance: 10,
+          criticalHitName: "Master Chef's Cleaver"
+        })) amount += 1;
+        return amount;
+      }
+    });
+  });
+  return out;
+}
+
+function farmPanelCookingLogSlots(g) {
+  const buildings = farmPanelField(g, "buildings");
+  if (!buildings || typeof buildings !== "object") return null;
+  const present = [];
+  COOKING_BUILDINGS.forEach(b => {
+    if (Array.isArray(buildings[b])) present.push(b);
+  });
+  if (Array.isArray(buildings["Fish Market"])) present.push("Fish Market");
+  const agingShed = farmPanelField(g, "agingShed");
+  if (agingShed && typeof agingShed === "object") present.push("Aging Shed", "Fermentation Rack", "Spice Rack");
+  const slots = [];
+  farmPanelComputeCookingCardsFromState(g).forEach(card => {
+    (card.slots || []).forEach(sl => {
+      const name = sl.outputName || sl.name;
+      if (!name || !(sl.amount > 0)) return;
+      slots.push({
+        building: card.cookingBuilding,
+        name: name,
+        amount: sl.amount,
+        readyAt: typeof sl.readyAt === "number" ? sl.readyAt : 0,
+        price: farmPanelGetMarketPriceFlower(name) || 0,
+        feeRate: (feePercent || 0) / 100,
+        keys: farmPanelCookingCounterKeys(card.cookingBuilding, sl)
+      });
+    });
+  });
+  const activity = farmPanelField(g, "farmActivity");
+  return {
+    slots: slots,
+    present: present,
+    activity: activity && typeof activity === "object" ? activity : null,
+    instant: farmPanelInstantCookEntries(g, buildings)
+  };
+}
+
+function farmPanelComputeCookingCardsFromState(g) {
   const buildings = farmPanelField(g, "buildings");
   const farmActivity = farmPanelField(g, "farmActivity") || {};
   const cards = [];
@@ -4371,7 +4627,8 @@ export function farmPanelComputeInProgress(json) {
     };
   });
   const cookingCards = farmPanelComputeCookingCards(json);
-  const allCards = cards.concat(animalCards).concat(cookingCards);
+  const composterCards = farmPanelComputeComposterCards(json);
+  const allCards = cards.concat(animalCards).concat(composterCards).concat(cookingCards);
   allCards.sort((a, b) => b.profit - a.profit);
   const peteQuestCard = farmPanelComputePeteQuestCard(json);
   if (peteQuestCard) allCards.push(peteQuestCard);
@@ -4606,6 +4863,7 @@ function farmPanelRenderNodeYieldBoostList(row, summary, produceIcon) {
 function farmPanelCardCategory(row) {
   if (row.isPeteQuestCard) return "pete";
   if (row.isAnimalMerged) return "animals";
+  if (row.isComposterCard) return "composters";
   if (row.isHoneyCard) return "beehive";
   const name = row.name;
   if (BASE_GREENHOUSE[name]) return "greenhouse";
@@ -4677,6 +4935,11 @@ export function farmPanelFilterCategories() {
     label: "Animals",
     name: "Animals",
     icon: getIcon("Chicken")
+  }, {
+    id: "composters",
+    label: "Composters",
+    name: "Composters",
+    icon: getIcon("Compost Bin")
   }, {
     id: "cooking",
     label: "Cooking",
@@ -4781,6 +5044,58 @@ function farmPanelRenderHoneyCard(row) {
   const boostListHtml = farmPanelRenderNodeYieldBoostList(row, boostSummary, produceIcon);
   const beehiveListHtml = renderBeehiveListHtml(row.honeyHiveDetails);
   return `\n  <div class="card animal-merged-card${isProfit ? " is-profit" : " is-loss"}${expandedCls}" data-search="honey" data-fp-category="beehive">\n    <div class="card-toggle">\n      <div class="card-name-row">\n        <span class="card-icon">${beehiveIcon}</span>\n        <div>\n          <div class="card-name">Beehive</div>\n          <div class="card-type-row">\n            <span class="card-type">${row.displayNodeCount} node${row.displayNodeCount === 1 ? "" : "s"}${tierNote}</span>\n            ${badgeHtml}\n          </div>\n          <div class="animal-fold-row">${productChipHtml}${swarmChipHtml}</div>${valueBlockHtml}\n        </div>\n      </div>\n      <div class="card-collapsed-profit">\n        <span class="harvest-stack">${dailyBadgeHtml}${statusBadgeHtml}</span>\n        <span class="chev">▾</span>\n      </div>\n      ${statusFoldHtml}\n    </div>\n    <div class="card-details">\n      <div class="animal-detail-grid">\n        ${productDetailRow}\n        <div class="animal-detail-stat"><span class="label">Market Price/Unit</span><span class="value">${fmt(row.price)} ${FLOWER_ICON}</span></div>\n        <div class="animal-detail-stat"><span class="label">Market Value</span><span class="value">${fmt(row.grossRevenue)} ${FLOWER_ICON}</span></div>\n        <div class="animal-detail-stat"><span class="label">Tax</span><span class="value">${row.feeAmount > 0 ? `-${fmt(row.feeAmount)}` : "0"} ${FLOWER_ICON}</span></div>\n      </div>\n      <div class="animal-net-row2">\n        <span class="label">Net</span>\n        <span class="value ${isProfit ? "is-profit" : "is-loss"}">${fmt(row.grossRevenue - row.feeAmount)} ${FLOWER_ICON}</span>\n      </div>\n      ${beehiveListHtml}\n      ${boostListHtml}\n    </div>\n  </div>`;
+}
+
+function farmPanelRenderComposterBoostList(row) {
+  const fertIcon = getIcon(row.fertilizer);
+  const wormIcon = getIcon(row.wormName);
+  const fertHtml = row.boostParts.fertParts.map(p => `<div class="boost-applied-row is-yield">${getBoostIcon(p.name)}<b>${escapeHtml(p.name)}</b>${p.note ? ` <span class="boost-mult-note">(${p.note})</span>` : ""} <span class="boost-total-value">+${fmtCompost(p.total)}</span>${fertIcon}</div>`);
+  const wormHtml = row.boostParts.wormParts.map(p => {
+    const valueHtml = p.total == null ? "" : ` <span class="boost-total-value">${p.total < 0 ? "-" : "+"}${fmtCompost(Math.abs(p.total))}</span>`;
+    return `<div class="boost-applied-row is-yield">${getBoostIcon(p.name)}<b>${escapeHtml(p.name)}</b>${p.note ? ` <span class="boost-mult-note">(${p.note})</span>` : ""}${valueHtml}${wormIcon}</div>`;
+  });
+  const timeHtml = row.boostParts.timeParts.map(p => `<div class="boost-applied-row is-time">${getBoostIcon(p.name)}<b>${escapeHtml(p.name)}</b> <span class="boost-mult-note">(-${fmtCompost(p.pct)}% compost time)</span></div>`);
+  const sections = [ [ "FERTILISER", fertHtml ], [ "WORMS", wormHtml ], [ "TIME REDUCTION", timeHtml ] ].filter(([, parts]) => parts.length);
+  if (!sections.length) return "";
+  const sectionsHtml = sections.map(([label, parts]) => `<div class="lib-section-title" style="margin-top:10px;">${label}</div>${parts.join("")}`).join("");
+  return `<div class="section-badge is-boost-label">⚡ Applied Boost</div>${sectionsHtml}`;
+}
+
+function farmPanelRenderComposterChainHtml(row) {
+  if (!row.wormExact || !row.wormChain.length) return "";
+  const wormIcon = getIcon(row.wormName);
+  const rows = row.wormChain.map((r, i) => {
+    const mult = r.worms !== r.baseAmount ? ` <span class="boost-mult-note">(roll ${r.baseAmount} → ${fmtCompost(r.worms)})</span>` : "";
+    const label = i === 0 ? "Next collect" : `Collect +${i}`;
+    return `<div class="animal-detail-stat"><span class="label">${label} <span class="boost-mult-note">#${r.counter}</span></span><span class="value">+${fmtCompost(r.worms)} ${wormIcon}${mult}</span></div>`;
+  }).join("");
+  return `<div class="lib-section-title" style="margin-top:10px;">WORM ROLL CHAIN</div><div class="animal-detail-grid">${rows}</div>`;
+}
+
+function farmPanelRenderComposterCard(row) {
+  const showCountdown = row.soonestSec != null && row.readyCount < row.count;
+  const statusFoldHtml = guroStatusFoldHtml("Ready", showCountdown ? row.soonestSec : null);
+  const expandedCls = farmPanelExpandedNames.has(row.searchKey) ? " expanded" : "";
+  const growingCount = row.count - row.readyCount;
+  const statusBadgeHtml = farmPanelStatusBadgeHtml(row.readyCount, growingCount, "Composting");
+  const composterIcon = getIcon(row.composterName);
+  const fertIcon = getIcon(row.fertilizer);
+  const wormIcon = getIcon(row.wormName);
+  const wormPrefix = row.wormExact ? "+" : "~+";
+  const productChipsHtml = `\n      <span class="animal-produce-chip">\n        <span class="produce-yield">+${fmtCompost(row.fertTotal)}</span>\n        <span class="produce-icon">${fertIcon}</span>\n        <span class="produce-name">${escapeHtml(row.fertilizer)}</span>\n      </span>\n      <span class="animal-produce-chip">\n        <span class="produce-yield">${wormPrefix}${fmtCompost(row.wormTotal)}</span>\n        <span class="produce-icon">${wormIcon}</span>\n        <span class="produce-name">${escapeHtml(row.wormName)}</span>\n      </span>`;
+  const valueBlockHtml = `<div class="guro-value-block"><div class="guro-market-value"><span class="guro-market-label">Ingredient cost</span><span class="guro-market-amount">${fmtAnimal(row.costFlower)} ${FLOWER_ICON}</span></div><div class="guro-net-line"><span class="guro-net-label">Per ${escapeHtml(row.fertilizer)}</span><span class="guro-net-amount">${fmtAnimalCost(row.unitCostFlower)} ${FLOWER_ICON}</span></div></div>`;
+  const fertDetailRow = `\n        <div class="animal-detail-stat is-yield-row animal-yield-block">\n          <span class="label">${fertIcon} ${escapeHtml(row.fertilizer)}</span>\n          <div class="animal-yield-sublines">\n            <div class="animal-yield-subline"><span class="sublabel">Yield</span><span class="value">${fmtCompost(row.fertTotal)}</span></div>\n            <div class="animal-yield-subline"><span class="sublabel">Cost</span><span class="value">${fmtAnimal(row.costFlower)} ${FLOWER_ICON}</span></div>\n          </div>\n        </div>`;
+  const wormRangeText = row.wormMin === row.wormMax ? fmtCompost(row.wormMin) : `${fmtCompost(row.wormMin)}–${fmtCompost(row.wormMax)}`;
+  const wormYieldText = row.wormExact ? fmtCompost(row.wormTotal) : `~${fmtCompost(row.wormTotal)}`;
+  const wormDetailRow = `\n        <div class="animal-detail-stat is-yield-row animal-yield-block">\n          <span class="label">${wormIcon} ${escapeHtml(row.wormName)}</span>\n          <div class="animal-yield-sublines">\n            <div class="animal-yield-subline"><span class="sublabel">${row.wormExact ? "Rolled" : "Average"}</span><span class="value">${wormYieldText}</span></div>\n            <div class="animal-yield-subline"><span class="sublabel">Range</span><span class="value">${wormRangeText}</span></div>\n          </div>\n        </div>`;
+  const reqHtml = (row.reqs || []).map(r => `<span class="spice-yield-chip">${getIcon(r.item)}${fmtCompost((r.qty || 0) * row.count)}</span>`).join("");
+  const reqRow = reqHtml ? `<div class="animal-detail-stat"><span class="label">Ingredients (${escapeHtml(previewSeason)})</span><span class="value">${reqHtml}</span></div>` : "";
+  const mismatchNote = row.fertMismatch ? `<div class="animal-detail-stat"><span class="label">Locked at start</span><span class="value">${fmtCompost(row.fertTotal)} <span class="boost-mult-note">(current boosts give ${fmtCompost(row.expectedFert)})</span></span></div>` : "";
+  const timeRow = `<div class="animal-detail-stat"><span class="label">Compost Time</span><span class="value">${farmPanelFormatSpiceDuration(row.cycleTimeSec)}${row.cycleTimeSec !== row.baseCycleTimeSec ? ` <span class="boost-mult-note">(base ${farmPanelFormatSpiceDuration(row.baseCycleTimeSec)})</span>` : ""}</span></div>`;
+  const counterRow = row.wormExact ? `<div class="animal-detail-stat"><span class="label">${escapeHtml(row.wormCounterKey)}</span><span class="value">${row.wormCounterStart}</span></div>` : "";
+  const boostListHtml = farmPanelRenderComposterBoostList(row);
+  const chainHtml = farmPanelRenderComposterChainHtml(row);
+  return `\n  <div class="card animal-merged-card is-profit${expandedCls}" data-search="${row.searchKey}" data-fp-category="composters">\n    <div class="card-toggle">\n      <div class="card-name-row">\n        <span class="card-icon">${composterIcon}</span>\n        <div>\n          <div class="card-name">${escapeHtml(row.composterName)}</div>\n          <div class="card-type-row">\n            <span class="card-type">${row.count} batch${row.count === 1 ? "" : "es"}</span>\n          </div>\n          <div class="animal-fold-row">${productChipsHtml}</div>${valueBlockHtml}\n        </div>\n      </div>\n      <div class="card-collapsed-profit">\n        <span class="harvest-stack">${statusBadgeHtml}</span>\n        <span class="chev">▾</span>\n      </div>\n      ${statusFoldHtml}\n    </div>\n    <div class="card-details">\n      <div class="animal-detail-grid">\n        ${fertDetailRow}\n        ${wormDetailRow}\n        ${mismatchNote}\n        ${reqRow}\n        ${timeRow}\n        ${counterRow}\n      </div>\n      ${chainHtml}\n      ${boostListHtml}\n    </div>\n  </div>`;
 }
 
 function cookingFoodOrFishIcon(name) {
@@ -4959,6 +5274,8 @@ function farmPanelResolveHarvestPending(groupKey, pend) {
 
 dailyHarvestSetResolver(farmPanelResolveHarvestPending);
 
+dailyHarvestSetCookingProvider(farmPanelCookingLogSlots);
+
 function farmPanelDailyFarmId() {
   const stateId = farmPanelGameState && farmPanelGameState.id;
   return String(stateId || farmPanelGetLastInfo().id || "");
@@ -4975,6 +5292,7 @@ function farmPanelDailyHarvestKind(name) {
 
 export function farmPanelRenderInProgressRow(row) {
   if (row.isAnimalMerged) return farmPanelRenderAnimalMergedCard(row);
+  if (row.isComposterCard) return farmPanelRenderComposterCard(row);
   if (row.isHoneyCard) return farmPanelRenderHoneyCard(row);
   if (row.isCookingCard) return farmPanelRenderCookingCard(row);
   if (row.isPeteQuestCard) return farmPanelRenderPeteQuestCard(row);
