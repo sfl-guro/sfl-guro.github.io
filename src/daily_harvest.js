@@ -38,7 +38,8 @@ function pruneStore(store) {
           inv: rec.inv || {},
           act: rec.act || {},
           power: rec.power || {},
-          syncAt: rec.syncAt || 0
+          syncAt: rec.syncAt || 0,
+          cook: carryCook(rec.cook)
         };
         changed = true;
       }
@@ -98,6 +99,135 @@ const RESOLVABLE_GROUPS = {
 const ACT_KEY_RE = /^(.+ Tree Chopped|.+ Rock Mined)$/;
 
 let pendResolver = null;
+
+let cookProvider = null;
+
+const LOG_NAME_RE = /^[A-Za-z0-9 '&.\-]{1,40}$/;
+
+export function dailyHarvestSetCookingProvider(fn) {
+  cookProvider = typeof fn === "function" ? fn : null;
+}
+
+function carryCook(c) {
+  return {
+    prev: c && c.prev && typeof c.prev === "object" ? c.prev : {},
+    ctr: c && c.ctr && typeof c.ctr === "object" ? c.ctr : {},
+    totals: {},
+    known: !!(c && c.known)
+  };
+}
+
+function cookCounterNow(activity, key) {
+  const v = activity ? Number(activity[key]) : NaN;
+  return Number.isFinite(v) && v > 0 ? v : 0;
+}
+
+function trackCooking(g, rec, fresh, now) {
+  if (!cookProvider) return;
+  let res;
+  try {
+    res = cookProvider(g);
+  } catch (e) {
+    return;
+  }
+  if (!res || !Array.isArray(res.slots) || !Array.isArray(res.present)) return;
+  const activity = res.activity && typeof res.activity === "object" ? res.activity : null;
+  const cook = rec.cook || (rec.cook = carryCook(null));
+  const start = utcDayStart(now);
+  const present = new Set(res.present);
+  const cur = {};
+  const seen = {};
+  res.slots.forEach(sl => {
+    if (!sl || !sl.name) return;
+    const base = `${sl.building}|${sl.name}|${sl.readyAt}`;
+    seen[base] = (seen[base] || 0) + 1;
+    cur[`${base}|${seen[base]}`] = {
+      b: sl.building,
+      name: sl.name,
+      amount: sl.amount,
+      readyAt: sl.readyAt,
+      price: sl.price || 0,
+      fee: sl.feeRate || 0,
+      k: Array.isArray(sl.keys) ? sl.keys : []
+    };
+  });
+  const prevCtr = cook.ctr && typeof cook.ctr === "object" ? cook.ctr : null;
+  if (cook.known) {
+    const gone = Object.keys(cook.prev).filter(key => !cur[key]).map(key => cook.prev[key]).filter(p => p && present.has(p.b) && typeof p.amount === "number" && p.amount > 0);
+    gone.sort((a, b) => (a.readyAt <= now ? 0 : 1) - (b.readyAt <= now ? 0 : 1) || a.readyAt - b.readyAt);
+    const budget = {};
+    gone.forEach(p => {
+      const keys = Array.isArray(p.k) ? p.k : [];
+      const gated = !!(activity && prevCtr && keys.length && keys.every(k => typeof prevCtr[k] === "number"));
+      if (gated) {
+        const id = keys.join("|");
+        if (budget[id] === undefined) budget[id] = keys.reduce((sum, k) => sum + Math.max(0, cookCounterNow(activity, k) - prevCtr[k]), 0);
+        if (budget[id] <= 0) return;
+        budget[id] -= 1;
+        if (fresh && !(p.readyAt >= start && p.readyAt <= now)) return;
+      } else if (!(p.readyAt <= now) || fresh && !(p.readyAt >= start)) {
+        return;
+      }
+      const t = cook.totals[p.name] || (cook.totals[p.name] = {
+        a: 0,
+        c: 0,
+        p: 0,
+        f: 0
+      });
+      t.a += p.amount;
+      t.c += 1;
+      if (p.price > 0) {
+        t.p = p.price;
+        t.f = p.fee || 0;
+      }
+    });
+  }
+  const instant = Array.isArray(res.instant) ? res.instant : [];
+  if (cook.known && !fresh && activity && prevCtr) {
+    instant.forEach(e => {
+      if (!e || !e.key || typeof e.amountAt !== "function" || typeof prevCtr[e.key] !== "number") return;
+      const from = Math.floor(prevCtr[e.key]);
+      const to = Math.min(Math.floor(cookCounterNow(activity, e.key)), from + 500);
+      for (let n = from; n < to; n++) {
+        const amount = e.amountAt(n);
+        if (!(amount > 0)) continue;
+        const t = cook.totals[e.name] || (cook.totals[e.name] = {
+          a: 0,
+          c: 0,
+          p: 0,
+          f: 0
+        });
+        t.a += amount;
+        t.c += 1;
+        if (e.price > 0) {
+          t.p = e.price;
+          t.f = e.feeRate || 0;
+        }
+      }
+    });
+  }
+  const kept = {};
+  const ctr = {};
+  Object.keys(cook.prev).forEach(key => {
+    const p = cook.prev[key];
+    if (!p || present.has(p.b)) return;
+    kept[key] = p;
+    (Array.isArray(p.k) ? p.k : []).forEach(k => {
+      if (prevCtr && typeof prevCtr[k] === "number") ctr[k] = prevCtr[k];
+    });
+  });
+  if (activity) Object.keys(cur).forEach(key => {
+    cur[key].k.forEach(k => {
+      ctr[k] = cookCounterNow(activity, k);
+    });
+  });
+  if (activity) instant.forEach(e => {
+    if (e && e.key) ctr[e.key] = cookCounterNow(activity, e.key);
+  });
+  cook.prev = Object.assign(kept, cur);
+  cook.ctr = ctr;
+  cook.known = true;
+}
 
 const TREE_BASE_RECOVERY_MS = 7200 * 1e3;
 
@@ -425,7 +555,8 @@ export function dailyHarvestTrack(g, farmId) {
     act: old && old.act ? old.act : {},
     flow: old && old.flow ? old.flow : {},
     power: old && old.power ? old.power : {},
-    syncAt: old && old.syncAt ? old.syncAt : 0
+    syncAt: old && old.syncAt ? old.syncAt : 0,
+    cook: carryCook(old && old.cook)
   };
   const prevSyncAt = rec.syncAt || 0;
   woodShiftMs = treePermanentShiftMs(g);
@@ -631,6 +762,7 @@ export function dailyHarvestTrack(g, farmId) {
       st.lastAt = stamps.length ? Math.max(...stamps) : now;
     }
   });
+  trackCooking(g, rec, fresh, now);
   rec.prev = groups;
   rec.power = Object.assign({}, knownPower);
   Object.keys(POWER_KINDS).forEach(skill => {
@@ -858,6 +990,12 @@ export function dailyHarvestTotals(farmId) {
     });
     const gm = yieldMeta[groupKey];
     addLogTotal(totals, groupKey, logKind, amount, roundsFromStats(st).rounds, gm && gm.price, gm && gm.feeRate);
+  });
+  const cookTotals = rec.cook && rec.cook.totals ? rec.cook.totals : {};
+  Object.keys(cookTotals).forEach(name => {
+    const t = cookTotals[name];
+    if (!t || !LOG_NAME_RE.test(name)) return;
+    addLogTotal(totals, name, "cooking", t.a, t.c, t.p, t.f);
   });
   return {
     day: rec.day,

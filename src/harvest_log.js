@@ -24,7 +24,8 @@ const KIND_ORDER = {
   fruit: 2,
   greenhouse: 3,
   animal: 4,
-  beehive: 5
+  beehive: 5,
+  cooking: 6
 };
 
 let pendingFarm = "";
@@ -217,7 +218,7 @@ function dayHtml(entry, number) {
     const net = netOf(e);
     if (net !== null) totalNet += net;
     const value = net !== null ? `<span class="dh-hlog-val"><span class="dh-hlog-price">(${fmtPrice(e.p)}${flowerHtml()}/U)</span><span class="dh-hlog-net">(+${fmtFlower(net)}${flowerHtml()})</span></span>` : "";
-    const count = e.c > 0 ? `<span class="dh-hlog-count"><span class="dh-hlog-h" role="button" tabindex="0" data-dh-h="1" aria-label="Harvested">H<span class="dh-hlog-tip">Harvested</span></span>${e.c}x</span>` : "";
+    const count = e.c > 0 ? `<span class="dh-hlog-count"><span class="dh-hlog-h" role="button" tabindex="0" data-dh-h="1" aria-label="${e.k === "cooking" ? "Collected" : "Harvested"}">${e.k === "cooking" ? "C" : "H"}<span class="dh-hlog-tip">${e.k === "cooking" ? "Collected" : "Harvested"}</span></span>${e.c}x</span>` : "";
     return `<div class="dh-hlog-row"><span class="dh-hlog-amt">+${fmtAmount(e.a)}</span><span class="dh-hlog-ico">${getIcon(name)}</span><span class="dh-hlog-name">${esc(name)}</span>${value}${count}</div>`;
   }).join("");
   const total = totalNet > 0 ? `<div class="dh-hlog-gain"><span>Total Gained:</span><span class="dh-hlog-gain-val">+${totalNet.toLocaleString("en-US", {

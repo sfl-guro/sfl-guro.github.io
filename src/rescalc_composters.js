@@ -241,8 +241,10 @@ function effectParts(b) {
   const out = [];
   const time = [];
   const worm = [];
+  if (b.fertMult) out.push(`×${n2(b.fertMult)} base fertiliser`);
   if (b.fertAdd) out.push(`${b.fertAdd > 0 ? "+" : ""}${n2(b.fertAdd)} fertiliser`);
   if (b.timeMult) time.push(`×${b.timeMult} time`);
+  if (b.wormBaseMult) worm.push(`×${n2(b.wormBaseMult)} base worms`);
   if (b.wormAdd) worm.push(`${b.wormAdd > 0 ? "+" : ""}${n2(b.wormAdd)} worms`);
   return {
     output: out,

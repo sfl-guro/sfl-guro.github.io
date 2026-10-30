@@ -466,6 +466,8 @@ export function renderBoostAppliedList(activeBoosts, itemName, opts) {
     if (b.feedMult) otherParts.push(`×${b.feedMult} feed`);
     if (b.feedMultAll) otherParts.push(`×${b.feedMultAll} feed`);
     if (b.perUseCostFlower) otherParts.push(`${fmt(b.perUseCostFlower)} ${FLOWER_ICON}/use`);
+    if (b.fertMult) otherParts.push(`×${b.fertMult} base fertiliser`);
+    if (b.wormBaseMult) otherParts.push(`×${b.wormBaseMult} base worm`);
     if (b.fertAdd) otherParts.push(`+${fmt(b.fertAdd)} fertiliser/cycle`);
     if (b.wormAdd) otherParts.push(`+${fmt(b.wormAdd)} worm/cycle`);
     if (b.fertPotencyMult) otherParts.push(`×${b.fertPotencyMult} ${b.appliesFertilizer || "fertiliser"} effect`);
@@ -922,6 +924,8 @@ export function renderBoostPanel() {
       if (b.flowerTimeMult) parts.push(`×${b.flowerTimeMult} flower time`);
       if (b.flowerExtraChance) parts.push(`${Math.round(b.flowerExtraChance * 100)}% chance +1 flower`);
       if (b.flowerExtraFlat) parts.push(`+${fmt(b.flowerExtraFlat)} flower guaranteed`);
+      if (b.fertMult) parts.push(`×${b.fertMult} base fertiliser`);
+      if (b.wormBaseMult) parts.push(`×${b.wormBaseMult} base worm`);
       if (b.fertAdd) parts.push(`+${fmt(b.fertAdd)} fertiliser/cycle`);
       if (b.wormAdd) parts.push(`+${fmt(b.wormAdd)} worm/cycle`);
       if (b.fertPotencyMult) parts.push(`×${b.fertPotencyMult} ${b.appliesFertilizer || "fertiliser"} effect`);
@@ -5392,7 +5396,7 @@ const VIEW_URL_SLUGS = {
 
 const IN_PROGRESS_ROUTE_PREFIX = "in_progress";
 
-const IN_PROGRESS_FILTER_IDS = new Set([ "all", "crops", "resources", "greenhouse", "beehive", "fruits", "animals", "cooking", "pete" ]);
+const IN_PROGRESS_FILTER_IDS = new Set([ "all", "crops", "resources", "greenhouse", "beehive", "fruits", "animals", "composters", "cooking", "pete" ]);
 
 function setInProgressRouteUrl(filter, history_ = "push") {
   if (history_ === "none" || typeof window === "undefined" || !window.history) return;

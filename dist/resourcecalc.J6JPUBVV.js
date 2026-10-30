@@ -168,7 +168,7 @@ import {
   toast,
   updateCalcSummary,
   updateSkillSaveBarState
-} from "./chunk.R5EAGT7E.js";
+} from "./chunk.OAFR4BC4.js";
 import "./chunk.LPEVZJ4B.js";
 import "./chunk.VR6FV3KR.js";
 import "./chunk.AS3VMXOQ.js";
@@ -7204,8 +7204,10 @@ function effectParts7(b) {
   const out = [];
   const time = [];
   const worm = [];
+  if (b.fertMult) out.push(`\xD7${n210(b.fertMult)} base fertiliser`);
   if (b.fertAdd) out.push(`${b.fertAdd > 0 ? "+" : ""}${n210(b.fertAdd)} fertiliser`);
   if (b.timeMult) time.push(`\xD7${b.timeMult} time`);
+  if (b.wormBaseMult) worm.push(`\xD7${n210(b.wormBaseMult)} base worms`);
   if (b.wormAdd) worm.push(`${b.wormAdd > 0 ? "+" : ""}${n210(b.wormAdd)} worms`);
   return {
     output: out,

@@ -1,3 +1,4 @@
+import { DIG_CHAPTER_STORE } from "./dig_chapter_store.js";
 import { ICON_DATA } from "./icon_data.js";
 import { digDeduce } from "./dig_solver.js";
 import { __set_farmPanelInProgressCategoryFilter, __set_farmPanelSyncInFlight, farmPanelAOEExtent, farmPanelCheckTurtleAOEBonus, farmPanelComputeEconomics, farmPanelComputeExactCrimstoneYield, farmPanelComputeExactCropYield, farmPanelComputeExactFlowerYield, farmPanelComputeExactFruitYield, farmPanelComputeExactGreenhouseYield, farmPanelCropTierLabel, farmPanelDebugFindShapes, farmPanelDetectNodeTier, farmPanelField, farmPanelGameState, farmPanelGetCollectiblePosition, farmPanelGetCropGrowDurationMsFromSync, farmPanelGetCostPerUnitFlower, farmPanelGetLastInfo, farmPanelGetMarketId, farmPanelGetMarketPriceFlower, farmPanelGnomeAOEBonus, farmPanelGnomeComboPresent, farmPanelGrowTimeSec, farmPanelIsWithinTurtleAOE, farmPanelLoadCachedGameState, farmPanelMarkScrollActivity, farmPanelMergeAuthoritativeResourceData, farmPanelSaveGameState, farmPanelSaveLastInfo, farmPanelSyncInFlight } from "./inprogress.js";
@@ -87,6 +88,9 @@ export const IMAGE_ICONS = {
   "NFT Pet": "data:image/webp;base64,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",
   "Camel Bone": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA0AAAAQBAMAAAA/jegKAAAAIGNIUk0AAHomAACAhAAA+gAAAIDoAAB1MAAA6mAAADqYAAAXcJy6UTwAAAAPUExURQAAAMKFafDhxezCn////4iy9o4AAAABdFJOUwBA5thmAAAAAWJLR0QEj2jZUQAAAAd0SU1FB+gHHwUPDXN7Cg8AAABASURBVAjXPYzRDQAhDELpBmed4NoJtPvvZkJRfl6AAADYB8r/0axg4pHkzGqf6hdh3T7eOEjz1InGu715acazAzJfBNFf6G8IAAAAJXRFWHRkYXRlOmNyZWF0ZQAyMDI0LTA3LTMxVDA1OjE1OjEzKzAwOjAwIDsJOAAAACV0RVh0ZGF0ZTptb2RpZnkAMjAyNC0wNy0zMVQwNToxNToxMyswMDowMFFmsYQAAAAodEVYdGRhdGU6dGltZXN0YW1wADIwMjQtMDctMzFUMDU6MTU6MTMrMDA6MDAGc5BbAAAAAElFTkSuQmCC",
   "Otter Pebble": "data:image/webp;base64,UklGRqgAAABXRUJQVlA4TJsAAAAvDoADED+gqG0jNlcS4w7A/aeaRlLg7Fm4A3osvDUK2rZhQ4XS/SsQSALbfrEAQOGRPF1Vqq3X1/4NXNW2YzU3gwGCglfmH+hDAIQKmDW3BlikEup/YSKi/wnMjwfu8/9rAMwR8QZQrggm9JUkDb0Hr4+hHMbsTNtubr6ntcbj/D7TUPMr00Q3juXoRAd3N5VWx3HsFNBbAKiqAAA=",
+  "Otty the Otter": "data:image/webp;base64,UklGRgQBAABXRUJQVlA4TPgAAAAvFcAFEF+gtpGk5iP/Ed4T0391dGKmto3/PwqIYbdqoH8KmwBKZFup+NNIRFCjY3X/3QW5AIJsm4qN/mAPAPBcV5NCxWq7/1fbcu3BOV5s/b6tBLi1bauNrqkDSr0E+V//yZB6vWtMPdiAIRw0xYIGBmpQOiXqaWqI6P8EAIJ6d2rVQUValuPplFjK99OyVXFKvlvKamIsWbI0nLLL2fa+A0DfB6eXr+enyqnkXXooOsbm61hkHcC9n8r0N9t1AC+yPRa7XYyhJ++K7DAOm4GnbLPD7m0SBJ5MZCqnMAgCpdyUhuffUt+NQN4oIkEwDOqb+AeAGlQNAA==",
+  "Mining Drill": "data:image/webp;base64,UklGRmYBAABXRUJQVlA4TFoBAAAvIcAGENfANrJtJd81dg1/jPafQUxKCQwdWBtsI9tW8t0dhw5+zWgbRFTBUAAx+Y9gGgBgkrmPG/wA/m/eqEQucHcIsm0qNvqDPQAA/v+/a6NMdPf0LRUEGm46US8G/GSFrJyscTkH67n7HOU5pp5Af0fDdxBjYi+dJkvrNZO5sh3Kcdee8jJAjGS7bcP0CeYcJPXfqIEP8NMVvBfRf0du20gSFfcsp35HZm0h8TKe5NsrF/98i4tZq5tG/zmihWWbbhpGcsDWiWUTNJKBE8PGNVx/7Pd+8Fm7BYQjPXiubiW9bgsHhvoDYE06SS/ofrNT9aQjveRikq5GEflKZJZn1Msj6Ky+EXUPBeq71m7PdU75epf4AUbqOylhgM03v74XZ2mNqUf5wfyBGdTfJf0J3iBZkoKqtgT+SVU1bENk8g3CsscjK6nIeAGQPJJIv4Gi4psQ9w8DYB4A",
+  "Clover Coin": "data:image/webp;base64,UklGRsIAAABXRUJQVlA4TLYAAAAvDsACEGegJgCQhgYbbj4uKlAfA3hbxRpGIkm5Au9/8JTBUR+FogaKIklqLgfyEwf414IMRECQbVOx0R/sAYD//xGnYi8l2mZSYSXuarnOLPeetwZOa217mvf8FoXEcX6NZAWYoDNAHaBt0AbotiRRENUcLmWp758iov8TALypBGCvZPkA0A5up0jYL6WZXR9CoFs3cr+kZng7GAkcRzjrm7E0H8bnivYaU8+BfjjA/1RjgMpFAA==",
   Coral: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA0AAAAMCAYAAAC5tzfZAAAAAXNSR0IArs4c6QAAALZJREFUKJGNkbENwjAQRd+hKA1FlAHYIGnYgEkyRjxCPAaTeAMaswEDWC5o0oQiOssyMeI6/7v///2zUKnlNm8lZpwVAKkNjV2PjwGAaWh5vM74GDDOSqOEseu5Xt4A3J9rIishr1P+0OY0tPgYGLs+9dQlkYyzoquUqvlain1lytXVoTyGKGEa2kMnIGXVvHJE8DFQE/Ex0JRHKNcpMeOsNHvAeYM1gb8+FtidcuCfqg7nbqXoB5VzYtwE2DiiAAAAAElFTkSuQmCC",
   "Clam Shell": "data:image/webp;base64,UklGRrYAAABXRUJQVlA4TKoAAAAvDMADEFegppEU6NpDAQbwbwENBAe0rxyzbZtU/awH9Pau3IDY2BCDmgAgGEFUUVgSZfZ85z8AkM3jBCv5q5rSeb9HSNTIVAxua21bky/aIws4lA5tPAtkABx67SmZIDACczLE+0T0fwIsykBSvyv5FjUbkFg/zqDjtwHkF0kGCjdVRnUwHZ86B7apP9LFhvWP7zgsXj/eSXjtd6WbNy8zWHvzv97kjwnAEw==",
   Pipi: "data:image/webp;base64,UklGRmQAAABXRUJQVlA4TFgAAAAvCcABEC+gppEUOHd+XqjoIJO2Tfaqg7mYjSkaWYBpcBb7oyiQ5j8A/rvTNWIxBwWNJLWS7h38AwaKAjgQUBWUiP4HzAz6/pHRecPgZiiLzWtlFkQ6QJMA",
@@ -554,6 +558,7 @@ export const IMAGE_ICONS = {
   "King of Bears": "data:image/png;base64,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",
   "Honeycomb Shield": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAAA7CAYAAADLjIzcAAACZUlEQVR4nO2asWsTURzHP5daunToUKsBMXTLFhAcSoeQP0Gw4OKQP6BOpZOjU1bBNWsggpPz4ZBJKHQrLlIoRtMMAYVaxZ7Ti+9e7929u5zmnf19pnC5/Hjf3/3ue993BARBEARBEARBEARBEG4YwbIXsCiX56dR3t+s3W5UXrcgCIIgCIIgCIuRe1Nw0N6JeoNm7Nh0NGPv+SkP76wB8P7LJQDvTo6833Q4L/CgvRMB9AZNpqMZAF8/XACw3a1Xtgk1l5PSxAN87I/Z3N1g+KIxF64a0W4+yL1d/ZdkNkAJsIlXVLUJqeOpFh6GrVTxOtvdOmfDCU9fja995+PtcMs8cDXuxq7WdDSj0zkmDFucDSesrq/w89uvxGK6+DBsYdaBRrT1+I1XTYgt5mrcjdIMTjUBuNYEU7ytDoBPTZh7QJJ4iN/bnc4x9/a2AFhdX5mfkyVerwMwef3IG08IwC5ex5wEnSzxSXXAj0kIXMQr9CutHF6R9ZQw6/jShPkE2O5tRZbB9V5+pjdoWj3CrANw/9nb5U+A+pDWBFeDy2qCb+JBM8FavR8sanCH+3c5fHKSapTgj3hICEJmDihicGoSzDrgl3iwJEEzuuZNguppkYRvabD0JGh7VP5x/aOy1l4KpSZB/bwblwTTxOt14D9Mglnik+qAH5NQOAmaFDFKWH4TSkuCWR5h1gE/HomlJkHXLTP4IR5KToIuW2bwRzz8pSRo2zKDX+LB8bV4EaME/8Qm4fRavFbvB5u7G3z/9CM21iZVEw+ODQC7RyiqKB5yNACyjRKqJR4K/lEyySiheuIBfgNyy6T7Tw3TqwAAAABJRU5ErkJggg==",
   "Turd Topper": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADQAAABACAYAAABVy1Q8AAADu0lEQVR4nO2aPWhTURiGnzTBgokYuoSU1lnBoUoVSoeAFir+7LW1ij+T6KBGxEEHHaT0R0ERHNRBq4NjUSztkkE6CFpc4uBkg5qlRIyFSkoc7Dk5N7m59zRNz82NfaGkzTm99zz3+773Ozc3sKlNbWpTigI6k4a69xfj4SBDx3bZju9JPtE6jgm5LkTAAHz/vUI8HKSvK2aZE+tsAxoDrMVtQiZfAOB9dtkWBiC7sAjAx7EzxTqvb80KOQ0Ode8vwj+YfbFWmXICQEhEqBFUNUWSiZ7i998rAJbIOC0+u7DInemvpD5/8Cz1bE+cTPQU4V/NZPIFOiIhRB05SVyA5MBuJqfSjKXmjINVpJyAARjubefZu2+yjtyUyRe43r8DYDWiPUXTUFVNQaTYcG87HZEQmXzB8qNKvNcRCXleTxUREtasKjmwG4C2wXEAFl9cAUrmEOtss4yVm4ZJyXQQJqDWjGrRu6495cjRU/xZXmJm5hXpkdNVx+4fPwyUakpcIBPpFxIw4g2RXvFwkNn5bGnRq69bWrcCOI5VUzKx8TUVUGGgdFVVPU70AZC9chVARkDVxZdvAIiNjwJwNjVLJl+Q/WtyKg1sfJQqaigeDkq7LldsfJT+12/piFT245MHDgIwfeQQgExdkbZ9XTFLVDdKtjuFeDjIcG+7/Dsd/yF/v3euy/GAaX5Y5pk2iJCdq5Xv11Q301E5RHZh0Uh0YDVC5VCz81nHTehaJWDs6rPeColcr7aIeskEDCh9KLFz74Zv/U1sWmVo9nbvtAxEolHXfw5s2aZ1klsTI8b2c643eH5T0wGFblw4L2snn8t5uJT6qAXsQfwKZ0k5HSNodLVAc4AISTu9dGLQtg85wTaibcs+dPf5C1c4P8jWtlU4v5lD0/Uh19wW6WdXSzo1ZLJ+QCNCIv1qST3TMODy2Xa5BJSbzXsBIqQFJAAEkHgNtJbucSYeP/L8UQpUqSF1f2enEpB9DXkJZznxzcvXtPpP/mcOgOLyL8d5qv2bkjQFXRiAyPao1jwvGnTNfUgXyrQkUP5nTqaSriLRqKvjmY5SXXYKjbRbrwBaa5SEdKJlQhJItdpaoaAE5hWcJUL17h+RaNS4dVeknIBaT5S8lK0p+Bmq6e6HqgK1fPkE+C9KjhHyI5Rryq0H6vaDh95tTnXkh0hp3eCJKAEsucz14vs9qprO5db0mUI1qc9jx1L1OGLtqgnI7oFyo0gbqJEhVDVdDf0/QF7bb61yjNBYai7gNzBtUzD1XZ316i/hb32tR+qhmAAAAABJRU5ErkJggg==",
+  "Straw House": "data:image/webp;base64,UklGRnoBAABXRUJQVlA4TG4BAAAvH8AJEIegJgCQhg7koH+LVYB/6aXfqqEmstWIs8a/FxzkrOIBASmZrzSSreZ+Ikh8qoT+a8F+hyPItqnY6A/2AILj/AHcABIH0FYf2FWYT+sm+h3GoPnE+ObLrO4Ay7bVuo0JJxSpUcz8hyuB7PTxH9F/Bm4bKUqWerjwi2MrxeOmIBJTkXsDVVk1F1G9MbJ9YxcDiJBca5EIqKNHBNg+GEQ8IFWTUK4DGmKzgNj9YAKGKHcDKqvGJyHkaZ8G++9BPg3y6yH2QUSLIjWwC6Zb7TqEtj1NpZzLMwW4BtJrGNIU1VW8qHkmNMEUvIFC9419jWiOaUfprOcrZQqk6fSz95bsawKXU+j9PE+vNsfB8ebVc2G5tTaKzcpUMriZOTZexWFlKgXDMWZ9J2fJU8l0c9YD4/Ue39Pxfo0ylT6pL/bJd3LS65vb1/bU/a+PuDmLUShT8QLGNRh+8cjXPpSppHCWRzav7R45/4LHpxw=",
   "Soil Krabby": "data:image/webp;base64,UklGRgQBAABXRUJQVlA4TPcAAAAvEkAEEG/AJgCANARwt0tfTU01KkxrqAkANOEmBh9z7WB5FnoVXIkkqRHy1hQSf0Tl/7/CQpBtU7HRH+wBAPz/fvRq88XYZjKCfdWVNIZIZBsXylm+XOOD21rb1uQ9J4KM4a5flw7pXKJ7YCOwgHY5hv8lFdTOBLZNhojo/wQAgCLAW1logkdHXRmqx1BfGRMBgDnTV8bSBZCaaVN9EQ0CqeF1fBtFgzCtwel9GToWzJRcO9flyB4pS67VarITCqb2TbncrbFU0A7t5XLXSVmcbWUtxQ0xizMZC0kpizEU7H9KSn0YAfRhZP8lDigQcUQEAEQoEAcAAA==",
   "Hornet Mask": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADYAAABACAYAAABRPoQBAAAD+0lEQVR4nO2aQYgTVxjHfxmEveyyYwjNplKqS5Gcai4uFC3bw1AqBdGbiBdBEEq3oEi0FCvSQiGUllIpbKF4sUXQgwqlCDkouhW2pWz3lMOi0EXXXULIkqXFi+khfG/nTWaSWZOZlyzzh5DkvTdv3m/+337zvdlAokSJEiVKlChRoh6V8mt8uXKy2evEVu6q79xxyfI2rN082jMU9Ofi9CINbO3m0WbmgN23yU3CKbB+Q4lMwbWF4nZRCoLdmj70hH27xvn76bp6B7j/2x41Ju8sA1Apv6G+y2fRJ6dq2hz7do1z5dfbkSaXro4JjLx/Nm1TPFYJfYLisUrbHPIepVKVotNMT43hdWz60BNAd0cW6hSylBdWKV3Pd5xcxr5/YSeweQt4t/BeM2rXOjrmhQIoXc9TXljFKWQ15/LOsgpL0C+AVw8W7qWidk2BVefqWocfFLQAijMTCs5PbqjizIQGLHqwcC/Sv7FUpeg0AdJTY6oxKO3nnWUyuUmqK495eLk1vvT9cy0kxcXizAQABy81yOQmAfi9/GNs1YhvKHrd8yqTm+TgpQawCSAqzkxoUKakwGrz+iKC4KorjwEdzm+sSSgAK18qp37+dy/QDtdNmdykOqY6V6c6V6c23zAOBWBd/PijJoAfXDfXRLX5hnoFyXtM1LIANup1wB/OLUkY0FqoLDY9NaZefpJkE2fdaAGM2rZqmH32WuDgTkVy5oAd2P/wcnsBELWsL6780DEFe8PR7Rq03HIvOj01xp0P9TnihgLXDvrMieNamJx+fS3w3iZJAmDvGb3g9fZ7wePaWfueRCA/PfKf1t6PK28UDFpwXteg3Tlvu18mHRjHROKcF7A23+D0nRr7syMA/LH6gtnDaQCtXfpufPmmOi5fKpsHAx1OJIt3Clm+uvuP73HSD7B7ZAMgNigIAQabcH/92SpwZdFS4Xvh3P0AX99/FPujuNAndMN5Q81PMsYpZPngu1uDCSZlF7SqFLdzIgF0t4EZtyAAzA3iJynBAFIj/mXUNz/NGn0SrJ3887PnQ9dyG+t1AJovOlfy3177xQig2o9tBQpgdNwONc5b0cSlnh6YhoUzIQUmoRWFTLi2w/1lY72+ZRfcWx53UjGttlDsxblR29ZATUqBudNzr2EpgCYhNceiuPeM2raRlN8WigIXZTKJQ77pfjvABd7HTJdEvarrDXpYXQtVeQwjXEcwa2lRfR42uK6OWUuLCvBV4Lo9t4xKO7oPaclaWuTlW2+3wQVtW0xtV0ShwUAPzU4ytWt2q++/8wj6923c2pJjQRoUGLe2BDaIAEHatj85SsCGTR3BBiFtv6q6OjascKEXfW76ndBPmgbhYvwPpcrDXcPQefQAAAAASUVORK5CYII=",
   "Beekeeper Hat": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADwAAABACAYAAABGHBTIAAADQUlEQVR4nO2aMW/TQBiGXxcPkbDaRAIFiLIgwhQhpHZhyMYPoANLxR9gqWBng60VoAgRMbChLB3gL1QZusRL1CmhGYhABFUKaVMpCKIwhDPX2D7fne9sJ/UjRaoq310ef5/v7jsHSElJSUlJSYkLQ7RBZ3tjmq8UcWl9Xajdt9efQLe7fPOZ8NgqMEUuPtnbnAJAv9FDHhCSzleKUu1Uw32XiSyh3+gJD5avFAEg1ihzDUjS2I8wEYtaeiXoAjqNvQgjO7Ft6bayMO8uHVkizIq0DP1GD6VqM7IouyJ8src5JR/6/6pFgZnsjScPlPfLwpml5wW9IDOtKogsGZt+PHQ92waPaL/R0xJhr77n5wTV4iaPjOrIzvdNiGJ9NgG+COqKMOAvqmMWN0vVptHZ3ghMaxFURErXkmUCQKnaNDoAc3MhgteXFbkJpL2Ox8iZEK5dKU0BoLG1pnwQUSr1Ib4fd7TM0q7ioVIf+l7crpUBALcfHyr/InTfGSsHHCsfAgAlnLFyGI8GgQ1mqXnotLl+ddV1jWHwF2Hd7tFM8F/fGesrd1sZzu20MlbOGTwI3uuShmfxICK+aDCrpWWUDiwPl006UHjZSIWXnQsnbJLCoVL/v+mgJyqezYgs3e6Rtr79cCLcrpWd7d14NHA+uiCyXqtAa6egbVxXStPiLMjNmPz+Iz04a8k7675QWrISfDe97VrZs0igS7/xaIAvIbLgfAYVMLFttHYKWk8+nBKMPMt+NXHUr0cmto3Vhx+Vl4iulPYruqM8NJ/YtrYzNNcdpI97dJ5jsdB5OB/45kHHoCx0v4VgVuq1s3VYa1nhTk9/8KXjqw/1yN8eBu60RsOfwp1a2SzXdU8fbUWeQUzhl+/fGYC8NPkkCe69tIw0IUnigcIkykA4aSAZUeeKMC2tkkROWoQwz7MXcUVZqB5WLR0HF+4AQFo4bJSfv3kbyw/ThIVXPrecvxcxtaUiTEsvGkI/PaQh0qNbdwBAas8dB9LC89DpPf116ntdHGsvTWhhkfTe3T+IVRaIcFm6fzcf1VBMlKW0F0mRpAktnEQpFulOa9lJhYPY3T8wkrC8yCId4UWVDjVLz6TvRX7yGIa/taApugZr/hsAAAAASUVORK5CYII=",
@@ -10375,6 +10380,15 @@ const COMPOSTER_BOOSTS = [ {
   timeMult: .9,
   note: "×0.9 compost time, every composter"
 }, {
+  id: "straw_house",
+  name: "Straw House",
+  category: "composter",
+  scope: "composterGlobal",
+  fertMult: 3,
+  wormBaseMult: 3,
+  timeMult: .9,
+  note: "×0.9 compost time, ×3 base fertiliser and ×3 base worms (applied before additive boosts), every composter"
+}, {
   id: "bucket_o_worms",
   name: "Bucket O' Worms",
   category: "composter",
@@ -13037,12 +13051,19 @@ export function computeComposterFigures(composterName, visited) {
     activeBoosts: []
   };
   const active = getActiveBoostsForComposter(composterName);
-  let outputQty = d.output, timeVal = d.timeSec, wormAvg = d.wormAvg;
+  let fertMult = 1, wormBaseMult = 1, fertAddTotal = 0, wormAddTotal = 0, timeVal = d.timeSec;
   active.forEach(b => {
-    if (b.fertAdd) outputQty += b.fertAdd;
+    if (b.fertMult) fertMult *= b.fertMult;
+    if (b.wormBaseMult) wormBaseMult *= b.wormBaseMult;
+    if (b.fertAdd) fertAddTotal += b.fertAdd;
+    if (b.wormAdd) wormAddTotal += b.wormAdd;
     if (b.timeMult) timeVal *= b.timeMult;
-    if (b.wormAdd) wormAvg += b.wormAdd;
   });
+  const outputQty = Math.max(0, d.output * fertMult + fertAddTotal);
+  const wormAmounts = COMPOSTER_WORM_AMOUNTS[d.wormName] || [ d.wormAvg ];
+  const wormAvg = wormAmounts.reduce((sum, a) => sum + Math.max(0, a * wormBaseMult + wormAddTotal), 0) / wormAmounts.length;
+  const wormMin = Math.max(0, Math.min(...wormAmounts) * wormBaseMult + wormAddTotal);
+  const wormMax = Math.max(0, Math.max(...wormAmounts) * wormBaseMult + wormAddTotal);
   const reqs = SEASON_COMPOST_REQUIREMENTS[previewSeason] && SEASON_COMPOST_REQUIREMENTS[previewSeason][composterName] || [];
   const ingredientCostCoins = reqs.reduce((sum, r) => sum + (r.qty || 0) * getItemCostByName(r.item, visited ? new Set(visited) : visited), 0);
   const costPerUnitCoins = outputQty > 0 ? ingredientCostCoins / outputQty : 0;
@@ -13052,10 +13073,50 @@ export function computeComposterFigures(composterName, visited) {
     outputQty: outputQty,
     timeVal: timeVal,
     wormAvg: wormAvg,
+    wormMin: wormMin,
+    wormMax: wormMax,
+    wormBaseMult: wormBaseMult,
+    wormAddTotal: wormAddTotal,
+    fertMult: fertMult,
+    fertAddTotal: fertAddTotal,
     reqs: reqs,
     ingredientCostCoins: ingredientCostCoins,
     costPerUnitCoins: costPerUnitCoins,
     activeBoosts: active
+  };
+}
+
+export const COMPOSTER_WORM_AMOUNTS = {
+  Earthworm: [ 2, 3, 3, 3, 4 ],
+  Grub: [ 2, 2, 2, 3, 3 ],
+  "Red Wiggler": [ 1, 1, 2, 2, 2, 3 ]
+};
+
+export const COMPOSTER_WORM_ITEM_IDS = {
+  Earthworm: 626,
+  Grub: 627,
+  "Red Wiggler": 628
+};
+
+export function composterRollWorms(composterName, farmId, counter, fig) {
+  const d = BASE_COMPOSTERS[composterName];
+  if (!d) return null;
+  const amounts = COMPOSTER_WORM_AMOUNTS[d.wormName];
+  const itemId = COMPOSTER_WORM_ITEM_IDS[d.wormName];
+  if (!amounts || !itemId) return null;
+  const f = fig || computeComposterFigures(composterName);
+  const roll = sflPrng({
+    farmId: farmId,
+    itemId: itemId,
+    counter: counter,
+    criticalHitName: "Native"
+  });
+  const baseAmount = amounts[Math.floor(roll * amounts.length)];
+  return {
+    roll: roll,
+    counter: counter,
+    baseAmount: baseAmount,
+    worms: Math.max(0, baseAmount * f.wormBaseMult + f.wormAddTotal)
   };
 }
 
@@ -31990,6 +32051,10 @@ const DESERT_CHAPTERS = {
   "Ascension Age": {
     start: Date.parse("2026-08-03T00:00:00.000Z"),
     end: Date.parse("2026-11-02T00:00:00.000Z")
+  },
+  "Cave Dwellers": {
+    start: Date.parse("2026-11-02T00:00:00.000Z"),
+    end: Date.parse("2027-02-01T00:00:00.000Z")
   }
 };
 
@@ -32008,7 +32073,8 @@ const DESERT_CHAPTER_ARTEFACT = {
   "Paw Prints": "Moon Crystal",
   "Crabs and Traps": "Ammonite Shell",
   "Salt Awakening": "Salt Dino Egg",
-  "Ascension Age": "Otter Pebble"
+  "Ascension Age": "Otter Pebble",
+  "Cave Dwellers": "Clover Coin"
 };
 
 function digGetCurrentChapterName(now) {
@@ -32017,7 +32083,7 @@ function digGetCurrentChapterName(now) {
     const range = DESERT_CHAPTERS[names[i]];
     if (now >= range.start && now < range.end) return names[i];
   }
-  return "Ascension Age";
+  return "Cave Dwellers";
 }
 
 const DIGGING_FORMATIONS = {
@@ -33487,6 +33553,11 @@ const DIG_BOOST_DEFS = [ {
   icon: "Crab Trap",
   desc: "+1 Crab per dig",
   crab: 1
+}, {
+  id: "mining_drill",
+  name: "Mining Drill",
+  icon: "Mining Drill",
+  desc: "1/3 chance of +1 Desert Treasure"
 } ];
 
 const DIG_ALWAYS_BUY_MATS = new Set([ "Leather", "Wool", "Merino Wool" ]);
@@ -33495,7 +33566,7 @@ const DIG_TOOL_ORDER = [ "Sand Shovel", "Sand Drill", "Oil Drill" ];
 
 const DIG_COST_CARD_ORDER = [ "Sand Shovel", "Sand Drill", "Oil Drill", "Gold Pickaxe" ];
 
-const DIG_CHAPTER_ARTEFACTS = new Set([ "Scarab", "Cow Skull", "Ancient Clock", "Broken Pillar", "Coprolite", "Moon Crystal", "Ammonite Shell", "Salt Dino Egg", "Otter Pebble" ]);
+const DIG_CHAPTER_ARTEFACTS = new Set([ "Scarab", "Cow Skull", "Ancient Clock", "Broken Pillar", "Coprolite", "Moon Crystal", "Ammonite Shell", "Salt Dino Egg", "Otter Pebble", "Clover Coin" ]);
 
 let digDataState = null;
 
@@ -34155,6 +34226,75 @@ function digTotalsHtml(dug, pct, reward) {
   return usedTools + '<div class="dig-totals-sep"></div>' + row("Digs Left", `${digFmt(left)} <small>(${digFmt(dug.digs)}/${digFmt(limit + dug.extraDigs)} used)</small>`, "") + row("Total Coins", digFmt(totalCoins) + COIN_ICON, "") + row("Total Cost", digFmt(totalCost) + COIN_ICON, "", parts.join(", ")) + row("Net", (net > 0 ? "+" : "") + digFmt(net) + COIN_ICON, (net > 0 ? "is-profit" : net < 0 ? "is-loss" : "") + " dig-total-net");
 }
 
+function digGoalCounts(solved, streakInfo) {
+  const art = solved && solved.artefactName;
+  const hasBoard = solved && Array.isArray(solved.instances) && solved.instances.length > 0;
+  if (!hasBoard) return {
+    perDay: 4,
+    left: 4
+  };
+  let perDay = 0;
+  let left = 0;
+  solved.instances.forEach((inst, i) => {
+    const n = inst.shape.filter(c => c.name === art).length;
+    perDay += n;
+    if (!solved.completedByIndex[i]) left += n;
+  });
+  perDay += 1;
+  if (!streakInfo.claimed) left += 1;
+  return {
+    perDay: perDay,
+    left: left
+  };
+}
+
+function digGoalBought(g, item, chapter) {
+  if (!g || !item.limit) return false;
+  const ms = g.megastore || {};
+  const rec = ms.purchases && ms.purchases[item.name];
+  if (rec && rec.chapter === chapter) return (Number(rec.count) || 0) >= item.limit;
+  const boughtAt = ms.boughtAt && Number(ms.boughtAt[item.name]);
+  const activity = Number(g.farmActivity && g.farmActivity[item.name + " Bought"]) || 0;
+  const range = DESERT_CHAPTERS[chapter];
+  if (boughtAt && range && boughtAt >= range.start && boughtAt < range.end) return Math.max(activity, 1) >= item.limit;
+  if (!boughtAt && activity > 0) return activity >= item.limit;
+  return false;
+}
+
+function digGoalRowHtml(g, solved, streakInfo, item, chapter) {
+  const owned = Math.max(0, Math.floor(Number(g && g.inventory && g.inventory[item.artefact]) || 0));
+  const need = Math.max(0, item.price - owned);
+  const bought = digGoalBought(g, item, chapter);
+  const shown = owned + (bought ? item.price : 0);
+  const pct = bought ? 100 : Math.min(100, owned / item.price * 100);
+  const counts = digGoalCounts(solved, streakInfo);
+  const days = need <= counts.left ? 0 : Math.ceil((need - counts.left) / counts.perDay);
+  const todayMs = Date.parse(digUtcDay(Date.now()));
+  const etaMs = todayMs + days * 864e5;
+  const range = DESERT_CHAPTERS[chapter];
+  const late = !bought && need > 0 && range && etaMs >= range.end;
+  const etaText = new Date(etaMs).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC"
+  });
+  let dateHtml;
+  if (bought) dateHtml = '<span class="dig-goal-date is-done">Bought</span>'; else if (need <= 0) dateHtml = '<span class="dig-goal-date is-done">Ready</span>'; else dateHtml = `<span class="dig-goal-date${late ? " is-late" : ""}" title="${late ? "Chapter ends before this is reached" : counts.perDay + " " + escapeHtml(item.artefact) + " per day"}">${etaText}</span>`;
+  const buffHtml = item.buffs && item.buffs.length ? '<div class="dig-goal-buffs">' + item.buffs.map(b => `<div class="dig-goal-buff">${escapeHtml(b)}</div>`).join("") + "</div>" : "";
+  const pctText = (Math.round(pct * 10) / 10).toLocaleString(undefined, {
+    maximumFractionDigits: 1
+  }) + "%";
+  return `<div class="dig-goal"><div class="dig-goal-row">${digRewardIconHtml(item.name).replace("dig-ico", "dig-ico dig-goal-ico")}<span class="dig-goal-name" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</span><span class="dig-goal-count">${digFmt(shown)}/${digFmt(item.price)}${digRewardIconHtml(item.artefact)}</span>${dateHtml}</div>${buffHtml}<div class="dig-goal-bar-row"><div class="dig-goal-track guro-frame"><div class="dig-goal-fill" style="width:${pct}%"></div></div><span class="dig-goal-pct">${pctText}</span></div></div>`;
+}
+
+function digGoalsHtml(g, solved, streakInfo) {
+  const chapter = solved && solved.chapterName || digGetCurrentChapterName(Date.now());
+  const items = DIG_CHAPTER_STORE[chapter] || [];
+  if (!items.length) return "";
+  return items.map(item => digGoalRowHtml(g, solved, streakInfo, item, chapter)).join("");
+}
+
 export function renderDigDataPanel(solved) {
   const card = $("digDataCard");
   if (!card || !card.isConnected) return;
@@ -34168,6 +34308,12 @@ export function renderDigDataPanel(solved) {
   digRenderToolCfg();
   $("digDugList").innerHTML = digDugTreasuresHtml(dug, pct);
   const streakInfo = digStreakInfo(g);
+  const goalBox = $("digGoalBox");
+  if (goalBox) {
+    const goalHtml = digGoalsHtml(g, digDataLastSolved, streakInfo);
+    $("digGoalList").innerHTML = goalHtml;
+    goalBox.style.display = goalHtml ? "" : "none";
+  }
   $("digStreakDug").innerHTML = digStreakDugHtml(streakInfo, pct);
   $("digDugTotals").innerHTML = digTotalsHtml(dug, pct, digStreakBonusItems(streakInfo));
   $("digInventoryList").innerHTML = digInventoryHtml(g, pct);
@@ -36706,7 +36852,8 @@ const SELLABLE_TREASURES = {
   "Moon Crystal": 200,
   "Ammonite Shell": 200,
   "Salt Dino Egg": 200,
-  "Otter Pebble": 200
+  "Otter Pebble": 200,
+  "Clover Coin": 200
 };
 
 function profileGetTreasureBoosts(g) {
@@ -36786,7 +36933,7 @@ function profileTradableResourceRows(g) {
   return rows.sort((a, b) => b.value - a.value);
 }
 
-const COLLECTIBLE_BOOST_NAMES = [ "Alba", "Alien Chicken", "Ancient Tree", "Anemone Flower", "Apprentice Beaver", "Ascended Chicken", "Ascended Cow", "Ascended Idol", "Ascended Sheep", "Ascension Monument", "Astrolabe", "Astronaut Sheep", "Autumn Guardian", "Ayam Cemani", "Baby Cow", "Badger Shrine", "Bale", "Banana Chicken", "Bantam Shrine", "Barn Blueprint", "Beetle Sheep", "Basic Scarecrow", "Battle Fish", "Bear Shrine", "Beehive", "Black Bearry", "Blossom Hourglass", "Blossombeard", "Boar Shrine", "Butterfly", "Cabbage Boy", "Cabbage Girl", "Camel", "Cannonball", "Carrot Sword", "Chicken Coop", "Chicory", "Christmas Tree", "Cluckulator", "Collie Shrine", "Cornucopia", "Crab House", "Crim Peckster", "Crimson Carp", "Crimstone Clam", "Crystal Altar", "Deep Sea Slug", "Desert Gnome", "Desert Rose", "Dino Egg Trophy", "Dr Cow", "Dumbo Octopus", "Easter Bunny", "El Pollo Veloz", "Emerald Turtle", "Fairy Circle", "Farm Dog", "Farmer's Monument", "Fat Chicken", "Festive Tree", "Fisher's Hourglass", "Flamingo Chicken", "Flower Fox", "Foliant", "Foreman Beaver", "Fox Shrine", "Freya Fox", "Frozen Cow", "Frozen Sheep", "Fruit Tune Box", "Fruitful Blend", "Fused Stone Rock", "Genie Lamp", "Giant Artichoke", "Giant Gold Bone", "Giant Kale", "Giant Onion", "Giant Turnip", "Giant Yam", "Giant Zucchini", "Gilded Swordfish", "Gnome", "Gold Beetle", "Gold Egg", "Golden Cauliflower", "Golden Cow", "Golden Sheep", "Gourmet Hourglass", "Grain Grinder", "Grape Granny", "Greenhouse Glow", "Greenhouse Goodie", "Grinx's Hammer", "Groovy Gramophone", "Harvest Hourglass", "Heart of Davy Jones", "Honey Treat", "Hoot", "Hound Shrine", "Humming Bird", "Hungry Caterpillar", "Hungry Hare", "Immortal Pear", "Iron Beetle", "Iron Idol", "Janitor Chicken", "Jellyfish", "Karkinos", "Kernaldo", "King of Bears", "Knight Chicken", "Knowledge Crab", "Kuebiko", "Lab Grown Carrot", "Lab Grown Pumpkin", "Lab Grown Radish", "Lady Bug", "Laurie the Chuckle Crow", "Legendary Shrine", "Lemon Frog", "Lemon Shark", "Lemon Tea Bath", "Longhorn Cowfish", "Lunar Calendar", "Lunar Temple", "Macaw", "Magma Stone", "Mammoth", "Maneki Neko", "Maximus", "Meerkat", "Mermaid Sheep", "Miner's Monument", "Mole Shrine", "Moo-ver", "Mootant", "Moth Shrine", "Mushroom House", "Mysterious Parsnip", "Nana", "Nancy", "Nautilus", "Navigation Table", "Nugget", "Nurse Sheep", "Oaken", "Obie", "Observatory", "Obsidian Shrine", "Obsidian Turtle", "Orchard Hourglass", "Ore Hourglass", "Otty the Otter", "Pablo The Bunny", "Peeled Potato", "Pet Bowls", "Pharaoh Chicken", "Pharaoh Gnome", "Pink Dolphin", "Poppy", "Poseidon", "Poseidon's Throne", "Potent Potato", "Prime Gold Rock", "Pure Gold Rock", "Purple Trail", "Quarry", "Queen Bee", "Queen Cornelia", "Radiant Ray", "Radical Radish", "Rapid Root", "Reelmaster's Chair", "Refined Iron Rock", "Reinforced Stone Rock", "Reveling Lemon", "Rice Panda", "Rich Chicken", "Rock Golem", "Rocky the Mole", "Rooster", "Royal Crab Pot", "Ruins Flower", "Sacred Tree", "Salt Crystal Flower", "Salt Lick", "Salt Sculpture", "Salt Worker Gnome", "Scarecrow", "Scary Mike", "Sheaf of Plenty", "Sir Goldensnout", "Skill Shrimpy", "Sleepy Chicken", "Soil Krabby", "Soybliss", "Spa Cow", "Spa Sheep", "Sparrow Shrine", "Speed Chicken", "Speed Trap", "Spring Guardian", "Sprout Mix", "Sproutroot Surprise", "Squid Chicken", "Squirrel", "Squirrel Monkey", "Stag Shrine", "Stellar Sunflower", "Stone Beetle", "Summer Chicken", "Summer Guardian", "Super Star", "Super Totem", "Swiss Whiskers", "Teamwork Monument", "Tempered Iron Rock", "Tiki Totem", "Timber Hourglass", "Time Warp Totem", "Tin Turtle", "Tomato Bombard", "Tomato Clown", "Toolshed", "Tortoise Shrine", "Toucan Shrine", "Toxic Tuft", "Trading Shrine", "Treasure Map", "Tunnel Mole", "Turbo Sprout", "Turbofruit Mix", "Undead Rooster", "Vibraphone", "Victoria Sisters", "Vinny", "Volcano Gnome", "Walrus", "Warehouse", "Winged Vase", "Winter Guardian", "Wood Nymph Wendy", "Woodcutter's Monument", "Woody the Beaver" ];
+const COLLECTIBLE_BOOST_NAMES = [ "Alba", "Alien Chicken", "Ancient Tree", "Anemone Flower", "Apprentice Beaver", "Ascended Chicken", "Ascended Cow", "Ascended Idol", "Ascended Sheep", "Ascension Monument", "Astrolabe", "Astronaut Sheep", "Autumn Guardian", "Ayam Cemani", "Baby Cow", "Badger Shrine", "Bale", "Banana Chicken", "Bantam Shrine", "Barn Blueprint", "Beetle Sheep", "Basic Scarecrow", "Battle Fish", "Bear Shrine", "Beehive", "Black Bearry", "Blossom Hourglass", "Blossombeard", "Boar Shrine", "Butterfly", "Cabbage Boy", "Cabbage Girl", "Camel", "Cannonball", "Carrot Sword", "Chicken Coop", "Chicory", "Christmas Tree", "Cluckulator", "Collie Shrine", "Cornucopia", "Crab House", "Crim Peckster", "Crimson Carp", "Crimstone Clam", "Crystal Altar", "Deep Sea Slug", "Desert Gnome", "Desert Rose", "Dino Egg Trophy", "Dr Cow", "Dumbo Octopus", "Easter Bunny", "El Pollo Veloz", "Emerald Turtle", "Fairy Circle", "Farm Dog", "Farmer's Monument", "Fat Chicken", "Festive Tree", "Fisher's Hourglass", "Flamingo Chicken", "Flower Fox", "Foliant", "Foreman Beaver", "Fox Shrine", "Freya Fox", "Frozen Cow", "Frozen Sheep", "Fruit Tune Box", "Fruitful Blend", "Fused Stone Rock", "Genie Lamp", "Giant Artichoke", "Giant Gold Bone", "Giant Kale", "Giant Onion", "Giant Turnip", "Giant Yam", "Giant Zucchini", "Gilded Swordfish", "Gnome", "Gold Beetle", "Gold Egg", "Golden Cauliflower", "Golden Cow", "Golden Sheep", "Gourmet Hourglass", "Grain Grinder", "Grape Granny", "Greenhouse Glow", "Greenhouse Goodie", "Grinx's Hammer", "Groovy Gramophone", "Harvest Hourglass", "Heart of Davy Jones", "Honey Treat", "Hoot", "Hound Shrine", "Humming Bird", "Hungry Caterpillar", "Hungry Hare", "Immortal Pear", "Iron Beetle", "Iron Idol", "Janitor Chicken", "Jellyfish", "Karkinos", "Kernaldo", "King of Bears", "Knight Chicken", "Knowledge Crab", "Kuebiko", "Lab Grown Carrot", "Lab Grown Pumpkin", "Lab Grown Radish", "Lady Bug", "Laurie the Chuckle Crow", "Legendary Shrine", "Lemon Frog", "Lemon Shark", "Lemon Tea Bath", "Longhorn Cowfish", "Lunar Calendar", "Lunar Temple", "Macaw", "Magma Stone", "Mammoth", "Maneki Neko", "Maximus", "Meerkat", "Mermaid Sheep", "Miner's Monument", "Mole Shrine", "Moo-ver", "Mootant", "Moth Shrine", "Mushroom House", "Mysterious Parsnip", "Nana", "Nancy", "Nautilus", "Navigation Table", "Nugget", "Nurse Sheep", "Oaken", "Obie", "Observatory", "Obsidian Shrine", "Obsidian Turtle", "Orchard Hourglass", "Ore Hourglass", "Otty the Otter", "Pablo The Bunny", "Peeled Potato", "Pet Bowls", "Pharaoh Chicken", "Pharaoh Gnome", "Pink Dolphin", "Poppy", "Poseidon", "Poseidon's Throne", "Potent Potato", "Prime Gold Rock", "Pure Gold Rock", "Purple Trail", "Quarry", "Queen Bee", "Queen Cornelia", "Radiant Ray", "Radical Radish", "Rapid Root", "Reelmaster's Chair", "Refined Iron Rock", "Reinforced Stone Rock", "Reveling Lemon", "Rice Panda", "Rich Chicken", "Rock Golem", "Rocky the Mole", "Rooster", "Royal Crab Pot", "Ruins Flower", "Sacred Tree", "Salt Crystal Flower", "Salt Lick", "Salt Sculpture", "Salt Worker Gnome", "Scarecrow", "Scary Mike", "Sheaf of Plenty", "Sir Goldensnout", "Skill Shrimpy", "Sleepy Chicken", "Soil Krabby", "Soybliss", "Spa Cow", "Spa Sheep", "Sparrow Shrine", "Speed Chicken", "Speed Trap", "Spring Guardian", "Sprout Mix", "Sproutroot Surprise", "Squid Chicken", "Squirrel", "Squirrel Monkey", "Stag Shrine", "Stellar Sunflower", "Stone Beetle", "Straw House", "Summer Chicken", "Summer Guardian", "Super Star", "Super Totem", "Swiss Whiskers", "Teamwork Monument", "Tempered Iron Rock", "Tiki Totem", "Timber Hourglass", "Time Warp Totem", "Tin Turtle", "Tomato Bombard", "Tomato Clown", "Toolshed", "Tortoise Shrine", "Toucan Shrine", "Toxic Tuft", "Trading Shrine", "Treasure Map", "Tunnel Mole", "Turbo Sprout", "Turbofruit Mix", "Undead Rooster", "Vibraphone", "Victoria Sisters", "Vinny", "Volcano Gnome", "Walrus", "Warehouse", "Winged Vase", "Winter Guardian", "Wood Nymph Wendy", "Woodcutter's Monument", "Woody the Beaver" ];
 
 const WEARABLE_BOOST_NAMES = [ "Alchemist Apron", "Ancient Rod", "Ancient Shovel", "Angel Wings", "Angler Waders", "Architect Ruler", "Autumn's Embrace", "Banana Amulet", "Banana Onesie", "Beast Shoes", "Bee Suit", "Beekeeper Hat", "Beetroot Amulet", "Bionic Drill", "Black Sheep Onesie", "Blossom Ward", "Broccoli Hat", "Bubble Aura", "Bucket O' Worms", "Bumpkin Armor", "Bumpkin Crown", "Bumpkin Helmet", "Bumpkin Medallion", "Bumpkin Pants", "Bumpkin Quiver", "Bumpkin Sabatons", "Bumpkin Shield", "Bumpkin Sword", "Camel Onesie", "Carrot Amulet", "Cattlegrim", "Chef Apron", "Chicken Suit", "Corn Onesie", "Corn Silk Hair", "Cowbell Necklace", "Crab Hat", "Crab Trap", "Crimstone Amulet", "Crimstone Armor", "Crimstone Hammer", "Crimstone Spikes Hair", "Deep Sea Helm", "Deep Sea Salt Cave Background", "Dev Wrench", "Devil Wings", "Dream Scarf", "Eggplant Onesie", "Flower Crown", "Frozen Heart", "Fruit Picker Apron", "Goblin Armor", "Goblin Axe", "Goblin Crown", "Goblin Helmet", "Goblin Medallion", "Goblin Pants", "Goblin Quiver", "Goblin Sabatons", "Goblin Shield", "Golden Spatula", "Grape Pants", "Green Amulet", "Honeycomb Shield", "Hornet Mask", "Infernal Bullwhip", "Infernal Drill", "Infernal Pitchfork", "Ladybug Suit", "Lava Swimwear", "Lemon Shield", "Luminous Anglerfish Topper", "Luna's Crescent", "Luna's Hat", "Master Chef's Cleaver", "Medic Apron", "Merino Jumper", "Milk Apron", "Moon Hair", "Mushroom Hat", "Nightshade Armor", "Nightshade Crown", "Nightshade Helmet", "Nightshade Medallion", "Nightshade Pants", "Nightshade Quiver", "Nightshade Sabatons", "Nightshade Shield", "Nightshade Sword", "Non La Hat", "Obsidian Necklace", "Oil Can", "Oil Gallon", "Oil Overalls", "Olive Royalty Shirt", "Olive Shield", "Oracle Syringe", "Pan", "Parsnip", "Paw Aura", "Paw Shield", "Pickaxe Shark", "Pirate Potion", "Pistol Shrimp", "Red Pepper Onesie", "Rice Shirt", "Salt Bottle Onesie", "Saw Fish", "Shrimp Onesie", "Sickle", "Sol & Luna", "Solflare Aegis", "Squirrel Onesie", "Sunflorian Armor", "Sunflorian Crown", "Sunflorian Helmet", "Sunflorian Medallion", "Sunflorian Pants", "Sunflorian Quiver", "Sunflorian Sabatons", "Sunflorian Shield", "Sunflorian Sword", "Sunflower Amulet", "Sunflower Rod", "Sunflower Shield", "Surfer Hair", "Tofu Mask", "Training Whistle", "Trident", "Turd Topper", "Victoria's Apron", "Walrus Onesie", "White Sheep Onesie" ];
 
