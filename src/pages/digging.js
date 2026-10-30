@@ -1,4 +1,5 @@
 import { setOpenClass } from "./shared.js";
+import { toggle as toggleGodMode, close as closeGodMode } from "../dig_godmode.js";
 
 let onTitleClick = null;
 
@@ -35,6 +36,10 @@ export function mount(root, api) {
   const bar = document.getElementById("guroPageTitle");
   if (bar) {
     onTitleClick = ev => {
+      if (ev.target.closest("#digGodToggleBtn")) {
+        toggleGodMode();
+        return;
+      }
       if (ev.target.closest("#digPctToggleBtn")) {
         setPercentMode(root, !root.classList.contains("dig-pct-mode"));
         api.ui.renderDigTreasurePanel();
@@ -53,6 +58,7 @@ export function mount(root, api) {
 }
 
 export function unmount() {
+  closeGodMode();
   setOpenClass("digSidePanel", false);
   const bar = document.getElementById("guroPageTitle");
   if (bar && onTitleClick) bar.removeEventListener("click", onTitleClick);

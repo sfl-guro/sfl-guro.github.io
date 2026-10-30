@@ -791,7 +791,7 @@ const LOG_KIND_OF = {
   greenhouse: "greenhouse"
 };
 
-function addLogTotal(totals, name, kind, amount, rounds) {
+function addLogTotal(totals, name, kind, amount, rounds, price, feeRate) {
   const value = Math.round(amount * 100) / 100;
   if (!(value > 0) || !isFinite(value)) return;
   const cur = totals[name];
@@ -801,6 +801,12 @@ function addLogTotal(totals, name, kind, amount, rounds) {
   };
   const c = Math.max(cur && cur.c || 0, Number.isFinite(rounds) ? Math.floor(rounds) : 0);
   if (c > 0) entry.c = c;
+  const p = typeof price === "number" && isFinite(price) && price > 0 ? price : cur && cur.p || 0;
+  if (p > 0) {
+    entry.p = Math.round(p * 1e6) / 1e6;
+    const f = typeof feeRate === "number" && isFinite(feeRate) && feeRate > 0 && feeRate < 1 ? feeRate : cur && cur.f || 0;
+    entry.f = Math.round(f * 1e6) / 1e6;
+  }
   totals[name] = entry;
 }
 
@@ -818,7 +824,7 @@ function animalLogTotals(totals, groupKey, st) {
         parts[i] += v;
       });
     });
-    products.forEach((pr, i) => addLogTotal(totals, pr.name, "animal", parts[i], rounds));
+    products.forEach((pr, i) => addLogTotal(totals, pr.name, "animal", parts[i], rounds, pr.price, pr.feeRate));
     return;
   }
   if (!meta.productName) return;
@@ -826,7 +832,7 @@ function animalLogTotals(totals, groupKey, st) {
   st.log.forEach(e => {
     if (typeof e.y === "number") amount += e.y; else if (meta.per) amount += e.n * meta.per;
   });
-  addLogTotal(totals, meta.productName, "animal", amount, rounds);
+  addLogTotal(totals, meta.productName, "animal", amount, rounds, meta.price, meta.feeRate);
 }
 
 export function dailyHarvestTotals(farmId) {
@@ -850,7 +856,8 @@ export function dailyHarvestTotals(farmId) {
     st.log.forEach(e => {
       if (typeof e.y === "number") amount += e.y; else if (per) amount += e.n * per;
     });
-    addLogTotal(totals, groupKey, logKind, amount, roundsFromStats(st).rounds);
+    const gm = yieldMeta[groupKey];
+    addLogTotal(totals, groupKey, logKind, amount, roundsFromStats(st).rounds, gm && gm.price, gm && gm.feeRate);
   });
   return {
     day: rec.day,
