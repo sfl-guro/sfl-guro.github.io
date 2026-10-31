@@ -210,7 +210,7 @@ export function saveMarketState() {
 }
 
 export function loadBaseAnimalProduceIfNeeded() {
-  const names = [ "Egg", "Feather", "Wool", "Merino Wool", "Milk", "Leather" ];
+  const names = [ "Egg", "Feather", "Wool", "Merino Wool", "Milk", "Leather", "Truffle", "Pig Bristles" ];
   let added = false;
   names.forEach(n => {
     const exists = marketItems.some(m => (m.name || "").toLowerCase() === n.toLowerCase());
@@ -225,6 +225,15 @@ export function loadBaseAnimalProduceIfNeeded() {
       added = true;
     }
   });
+  if (!marketItems.some(m => (m.name || "").toLowerCase() === "mud")) {
+    marketItems.push({
+      id: "pig_mud",
+      name: "Mud",
+      flowerPrice: 0,
+      sourceLibId: null
+    });
+    added = true;
+  }
   if (added) {
     saveMarketState();
     autoFillLivePricesForNewEntries();

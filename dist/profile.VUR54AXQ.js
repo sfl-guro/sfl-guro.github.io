@@ -36,6 +36,30 @@ var query = "";
 var picked = null;
 var menuOpen = false;
 var listenersOn = false;
+var tab = "info";
+var harvestMod = null;
+function tabsHtml() {
+  return `<div class="pf-switch"><button type="button" class="fd-lb-tab pf-sw-btn${tab === "info" ? " active" : ""}" data-pf-tab="info">Info</button><button type="button" class="fd-lb-tab pf-sw-btn${tab === "harvest" ? " active" : ""}" data-pf-tab="harvest">Harvest Log</button></div>`;
+}
+async function renderHarvest() {
+  if (!rootEl) return;
+  rootEl.innerHTML = `${tabsHtml()}<div class="pf-hlog-host" id="pfHarvestHost"></div>`;
+  const host = rootEl.querySelector("#pfHarvestHost");
+  try {
+    if (!harvestMod) harvestMod = await import("./harvest_log.PLVZSAAC.js");
+  } catch (e) {
+    if (host) host.innerHTML = `<div class="dh-hlog-msg">Couldn't load history. Check your connection.</div>`;
+    return;
+  }
+  if (!rootEl || tab !== "harvest" || !host || !host.isConnected) return;
+  harvestMod.harvestLogInlineOpen(host);
+}
+function setTab(next) {
+  if (next === tab) return;
+  tab = next;
+  if (tab !== "harvest" && harvestMod) harvestMod.harvestLogInlineClose();
+  render();
+}
 function money(n) {
   if (n == null || !isFinite(n)) return "\u2014";
   return n.toLocaleString(void 0, {
@@ -79,13 +103,17 @@ function renderMenuOnly() {
 }
 function render() {
   if (!rootEl) return;
+  if (tab === "harvest") {
+    renderHarvest();
+    return;
+  }
   const keep = rootEl.querySelector("#pfSearchInput");
   const hadFocus = keep && document.activeElement === keep;
   const { inv, chain, total, goals, source } = evaluateGoals();
   const invRows = inv.rows.length ? inv.rows.map(inventoryRowHtml).join("") : `<div class="pf-empty">${inv.ready ? "No tradable resources found" : "Sync a Farm ID to see your inventory"}</div>`;
   const priceRows = goals.length ? goals.map(goalPriceRowHtml).join("") : `<div class="pf-empty">No SFT added yet</div>`;
   const cards = goals.length ? goals.map((g) => goalTileHtml(g, total)).join("") : `<div class="pf-empty">Add an SFT to track your goal</div>`;
-  rootEl.innerHTML = `<div class="pf-wrap">
+  rootEl.innerHTML = `${tabsHtml()}<div class="pf-wrap">
     <div class="pf-side">
     <div class="pf-value guro-frame">
       <div class="pf-title">On Chain History</div>
@@ -156,6 +184,30 @@ function addCurrent() {
   window.dispatchEvent(new Event("guroGoalsChanged"));
 }
 function onClick(e) {
+  const tabBtn = e.target.closest("[data-pf-tab]");
+  if (tabBtn) {
+    setTab(tabBtn.dataset.pfTab === "harvest" ? "harvest" : "info");
+    return;
+  }
+  if (tab === "harvest") {
+    const hBadge = e.target.closest("[data-dh-h]");
+    rootEl.querySelectorAll(".dh-hlog-h.open").forEach((el) => {
+      if (el !== hBadge) el.classList.remove("open");
+    });
+    if (hBadge) {
+      hBadge.classList.toggle("open");
+      return;
+    }
+    if (e.target.closest("[data-pf-hmore]")) {
+      if (harvestMod) harvestMod.harvestLogInlineMore();
+      return;
+    }
+    if (e.target.closest("[data-pf-hretry]")) {
+      renderHarvest();
+      return;
+    }
+    return;
+  }
   const rm = e.target.closest("[data-pf-remove]");
   if (rm) {
     saveGoals(loadGoals().filter((g) => g.name !== rm.dataset.pfRemove));
@@ -208,7 +260,7 @@ function onKey(e) {
   }
 }
 function refresh() {
-  if (!rootEl || !document.body.classList.contains("guro-show-profile")) return;
+  if (!rootEl || tab !== "info" || !document.body.classList.contains("guro-show-profile")) return;
   render();
 }
 async function mount(root, api) {
@@ -225,6 +277,7 @@ async function mount(root, api) {
   loadSource = goals.loadSource;
   saveSource = goals.saveSource;
   rootEl = root;
+  tab = "info";
   query = "";
   picked = null;
   menuOpen = false;
@@ -246,6 +299,8 @@ async function mount(root, api) {
 }
 function unmount() {
   if (!rootEl) return;
+  tab = "info";
+  if (harvestMod) harvestMod.harvestLogInlineClose();
   rootEl.removeEventListener("click", onClick);
   rootEl.removeEventListener("input", onInput);
   rootEl.removeEventListener("change", onChange);

@@ -752,6 +752,9 @@ export function renderBoostPanel() {
     }, {
       label: `${getIcon("Cow")} Cow`,
       items: inCategory.filter(b => b.scope === "animalType" && b.target === "cow" && !b.isBud)
+    }, {
+      label: `${getIcon("Pig")} Pig`,
+      items: inCategory.filter(b => b.scope === "animalType" && b.target === "pig" && !b.isBud)
     } ];
   } else if (boostCategory === "tools") {
     groups = [ {
