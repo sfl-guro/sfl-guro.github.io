@@ -262,7 +262,7 @@ function valuesHtml(rows) {
     ${valueBoxHtml("Gross", flowerHtml(t.gross), "rc-val-wide", splitRowsHtml(t.products, "gross", false))}
     ${valueBoxHtml("Feed Cost", flowerHtml(t.feed))}
     ${valueBoxHtml("Medicine Cost", flowerHtml(t.medicine))}
-    ${valueBoxHtml("Spice Cost", flowerHtml(t.spice))}
+    ${valueBoxHtml(spiceLabelFor(rows) + " Cost", flowerHtml(t.spice))}
     ${valueBoxHtml("Shrine Cost", flowerHtml(t.shrine))}
     ${feeBox}
   </div>
@@ -328,6 +328,10 @@ function boostEffectParts(b, products) {
   const p = [];
   if (b.feedMult) p.push(`×${b.feedMult} feed`);
   if (b.feedMultAll) p.push(`×${b.feedMultAll} feed`);
+  if (b.xpMult) p.push(`×${b.xpMult} feed XP`);
+  if (b.mud) p.push("no sickness");
+  if (b.truffleMult) p.push(`×${b.truffleMult} Truffle`);
+  if (b.bristleMult) p.push(`×${b.bristleMult} Bristles`);
   if (b.yieldMultAll) p.push(`×${b.yieldMultAll} yield`);
   if (b.yieldAddAll) p.push(`${b.yieldAddAll > 0 ? "+" : ""}${n2(b.yieldAddAll)} all produce`);
   if (b.productIndex != null && b.yieldAdd) p.push(`${b.yieldAdd > 0 ? "+" : ""}${n2(b.yieldAdd)} ${products[b.productIndex] || "produce"}`);
@@ -369,7 +373,73 @@ function collectBuy(act, name, mode) {
   return tbtn(act, name, "collect", "Collect", mode === "collect") + tbtn(act, name, "buy", "Buy", mode === "buy");
 }
 
-function feedConfigHtml() {
+function slopOptionText(o) {
+  return `${o.name} ×${o.qty} · ${o.cost > 0 ? fl(calc.coinsToFlower(o.cost)) + " FLOWER" : "no price"}`;
+}
+
+function slopConfigHtml() {
+  const rows = calc.PIG_FEED_KEYS.map(k => {
+    const chosen = calc.getPigSlopIngredientChoice(k);
+    const options = prices.getPigSlopOptions(k);
+    const pick = prices.resolvePigSlopIngredient(k);
+    const current = chosen ? options.find(o => o.name === chosen) : null;
+    const btnIcon = chosen ? ui.getIcon(chosen) : pick && pick.name ? ui.getIcon(pick.name) : "";
+    const btnText = current ? slopOptionText(current) : "Auto · cheapest";
+    const label = calc.PIG_FEEDS[k].label;
+    const toggles = pick && pick.name ? `<div class="rc-slop-head"><span class="rc-tool-mat-item">${ui.getIcon(pick.name)}<span class="rc-tool-mat-name">${esc(pick.name)} ×${pick.qty}${pick.auto ? " · auto" : ""}</span></span><span class="es-toolcfg-tog">${collectBuy("feedmode", pick.name, calc.getMaterialMode("AnimalFeed", pick.name))}</span></div>` : "";
+    return `<div class="rc-slop-row"><div class="rc-slop-head"><span class="rc-tool-mat-item">${ui.getIcon(label)}<span class="rc-tool-mat-name">${esc(label)}</span></span></div><button type="button" class="rc-dd-btn guro-frame" data-an-slop-open="${k}" aria-haspopup="listbox" aria-label="${esc(label)} ingredient"><span class="rc-dd-icon">${btnIcon}</span><span class="rc-dd-label">${esc(btnText)}</span><span class="rc-dd-chev">▾</span></button>${toggles}</div>`;
+  }).join("");
+  return `<div class="rc-group"><div class="rc-comp-sub">Slop Config</div><div class="rc-tool-cfg"><div class="rc-note">Each feeding uses 1 Slop. Pick the one ingredient you mix each Slop from, or leave Auto to use the cheapest priced one.</div>${rows}</div></div>`;
+}
+
+function closeSlopPicker() {
+  if (promptEl) {
+    promptEl.remove();
+    promptEl = null;
+  }
+}
+
+function openSlopPicker(k) {
+  const feed = calc.PIG_FEEDS[k];
+  if (!feed) return;
+  closeSlopPicker();
+  const chosen = calc.getPigSlopIngredientChoice(k);
+  const options = prices.getPigSlopOptions(k);
+  const pick = prices.resolvePigSlopIngredient(k);
+  const autoIcon = pick && pick.name ? ui.getIcon(pick.name) : "";
+  const optRow = (value, icon, text, on) => `<div class="rc-dd-opt${on ? " is-on" : ""}" role="option" tabindex="0" aria-selected="${on ? "true" : "false"}" data-an-slop-pick="${esc(value)}"><span class="rc-dd-icon">${icon}</span><span class="rc-dd-label">${esc(text)}</span><span class="rc-dd-chev">${on ? "✓" : ""}</span></div>`;
+  const list = optRow("", autoIcon, "Auto · cheapest", !chosen) + options.map(o => optRow(o.name, ui.getIcon(o.name), slopOptionText(o), chosen === o.name)).join("");
+  promptEl = document.createElement("div");
+  promptEl.className = "rc-overlay rc-overlay-top";
+  promptEl.innerHTML = `<div class="rc-prompt rc-slop-pop guro-frame" role="dialog" aria-modal="true" aria-label="${esc(feed.label)} ingredient"><div class="rc-slop-pop-title">${ui.getIcon(feed.label)}<span>${esc(feed.label)} Ingredient</span></div><div class="rc-slop-pop-list" role="listbox">${list}</div></div>`;
+  promptEl.addEventListener("click", e => {
+    if (e.target === promptEl) {
+      closeSlopPicker();
+      return;
+    }
+    const opt = e.target.closest("[data-an-slop-pick]");
+    if (!opt) return;
+    calc.setPigSlopIngredient(k, opt.getAttribute("data-an-slop-pick"));
+    closeSlopPicker();
+    prices.invalidateCostCache();
+    renderOverlayBody();
+    refreshResults();
+  });
+  promptEl.addEventListener("keydown", e => {
+    if ((e.key === "Enter" || e.key === " ") && e.target.closest("[data-an-slop-pick]")) {
+      e.preventDefault();
+      e.target.closest("[data-an-slop-pick]").click();
+    }
+  });
+  document.body.appendChild(promptEl);
+  const on = promptEl.querySelector(".rc-dd-opt.is-on");
+  if (on) on.scrollIntoView({
+    block: "center"
+  });
+}
+
+function feedConfigHtml(r) {
+  if (r && r.type === "pig") return slopConfigHtml();
   const omni = calc.isOmnifeedEnabled();
   const omniRow = toggleRow(ui.getIcon("Omnifeed"), "Omnifeed", tbtn("omni", "omni", "off", "Off", !omni) + tbtn("omni", "omni", "on", "On", omni));
   const crops = omni ? `<div class="rc-boost-none">Omnifeed costs 1${calc.GEM_ICON} per feed, so the ingredients below are not used.</div>` : "";
@@ -382,7 +452,7 @@ function medicineConfigHtml(r) {
   const recipe = calc.getBoostedMedicineRecipe();
   const free = r.fig.costPerCureFlower <= 0 && r.fig.medicineFlowerPerLevel <= 0 && r.fig.activeBoosts.some(b => b.freeCure);
   const sick = `<label class="rc-sick-row"><span class="rc-tool-mat-name">Sick heads (of ${n2(r.qty)})</span><input type="number" min="0" step="any" inputmode="decimal" class="rc-sick-input guro-frame" data-an-sick="${esc(r.type)}" value="${est.sickHeads ? est.sickHeads : ""}" placeholder="0"></label>`;
-  const rows = free ? `<div class="rc-boost-none">Free medicine</div>` : Object.keys(recipe).filter(n => recipe[n] > 0).map(n => toggleRow(ui.getIcon(n), n, collectBuy("medmode", n, calc.getMedicineIngredientMode(n)), recipe[n])).join("");
+  const rows = r.type === "pig" && r.fig.mudActive ? `<div class="rc-boost-none">Mud keeps Pigs from falling sick, so no medicine is used</div>` : free ? `<div class="rc-boost-none">Free medicine</div>` : Object.keys(recipe).filter(n => recipe[n] > 0).map(n => toggleRow(ui.getIcon(n), n, collectBuy("medmode", n, calc.getMedicineIngredientMode(n)), recipe[n])).join("");
   return `<div class="rc-group"><div class="rc-comp-sub">Medicine Config (Barn Delight)</div><div class="rc-tool-cfg">${sick}${rows}</div></div>`;
 }
 
@@ -422,6 +492,8 @@ function materialsHtml(r) {
     const feedName = week.feedLabel;
     rows.push(matRowHtml(ui.getIcon(feedName), feedName, fig.effectiveFeedQty * r.qty, r.cycleFeed, "1 cycle"));
     rows.push(matRowHtml(ui.getIcon(feedName), feedName, week.feedQtyWeek, r.feed, "24hr"));
+    const slopBd = r.type === "pig" && fig.feedInfo && fig.feedInfo.breakdown && fig.feedInfo.breakdown[0];
+    if (slopBd) rows.push(matRowHtml(ui.getIcon(slopBd.name), slopBd.name, fig.effectiveFeedQty * r.qty * slopBd.qty, r.cycleFeed, "1 cycle"));
   }
   if (week && r.medicine > 0) {
     const recipe = calc.getBoostedMedicineRecipe();
@@ -430,9 +502,15 @@ function materialsHtml(r) {
       rows.push(matRowHtml(ui.getIcon(n), n, recipe[n] * cures, r.medicine * (recipe[n] / Object.keys(recipe).reduce((s, k) => s + recipe[k], 0)), "24hr"));
     });
   }
-  if (week && r.spice > 0) {
+  const mudUnits24 = fig.mudActive ? calc.PIG_MUD_PER_APPLICATION * r.qty * r.cycles / fig.mudHarvestsPerCoat : 0;
+  const mudValue24 = mudUnits24 * priceOf("Mud");
+  if (week && week.spiceActiveKey && r.spice - mudValue24 > 0) {
     const label = SPICE_LABELS[week.spiceActiveKey];
-    rows.push(matRowHtml(ui.getIcon(label), label, week.boostedCycles * r.qty / calc.getSpiceLickDurationHarvests(), r.spice, "24hr"));
+    rows.push(matRowHtml(ui.getIcon(label), label, week.boostedCycles * r.qty / calc.getSpiceLickDurationHarvests(), r.spice - mudValue24, "24hr"));
+  }
+  if (fig.mudActive) {
+    rows.push(matRowHtml(ui.getIcon("Mud"), "Mud", calc.PIG_MUD_PER_APPLICATION * r.qty / fig.mudHarvestsPerCoat, fig.mudCostFlowerPerCycle * r.qty, "1 cycle"));
+    rows.push(matRowHtml(ui.getIcon("Mud"), "Mud", mudUnits24, mudValue24, "24hr"));
   }
   const matRows = rows.length ? rows.join("") : `<div class="rc-boost-none">No material used</div>`;
   const yieldRows = r.products.map((p, i) => matRowHtml(ui.getIcon(p), p, fig.yields[i] * r.qty, fig.yields[i] * r.qty * priceOf(p), "1 cycle") + matRowHtml(ui.getIcon(p), p, r.yields[i], r.yields[i] * priceOf(p), "24hr")).join("");
@@ -442,6 +520,24 @@ function materialsHtml(r) {
 
 function totalCycleHtml(r) {
   return `<span class="rc-cycle-val"><span>${n2(r.cycles)}${r.cyclesCustom ? ` <span class="rc-kv-sub">Custom</span>` : ""}</span><button type="button" class="rc-edit-link" data-rc-edit-cycle="${esc(r.type)}">Edit</button></span>`;
+}
+
+function pigKvHtml(r) {
+  if (r.type !== "pig") return "";
+  const fig = r.fig;
+  const bd = fig.feedInfo && fig.feedInfo.breakdown && fig.feedInfo.breakdown[0];
+  const trade = calc.computePigTradeIn(fig.level);
+  const bristlePrice = priceOf("Pig Bristles");
+  const parts = [];
+  if (bd) parts.push(kv("Slop Ingredient", `${ui.getIcon(bd.name)} ${esc(bd.name)} ×${n2(bd.qty)} / Slop`, "rc-kv-wide"));
+  parts.push(kv("Bristles / Trade-in", trade.tradeable ? `${n2(trade.amount)}${ui.getIcon("Pig Bristles")}` : "Not tradeable below Lv3"));
+  parts.push(kv("Bristles Value", trade.tradeable ? flowerHtml(trade.amount * bristlePrice) : "—"));
+  if (fig.mudActive) parts.push(kv("Mud / Cycle", flowerHtml(fig.mudCostFlowerPerCycle * r.qty)));
+  return parts.join("\n      ");
+}
+
+function spiceLabelFor(rows) {
+  return rows.some(r => r.type === "pig") ? "Spice & Mud" : "Spice";
 }
 
 function computationCardHtml(r) {
@@ -455,6 +551,7 @@ function computationCardHtml(r) {
       ${kv("Cycle Time", esc(calc.formatDuration(fig.cycleTimeSec)), "rc-kv-wide")}
       ${kv("Yield / Head", yieldHead, "rc-kv-wide")}
       ${kv("Feed Used", `${ui.getIcon(fig.feedNameUsed)} ${esc(fig.feedNameUsed)}`)}
+      ${pigKvHtml(r)}
       ${kv("Feeds / Cycle", n2(fig.feedCount))}
       ${kv("Feed Qty / Feed", n2(fig.feedQtyPerFeed))}
       ${kv("XP / Feed", `${n2(fig.feedXpPerFeed)} XP`)}
@@ -465,7 +562,7 @@ function computationCardHtml(r) {
       ${kv("Gross / Cycle", flowerSigned(r.cycleGross))}
       ${kv("Feed / Cycle", flowerHtml(r.cycleFeed))}
       ${kv("Medicine / Cycle", flowerHtml(r.cycleMedicine))}
-      ${kv("Spice / Cycle", flowerHtml(r.cycleSpice))}
+      ${kv(spiceLabelFor([ r ]) + " / Cycle", flowerHtml(r.cycleSpice))}
       ${kv("Shrine / Cycle", flowerHtml(r.cycleShrine))}
       ${kv("Net / Cycle", `<span class="${r.cycleNet >= 0 ? "is-profit" : "is-loss"}">${signed(r.cycleNet, fl)}${calc.FLOWER_ICON}</span>`, "rc-kv-wide")}
     </div></div>
@@ -476,13 +573,13 @@ function computationCardHtml(r) {
       ${kv("Total Gross", flowerSigned(r.gross))}
       ${kv("Total Feed Cost", flowerHtml(r.feed))}
       ${kv("Total Medicine Cost", flowerHtml(r.medicine))}
-      ${kv("Total Spice Cost", flowerHtml(r.spice))}
+      ${kv("Total " + spiceLabelFor([ r ]) + " Cost", flowerHtml(r.spice))}
       ${kv("Total Shrine Cost", flowerHtml(r.shrine))}
       ${(calc.feePercent || 0) > 0 ? kv("Market Fee", flowerHtml(r.fee)) : ""}
       ${kv("Total Net", `<span class="${r.net >= 0 ? "is-profit" : "is-loss"}">${signed(r.net, fl)}${calc.FLOWER_ICON}</span>`, "rc-kv-wide rc-kv-net")}
     </div></div>
     ${appliedBoostHtml(r)}
-    ${feedConfigHtml()}
+    ${feedConfigHtml(r)}
     ${medicineConfigHtml(r)}
     ${affectionConfigHtml(r)}
     ${spiceConfigHtml(r)}
@@ -857,6 +954,11 @@ function onDocClick(e) {
   const editCycle = e.target.closest("[data-rc-edit-cycle]");
   if (editCycle && popup === "computation") {
     openCycleEditor(editCycle.getAttribute("data-rc-edit-cycle"));
+    return;
+  }
+  const slopOpen = e.target.closest("[data-an-slop-open]");
+  if (slopOpen && popup === "computation") {
+    openSlopPicker(slopOpen.getAttribute("data-an-slop-open"));
     return;
   }
   const act = e.target.closest("[data-an-act]");

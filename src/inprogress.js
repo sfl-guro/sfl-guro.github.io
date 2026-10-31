@@ -2823,7 +2823,7 @@ function farmPanelComputeInProgressRaw(json, opts) {
     });
   }
   if (typeof computeAnimalTypeFigures === "function" && typeof computeAnimalYieldsForLevel === "function") {
-    [ "chicken", "sheep", "cow" ].forEach(type => {
+    [ "chicken", "sheep", "cow", "pig" ].forEach(type => {
       const bag = farmSyncGetAnimalRecords(g, type);
       if (!bag || typeof bag !== "object") return;
       const cycleSec = computeAnimalTypeFigures(type).cycleTimeSec || ANIMAL_BASE_CYCLE_SEC;
@@ -2852,7 +2852,8 @@ function farmPanelComputeInProgressRaw(json, opts) {
           state: stateStr,
           item: animal.item,
           asleepAt: asleepAt,
-          lovedAt: lovedAt
+          lovedAt: lovedAt,
+          muddy: type === "pig" ? !!(animal.mud && animal.mud.harvestsRemaining > 0) : undefined
         }, now, readyAtMs);
         const level = progress.level;
         const realFeedBuffName = animal.feedBuff && typeof animal.feedBuff === "object" && animal.feedBuff.name && (typeof animal.feedBuff.harvestsRemaining !== "number" || animal.feedBuff.harvestsRemaining > 0) ? animal.feedBuff.name : null;

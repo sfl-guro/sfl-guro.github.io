@@ -868,6 +868,39 @@ let factionMarksAutoTarget = "kitchen";
 
 let factionMarksAutoTimer = null;
 
+let factionMarksRequestWeek = "this";
+
+function factionMarksTargetWeekKey() {
+  const current = factionGetWeekKey();
+  return factionMarksRequestWeek === "next" ? factionRoutineShiftWeek(current, 1) : current;
+}
+
+function factionMarksLoadRequests(st) {
+  st.kitchen = [];
+  st.pet = [];
+  const g = farmPanelGameState;
+  const own = g ? farmSyncGetFaction(g) : null;
+  if (st.synced && own && factionMarksRequestWeek !== "next") {
+    const kitchen = farmSyncAsObj(own.kitchen);
+    const pet = farmSyncAsObj(own.pet);
+    (kitchen && Array.isArray(kitchen.requests) ? kitchen.requests : []).forEach(r => {
+      st.kitchen.push({ item: r.item, amount: Number(r.amount) || 0, done: 0, deliver: 1 });
+    });
+    (pet && Array.isArray(pet.requests) ? pet.requests : []).forEach(r => {
+      st.pet.push({ item: r.food, amount: Number(r.quantity) || 0, done: 0, deliver: 1 });
+    });
+    return;
+  }
+  const prediction = factionDeliveryPredict(st.faction, factionMarksTargetWeekKey());
+  const set = prediction && prediction.set;
+  ((set && set.kitchen) || []).forEach(r => {
+    st.kitchen.push({ item: r.item, amount: Number(r.amount) || 0, done: 0, deliver: 1 });
+  });
+  ((set && set.pet) || []).forEach(r => {
+    st.pet.push({ item: r.food, amount: Number(r.quantity) || 0, done: 0, deliver: 1 });
+  });
+}
+
 function factionMarksUnitCost(name) {
   try {
     const coins = craftingBoxHasRecipe(name) ? craftingBoxUnitCostCoinsForMode(name, factionMarksCostMode) : cookingIngredientUnitCostCoins(name, factionMarksCostMode);
@@ -910,12 +943,6 @@ function factionMarksBuildState(faction) {
   const synced = !!(own && own.name === faction);
   const st = { faction: faction, synced: synced, wear: {}, paw: false, champion: !!factionChampionFaction && factionChampionFaction === faction, championTouched: false, emblems: 0, kitchen: [], pet: [] };
   if (synced) {
-    const day = factionMarksTodayKey();
-    const doneOf = r => {
-      const o = farmSyncAsObj(r && r.dailyFulfilled);
-      if (!o) return 0;
-      return Number(o[day] != null ? o[day] : o[String(day)]) || 0;
-    };
     const equipped = factionMarksEquippedSet(g);
     const outfit = FACTION_MARKS_OUTFITS[faction];
     FACTION_MARKS_PARTS.forEach(p => {
@@ -924,24 +951,8 @@ function factionMarksBuildState(faction) {
     st.paw = equipped.has("Paw Shield");
     const inv = farmSyncAsObj(g.inventory);
     st.emblems = inv ? Math.max(0, Math.floor(Number(inv[FACTION_MARKS_EMBLEMS[faction]]) || 0)) : 0;
-    const kitchen = farmSyncAsObj(own.kitchen);
-    const pet = farmSyncAsObj(own.pet);
-    (kitchen && Array.isArray(kitchen.requests) ? kitchen.requests : []).forEach(r => {
-      st.kitchen.push({ item: r.item, amount: Number(r.amount) || 0, done: doneOf(r), deliver: 1 });
-    });
-    (pet && Array.isArray(pet.requests) ? pet.requests : []).forEach(r => {
-      st.pet.push({ item: r.food, amount: Number(r.quantity) || 0, done: doneOf(r), deliver: 1 });
-    });
-  } else {
-    const prediction = factionDeliveryPredict(faction, factionGetWeekKey());
-    const set = prediction && prediction.set;
-    ((set && set.kitchen) || []).forEach(r => {
-      st.kitchen.push({ item: r.item, amount: Number(r.amount) || 0, done: 0, deliver: 1 });
-    });
-    ((set && set.pet) || []).forEach(r => {
-      st.pet.push({ item: r.food, amount: Number(r.quantity) || 0, done: 0, deliver: 1 });
-    });
   }
+  factionMarksLoadRequests(st);
   return st;
 }
 
@@ -1134,6 +1145,13 @@ function factionMarksBodyHtml() {
         <button type="button" data-act="cost" data-cost="buy" class="fd-lb-tab${factionMarksCostMode === "buy" ? " active" : ""}">Buy</button>
       </div>
     </div>
+    <div class="fdm-inline">
+      <div class="fd-section-label">Request</div>
+      <div class="fdm-pair">
+        <button type="button" data-act="reqweek" data-week="this" class="fd-lb-tab${factionMarksRequestWeek === "this" ? " active" : ""}">This Week</button>
+        <button type="button" data-act="reqweek" data-week="next" class="fd-lb-tab${factionMarksRequestWeek === "next" ? " active" : ""}">Next Week</button>
+      </div>
+    </div>
     <div class="fdm-inline fdm-calc-row">
       <div class="fd-section-label">Calculator</div>
       <div class="fdm-pair fdm-calc-pair">
@@ -1144,7 +1162,8 @@ function factionMarksBodyHtml() {
     </div>
     ${targetHtml}
   </div>`;
-  const weekNote = calc.week ? `<div class="fd-week-info">Week view repeats your plan on each of the ${FACTION_MARKS_WEEK_DAYS} days, starting every day from 0 deliveries.</div>` : "";
+  const reqNote = factionMarksRequestWeek === "next" ? `<div class="fd-week-info">Using next week's requests · week of ${factionMarksTargetWeekKey()} (UTC) · routine week ${factionRoutineIndexForWeek(factionMarksTargetWeekKey()) + 1}/12</div>` : "";
+  const weekNote = reqNote + (calc.week ? `<div class="fd-week-info">Week view repeats your plan on each of the ${FACTION_MARKS_WEEK_DAYS} days, starting every day from 0 deliveries.</div>` : "");
   const allMarks = calc.kitchen.marks + calc.pet.marks;
   const allCost = calc.kitchen.cost + calc.pet.cost;
   const totalHtml = `<div class="fd-container is-own">
@@ -1437,6 +1456,12 @@ function factionMarksHandleClick(e) {
   } else if (act === "scope") {
     factionMarksScope = btn.dataset.scope;
     factionMarksAutoReapply();
+  } else if (act === "reqweek") {
+    const week = btn.dataset.week === "next" ? "next" : "this";
+    if (week === factionMarksRequestWeek) return;
+    factionMarksRequestWeek = week;
+    factionMarksLoadRequests(st);
+    factionMarksAutoReapply();
   } else if (act === "cost") {
     factionMarksCostMode = btn.dataset.cost === "collect" ? "collect" : "buy";
     factionMarksAutoReapply();
@@ -1559,6 +1584,8 @@ function factionSubApplyView() {
   const deliveryView = $("factionDeliveryView");
   const wrap = $("factionSubPanels");
   if (deliveryView) deliveryView.style.display = anyOpen ? "none" : "";
+  const requestBox = $("factionRequestBox");
+  if (requestBox) requestBox.style.display = anyOpen ? "none" : "";
   if (wrap) wrap.style.display = anyOpen ? "" : "none";
   FACTION_SUB_KEYS.forEach(k => {
     const cfg = FACTION_SUB_PANELS[k];
@@ -1649,6 +1676,7 @@ export function renderFactionDeliveryPanel() {
   const body = $("factionBody");
   if (!body) return;
   factionDeliveryWeekMode = "this";
+  factionMarksRequestWeek = "this";
   FACTION_SUB_KEYS.forEach(k => {
     factionSubOpen[k] = false;
   });
@@ -1657,20 +1685,22 @@ export function renderFactionDeliveryPanel() {
   body.innerHTML = `
     <div class="fd-title">Factions Deliveries</div>
     <div class="fd-note">Your connected farm sets the routine week and shows your faction's real requests. The other three factions follow the same routine for this week and next week.</div>
-    <div class="fd-container fdm-gap">
-      <div class="fdm-pair fdm-flush">
-        <button type="button" class="fd-lb-btn" id="factionLeaderboardBtn">${FACTION_SUB_PANELS.leaderboard.label()}</button>
-        <button type="button" class="fd-lb-btn" id="factionMarksCalcBtn">${FACTION_SUB_PANELS.marks.label()}</button>
+    <div class="fd-top-row">
+      <div class="fd-container fdm-gap fd-shrink">
+        <div class="fdm-pair fdm-flush">
+          <button type="button" class="fd-lb-btn" id="factionLeaderboardBtn">${FACTION_SUB_PANELS.leaderboard.label()}</button>
+          <button type="button" class="fd-lb-btn" id="factionMarksCalcBtn">${FACTION_SUB_PANELS.marks.label()}</button>
+        </div>
       </div>
-    </div>
-    <div id="factionDeliveryView">
-      <div class="fd-container fdm-gap">
+      <div class="fd-container fdm-gap fd-shrink" id="factionRequestBox">
         <div class="fd-container-head"><span class="fd-container-title">Faction Request</span></div>
         <div class="fdm-pair fdm-flush" id="factionWeekFilter">
           <button type="button" data-week="this" class="fd-lb-tab active">This Week</button>
           <button type="button" data-week="next" class="fd-lb-tab">Next Week</button>
         </div>
       </div>
+    </div>
+    <div id="factionDeliveryView">
       <div class="fd-week-info" id="factionWeekInfo"></div>
       <div class="fd-grid" id="factionDeliveryGrid"></div>
     </div>

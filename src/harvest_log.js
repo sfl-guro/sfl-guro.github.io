@@ -436,6 +436,83 @@ async function openLog(trackKey) {
   }
 }
 
+const inlineState = {
+  host: null,
+  token: 0,
+  showCount: PAGE_SIZE,
+  list: [],
+  notice: ""
+};
+
+function inlineRender() {
+  const host = inlineState.host;
+  if (!host || !host.isConnected) return;
+  const list = inlineState.list;
+  const asc = list.slice().sort((a, b) => a.day < b.day ? -1 : a.day > b.day ? 1 : 0);
+  const cards = asc.map((entry, i) => dayHtml(entry, i + 1)).reverse();
+  const more = cards.length > inlineState.showCount ? `<div class="dh-hlog-more"><button type="button" class="dh-pop-log-btn" data-pf-hmore="1">Show more (${cards.length - inlineState.showCount} older)</button></div>` : "";
+  host.innerHTML = `<div class="dh-hlog-tax">${taxNoteHtml(list)}</div>` + (inlineState.notice ? `<div class="dh-hlog-msg">${inlineState.notice}</div>` : "") + `<div class="pf-hlog-grid">${cards.slice(0, inlineState.showCount).join("")}</div>` + more;
+}
+
+function inlineMessage(html) {
+  const host = inlineState.host;
+  if (host && host.isConnected) host.innerHTML = `<div class="dh-hlog-msg">${html}</div>`;
+}
+
+export function harvestLogInlineMore() {
+  inlineState.showCount += PAGE_SIZE;
+  inlineRender();
+}
+
+export function harvestLogInlineClose() {
+  inlineState.token++;
+  inlineState.host = null;
+}
+
+export async function harvestLogInlineOpen(host) {
+  inlineState.host = host;
+  inlineState.showCount = PAGE_SIZE;
+  const token = ++inlineState.token;
+  const farmId = currentFarmId();
+  if (!farmId) {
+    inlineMessage("Sync your Farm ID first to see your history.");
+    return;
+  }
+  const cache = loadCache(farmId);
+  const hasCache = Object.keys(cache.days).length > 0;
+  if (hasCache) {
+    inlineState.list = mergeLocalToday(cacheToList(cache), farmId);
+    inlineState.notice = "";
+    inlineRender();
+    if (Date.now() - cache.at < CACHE_FRESH_MS) return;
+  } else {
+    inlineMessage("Loading…");
+  }
+  try {
+    await refreshCache(farmId, cache);
+  } catch (e) {
+    if (token !== inlineState.token || hasCache) return;
+    const local = mergeLocalToday([], farmId);
+    if (local.length) {
+      inlineState.list = local;
+      inlineState.notice = "Offline: showing today only.";
+      inlineRender();
+    } else {
+      inlineMessage(`Couldn't load history. Check your connection.<br><button type="button" class="dh-pop-log-btn" data-pf-hretry="1">Retry</button>`);
+    }
+    return;
+  }
+  if (token !== inlineState.token) return;
+  const list = mergeLocalToday(cacheToList(cache), farmId);
+  if (!list.length) {
+    inlineMessage("No history yet. Sync your farm to start recording.");
+    return;
+  }
+  inlineState.list = list;
+  inlineState.notice = "";
+  inlineRender();
+}
+
 document.addEventListener("dh-open-log", ev => {
   openLog(ev && ev.detail && ev.detail.farm ? String(ev.detail.farm) : "");
 });

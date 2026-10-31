@@ -69,6 +69,13 @@ const AUTUMN_GUARDIAN_ICON = "data:image/webp;base64,UklGRpABAABXRUJQVlA4TIQBAAA
 const SPRING_GUARDIAN_ICON = "data:image/webp;base64,UklGRrYBAABXRUJQVlA4TKoBAAAvIoALEJ+gJpKt5pODgT94wARy8YKDnDpqWnQojSQp2rtDUedI4PUoUiYNQkGi0a/SSLaa/1WmBWpPZSGRDD7PCASSFBedMQAAAOXdvhi26cL/OqrfHPSlKzrjiHZ688NKXHboTVqBL5FwxGpikBjbVtg4BJFgELLZ7/6bFR9LOFvAfRH9d+C2bSTJEjD37jvCxQz/3NJsA8RiXbFrY7EUWdKS1OMW+yZsBSluuk+XpaEL67pzlKKRzEEyYro8OI9EPxWgM/9HrqPLfhw/1pWcl6FTPymmKxUHEn0e/o/oDrMsIObpisoxXZY+h0SvODLubxj6NEgS1MwjVMjF2T8K3VVyBURpqua9yGpTqRkK9cmhZk6ihIt26Ekt1FBHbW99kqne9jYkQBvHUuiWJhWT9dA0DlsYHNLeQN0SQ6WzFtB+SA3v7qjHUKOjOjQFkmCWOZDE1VQOp0mlhZtTHjLKt6nKr+MJeuVW71LC6clZKIH7hy8Af7xwOHqUsLYmPfSGsLy//LvNGybeWv/T0gJvheVJ4tfs6z/xiz/2Z94XjgC+Efw3uOjLjwA=";
 
 export const IMAGE_ICONS = {
+  "Truffle": "data:image/webp;base64,UklGRnoAAABXRUJQVlA4TG4AAAAvDQADEC9ApG0bG9/hhFxN2wZsqjDmXyJVE4AAG7NetwTmPwDEb6VsjX/AIJKkuJL2HPAKYC8RcI8CQAIR/Q+gCgCUOwEUu1kF9oXuCVO+k7L2H66tnCR9FNf9vGPxXG3F1YO1uJIUrEY2oEitAg==",
+  "Pig Bristles": "data:image/webp;base64,UklGRpwAAABXRUJQVlA4TI8AAAAvDsADEDdAJm2brIsyB7v2TkkbSXB00er4Dh49fGoaSYGD172oQAIV8x8A+tejzFD1XeODo0aSHCmbQfeMdgGMIWD/5wCs/Z/lD+MgRPQ/+cfUANHp4kHnJVUnPMd9DU14fsejeGP59RqunuWsMVfHcoytRRP9nmMLTfT7HY9rFJZfr8HBctbgBDQHEwAzAAA=",
+  "Mud": "data:image/webp;base64,UklGRogAAABXRUJQVlA4THsAAAAvDgADEC+gIG0DFs7Dn4K2bdhYQZRA94+iNlLg2P5OQAUCgSS+ffcLAMyPf6uIY1eAQWxbUS4k4A0FFjWAfizA0sDfv4whIvo/AkCLABS/fobvCJR39QsYvr4dKbP7uw5uG74fCzrmWkcOum11U0gysyyQLCtAkiT4BQAA",
+  "Basic Slop": "data:image/webp;base64,UklGRqAAAABXRUJQVlA4TJQAAAAvDcACEF+gJpKt5nc59L/6BAH4Qi6IUxNJisQXUYQoIMIAIf6NPHcylAQA2nDUV3gsHQhEzeWamv8AADs2ihBNqUWNlbee5/3vtvl5Tg0wyra3SRlSeLjjYM+csDAtlCpoqoDmjoTcIo9lIaL/E6Dqu8oFBSXm2iP1wEjOHMDkDSLw6aw3wNpZ0nDJfZz3ezr9yB4S",
+  "Hearty Slop": "data:image/webp;base64,UklGRt4AAABXRUJQVlA4TNIAAAAvDUAEEHegJgAISQC7BEazNooKwKTEdwmui6JIkprLgANEpBcqEIoc9ORSG8kGJTKq+JaiE8WKhNQhFM9/AID3c8DIda4qicgva2nUCPbH22hyf4Say0KB02rbluX58cwKLOIuyXUAp7m175eGe/xtAuskOon25X+JjyEi+j8BAMKeOADQouMBEO8UGZQ8AM/zGQFbO37c7QLGjB6CO8mIO8VQTDIStBOnklEvlUsvSTbutil1ZVXUVbH71m66dut/P+xq8mMnZMJOx2TKk6kffwA=",
+  "Rich Slop": "data:image/webp;base64,UklGRtAAAABXRUJQVlA4TMQAAAAvD8ADEGegJpIUCQdoQTEKMPHlX04RXnxq1ES2GiEAKfh3gAOqO+WdKpNaTSMp0FVowBH6sIYN2h+a+Q8AeJRFwn1Fd+QzgYDqthFmpvamn78F3Ma2rSoH14gqtIzz5qfIu2gDPxSsAIcOLCVyd80pMKL/AeAbBQA80r8HgO049R9HgMX4FpvdgNNiFF9WkdF3s31XvgznZq9KH5QWURookmQDMERE6oBBknVYiiR1wBKSlIAhitRSt4oiIo0ArFar1QoA",
+  "Gourmet Slop": "data:image/webp;base64,UklGRtIAAABXRUJQVlA4TMYAAAAvDcADEIegJpKt5tffAW3OsaPHCAJRgCHaJEZNJFvNk/HLX/1PDjV2kBwFIINhmEa21QqFxGGzhUqokPqyzemHmf8AADuMc3TkGw1aN07BLxC0HoFHUrf4HalV8ccaLaN8HcEMDBpJUnT8f3z+5T6shp6I/itM2oDp7isOYOEsroahuk5Dq4KD6leTiBtfH9cirSilR/gydZX9UcVfepXi/UG9pKmSYNc74Pk93QrIeLeGhXHnPgx2QAaBmg3W7DKV38OBBQc=",
   "Power hour": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABYAAAAWCAYAAADEtGw7AAAAAXNSR0IArs4c6QAAAaZJREFUOI21k7FPwkAYxR+moyPkAhMDYbGkCXHpYDoYDUzMDvwBuGm6MZoYEokjhJlRF6cSDINxMHFoIJSlOLioNBhdwMnkHNper6VowfCW9q7f/b73vVxjWEEknqH82np/ii2rFQBAVWR2oH73EFpM4hk6mY6Rs75g3LyCVIu+7wsMVZGpq4nWoHwBD6WUUnEyp2iNKVpjyrtXFZlOtAbjqIpMBTZWp8lA5d09dqj7/IaEMWBOAYBUizhMJ4F00qn7ZgxSqHhRuFBTHwIALs6OAABS+RIJYwAAPuigfeqbqF5rw9SHyOZzjCUgosRSym4ADVLZzjfYgFco2HUOAFNRYu8JYwCxlIIBDaRa9NVFAmfzOceR/QyLhK9Dt7/A2Fra0lHUnFcCrwtFlIyD0KuTg1+z9YFJoQKr07Qz6/a97HCLqSiBOKulTrkzpFABam3PsQvnFWVkXu7PwRzfnx/7CqKMGpSpD2HqHufPW7GuBGsu4PPFu5vBdRSFMTbmeHNRAMD148e/QUGGAAD7O9tsozeardUoyAj98/iiKOqNZgt7G8v4B+Gg2SgFy2zmAAAAAElFTkSuQmCC",
   "Fairy Circle": "data:image/webp;base64,UklGRuoAAABXRUJQVlA4TN0AAAAvIgAHEDdAJmCxFCTwKyW+PmQCFiuhiAxSK+GTR1EbKdDugge+pyr8G8CBQCAJbPvFAkDasvx9vmvCfOAokiS5mZEIbEsGcPsvC4FBmMDJH8NEd+tAENF/Bm7bNlLbm0aG84ugdWadW8d/RzrH+3wnneNyfgClc0zzCExzrzQ8XweQTiLCrjNFHBynf0etOSogRVQ4YKuIjtJGq4gKBQwsr9yLJWeK05IzQ2LZmcSyM4llZ5KdOVMEdqZJI6IDIqQR0SGDbjpfukdwI6JLHq+bL3TiZoUuNTfcau5rAAA=",
   "Wild Mushroom": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAMCAYAAABbayygAAAAAXNSR0IArs4c6QAAAN1JREFUGJWFjjFOwzAUhj9XlZmqDokULoDSybAEZWFDndi4AUMF9A4MSBwBAksOgjhAlCyQiaoXaKQwVEx4MUP0XMPSf/ptf+99VgQpZ5kLz1efjZI+DqH53Rna5ADYtqK8xwk88lA09RCANjnzaOotI4Fki0S6wOPaWS5eFsPDY4ul3X1yadAmp758GNS2rf5oQ71sVtfpsQM4VdqrAF6/tgDUzg4ggMDhgAAAz6sPpQ7joxuANJ48ZckB5ycJAG/vHU33w6r/vgXw4L4ogH3wpl8XKrz4P7Dp14X0X7MSUmuc1gdpAAAAAElFTkSuQmCC",
@@ -1108,8 +1115,121 @@ export const FEED_LABELS = {
   hay: "Hay",
   nutriBarley: "Nutri Barley",
   mixedGrain: "Mixed Grain",
-  omnifeed: "Omnifeed"
+  omnifeed: "Omnifeed",
+  slopBasic: "Basic Slop",
+  slopHearty: "Hearty Slop",
+  slopRich: "Rich Slop",
+  slopGourmet: "Gourmet Slop"
 };
+
+const PIG_BASIC_FISH = [ "Anchovy", "Butterflyfish", "Blowfish", "Clownfish", "Sea Bass", "Sea Horse", "Horse Mackerel", "Halibut", "Squid", "Porgy", "Muskellunge" ];
+
+const PIG_ADVANCED_FISH = [ "Red Snapper", "Moray Eel", "Olive Flounder", "Napoleanfish", "Surgeonfish", "Angelfish", "Zebra Turkeyfish", "Ray", "Hammerhead shark", "Barred Knifejaw", "Walleye", "Rock Blackfish", "Tilapia", "Tuna", "Mahi Mahi", "Blue Marlin", "Oarfish", "Football fish", "Sunfish", "Coelacanth", "Parrotfish", "Whale Shark", "Saw Shark", "White Shark", "Cobia", "Trout", "Weakfish" ];
+
+const PIG_TIER4_CRUSTACEANS = [ "Blue Crab", "Lobster", "Hermit Crab", "Shrimp", "Mussel", "Oyster", "Anemone", "Sea Slug", "Sea Snail", "Garden Eel", "Sea Grapes", "Octopus", "Sea Urchin", "Horseshoe Crab" ];
+
+function pigEach(qty, names) {
+  const out = {};
+  names.forEach(n => {
+    out[n] = qty;
+  });
+  return out;
+}
+
+export const PIG_FEEDS = {
+  slopBasic: {
+    label: "Basic Slop",
+    tier: 1,
+    ingredients: {
+      Sunflower: 800,
+      Potato: 150,
+      Rhubarb: 100,
+      Pumpkin: 60,
+      Zucchini: 60,
+      Carrot: 25,
+      Yam: 25,
+      Cabbage: 15,
+      Broccoli: 15,
+      Soybean: 9
+    }
+  },
+  slopHearty: {
+    label: "Hearty Slop",
+    tier: 2,
+    ingredients: {
+      Beetroot: 15,
+      Pepper: 15,
+      Cauliflower: 8,
+      Parsnip: 5,
+      Tomato: 20,
+      Lemon: 4,
+      Blueberry: 4
+    }
+  },
+  slopRich: {
+    label: "Rich Slop",
+    tier: 3,
+    ingredients: {
+      Eggplant: 6,
+      Wheat: 6,
+      Turnip: 6,
+      Corn: 5,
+      Onion: 5,
+      Radish: 5,
+      Kale: 4,
+      Artichoke: 4,
+      Barley: 3,
+      Orange: 3,
+      Apple: 2,
+      Banana: 2,
+      ...pigEach(1, [ ...PIG_BASIC_FISH, "Wild Mushroom", "Isopod", "Barnacle" ])
+    }
+  },
+  slopGourmet: {
+    label: "Gourmet Slop",
+    tier: 4,
+    ingredients: {
+      Rice: 1,
+      Olive: 1,
+      Grape: 1,
+      Celestine: 1,
+      Lunara: 1,
+      Duskberry: 1,
+      ...pigEach(1, [ ...PIG_ADVANCED_FISH, "Magic Mushroom", ...PIG_TIER4_CRUSTACEANS ])
+    }
+  }
+};
+
+export const PIG_FEED_KEYS = [ "slopBasic", "slopHearty", "slopRich", "slopGourmet" ];
+
+export function isPigFeedKey(key) {
+  return Object.prototype.hasOwnProperty.call(PIG_FEEDS, key);
+}
+
+export const PIG_MUD_PER_APPLICATION = 25;
+
+export const PIG_MUD_XP_MULTIPLIER = 1.25;
+
+export const PIG_BRISTLES_PER_LEVEL = {
+  0: 0,
+  1: 0,
+  2: 0,
+  3: 1,
+  4: 1,
+  5: 2,
+  6: 3,
+  7: 3,
+  8: 4,
+  9: 5,
+  10: 6,
+  11: 6,
+  12: 7,
+  13: 8,
+  14: 9,
+  15: 12
+};
+
+export const SICK_ANIMAL_REWARD_MULTIPLIER = .75;
 
 export const FEED_RECIPE = {
   kernelBlend: [ {
@@ -1334,6 +1454,72 @@ export const ANIMAL_DATA = {
       qty: 60,
       y: [ 4, 4 ]
     } ]
+  },
+  pig: {
+    label: "Pig",
+    emoji: "🐖",
+    products: [ "Truffle" ],
+    levels: [ {
+      feed: "slopBasic",
+      qty: 3,
+      y: [ 1 ]
+    }, {
+      feed: "slopBasic",
+      qty: 3,
+      y: [ 1 ]
+    }, {
+      feed: "slopBasic",
+      qty: 6,
+      y: [ 1 ]
+    }, {
+      feed: "slopHearty",
+      qty: 6,
+      y: [ 2 ]
+    }, {
+      feed: "slopHearty",
+      qty: 6,
+      y: [ 2 ]
+    }, {
+      feed: "slopHearty",
+      qty: 9,
+      y: [ 2 ]
+    }, {
+      feed: "slopRich",
+      qty: 9,
+      y: [ 2 ]
+    }, {
+      feed: "slopRich",
+      qty: 9,
+      y: [ 3 ]
+    }, {
+      feed: "slopRich",
+      qty: 9,
+      y: [ 3 ]
+    }, {
+      feed: "slopRich",
+      qty: 12,
+      y: [ 3 ]
+    }, {
+      feed: "slopGourmet",
+      qty: 9,
+      y: [ 3 ]
+    }, {
+      feed: "slopGourmet",
+      qty: 9,
+      y: [ 3 ]
+    }, {
+      feed: "slopGourmet",
+      qty: 9,
+      y: [ 3 ]
+    }, {
+      feed: "slopGourmet",
+      qty: 9,
+      y: [ 3 ]
+    }, {
+      feed: "slopGourmet",
+      qty: 12,
+      y: [ 4 ]
+    } ]
   }
 };
 
@@ -1391,6 +1577,24 @@ const ANIMAL_XP_THRESHOLDS = {
     13: 4320,
     14: 4800,
     15: 5440
+  },
+  pig: {
+    0: 0,
+    1: 180,
+    2: 360,
+    3: 720,
+    4: 1080,
+    5: 1440,
+    6: 1980,
+    7: 2520,
+    8: 3060,
+    9: 3600,
+    10: 4320,
+    11: 5040,
+    12: 5760,
+    13: 6480,
+    14: 7200,
+    15: 8160
   }
 };
 
@@ -1407,8 +1611,24 @@ export function getAnimalLevelFromXp(type, xp, allowZero) {
 export const REQUIRED_FOOD_QTY_MAP = {
   chicken: 1,
   sheep: 3,
-  cow: 5
+  cow: 5,
+  pig: 1
 };
+
+const PIG_FOOD_XP_BY_LEVEL = (function() {
+  const table = {};
+  for (let lvl = 0; lvl <= 15; lvl++) {
+    if (lvl <= 2) table[lvl] = { slopBasic: 60, slopHearty: 10, slopRich: 20, slopGourmet: 30 };
+    else if (lvl <= 5) table[lvl] = { slopBasic: 10, slopHearty: 60, slopRich: 20, slopGourmet: 30 };
+    else if (lvl <= 9) table[lvl] = { slopBasic: 10, slopHearty: 20, slopRich: 60, slopGourmet: 30 };
+    else table[lvl] = { slopBasic: 10, slopHearty: 20, slopRich: 30, slopGourmet: 80 };
+  }
+  return table;
+})();
+
+export function getAnimalFoodXpTable(type) {
+  return type === "pig" ? PIG_FOOD_XP_BY_LEVEL : ANIMAL_FOOD_XP_BY_LEVEL;
+}
 
 const ANIMAL_LOVE_OPPORTUNITIES_PER_CYCLE = 2;
 
@@ -1669,10 +1889,11 @@ export function setAnimalAffectionTool(key, val) {
   saveAnimalAffectionTools();
 }
 
-function getFavouriteFoodKeyAtLevel(fromLevel) {
-  const table = ANIMAL_FOOD_XP_BY_LEVEL[Math.min(15, Math.max(0, fromLevel))];
-  let best = "kernelBlend";
-  [ "kernelBlend", "hay", "nutriBarley", "mixedGrain" ].forEach(k => {
+function getFavouriteFoodKeyAtLevel(fromLevel, type) {
+  const table = getAnimalFoodXpTable(type)[Math.min(15, Math.max(0, fromLevel))];
+  const keys = type === "pig" ? PIG_FEED_KEYS : [ "kernelBlend", "hay", "nutriBarley", "mixedGrain" ];
+  let best = keys[0];
+  keys.forEach(k => {
     if (table[k] > table[best]) best = k;
   });
   return best;
@@ -1830,9 +2051,9 @@ function runAnimalCycleSim(type, scales) {
     const startXp = xp;
     const startLevel = levelOf(startXp);
     const startsAtMax = startXp >= maxXp;
-    const favouriteFoodKey = getFavouriteFoodKeyAtLevel(startLevel);
-    const feedKeyUsed = omnifeedEnabled ? "omnifeed" : favouriteFoodKey;
-    const baseFoodXp = ANIMAL_FOOD_XP_BY_LEVEL[startLevel][feedKeyUsed];
+    const favouriteFoodKey = getFavouriteFoodKeyAtLevel(startLevel, type);
+    const feedKeyUsed = omnifeedEnabled && type !== "pig" ? "omnifeed" : favouriteFoodKey;
+    const baseFoodXp = getAnimalFoodXpTable(type)[startLevel][feedKeyUsed];
     const boostedFoodXp = Math.max(1e-9, baseFoodXp * mods.xpMultTotal);
     let loveXp = 0;
     if (i > 0) {
@@ -1972,11 +2193,17 @@ export function computeAnimalRealProgress(type, animal, now, readyAt) {
     isMaxCycle = true;
   }
   if (isReadyState) xpGap = 0;
-  const favouriteFoodKey = getFavouriteFoodKeyAtLevel(level);
-  const feedKeyUsed = omnifeedEnabled ? "omnifeed" : favouriteFoodKey;
-  const baseFoodXp = ANIMAL_FOOD_XP_BY_LEVEL[Math.min(15, Math.max(0, level))][feedKeyUsed];
+  const favouriteFoodKey = getFavouriteFoodKeyAtLevel(level, type);
+  const feedKeyUsed = omnifeedEnabled && type !== "pig" ? "omnifeed" : favouriteFoodKey;
+  const baseFoodXp = getAnimalFoodXpTable(type)[Math.min(15, Math.max(0, level))][feedKeyUsed];
   const mods = getAnimalXpModifiers(type);
-  const boostedFoodXp = Math.max(1e-9, baseFoodXp * mods.xpMultTotal);
+  let realXpMult = mods.xpMultTotal;
+  if (type === "pig" && typeof animal.muddy === "boolean") {
+    const mudSelected = isBoostActive("pig_mud");
+    if (mudSelected && !animal.muddy) realXpMult /= PIG_MUD_XP_MULTIPLIER;
+    if (!mudSelected && animal.muddy) realXpMult *= PIG_MUD_XP_MULTIPLIER;
+  }
+  const boostedFoodXp = Math.max(1e-9, baseFoodXp * realXpMult);
   const love = xpGap > 0 ? computeAnimalRealLoveXp(type, level, animal, now, readyAt) : {
     slots: 0,
     xp: 0
@@ -2025,20 +2252,44 @@ function roundClaimProduce(n) {
   return Math.round(Number((n * 100).toPrecision(12))) / 100;
 }
 
+export function computePigTradeIn(levelOverride) {
+  const counts = getAnimalCount("pig");
+  const level = Math.min(15, Math.max(0, parseInt(levelOverride != null ? levelOverride : counts.level) || 0));
+  const base = PIG_BRISTLES_PER_LEVEL[level] || 0;
+  const active = getActiveAnimalBoosts("pig");
+  let flat = 0, mult = 1;
+  active.forEach(b => {
+    if (b.yieldAddAll) flat += b.yieldAddAll;
+    if (b.bristleMult) mult *= b.bristleMult;
+  });
+  const spice = getSpiceEffectForAnimalType("pig");
+  const amount = base > 0 ? roundClaimProduce(Math.max(0, (base + flat) * mult * spice.yieldMultAll)) : 0;
+  const sickAmount = roundClaimProduce(amount * SICK_ANIMAL_REWARD_MULTIPLIER);
+  return {
+    level: level,
+    base: base,
+    amount: amount,
+    sickAmount: sickAmount,
+    tradeable: base > 0
+  };
+}
+
 export function computeAnimalYieldsForLevel(type, level, realFeedBuffName) {
   const cfg = ANIMAL_DATA[type];
   const lvl = Math.min(15, Math.max(1, parseInt(level) || 1));
   const lvlData = cfg.levels[lvl - 1];
   const active = getActiveAnimalBoosts(type);
   let yieldMultAllTotal = 1;
-  const yieldAdd = [ 0, 0 ];
-  const budAddSum = [ {}, {} ];
+  const productCount = cfg.products.length;
+  const yieldAdd = cfg.products.map(() => 0);
+  const budAddSum = cfg.products.map(() => ({}));
+  const productMult = cfg.products.map(() => 1);
   active.forEach(b => {
     if (b.yieldMultAll) yieldMultAllTotal *= b.yieldMultAll;
     if (b.yieldAddAll) {
-      yieldAdd[0] += b.yieldAddAll;
-      yieldAdd[1] += b.yieldAddAll;
+      for (let pi = 0; pi < productCount; pi++) yieldAdd[pi] += b.yieldAddAll;
     }
+    if (b.truffleMult && type === "pig") productMult[0] *= b.truffleMult;
     if (b.productIndex != null && b.yieldAdd) {
       const budKey = b.isBud && b.budId ? b.budId : null;
       if (budKey) {
@@ -2058,7 +2309,11 @@ export function computeAnimalYieldsForLevel(type, level, realFeedBuffName) {
     yieldMultAll: 1
   };
   yieldMultAllTotal *= spice.yieldMultAll;
-  const yields = [ roundClaimProduce(Math.max(0, (lvlData.y[0] + yieldAdd[0]) * yieldMultAllTotal)), roundClaimProduce(Math.max(0, (lvlData.y[1] + yieldAdd[1]) * yieldMultAllTotal)) ];
+  const yields = cfg.products.map((_, pi) => {
+    const budPart = Object.values(budAddSum[pi]).length ? Math.max(...Object.values(budAddSum[pi])) : 0;
+    const flatPart = yieldAdd[pi] - budPart;
+    return roundClaimProduce(Math.max(0, ((lvlData.y[pi] + flatPart) * productMult[pi] + budPart) * yieldMultAllTotal));
+  });
   return {
     yields: yields,
     products: cfg.products
@@ -3981,6 +4236,18 @@ export function setMaterialMode(resourceName, materialName, mode) {
 
 export let animalCounts = safeLSJSON(localStorage.getItem("hl_animal_counts"), {});
 
+export let pigSlopIngredients = safeLSJSON(localStorage.getItem("hl_pig_slop_ingredients"), {});
+
+export function setPigSlopIngredient(feedKey, name) {
+  if (name) pigSlopIngredients[feedKey] = name; else delete pigSlopIngredients[feedKey];
+  localStorage.setItem("hl_pig_slop_ingredients", JSON.stringify(pigSlopIngredients));
+}
+
+export function getPigSlopIngredientChoice(feedKey) {
+  const name = pigSlopIngredients[feedKey];
+  return name && PIG_FEEDS[feedKey] && PIG_FEEDS[feedKey].ingredients[name] != null ? name : null;
+}
+
 if (!animalCounts.chicken) animalCounts.chicken = {
   level: 1,
   qty: 0
@@ -3992,6 +4259,11 @@ if (!animalCounts.sheep) animalCounts.sheep = {
 };
 
 if (!animalCounts.cow) animalCounts.cow = {
+  level: 1,
+  qty: 0
+};
+
+if (!animalCounts.pig) animalCounts.pig = {
   level: 1,
   qty: 0
 };
@@ -4085,6 +4357,9 @@ export let animalSicknessEstimate = safeLSJSON(localStorage.getItem("hl_animal_s
   },
   cow: {
     sickHeads: 0
+  },
+  pig: {
+    sickHeads: 0
   }
 });
 
@@ -4095,6 +4370,7 @@ export function getSicknessEstimate(type) {
 }
 
 function getEffectiveSickHeads(type) {
+  if (type === "pig" && isBoostActive("pig_mud")) return 0;
   const qty = Math.max(0, parseFloat(getAnimalCount(type).qty) || 0);
   const est = getSicknessEstimate(type);
   let sickHeads = Math.min(Math.max(0, est.sickHeads || 0), qty);
@@ -6444,6 +6720,93 @@ const SKILL_ANIMALS = [ {
   hideInPanel: true,
   note: "-25% feed for Cows / +50% feed for Chickens & Sheep"
 }, {
+  id: "skill_truffle_yield",
+  name: "Truffle Yield",
+  skillTier: 2,
+  category: "animals",
+  scope: "animalType",
+  target: "pig",
+  truffleMult: 1.1,
+  note: "×1.1 Truffle yield — scales the Truffles after flat boosts (Cattlegrim, Barn Manager) and before Bud yield and Salt Lick"
+}, {
+  id: "skill_swill_savvy",
+  name: "Swill Savvy",
+  skillTier: 3,
+  category: "animals",
+  scope: "animalType",
+  target: "pig",
+  feedMult: .75,
+  note: "-25% Slop for Pigs / +50% feed for Chickens, Sheep & Cows"
+}, {
+  id: "skill_swill_savvy",
+  name: "Swill Savvy",
+  skillTier: 3,
+  category: "animals",
+  scope: "animalType",
+  target: "chicken",
+  feedMult: 1.5,
+  hideInPanel: true,
+  note: "-25% Slop for Pigs / +50% feed for Chickens, Sheep & Cows"
+}, {
+  id: "skill_swill_savvy",
+  name: "Swill Savvy",
+  skillTier: 3,
+  category: "animals",
+  scope: "animalType",
+  target: "sheep",
+  feedMult: 1.5,
+  hideInPanel: true,
+  note: "-25% Slop for Pigs / +50% feed for Chickens, Sheep & Cows"
+}, {
+  id: "skill_swill_savvy",
+  name: "Swill Savvy",
+  skillTier: 3,
+  category: "animals",
+  scope: "animalType",
+  target: "cow",
+  feedMult: 1.5,
+  hideInPanel: true,
+  note: "-25% Slop for Pigs / +50% feed for Chickens, Sheep & Cows"
+}, {
+  id: "skill_bristle_payout",
+  name: "Bristle Payout",
+  skillTier: 3,
+  category: "animals",
+  scope: "animalType",
+  target: "pig",
+  bristleMult: 1.1,
+  note: "×1.1 Pig Bristles paid when a Pig is traded in or sold to a bounty"
+}, {
+  id: "skill_clucky_grazing",
+  name: "Clucky Grazing",
+  skillTier: 3,
+  category: "animals",
+  scope: "animalType",
+  target: "pig",
+  feedMult: 1.5,
+  hideInPanel: true,
+  note: "-25% feed for Chickens / +50% feed for Sheep, Cows & Pigs"
+}, {
+  id: "skill_sheepwise_diet",
+  name: "Sheepwise Diet",
+  skillTier: 3,
+  category: "animals",
+  scope: "animalType",
+  target: "pig",
+  feedMult: 1.5,
+  hideInPanel: true,
+  note: "-25% feed for Sheep / +50% feed for Chickens, Cows & Pigs"
+}, {
+  id: "skill_cow_smart_nutrition",
+  name: "Cow-Smart Nutrition",
+  skillTier: 3,
+  category: "animals",
+  scope: "animalType",
+  target: "pig",
+  feedMult: 1.5,
+  hideInPanel: true,
+  note: "-25% feed for Cows / +50% feed for Chickens, Sheep & Pigs"
+}, {
   id: "skill_featherweight",
   name: "Featherweight",
   skillTier: 1,
@@ -7666,7 +8029,8 @@ export const ASCENSION_RANK_DATA = {
     values: {
       chicken: [ .75, .65, .5 ],
       sheep: [ 1.5, 1.55, 1.65 ],
-      cow: [ 1.5, 1.55, 1.65 ]
+      cow: [ 1.5, 1.55, 1.65 ],
+      pig: [ 1.5, 1.55, 1.65 ]
     }
   },
   skill_sheepwise_diet: {
@@ -7675,7 +8039,8 @@ export const ASCENSION_RANK_DATA = {
     values: {
       sheep: [ .75, .65, .5 ],
       chicken: [ 1.5, 1.55, 1.65 ],
-      cow: [ 1.5, 1.55, 1.65 ]
+      cow: [ 1.5, 1.55, 1.65 ],
+      pig: [ 1.5, 1.55, 1.65 ]
     }
   },
   skill_cow_smart_nutrition: {
@@ -7684,8 +8049,29 @@ export const ASCENSION_RANK_DATA = {
     values: {
       cow: [ .75, .65, .5 ],
       chicken: [ 1.5, 1.55, 1.65 ],
-      sheep: [ 1.5, 1.55, 1.65 ]
+      sheep: [ 1.5, 1.55, 1.65 ],
+      pig: [ 1.5, 1.55, 1.65 ]
     }
+  },
+  skill_swill_savvy: {
+    field: "feedMult",
+    byTarget: true,
+    values: {
+      pig: [ .75, .65, .5 ],
+      chicken: [ 1.5, 1.55, 1.65 ],
+      sheep: [ 1.5, 1.55, 1.65 ],
+      cow: [ 1.5, 1.55, 1.65 ]
+    }
+  },
+  skill_truffle_yield: {
+    field: "truffleMult",
+    values: [ 1.1, 1.2, 1.3 ],
+    unit: "×"
+  },
+  skill_bristle_payout: {
+    field: "bristleMult",
+    values: [ 1.1, 1.2, 1.3 ],
+    unit: "×"
   },
   skill_featherweight: {
     field: "yieldAdd",
@@ -8036,7 +8422,8 @@ function getAscensionTotals() {
 const ASCENSION_FRUIT_FEED_LABELS = {
   chicken: "Chicken feed",
   sheep: "Sheep feed",
-  cow: "Cow feed"
+  cow: "Cow feed",
+  pig: "Pig feed"
 };
 
 const ASCENSION_ANIMAL_YIELD_LABELS = {
@@ -8098,6 +8485,16 @@ const ASCENSION_PART_META = {
   skill_cow_smart_nutrition: {
     unit: "×",
     labels: ASCENSION_FRUIT_FEED_LABELS
+  },
+  skill_swill_savvy: {
+    unit: "×",
+    labels: ASCENSION_FRUIT_FEED_LABELS
+  },
+  skill_truffle_yield: {
+    template: v => `×${v} Truffle yield — scales the Truffles after flat boosts and before Bud yield and Salt Lick`
+  },
+  skill_bristle_payout: {
+    template: v => `×${v} Pig Bristles paid on trade-in and bounties`
   },
   skill_featherweight: {
     labels: ASCENSION_ANIMAL_YIELD_LABELS
@@ -10247,12 +10644,28 @@ const ANIMAL_BOOSTS = [ {
   hideInPanel: true,
   note: "-25% Cow sleep time, -25% Sheep sleep time, -5% feed to feed barn animals · Temporary, 7 days"
 }, {
+  id: "pig_onesie",
+  name: "Pig Onesie",
+  category: "animals",
+  scope: "animalGlobal",
+  xpMult: 1.05,
+  note: "+5% feed XP for all animals"
+}, {
+  id: "pig_mud",
+  name: "Mud",
+  category: "animals",
+  scope: "animalType",
+  target: "pig",
+  xpMult: 1.25,
+  mud: true,
+  note: "+25% final feed XP and no sickness for Pigs · 25 Mud per coat, lasts one claim (two with a Vibraphone)"
+}, {
   id: "vibraphone",
   name: "Vibraphone",
   category: "animals",
   scope: "animalGlobal",
   feedBuffHarvests: 6,
-  note: "Animal Feed buffs (Salt Lick / Honey Treat) last 6 harvests instead of 3"
+  note: "Animal Feed buffs (Salt Lick / Honey Treat) last 6 harvests instead of 3 · Mud lasts 2 claims instead of 1"
 } ];
 
 const TOOL_BOOSTS = [ {
@@ -10675,13 +11088,15 @@ export let spiceUsage = function() {
       active: false,
       chicken: false,
       sheep: false,
-      cow: false
+      cow: false,
+      pig: false
     },
     honeyTreat: {
       active: false,
       chicken: false,
       sheep: false,
-      cow: false
+      cow: false,
+      pig: false
     }
   };
   try {
@@ -10702,7 +11117,7 @@ export let spiceUsage = function() {
   }
 }();
 
-export const SPICE_ANIMAL_TYPES = [ "chicken", "sheep", "cow" ];
+export const SPICE_ANIMAL_TYPES = [ "chicken", "sheep", "cow", "pig" ];
 
 export function refreshAfterSpiceChange() {
   setTimeout(() => {
@@ -13421,6 +13836,7 @@ function getOmnifeedInfo() {
 }
 
 export function getActiveFeedInfo(feedKey, visited) {
+  if (isPigFeedKey(feedKey)) return getFeedUnitCost(feedKey, visited);
   return omnifeedEnabled ? getOmnifeedInfo() : getFeedUnitCost(feedKey, visited);
 }
 
@@ -13450,16 +13866,20 @@ export function computeAnimalTypeFigures(type, visited, levelOverride) {
   const lvlData = cfg.levels[level - 1];
   const active = getActiveAnimalBoosts(type);
   let feedMultTotal = 1, yieldMultAllTotal = 1, timeMultTotal = 1, freeFeed = false, cureFree = false, cureCostMult = 1;
-  const yieldAdd = [ 0, 0 ];
-  const budAddSum = [ {}, {} ];
+  const productCount = cfg.products.length;
+  const yieldAdd = cfg.products.map(() => 0);
+  const budAddSum = cfg.products.map(() => ({}));
+  const productMult = cfg.products.map(() => 1);
+  let mudActive = false;
   active.forEach(b => {
     if (b.feedMult) feedMultTotal *= b.feedMult;
     if (b.feedMultAll) feedMultTotal *= b.feedMultAll;
     if (b.yieldMultAll) yieldMultAllTotal *= b.yieldMultAll;
     if (b.yieldAddAll) {
-      yieldAdd[0] += b.yieldAddAll;
-      yieldAdd[1] += b.yieldAddAll;
+      for (let pi = 0; pi < productCount; pi++) yieldAdd[pi] += b.yieldAddAll;
     }
+    if (b.truffleMult && type === "pig") productMult[0] *= b.truffleMult;
+    if (b.mud && type === "pig") mudActive = true;
     if (b.timeMult) timeMultTotal *= b.timeMult;
     if (b.timeMultAll) timeMultTotal *= b.timeMultAll;
     if (b.productIndex != null && b.yieldAdd) {
@@ -13492,12 +13912,18 @@ export function computeAnimalTypeFigures(type, visited, levelOverride) {
   const requiredQtyPerFeed = REQUIRED_FOOD_QTY_MAP[type];
   const effectiveFeedQty = freeFeed ? 0 : Math.max(0, feedFig.noOfFeeds * requiredQtyPerFeed * feedMultTotal);
   const feedCostCoins = effectiveFeedQty * feedInfo.cost;
-  const yields = [ roundClaimProduce(Math.max(0, (lvlData.y[0] + yieldAdd[0]) * yieldMultAllTotal)), roundClaimProduce(Math.max(0, (lvlData.y[1] + yieldAdd[1]) * yieldMultAllTotal)) ];
-  const totalYieldUnits = yields[0] + yields[1];
+  const yields = cfg.products.map((_, pi) => {
+    const budPart = Object.values(budAddSum[pi]).length ? Math.max(...Object.values(budAddSum[pi])) : 0;
+    const flatPart = yieldAdd[pi] - budPart;
+    return roundClaimProduce(Math.max(0, ((lvlData.y[pi] + flatPart) * productMult[pi] + budPart) * yieldMultAllTotal));
+  });
+  const totalYieldUnits = yields.reduce((a, v) => a + v, 0);
   const curesPerLevel = getCuresPerLevelForType(type);
   const costPerCureFlower = cureFree ? 0 : computeMedicineCostFlower(visited) * cureCostMult;
   const medicineFlowerPerLevel = cureFree ? 0 : costPerCureFlower * curesPerLevel;
-  const consumablesFlowerPerLevel = spice.costFlowerPerCyclePerAnimal;
+  const mudHarvestsPerCoat = BOOSTS.some(b => b.id === "vibraphone" && isBoostActive(b.id)) ? 2 : 1;
+  const mudCostFlowerPerCycle = mudActive ? PIG_MUD_PER_APPLICATION * getMudFlowerUnitPrice() / mudHarvestsPerCoat : 0;
+  const consumablesFlowerPerLevel = spice.costFlowerPerCyclePerAnimal + mudCostFlowerPerCycle;
   const sickHeads = getEffectiveSickHeads(type);
   const extraCoinsPerLevel = (medicineFlowerPerLevel + consumablesFlowerPerLevel) * coinPerFlower;
   const totalCostCoinsPerAnimal = feedCostCoins + extraCoinsPerLevel;
@@ -13526,6 +13952,10 @@ export function computeAnimalTypeFigures(type, visited, levelOverride) {
     medicineFlowerPerLevel: medicineFlowerPerLevel,
     consumablesFlowerPerLevel: consumablesFlowerPerLevel,
     spiceActiveKey: spice.activeKey,
+    spiceCostFlowerPerCycle: spice.costFlowerPerCyclePerAnimal,
+    mudActive: mudActive,
+    mudCostFlowerPerCycle: mudCostFlowerPerCycle,
+    mudHarvestsPerCoat: mudHarvestsPerCoat,
     costPerCureFlower: costPerCureFlower,
     sickHeads: sickHeads,
     freeFeed: freeFeed,
@@ -13549,8 +13979,14 @@ export function computeAnimalTypeFigures(type, visited, levelOverride) {
 const ANIMAL_BUY_COINS = {
   chicken: 50,
   cow: 100,
-  sheep: 120
+  sheep: 120,
+  pig: 100
 };
+
+export function getMudFlowerUnitPrice() {
+  const m = marketItems.find(x => (x.name || "").toLowerCase() === "mud");
+  return m ? m.flowerPrice || 0 : 0;
+}
 
 const BOUNTIFUL_BOUNTIES_RANKS = [ .5, .75, 1 ];
 
@@ -13701,7 +14137,7 @@ export function computeAnimalWeeklyFigures(type, manualCyclesPerWeek) {
     totalYieldUnitsWeek += activeFig.totalYieldUnits * activeFig.qty;
     activeFig.yields.forEach((y, i) => yieldsWeek[i] += y * activeFig.qty);
     medicineCostFlowerWeek += activeFig.medicineFlowerPerLevel * activeFig.qty;
-    if (isBoosted) consumablesCostFlowerWeek += figWith.consumablesFlowerPerLevel * figWith.qty;
+    consumablesCostFlowerWeek += ((isBoosted ? figWith.spiceCostFlowerPerCycle : 0) + figWith.mudCostFlowerPerCycle) * figWith.qty;
     lastFigWith = figWith;
     if (!cyc.isMax && idx < simCycles.length - 1) idx++;
   }
@@ -13726,7 +14162,7 @@ export function computeAnimalWeeklyFigures(type, manualCyclesPerWeek) {
     consumablesCostFlowerWeek: consumablesCostFlowerWeek,
     costPerCureFlower: lastFigWith.costPerCureFlower,
     sickHeads: lastFigWith.sickHeads,
-    spiceCostPerUseFlower: figWithStart.consumablesFlowerPerLevel * getSpiceLickDurationHarvests(),
+    spiceCostPerUseFlower: figWithStart.spiceCostFlowerPerCycle * getSpiceLickDurationHarvests(),
     feedKey: figWithStart.feedKeyUsed,
     feedLabel: figWithStart.feedNameUsed
   };
@@ -13822,6 +14258,15 @@ export const ICONS = {
   "Nutri Barley": "🌾",
   "Mixed Grain": "🌾",
   Salt: "🧂",
+  Pig: "🐖",
+  Truffle: "🍄",
+  Mud: "🟤",
+  "Pig Bristles": "🪮",
+  "Basic Slop": "🥣",
+  "Hearty Slop": "🥣",
+  "Rich Slop": "🥣",
+  "Gourmet Slop": "🥣",
+  "Pig Onesie": "🐷",
   "Refined Salt": "🧂",
   "Salt Lick": "🧡",
   "Honey Treat": "🍯",
@@ -14904,7 +15349,7 @@ function applyFarmPlotsNodesOnly(json, hasFullData) {
     greenhouseCounts = freshGreenhouseCounts;
     saveGreenhouseCounts();
   }
-  const ANIMAL_TYPES_TO_SYNC = [ "chicken", "sheep", "cow" ];
+  const ANIMAL_TYPES_TO_SYNC = [ "chicken", "sheep", "cow", "pig" ];
   ANIMAL_TYPES_TO_SYNC.forEach(type => {
     const bag = asObj(farmSyncGetAnimalRecords(g, type)) || {};
     if (!animalCounts[type]) animalCounts[type] = {
@@ -15052,7 +15497,8 @@ export function farmSyncFindBagByNameHeuristic(root, nameRegex, maxDepth) {
 const ANIMAL_HOUSE_KEY = {
   chicken: "henHouse",
   sheep: "barn",
-  cow: "barn"
+  cow: "barn",
+  pig: "pigpen"
 };
 
 export function farmSyncGetAnimalRecords(g, type) {
@@ -15070,7 +15516,7 @@ export function farmSyncGetAnimalRecords(g, type) {
     }
   }
   if (!bag || typeof bag !== "object") return {};
-  if (houseKey === "henHouse") return bag;
+  if (houseKey === "henHouse" || houseKey === "pigpen") return bag;
   const wantType = type === "sheep" ? /sheep/i : /cow/i;
   const filtered = {};
   Object.entries(bag).forEach(([id, animal]) => {
@@ -17255,7 +17701,8 @@ function farmSyncFindConsumableName(obj, targets, depth, seen) {
 const SPICE_SYNC_ANIMAL_BAGS = {
   chicken: "chickens",
   sheep: "sheep",
-  cow: "cows"
+  cow: "cows",
+  pig: "pigs"
 };
 
 const SPICE_SYNC_TARGETS = [ "salt lick", "honey treat" ];
@@ -17648,8 +18095,8 @@ export function computeAnimalBaseCoinFigures(type) {
   const lvlData = cfg.levels[level - 1];
   const feedInfo = getFeedUnitCost(lvlData.feed);
   const feedCostCoins = lvlData.qty * feedInfo.cost;
-  const yields = [ lvlData.y[0], lvlData.y[1] ];
-  const totalYieldUnits = yields[0] + yields[1];
+  const yields = cfg.products.map((_, pi) => lvlData.y[pi]);
+  const totalYieldUnits = yields.reduce((a, v) => a + v, 0);
   const costPerUnit = totalYieldUnits > 0 ? feedCostCoins / totalYieldUnits : 0;
   return {
     level: level,

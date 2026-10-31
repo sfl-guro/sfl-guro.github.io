@@ -116,7 +116,8 @@ const SPICE_LABELS = {
 const ANIMAL_BUILDINGS = {
   chicken: "Hen House",
   cow: "Barn",
-  sheep: "Barn"
+  sheep: "Barn",
+  pig: "Pigpen"
 };
 
 const CROP_TIERS = [ [ "Basic", "Basic" ], [ "Medium", "Medium" ], [ "Advanced", "Advance" ] ];
