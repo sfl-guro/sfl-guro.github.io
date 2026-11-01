@@ -100,9 +100,9 @@ const RESOLVABLE_GROUPS = {
 
 const ACT_KEY_RE = /^(.+ Tree Chopped|.+ Rock Mined)$/;
 
-let pendResolver = null;
+var pendResolver;
 
-let cookProvider = null;
+var cookProvider;
 
 const LOG_NAME_RE = /^[A-Za-z0-9 '&.\-]{1,40}$/;
 
@@ -138,7 +138,7 @@ const COOK_NO_ESTIMATE = {
 
 const COOK_ESTIMATE_CAP = 500;
 
-let iconProvider = null;
+var iconProvider;
 
 export function dailyHarvestSetIconProvider(fn) {
   iconProvider = typeof fn === "function" ? fn : null;
@@ -1000,7 +1000,7 @@ function resolvePending(st, groupKey) {
   return changed;
 }
 
-let yieldListener = null;
+var yieldListener;
 
 export function dailyHarvestOnYield(fn) {
   yieldListener = typeof fn === "function" ? fn : null;
