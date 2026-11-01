@@ -70204,8 +70204,8 @@ var RESOLVABLE_GROUPS = {
   Gold: true
 };
 var ACT_KEY_RE = /^(.+ Tree Chopped|.+ Rock Mined)$/;
-var pendResolver = null;
-var cookProvider = null;
+var pendResolver;
+var cookProvider;
 var LOG_NAME_RE = /^[A-Za-z0-9 '&.\-]{1,40}$/;
 function dailyHarvestSetCookingProvider(fn) {
   cookProvider = typeof fn === "function" ? fn : null;
@@ -70233,7 +70233,7 @@ var COOK_NO_ESTIMATE = {
   "Premium Composter": true
 };
 var COOK_ESTIMATE_CAP = 500;
-var iconProvider = null;
+var iconProvider;
 function dailyHarvestSetIconProvider(fn) {
   iconProvider = typeof fn === "function" ? fn : null;
 }
@@ -71054,7 +71054,7 @@ function resolvePending(st, groupKey) {
   });
   return changed;
 }
-var yieldListener = null;
+var yieldListener;
 function dailyHarvestOnYield(fn) {
   yieldListener = typeof fn === "function" ? fn : null;
 }
