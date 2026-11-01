@@ -7,9 +7,15 @@ export const PAGES = [ {
 }, {
   id: "digging",
   path: "/digging",
-  label: "Digging",
+  label: "Desert Digging",
   root: "pageDigging",
   load: () => import("./digging.js")
+}, {
+  id: "cavesolver",
+  path: "/cave-solver",
+  label: "Cave Digging",
+  root: "pageCaveSolver",
+  load: () => import("./cavesolver.js")
 }, {
   id: "potionroom",
   path: "/potionroom",

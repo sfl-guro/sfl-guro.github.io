@@ -65,7 +65,9 @@ export const WB_BUILDINGS = [
   { name: "Greenhouse", level: 46, coins: 4800, ingredients: { Wood: 500, Stone: 100, Crimstone: 25, Oil: 100 } },
   { name: "Crafting Box", level: 6, coins: 0, ingredients: { Wood: 100, Stone: 5 } },
   { name: "Pet House", level: 0, coins: 5000, ingredients: { Wood: 200, Stone: 100 } },
-  { name: "Aging Shed", level: 0, coins: 200, ingredients: { Wood: 30 } }
+  { name: "Aging Shed", level: 0, coins: 200, ingredients: { Wood: 30 } },
+  { name: "Cave", level: 11, coins: 200, ingredients: { Wood: 20, Stone: 5 } },
+  { name: "Pigpen", level: 30, coins: 200, ingredients: { Wood: 150, Iron: 10, Gold: 10, Mud: 10 } }
 ];
 
 const WB_UPGRADES = {
@@ -81,6 +83,19 @@ const WB_UPGRADES = {
   "Barn": [
     { coins: 10000, ingredients: { Wood: 1000, Iron: 100, Gold: 75, Crimstone: 30 } },
     { coins: 75000, ingredients: { Wood: 5000, Iron: 300, Gold: 200, Crimstone: 125, Oil: 250 } }
+  ],
+  "Pigpen": [
+    { coins: 5000, ingredients: { Wood: 450, Iron: 45, Gold: 35, Crimstone: 12, Mud: 25 } },
+    { coins: 37500, ingredients: { Wood: 2250, Iron: 135, Gold: 90, Crimstone: 50, Oil: 100, Mud: 100 } }
+  ],
+  "Cave": [
+    { coins: 500, ingredients: { Mud: 80, Wood: 25, Stone: 10 } },
+    { coins: 1000, ingredients: { Mud: 160, Wood: 50, Stone: 25, Leather: 10 } },
+    { coins: 2500, ingredients: { Mud: 320, Wood: 75, Stone: 50, Leather: 15 } },
+    { coins: 5000, ingredients: { Mud: 640, Wood: 100, Stone: 75, "Pig Bristles": 20 } },
+    { coins: 10000, ingredients: { Mud: 960, Wood: 150, Stone: 100, "Pig Bristles": 30 } },
+    { coins: 20000, ingredients: { Mud: 1440, Wood: 200, Stone: 150, "Pig Bristles": 40 } },
+    { coins: 40000, ingredients: { Mud: 2200, Wood: 250, Stone: 200, "Pig Bristles": 50 } }
   ],
   "Pet House": [
     { coins: 0, ingredients: { "Chewed Bone": 1, Ribbon: 1, Ruffroot: 1, "Wild Grass": 1, "Heart leaf": 1, "Frost Pebble": 1, Dewberry: 1, Acorn: 10, Wood: 250 } },
@@ -123,6 +138,21 @@ const WB_PERKS = {
     "3 common pets, 1 NFT pet",
     "+2 common pet breeds, +3 NFT pet capacity (5 common, 4 NFT)",
     "+2 common pet breeds, +3 NFT pet capacity (7 common, 7 NFT)"
+  ],
+  "Pigpen": [
+    "Capacity of 3 pigs",
+    "+3 capacity (6 pigs)",
+    "+3 capacity (9 pigs)"
+  ],
+  "Cave": [
+    "1 Myco Bin (Tier I)",
+    "+1 Myco Bin (Tier II, needs Desert Island, 2h build)",
+    "+1 Myco Bin (Tier III, needs Volcano Island, 4h build)",
+    "+1 Myco Bin (Tier IV, needs Swamp Island, 8h build)",
+    "+1 Myco Bin (Tier V, needs Spooky Island, 12h build)",
+    "+1 Myco Bin (Tier VI, needs Crystal Island, 24h build)",
+    "+1 Myco Bin (Tier VII, needs Galaxy Island, 36h build)",
+    "+1 Myco Bin (Tier VIII, needs Marble Island, 48h build)"
   ],
   "Aging Shed": [
     "1 slot in aging, fermentation and spice racks",

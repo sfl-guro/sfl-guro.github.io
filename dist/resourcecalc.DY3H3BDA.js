@@ -113,7 +113,9 @@ import {
   getPlotCount,
   getRestockGemCostIndividual,
   getSicknessEstimate,
+  getSpiceDurationHarvests,
   getSpiceLickDurationHarvests,
+  getTruffleSeasoningSleeps,
   hasFreeSaltRakeCost,
   hasManualMaterialMode,
   invalidateCostCache,
@@ -176,7 +178,7 @@ import {
   toast,
   updateCalcSummary,
   updateSkillSaveBarState
-} from "./chunk.TJ2D2UQ7.js";
+} from "./chunk.VO3ZJNBW.js";
 import "./chunk.LPEVZJ4B.js";
 import "./chunk.VR6FV3KR.js";
 import "./chunk.AS3VMXOQ.js";
@@ -5400,7 +5402,13 @@ var STORE_KEY7 = "guro_rc_animals_v1";
 var MAX_CUSTOM_CYCLES7 = 1e5;
 var SPICE_LABELS = {
   saltLick: "Salt Lick",
-  honeyTreat: "Honey Treat"
+  honeyTreat: "Honey Treat",
+  truffleSeasoning: "Truffle Seasoning"
+};
+var SPICE_EFFECTS = {
+  saltLick: "\xD71.05 yield",
+  honeyTreat: "\xD70.75 feed",
+  truffleSeasoning: "\xD70.5 sleep"
 };
 var TOOL_LABELS = {
   pettingHand: "Petting Hand",
@@ -5704,7 +5712,7 @@ function appliedBoostHtml7(r) {
     parts: boostEffectParts(b, r.products)
   })).filter((x) => x.parts.length).map((x) => `<div class="rc-boost-row">${getBoostIconAnyFallback(x.b.name)}<span class="rc-boost-name">${esc8(x.b.name)}</span><span class="rc-boost-eff">${esc8(x.parts.join(", "))}</span></div>`);
   const spiceKey = r.fig.spiceActiveKey;
-  if (spiceKey) rows.push(`<div class="rc-boost-row">${getIcon(SPICE_LABELS[spiceKey])}<span class="rc-boost-name">${SPICE_LABELS[spiceKey]}</span><span class="rc-boost-eff">${spiceKey === "saltLick" ? "\xD71.05 yield" : "\xD70.75 feed"}</span></div>`);
+  if (spiceKey) rows.push(`<div class="rc-boost-row">${getIcon(SPICE_LABELS[spiceKey])}<span class="rc-boost-name">${SPICE_LABELS[spiceKey]}</span><span class="rc-boost-eff">${SPICE_EFFECTS[spiceKey]}</span></div>`);
   return `<div class="rc-group"><div class="rc-comp-sub">Applied Boost</div>${rows.join("") || `<div class="rc-boost-none">No boost applied</div>`}</div>`;
 }
 function kv7(label, html, cls) {
@@ -5812,9 +5820,9 @@ function affectionConfigHtml(r) {
 }
 function spiceConfigHtml(r) {
   const cur = r.fig.spiceActiveKey || "none";
-  const choose = `<div class="rc-tool-mat"><span class="rc-tool-mat-item"><span class="rc-tool-mat-name">Consumable</span></span><span class="es-toolcfg-tog">${tbtn("spice", "spice", "none", "None", cur === "none", r.type)}${tbtn("spice", "spice", "saltLick", "Salt Lick", cur === "saltLick", r.type)}${tbtn("spice", "spice", "honeyTreat", "Honey Treat", cur === "honeyTreat", r.type)}</span></div>`;
+  const choose = `<div class="rc-tool-mat"><span class="rc-tool-mat-item"><span class="rc-tool-mat-name">Consumable</span></span><span class="es-toolcfg-tog">${tbtn("spice", "spice", "none", "None", cur === "none", r.type)}${tbtn("spice", "spice", "saltLick", "Salt Lick", cur === "saltLick", r.type)}${tbtn("spice", "spice", "honeyTreat", "Honey Treat", cur === "honeyTreat", r.type)}${tbtn("spice", "spice", "truffleSeasoning", "Truffle Seasoning", cur === "truffleSeasoning", r.type)}</span></div>`;
   const used = [];
-  ["Salt Lick", "Honey Treat"].forEach((name) => {
+  ["Salt Lick", "Honey Treat", "Truffle Seasoning"].forEach((name) => {
     computeSpiceFigures(name).ingredients.forEach((ing) => {
       if (!ing.hasToggle || used.includes(ing.name)) return;
       used.push(ing.name);
@@ -5822,7 +5830,8 @@ function spiceConfigHtml(r) {
   });
   const rows = used.map((n) => toggleRow(getIcon(n), n, collectBuy("spicemode", n, spiceMaterialMode(n)))).join("");
   const dur = getSpiceLickDurationHarvests();
-  const note = `<div class="rc-note">One animal can use one consumable at a time. It lasts ${dur} harvests.</div>`;
+  const sleeps = getTruffleSeasoningSleeps();
+  const note = `<div class="rc-note">One animal can use one consumable at a time. Salt Lick and Honey Treat last ${dur} harvests. Truffle Seasoning halves the sleep it is spent on and lasts ${sleeps} ${sleeps === 1 ? "sleep" : "sleeps"}, so it is counted as re-applied at every claim.</div>`;
   return `<div class="rc-group"><div class="rc-comp-sub">Spice Rack</div><div class="rc-tool-cfg">${choose}${rows}${note}</div></div>`;
 }
 function materialsHtml3(r) {
@@ -5847,7 +5856,7 @@ function materialsHtml3(r) {
   const mudValue24 = mudUnits24 * priceOf("Mud");
   if (week && week.spiceActiveKey && r.spice - mudValue24 > 0) {
     const label = SPICE_LABELS[week.spiceActiveKey];
-    rows.push(matRowHtml3(getIcon(label), label, week.boostedCycles * r.qty / getSpiceLickDurationHarvests(), r.spice - mudValue24, "24hr"));
+    rows.push(matRowHtml3(getIcon(label), label, week.boostedCycles * r.qty / getSpiceDurationHarvests(week.spiceActiveKey), r.spice - mudValue24, "24hr"));
   }
   if (fig.mudActive) {
     rows.push(matRowHtml3(getIcon("Mud"), "Mud", PIG_MUD_PER_APPLICATION * r.qty / fig.mudHarvestsPerCoat, fig.mudCostFlowerPerCycle * r.qty, "1 cycle"));

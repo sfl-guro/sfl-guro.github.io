@@ -1,5 +1,5 @@
 import { ICON_DATA } from "./icon_data.js";
-import { FACTION_PET_BOOST_TIERS, runWithSimulatedSetup, ANIMAL_DATA, ASCENSION_RANK_DATA, BASE_CROPS, BASE_CROP_MACHINE, BASE_FRUITS, BASE_GREENHOUSE, BOOSTS, SEASON_EMOJI, boostStrength, boostsConflict, getAnimalCount, getCropSeasons, getFruitSeasons, getPlotCount, simulateGuideRows, FEED_RECIPE, FLOWER_ICON, COIN_ICON, coinsToFlower, RESOURCE_DATA, SKILL_BOOSTS, computeCropMachineBatch, currentSeason, escapeHtml, fmtInt, fmtXp, formatDuration, gatherAllProfitItems, computeGuideResourceFallback, computeResourceFigures, isBoostActive, getSpiceChoiceForAnimalType, getSpiceLickDurationHarvests, computeSpiceFigures, isCropInSeason, isCropMachineUnlocked, isFruitInSeason, isSkillActive, profileBuildFilterMatches, profileGetG } from "./calculator.js";
+import { FACTION_PET_BOOST_TIERS, runWithSimulatedSetup, ANIMAL_DATA, ASCENSION_RANK_DATA, BASE_CROPS, BASE_CROP_MACHINE, BASE_FRUITS, BASE_GREENHOUSE, BOOSTS, SEASON_EMOJI, boostStrength, boostsConflict, getAnimalCount, getCropSeasons, getFruitSeasons, getPlotCount, simulateGuideRows, FEED_RECIPE, FLOWER_ICON, COIN_ICON, coinsToFlower, RESOURCE_DATA, SKILL_BOOSTS, computeCropMachineBatch, currentSeason, escapeHtml, fmtInt, fmtXp, formatDuration, gatherAllProfitItems, computeGuideResourceFallback, computeResourceFigures, isBoostActive, getSpiceChoiceForAnimalType, getSpiceLickDurationHarvests, getTruffleSeasoningSleeps, computeSpiceFigures, isCropInSeason, isCropMachineUnlocked, isFruitInSeason, isSkillActive, profileBuildFilterMatches, profileGetG } from "./calculator.js";
 
 import { findCosmeticPriceForName, findLiveNftPriceForName, findLivePriceForName } from "./prices.js";
 
@@ -106,11 +106,12 @@ const CONS_SKILL_IDS = [ "skill_refiner", "skill_ager" ];
 
 const CONS_BOOST_IDS = [ "vibraphone", "astrolabe", "salt_bottle_onesie" ];
 
-const SPICE_CHOICES = [ [ "none", "None" ], [ "saltLick", "Salt Lick" ], [ "honeyTreat", "Honey Treat" ] ];
+const SPICE_CHOICES = [ [ "none", "None" ], [ "saltLick", "Salt Lick" ], [ "honeyTreat", "Honey Treat" ], [ "truffleSeasoning", "Truffle Seasoning" ] ];
 
 const SPICE_LABELS = {
   saltLick: "Salt Lick",
-  honeyTreat: "Honey Treat"
+  honeyTreat: "Honey Treat",
+  truffleSeasoning: "Truffle Seasoning"
 };
 
 const ANIMAL_BUILDINGS = {
@@ -876,7 +877,7 @@ export function handleGuideInput(e) {
     level: cur.level,
     spice: cur.spice || "none"
   };
-  if (field === "spice") next.spice = el.value === "saltLick" || el.value === "honeyTreat" ? el.value : "none"; else if (field === "qty") next.qty = Math.max(0, Math.min(9999, raw)); else next.level = Math.max(0, Math.min(15, raw));
+  if (field === "spice") next.spice = el.value === "saltLick" || el.value === "honeyTreat" || el.value === "truffleSeasoning" ? el.value : "none"; else if (field === "qty") next.qty = Math.max(0, Math.min(9999, raw)); else next.level = Math.max(0, Math.min(15, raw));
   const def = animalDefaultInput(type);
   d.q = next.qty === def.qty && next.level === def.level && next.spice === def.spice ? null : next;
   simRefreshUnsaved(key);
@@ -1048,7 +1049,7 @@ function boostEffectText(b) {
   const fm = b.feedMult || b.feedMultAll;
   if (typeof fm === "number" && fm !== 1) parts.push(`${fm < 1 ? "-" : "+"}${effPct(fm)} feed needed`);
   if (b.freeFeed) parts.push("no feed needed");
-  if (b.feedBuffHarvests) parts.push(`Salt Lick / Honey Treat last ${b.feedBuffHarvests} harvests instead of 3`);
+  if (b.feedBuffHarvests) parts.push(`Salt Lick / Honey Treat last ${b.feedBuffHarvests} harvests instead of 3, Truffle Seasoning ${b.feedBuffHarvests / 3} sleeps instead of 1`);
   if (b.spiceOutputAdd) parts.push(`${effSigned(b.spiceOutputAdd)} Spice Rack output per job`);
   if (b.doubleChancePct) parts.push(`${b.doubleChancePct}% chance to double Spice Rack output`);
   if (b.freeCost) parts.push(cat === "resources" ? "no tool cost" : "no seed cost");
@@ -1535,7 +1536,7 @@ function consumablesVerdict() {
     if (!base) return;
     heads += animalDefaultInput(type).qty;
     let best = 0;
-    [ "saltLick", "honeyTreat" ].forEach(choice => {
+    [ "saltLick", "honeyTreat", "truffleSeasoning" ].forEach(choice => {
       const r = consAnimalRows(plain, type, choice)[0];
       if (r) best = Math.max(best, r.net - base.net);
     });
@@ -1553,8 +1554,10 @@ function consumablesVerdict() {
 function consumablesNote() {
   const lick = computeSpiceFigures("Salt Lick");
   const treat = computeSpiceFigures("Honey Treat");
+  const seasoning = computeSpiceFigures("Truffle Seasoning");
   const harvests = getSpiceLickDurationHarvests();
-  return `Salt Lick gives +5% yield and Honey Treat cuts feed by 25%. Each one lasts ${fmtInt(harvests)} harvests and an animal can only carry one at a time. Priced from your Spice Rack: Salt Lick ${flower(lick.unitCost)} each, Honey Treat ${flower(treat.unitCost)} each. Skills and boosts below make them cheaper to craft or last longer.`;
+  const sleeps = getTruffleSeasoningSleeps();
+  return `Salt Lick gives +5% yield, Honey Treat cuts feed by 25% and Truffle Seasoning halves one sleep. Salt Lick and Honey Treat last ${fmtInt(harvests)} harvests, Truffle Seasoning ${fmtInt(sleeps)} ${sleeps === 1 ? "sleep" : "sleeps"}, and an animal can only carry one at a time. Priced from your Spice Rack: Salt Lick ${flower(lick.unitCost)} each, Honey Treat ${flower(treat.unitCost)} each, Truffle Seasoning ${flower(seasoning.unitCost)} each. Skills and boosts below make them cheaper to craft or last longer.`;
 }
 
 function simConsumablesBox(key) {
@@ -1577,7 +1580,7 @@ function simConsumablesBox(key) {
     })).join("");
     return `<div class="bg-sim-single">${simTierHtml(label, `<div class="bg-sim-list">${list}</div>`)}</div>`;
   }).join("");
-  const note = types.length ? "" : `<div class="bg-mini"><strong>Add some animals to your farm first.</strong> This compares No consumable, Salt Lick and Honey Treat on the animals you have.</div>`;
+  const note = types.length ? "" : `<div class="bg-mini"><strong>Add some animals to your farm first.</strong> This compares No consumable, Salt Lick, Honey Treat and Truffle Seasoning on the animals you have.</div>`;
   return simBox(key, "raise", `${html}${note}`, "");
 }
 
@@ -1598,7 +1601,7 @@ function animalsHtml(ctx) {
     const skills = tagOwned(ownAnimal.concat(consS).filter(x => !have.has(x.id) && have.add(x.id)).sort((a, b) => a.skillTier - b.skillTier), ownedOf(ownAnimal).concat(ownedOf(consS)));
     const boosts = boostsFor("animals", "animals", type).filter(b => CONS_BOOST_IDS.indexOf(b.id) < 0).concat(consB);
     const building = ANIMAL_BUILDINGS[type];
-    let note = `Skills and boosts below increase the yield and speed of ${escapeHtml(label.toLowerCase())}. Salt Lick and Honey Treat follow your animal panel settings and their cost is included under Consumables in Total Deductions. ${consumablesNote()}`;
+    let note = `Skills and boosts below increase the yield and speed of ${escapeHtml(label.toLowerCase())}. Salt Lick, Honey Treat and Truffle Seasoning follow your animal panel settings and their cost is included under Consumables in Total Deductions. ${consumablesNote()}`;
     if (building && g && (Number(g.inventory && g.inventory[building]) || 0) <= 0) note = `You need the ${escapeHtml(building)} first. ${note}`;
     let lock = "";
     if (ctx.free) {

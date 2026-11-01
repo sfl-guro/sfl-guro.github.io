@@ -1,4 +1,4 @@
-import { ICONS, NPC_ICONS, ALL_ANIMAL_PRODUCTS, ANIMAL_BASE_CYCLE_SEC, ANIMAL_DATA, ANIMAL_PRODUCT_LOOKUP, ASCENSION_RANK_DATA, BAIT_RECIPES, BASE_CROPS, BASE_FRUITS, BASE_GREENHOUSE, BASE_STOCK_TOOLS, BEE_SWARM_ICON, BOOSTS, CALENDAR_SEASONAL_BOOSTS, COIN_ICON, COOKING_BUILDINGS, COOKING_BUILDING_ICONS, COOKING_CAKE_DISHES, COOKING_FOOD_IMAGES, COOKING_RECIPES, CRIMSTONE_KNOWN_IDS, CROPS_GLOBAL_EXCLUDED_FROM_GREENHOUSE, CROP_AOE_RANKS, CROP_HARVEST_SEC, CROP_KNOWN_IDS, CROP_PRNG_EXCLUDE, FARM_LEVEL_NODES, FARM_PANEL_SCROLL_IDLE_MS, FEED_LABELS, FERMENTATION_BAIT_FAMILIES, FERMENTATION_SPICE_KNOWN_IDS, FERMENTATION_STATIC_RECIPES, FISH_AGING_KNOWN_IDS, FISH_SALT_DATA, FLOWER_ICON, FLOWER_SEEDS, FLOWER_VARIETIES, FOOD_KNOWN_IDS, FRUIT_KNOWN_IDS, FRUIT_PRNG_EXCLUDE, GAMESTATE_SECTION_KEYS, GEM_ICON, GOLD_KNOWN_IDS, IMAGE_ICONS, IRON_KNOWN_IDS, MUTANT_TYPE_EMOJI, OIL_BONUS_DROP_AMOUNT, OIL_SINGLE_HARVEST_BASE, PATCH_FRUIT_ONLY_GLOBAL_BOOSTS_EXCLUDED_FROM_GREENHOUSE, RCM_GREENHOUSE_ICON_HTML, REQUIRED_FOOD_QTY_MAP, RESOURCE_DATA, RESOURCE_NODE_TIERS, SALT_BASE_CHARGE_CAP, SALT_BASE_TIME_SEC, SALT_BASE_YIELD, SALT_KNOWN_ID, SPICE_RECIPES, SPICE_STATIC_RECIPES, STONE_KNOWN_IDS, SYNODIC_MONTH_DAYS, TREE_KNOWN_IDS, __farmPanelSaveGameStateHandle, __gameStateSectionLenSigs, __set___farmPanelSaveGameStateHandle, __set___gameStateSectionLenSigs, allResourceBudBoostEntries, applyFarmBoostsOnly, applyFarmSkillsOnly, coinPerFlower, coinsToFlower, computeAgedFishFigures, computeAnimalFeedFigures, computeAnimalRealProgress, computeAnimalTypeFigures, computeAnimalYieldsForLevel, computeBoostedCropStats, computeBoostedStock, computeBoostedFlowerVarietyStats, computeBoostedFruitStats, computeBoostedGreenhouseStats, computeBoostedLavaPitStats, computeBoostedResourceStats, computeComposterFigures, composterRollWorms, BASE_COMPOSTERS, previewSeason, computeDestroyedCropPlotIds, computeHiveStats, computeHoneyRestockBreakdown, computeQtyRestockGems, computeSpiceFigures, currentSeason, escapeHtml, farmIdPromptStartSync, farmSyncExtractBudTraits, farmSyncExtractGameState, farmSyncExtractPetTraits, farmSyncFindBagByNameHeuristic, farmSyncGetAnimalRecords, farmSyncGetCoords, farmSyncGetPetRecords, farmSyncPickActivePlacedInstances, feePercent, fmt, fmtAnimal, fmtAnimalCost, fullMoonSeedStockQty, getActiveAnimalBoosts, getActiveBoostsForHive, getActiveFeedInfo, getActiveSaltRechargeMult, getActiveSaltYieldBonus, getActiveSeasonGuardianName, getAnimalLevelFromXp, getAscensionRank, getBeeSwarmPerSwarmYield, getCropPlotSunshowerSpeedMultiplier, getCurrentChapterMutantSet, getCurrentChapterName, getEffectiveYieldAdd, getNodeIconHtml, getNodeLabel, getPowerHourWindow, getSpiceLickDurationHarvests, isBoostActive, isCropInSeason, isOvernightGroundCrop, isSkillActive, onDeferredInitialRenderDone, parseYieldBoostAmount, resourceBuds, saltSculptureLevel, sculptureEffects, sflPrngChance, syncCookingCountsFromInventory } from "./calculator.js";
+import { ICONS, NPC_ICONS, ALL_ANIMAL_PRODUCTS, ANIMAL_BASE_CYCLE_SEC, ANIMAL_DATA, ANIMAL_PRODUCT_LOOKUP, ASCENSION_RANK_DATA, BAIT_RECIPES, BASE_CROPS, BASE_FRUITS, BASE_GREENHOUSE, BASE_STOCK_TOOLS, BEE_SWARM_ICON, BOOSTS, CALENDAR_SEASONAL_BOOSTS, COIN_ICON, COOKING_BUILDINGS, COOKING_BUILDING_ICONS, COOKING_CAKE_DISHES, COOKING_FOOD_IMAGES, COOKING_RECIPES, CRIMSTONE_KNOWN_IDS, CROPS_GLOBAL_EXCLUDED_FROM_GREENHOUSE, CROP_AOE_RANKS, CROP_HARVEST_SEC, CROP_KNOWN_IDS, CROP_PRNG_EXCLUDE, FARM_LEVEL_NODES, FARM_PANEL_SCROLL_IDLE_MS, FEED_LABELS, FERMENTATION_BAIT_FAMILIES, FERMENTATION_SPICE_KNOWN_IDS, FERMENTATION_STATIC_RECIPES, FISH_AGING_KNOWN_IDS, FISH_SALT_DATA, FLOWER_ICON, FLOWER_SEEDS, FLOWER_VARIETIES, FOOD_KNOWN_IDS, FRUIT_KNOWN_IDS, FRUIT_PRNG_EXCLUDE, GAMESTATE_SECTION_KEYS, GEM_ICON, GOLD_KNOWN_IDS, IMAGE_ICONS, IRON_KNOWN_IDS, MUTANT_TYPE_EMOJI, OIL_BONUS_DROP_AMOUNT, OIL_SINGLE_HARVEST_BASE, PATCH_FRUIT_ONLY_GLOBAL_BOOSTS_EXCLUDED_FROM_GREENHOUSE, RCM_GREENHOUSE_ICON_HTML, REQUIRED_FOOD_QTY_MAP, RESOURCE_DATA, RESOURCE_NODE_TIERS, SALT_BASE_CHARGE_CAP, SALT_BASE_TIME_SEC, SALT_BASE_YIELD, SALT_KNOWN_ID, SPICE_RECIPES, SPICE_STATIC_RECIPES, STONE_KNOWN_IDS, SYNODIC_MONTH_DAYS, TREE_KNOWN_IDS, __farmPanelSaveGameStateHandle, __gameStateSectionLenSigs, __set___farmPanelSaveGameStateHandle, __set___gameStateSectionLenSigs, allResourceBudBoostEntries, applyFarmBoostsOnly, applyFarmSkillsOnly, coinPerFlower, coinsToFlower, computeAgedFishFigures, computeAnimalFeedFigures, computeAnimalRealProgress, computeAnimalTypeFigures, computeAnimalYieldsForLevel, computeBoostedCropStats, computeBoostedStock, computeBoostedFlowerVarietyStats, computeBoostedFruitStats, computeBoostedGreenhouseStats, computeBoostedLavaPitStats, computeBoostedResourceStats, computeComposterFigures, composterRollWorms, BASE_COMPOSTERS, previewSeason, computeDestroyedCropPlotIds, computeHiveStats, computeHoneyRestockBreakdown, computeQtyRestockGems, computeSpiceFigures, currentSeason, escapeHtml, farmIdPromptStartSync, farmSyncExtractBudTraits, farmSyncExtractGameState, farmSyncExtractPetTraits, farmSyncFindBagByNameHeuristic, farmSyncGetAnimalRecords, farmSyncGetCoords, farmSyncGetPetRecords, farmSyncPickActivePlacedInstances, feePercent, fmt, fmtAnimal, fmtAnimalCost, fullMoonSeedStockQty, getActiveAnimalBoosts, getActiveBoostsForHive, getActiveFeedInfo, getActiveSaltRechargeMult, getActiveSaltYieldBonus, getActiveSeasonGuardianName, getAnimalLevelFromXp, getAscensionRank, getBeeSwarmPerSwarmYield, getCropPlotSunshowerSpeedMultiplier, getCurrentChapterMutantSet, getCurrentChapterName, getEffectiveYieldAdd, getNodeIconHtml, getNodeLabel, getPowerHourWindow, getSpiceLickDurationHarvests, getTruffleSeasoningSleeps, getSpiceEffectForAnimalType, isBoostActive, isCropInSeason, isOvernightGroundCrop, isSkillActive, onDeferredInitialRenderDone, parseYieldBoostAmount, resourceBuds, saltSculptureLevel, sculptureEffects, sflPrngChance, syncCookingCountsFromInventory } from "./calculator.js";
 
 import { SFL_COMMUNITY_PROXY_BASE, SFL_NFT_PRICE_API, SFL_PROXY_BASE, computeRestockCost24h, cookingCostMode, cookingIngredientUnitCostCoins, fishSaltCostFlower, getActiveShrineDailyCostStable, getItemCostByName, getRestockGemCost, restocksForMode, getSpiceCostPerUseFlower, hasFreeSaltRakeCost, honeyCostFlowerForSpiceRack, marketItems, pickledVegCost, refinedSaltUnitCostFlower, saltCostFlowerForSpiceRack } from "./prices.js";
 
@@ -157,6 +157,11 @@ export function farmPanelCardCatalog() {
       label: n,
       icon: COOKING_BUILDING_ICONS[n] || getIcon(n)
     }));
+    if (id === "myco") return [ {
+      id: "myco",
+      label: "Myco Bins",
+      icon: getIcon("Myco Bin")
+    } ];
     return [ {
       id: "pete",
       label: "Pumpkin Pete Quest",
@@ -192,7 +197,7 @@ export function farmPanelCategoryVisible(id) {
 export function farmPanelRowCardKey(row) {
   const cat = farmPanelRowFilterCategory(row);
   let id = row.name;
-  if (row.isAnimalMerged) id = row.typeKey; else if (row.isComposterCard) id = row.composterName; else if (row.isCookingCard) id = row.cookingBuilding; else if (row.isPeteQuestCard) id = "pete";
+  if (row.isAnimalMerged) id = row.typeKey; else if (row.isComposterCard) id = row.composterName; else if (row.isCookingCard) id = row.cookingBuilding; else if (row.isMycoCard) id = "myco"; else if (row.isPeteQuestCard) id = "pete";
   return `${cat}:${id}`;
 }
 
@@ -2864,7 +2869,7 @@ function farmPanelComputeInProgressRaw(json, opts) {
         const animalFeedQty = freeFeed ? 0 : Math.max(0, progress.costFeeds * requiredQtyPerFeed * animalFeedMultTotal);
         const remainingFeedQty = freeFeed ? 0 : Math.max(0, progress.noOfFeeds * requiredQtyPerFeed * animalFeedMultTotal);
         const animalFeedCostFlower = animalFeedQty * feedInfo.cost / (coinPerFlower || 1);
-        const animalConsumableCostFlower = realFeedBuffName === "Salt Lick" ? getSpiceCostPerUseFlower("saltLick") / getSpiceLickDurationHarvests() : realFeedBuffName === "Honey Treat" ? getSpiceCostPerUseFlower("honeyTreat") / getSpiceLickDurationHarvests() : 0;
+        const animalConsumableCostFlower = realFeedBuffName === "Salt Lick" ? getSpiceCostPerUseFlower("saltLick") / getSpiceLickDurationHarvests() : realFeedBuffName === "Honey Treat" ? getSpiceCostPerUseFlower("honeyTreat") / getSpiceLickDurationHarvests() : realFeedBuffName === "Truffle Seasoning" ? getSpiceCostPerUseFlower("truffleSeasoning") / getTruffleSeasoningSleeps() : 0;
         let ready, remainingSec;
         if (sick) {
           ready = false;
@@ -2880,14 +2885,17 @@ function farmPanelComputeInProgressRaw(json, opts) {
           ready = false;
           remainingSec = cycleSec;
         }
-        if (realFeedBuffName === "Salt Lick" || realFeedBuffName === "Honey Treat") {
-          const harvestsRemaining = typeof animal.feedBuff.harvestsRemaining === "number" ? animal.feedBuff.harvestsRemaining : getSpiceLickDurationHarvests();
-          const buffRemainingSec = remainingSec != null ? Math.max(0, harvestsRemaining - 1) * cycleSec + remainingSec : null;
+        if (realFeedBuffName === "Salt Lick" || realFeedBuffName === "Honey Treat" || realFeedBuffName === "Truffle Seasoning") {
+          const isSeasoningBuff = realFeedBuffName === "Truffle Seasoning";
+          const harvestsRemaining = typeof animal.feedBuff.harvestsRemaining === "number" ? animal.feedBuff.harvestsRemaining : isSeasoningBuff ? getTruffleSeasoningSleeps() : getSpiceLickDurationHarvests();
+          const buffCycleSec = isSeasoningBuff ? cycleSec / getSpiceEffectForAnimalType(type).timeMultAll * .5 : cycleSec;
+          const buffRemainingSec = remainingSec != null ? Math.max(0, harvestsRemaining - 1) * buffCycleSec + remainingSec : null;
           if (!farmPanelAnimalBuffTrackingByType[type]) farmPanelAnimalBuffTrackingByType[type] = {
             saltLick: [],
-            honeyTreat: []
+            honeyTreat: [],
+            truffleSeasoning: []
           };
-          const bucket = realFeedBuffName === "Salt Lick" ? "saltLick" : "honeyTreat";
+          const bucket = realFeedBuffName === "Salt Lick" ? "saltLick" : isSeasoningBuff ? "truffleSeasoning" : "honeyTreat";
           farmPanelAnimalBuffTrackingByType[type][bucket].push({
             animalId: animalId,
             harvestsRemaining: harvestsRemaining,
@@ -3035,32 +3043,33 @@ function farmPanelFormatSpiceDuration(sec) {
 
 function farmPanelRenderSpiceBuffCard(key, tracking, yieldData, meta) {
   const isSaltLick = key === "saltLick";
-  const label = isSaltLick ? "Salt Lick" : "Honey Treat";
+  const isSeasoning = key === "truffleSeasoning";
+  const label = isSaltLick ? "Salt Lick" : isSeasoning ? "Truffle Seasoning" : "Honey Treat";
   const icon = getBoostIcon(label);
   const headsAffected = tracking.length;
   const knownDurations = tracking.map(t => t.remainingSec).filter(v => v != null);
   const durationLeftSec = knownDurations.length ? Math.min(...knownDurations) : null;
-  const durationHarvests = getSpiceLickDurationHarvests();
+  const durationHarvests = isSeasoning ? getTruffleSeasoningSleeps() : getSpiceLickDurationHarvests();
   const perUseCost = getSpiceCostPerUseFlower(key);
   const totalCost = perUseCost * headsAffected;
   const costPerCycle = totalCost / durationHarvests;
   let yieldLineHtml = "";
   let valueFlower = 0;
-  if (isSaltLick) {
+  if (isSaltLick || isSeasoning) {
     valueFlower = Object.entries(yieldData || {}).reduce((sum, [pname, amt]) => {
       const m = marketItems.find(x => (x.name || "").toLowerCase() === pname.toLowerCase());
       return sum + amt * (m ? m.flowerPrice || 0 : 0);
     }, 0);
     const chips = Object.entries(yieldData || {}).filter(([, amt]) => amt > 1e-9).map(([pname, amt]) => `<span class="spice-yield-chip">${getIcon(pname)}+${fmtAnimal(amt)}</span>`).join("");
-    yieldLineHtml = `<div class="spice-buff-stat"><span class="label">Yield contributed (cycle)</span><span class="value">${chips || "—"}</span></div>`;
+    yieldLineHtml = `<div class="spice-buff-stat"><span class="label">${isSeasoning ? "Extra produce (per sleep)" : "Yield contributed (cycle)"}</span><span class="value">${chips || "—"}</span></div>`;
   } else {
     const feedsSaved = tracking.reduce((s, t) => s + (t.feedQtySaved || 0), 0);
     yieldLineHtml = `<div class="spice-buff-stat"><span class="label">Feeds saved</span><span class="value">${fmtAnimal(feedsSaved)}</span></div>`;
     valueFlower = typeof yieldData === "number" ? yieldData : 0;
   }
-  const html = `\n      <div class="spice-buff-card ${isSaltLick ? "is-salt-lick" : "is-honey-treat"}">\n        <div class="spice-buff-head">${icon}<b>${label}</b> <span class="spice-buff-heads">${headsAffected} head${headsAffected === 1 ? "" : "s"}</span></div>\n        <div class="spice-buff-stat"><span class="label">Duration left</span><span class="value">${farmPanelFormatSpiceDuration(durationLeftSec)}</span></div>\n        ${yieldLineHtml}\n        <div class="spice-buff-stat"><span class="label">Value in ${FLOWER_ICON} ${isSaltLick ? "added yield" : "saved"}</span><span class="value">${fmtAnimal(valueFlower)} ${FLOWER_ICON}</span></div>\n      </div>`;
+  const html = `\n      <div class="spice-buff-card ${isSaltLick ? "is-salt-lick" : "is-honey-treat"}${isSeasoning ? " is-truffle-seasoning" : ""}">\n        <div class="spice-buff-head">${icon}<b>${label}</b> <span class="spice-buff-heads">${headsAffected} head${headsAffected === 1 ? "" : "s"}</span></div>\n        <div class="spice-buff-stat"><span class="label">Duration left</span><span class="value">${farmPanelFormatSpiceDuration(durationLeftSec)}</span></div>\n        ${yieldLineHtml}\n        <div class="spice-buff-stat"><span class="label">Value in ${FLOWER_ICON} ${isSaltLick ? "added yield" : isSeasoning ? "extra produce" : "saved"}</span><span class="value">${fmtAnimal(valueFlower)} ${FLOWER_ICON}</span></div>\n      </div>`;
   return {
-    category: isSaltLick ? "yield" : "cost",
+    category: isSaltLick || isSeasoning ? "yield" : "cost",
     html: html
   };
 }
@@ -3095,8 +3104,12 @@ function farmPanelComputeAnimalCards(rawRows) {
     const timeBoosts = activeAnimalBoosts.filter(b => b.timeMult || b.timeMultAll);
     const costBoosts = activeAnimalBoosts.filter(b => b.feedMult && b.feedMult < 1 || b.feedMultAll && b.feedMultAll < 1);
     const saltLickYieldByProduct = {};
+    const truffleSeasoningYieldByProduct = {};
     let honeyTreatSavingsFlower = 0;
     rows.forEach(r => {
+      if (r.feedBuffName === "Truffle Seasoning" && typeof r.qty === "number") {
+        truffleSeasoningYieldByProduct[r.name] = (truffleSeasoningYieldByProduct[r.name] || 0) + r.qty * .5;
+      }
       if (r.feedBuffName === "Salt Lick" && typeof r.qty === "number") {
         saltLickYieldByProduct[r.name] = (saltLickYieldByProduct[r.name] || 0) + r.qty * (1 - 1 / 1.05);
       }
@@ -3104,16 +3117,20 @@ function farmPanelComputeAnimalCards(rawRows) {
         honeyTreatSavingsFlower += r.feedCostFlowerShare / 3;
       }
     });
-    const buffTracking = farmPanelAnimalBuffTrackingByType[type] || {
+    const buffTracking = Object.assign({
       saltLick: [],
-      honeyTreat: []
-    };
+      honeyTreat: [],
+      truffleSeasoning: []
+    }, farmPanelAnimalBuffTrackingByType[type] || {});
     const spiceBuffCards = [];
     if (buffTracking.saltLick.length) {
       spiceBuffCards.push(farmPanelRenderSpiceBuffCard("saltLick", buffTracking.saltLick, saltLickYieldByProduct, meta));
     }
     if (buffTracking.honeyTreat.length) {
       spiceBuffCards.push(farmPanelRenderSpiceBuffCard("honeyTreat", buffTracking.honeyTreat, honeyTreatSavingsFlower, meta));
+    }
+    if (buffTracking.truffleSeasoning.length) {
+      spiceBuffCards.push(farmPanelRenderSpiceBuffCard("truffleSeasoning", buffTracking.truffleSeasoning, truffleSeasoningYieldByProduct, meta));
     }
     let timeMultTotal = 1;
     activeAnimalBoosts.forEach(b => {
@@ -4636,6 +4653,8 @@ export function farmPanelComputeInProgress(json) {
   const composterCards = farmPanelComputeComposterCards(json);
   const allCards = cards.concat(animalCards).concat(composterCards).concat(cookingCards);
   allCards.sort((a, b) => b.profit - a.profit);
+  const mycoCard = farmPanelComputeMycoCard(json);
+  if (mycoCard) allCards.push(mycoCard);
   const peteQuestCard = farmPanelComputePeteQuestCard(json);
   if (peteQuestCard) allCards.push(peteQuestCard);
   return allCards;
@@ -4705,6 +4724,55 @@ function peteParseReward(text) {
       icon: peteRewardIconHtml(itemName)
     };
   });
+}
+
+const MYCO_RECIPE_LABELS = {
+  Mushroom: "Mushroom mix",
+  Beetle: "Beetle mix",
+  Mud: "Mud mix"
+};
+
+function farmPanelComputeMycoCard(json) {
+  try {
+    const g = farmSyncExtractGameState(json);
+    const cave = farmPanelField(g, "cave");
+    if (!cave || typeof cave !== "object" || !cave.machines || typeof cave.machines !== "object") return null;
+    const ids = Object.keys(cave.machines).sort((a, b) => Number(a) - Number(b));
+    if (!ids.length) return null;
+    const now = Date.now();
+    const bins = ids.map(id => {
+      const machine = cave.machines[id];
+      const batch = machine && machine.batch;
+      const readyAtMs = batch ? Number(batch.readyAt) || 0 : 0;
+      let state = "idle";
+      if (batch) {
+        if (readyAtMs > now) state = "growing"; else if (Object.keys(batch.dug || {}).length < 25) state = "ready";
+      }
+      return {
+        id: id,
+        state: state,
+        recipe: batch ? MYCO_RECIPE_LABELS[batch.recipe] || String(batch.recipe) : "",
+        readyAtMs: readyAtMs,
+        remainingSec: state === "growing" ? (readyAtMs - now) / 1e3 : 0,
+        dugCount: batch && batch.dug ? Object.keys(batch.dug).length : 0
+      };
+    });
+    const growing = bins.filter(b => b.state === "growing");
+    return {
+      isMycoCard: true,
+      name: "Myco Bins",
+      searchKey: "myco-bins",
+      profit: 0,
+      count: bins.length,
+      readyCount: bins.filter(b => b.state === "ready").length,
+      growingCount: growing.length,
+      idleCount: bins.filter(b => b.state === "idle").length,
+      soonestSec: growing.length ? Math.min(...growing.map(b => b.remainingSec)) : null,
+      bins: bins
+    };
+  } catch (e) {
+    return null;
+  }
 }
 
 function farmPanelComputePeteQuestCard(json) {
@@ -4867,6 +4935,7 @@ function farmPanelRenderNodeYieldBoostList(row, summary, produceIcon) {
 }
 
 function farmPanelCardCategory(row) {
+  if (row.isMycoCard) return "myco";
   if (row.isPeteQuestCard) return "pete";
   if (row.isAnimalMerged) return "animals";
   if (row.isComposterCard) return "composters";
@@ -4951,6 +5020,11 @@ export function farmPanelFilterCategories() {
     label: "Cooking",
     name: "Cooking Buildings",
     icon: COOKING_PANEL_TAB_ICON_HTML
+  }, {
+    id: "myco",
+    label: "Myco Bins",
+    name: "Myco Bins",
+    icon: getIcon("Myco Bin")
   }, {
     id: "pete",
     label: "Pumpkin Pete Quest",
@@ -5122,6 +5196,54 @@ function farmPanelRenderCookingBoostList(row) {
   if (!sections.length) return "";
   const sectionsHtml = sections.map(([label, parts]) => `<div class="lib-section-title" style="margin-top:10px;">${label}</div>${parts.join("")}`).join("");
   return `<div class="section-badge is-boost-label">⚡ Applied Boost</div>${sectionsHtml}`;
+}
+
+function farmPanelRenderMycoCard(row) {
+  const expandedCls = farmPanelExpandedNames.has(row.searchKey) ? " expanded" : "";
+  let statusBadgeHtml;
+  if (row.readyCount > 0 || row.growingCount > 0) {
+    statusBadgeHtml = farmPanelStatusBadgeHtml(row.readyCount, row.growingCount, "Growing");
+  } else {
+    statusBadgeHtml = `<span class="harvest-badge is-growing">💤 Empty</span>`;
+  }
+  const statusFoldHtml = guroStatusFoldHtml("Ready", row.soonestSec);
+  const binRows = row.bins.map(b => {
+    let value;
+    if (b.state === "growing") {
+      value = `${escapeHtml(b.recipe)} · <span class="farm-countdown" data-base="${b.remainingSec}">${guroCountdownText(b.remainingSec)}</span>`;
+    } else if (b.state === "ready") {
+      value = `${escapeHtml(b.recipe)} · ✅ Ready to dig (${b.dugCount}/25 dug)`;
+    } else {
+      value = "💤 Empty · feed it to start a batch";
+    }
+    return `<div class="animal-detail-stat"><span class="label">Bin ${escapeHtml(b.id)}</span><span class="value">${value}</span></div>`;
+  }).join("");
+  const summaryRow = `<div class="animal-detail-stat"><span class="label">Running</span><span class="value">${row.growingCount} of ${row.count}</span></div><div class="animal-detail-stat"><span class="label">Ready to dig</span><span class="value">${row.readyCount}</span></div><div class="animal-detail-stat"><span class="label">Empty</span><span class="value">${row.idleCount}</span></div>`;
+  return `
+  <div class="card animal-merged-card${row.readyCount > 0 ? " is-profit" : ""}${expandedCls}" data-search="${row.searchKey}" data-fp-category="myco">
+    <div class="card-toggle">
+      <div class="card-name-row">
+        <span class="card-icon">${getIcon("Myco Bin")}</span>
+        <div>
+          <div class="card-name">Myco Bins</div>
+          <div class="card-type-row">
+            <span class="card-type">${row.count} bin${row.count === 1 ? "" : "s"}</span>
+          </div>
+        </div>
+      </div>
+      <div class="card-collapsed-profit">
+        <span class="harvest-stack">${statusBadgeHtml}</span>
+        <span class="chev">▾</span>
+      </div>
+      ${statusFoldHtml}
+    </div>
+    <div class="card-details">
+      <div class="animal-detail-grid">
+        ${summaryRow}
+        ${binRows}
+      </div>
+    </div>
+  </div>`;
 }
 
 function farmPanelRenderPeteQuestCard(row) {
@@ -5305,6 +5427,7 @@ export function farmPanelRenderInProgressRow(row) {
   if (row.isComposterCard) return farmPanelRenderComposterCard(row);
   if (row.isHoneyCard) return farmPanelRenderHoneyCard(row);
   if (row.isCookingCard) return farmPanelRenderCookingCard(row);
+  if (row.isMycoCard) return farmPanelRenderMycoCard(row);
   if (row.isPeteQuestCard) return farmPanelRenderPeteQuestCard(row);
   const baseStatus = row.readyCount > 0 ? row.readyCount === row.count ? "✅ All ready" : `✅ ${row.readyCount} ready · ⏳ ${row.count - row.readyCount} growing` : "⏳ Growing";
   const showCountdown = row.soonestSec != null && row.readyCount < row.count;
