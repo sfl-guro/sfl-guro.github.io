@@ -53,8 +53,8 @@ export const USER_GUIDES = [
   },
   {
     id: "digging",
-    label: "Digging",
-    title: "Digging",
+    label: "Desert Digging",
+    title: "Desert Digging",
     intro: "Helps me find treasure faster on my desert dig site by working out which tiles are safe, possible or guaranteed from the holes I already dug today.",
     steps: [
       "The Treasure Map card shows my farm, my Ascension Age and the chapter artefact I am looking for. I must sync first so today's dig patterns load.",
@@ -75,6 +75,21 @@ export const USER_GUIDES = [
       "Projected Combinations is my testing area. I tap an empty slot first, then tap a potion below it to place it. The app uses my past marks to rule potions out.",
       "Confirmed Combinations fills in once a slot is known for sure.",
       "Combination Trainer remembers the patterns of combinations I solved. Backup turns them into a code I can copy and keep, and Restore brings them back from that code. The Store and Logs buttons at the top open the potion store and my cost log."
+    ]
+  },
+  {
+    id: "cavesolver",
+    label: "Cave Digging",
+    title: "Cave Digging",
+    intro: "Shows the best odds for every tile of my Myco Bin patches, so I know where to dig first.",
+    steps: [
+      "I sync my farm first. Two boxes appear at the top: How Myco Bins work, and Myco Bins running, which shows how many bins are growing, ready to dig or empty, with a timer for each.",
+      "A fed Myco Bin cannot be dug until its batch has fully grown. Each bin with a ready batch gets its own 5x5 board.",
+      "Every undug tile shows the chance that it holds something. Red means only Mud, yellow is a chance, and blue is a sure thing.",
+      "A dug tile shows what it held and its clue, the number of Mushroom or Beetle tiles right next to it (up, down, left, right).",
+      "I tap a tile to see its chance for each kind of item and for Mud.",
+      "Best dig and Best drill suggest the tile and the 2x2 square with the highest chance of items.",
+      "The board changes after every dig, so the odds are a real chance, not a promise."
     ]
   },
   {

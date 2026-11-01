@@ -29,7 +29,8 @@ const NAV_ICON_CHAPTERFISH = "data:image/webp;base64,UklGRkABAABXRUJQVlA4TDQBAAA
 
 const PAGE_TITLES = {
   growing: [ "GROWING", "What is growing and ready on your farm" ],
-  digging: [ "DIGGING", "Beach bounty treasure map" ],
+  digging: [ "DESERT DIGGING", "Beach bounty treasure map" ],
+  cavesolver: [ "CAVE DIGGING", "Best odds for every tile of your Myco Bin patches" ],
   potionroom: [ "POTION HOUSE", "Find the right potion combination" ],
   boost: [ "BOOST", "All boosts and categories" ],
   skilltree: [ "SKILL TREE", "Skills and ascension ranks" ],
@@ -76,6 +77,9 @@ export function pageIconHtml(id) {
     return iconOrFallback("Sunflower", "🌻");
 
    case "digging":
+    return imgHtml(ICON_DATA["sand_shovel.png"]);
+
+   case "cavesolver":
     return imgHtml(ICON_DATA["sand_shovel.png"]);
 
    case "potionroom":
@@ -177,7 +181,7 @@ const NAV_GROUPS = [ {
   items: [ "profile", "growing" ]
 }, {
   label: "Tools",
-  items: [ "digging", "potionroom", "fishing", "expansionsim", "resourcecalc", "sflbubbles", "factiondelivery", "coinconverter", "npcgift", "map", "guntershop", "ticketcalc", "experiencecalc", "beginnerguide" ]
+  items: [ "digging", "cavesolver", "potionroom", "fishing", "expansionsim", "resourcecalc", "sflbubbles", "factiondelivery", "coinconverter", "npcgift", "map", "guntershop", "ticketcalc", "experiencecalc", "beginnerguide" ]
 }, {
   label: "Configuration",
   items: [ "nodes", "boost", "skilltree", "settings" ]

@@ -1,12 +1,12 @@
 import {
-  setOpenClass
-} from "./chunk.X4KTTJ4Z.js";
-import {
   digSolveBoard,
   getIcon
-} from "./chunk.TJ2D2UQ7.js";
+} from "./chunk.VO3ZJNBW.js";
 import "./chunk.LPEVZJ4B.js";
 import "./chunk.VR6FV3KR.js";
+import {
+  setOpenClass
+} from "./chunk.X4KTTJ4Z.js";
 import "./chunk.AS3VMXOQ.js";
 
 // src/dig_godmode.js

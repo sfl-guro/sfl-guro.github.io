@@ -13,7 +13,7 @@ import {
   prices_exports,
   setAppDarkMode,
   ui_exports
-} from "./chunk.TJ2D2UQ7.js";
+} from "./chunk.VO3ZJNBW.js";
 import {
   KEY_ICON_DATA,
   NAV_ICON_DATA
@@ -41,9 +41,15 @@ var PAGES = [{
 }, {
   id: "digging",
   path: "/digging",
-  label: "Digging",
+  label: "Desert Digging",
   root: "pageDigging",
-  load: () => import("./digging.GFYS3REG.js")
+  load: () => import("./digging.2GGRDTKF.js")
+}, {
+  id: "cavesolver",
+  path: "/cave-solver",
+  label: "Cave Digging",
+  root: "pageCaveSolver",
+  load: () => import("./cavesolver.6VJ2TVGN.js")
 }, {
   id: "potionroom",
   path: "/potionroom",
@@ -67,7 +73,7 @@ var PAGES = [{
   path: "/settings",
   label: "Settings",
   root: "pageSettings",
-  load: () => import("./settings.C4P4SLJ6.js")
+  load: () => import("./settings.BFBZXWYM.js")
 }, {
   id: "nodes",
   path: "/nodes",
@@ -169,13 +175,13 @@ var PAGES = [{
   path: "/experience-calculator",
   label: "Experience Calculator",
   root: "cookingPanel",
-  load: () => import("./experiencecalc.ARMMKF5L.js")
+  load: () => import("./experiencecalc.CIBAFZ7N.js")
 }, {
   id: "beginnerguide",
   path: "/beginner-guide",
   label: "Beginner Guide",
   root: "beginnerPanel",
-  load: () => import("./beginnerguide.N3KURAIC.js")
+  load: () => import("./beginnerguide.ZOZEXN4S.js")
 }, {
   id: "fishing",
   path: "/fishing",
@@ -193,7 +199,7 @@ var PAGES = [{
   path: "/resource-calculators",
   label: "Resource Calculators",
   root: "pageResourceCalc",
-  load: () => import("./resourcecalc.OKFWNH25.js")
+  load: () => import("./resourcecalc.DY3H3BDA.js")
 }, {
   id: "sflbubbles",
   path: "/sflbubbleschart",
@@ -211,13 +217,13 @@ var PAGES = [{
   path: "/userguide",
   label: "User Guide",
   root: "pageUserGuide",
-  load: () => import("./userguide.3FUJZ2A3.js")
+  load: () => import("./userguide.J7XXYH5G.js")
 }, {
   id: "profile",
   path: "/profile",
   label: "Profile",
   root: "pageProfile",
-  load: () => import("./profile.FAG3SRLL.js")
+  load: () => import("./profile.ZVSQHNVJ.js")
 }];
 var DEFAULT_PAGE_ID = "growing";
 function pageById(id) {
@@ -250,7 +256,8 @@ var NAV_ICON_FACTIONDELIVERY = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA
 var NAV_ICON_CHAPTERFISH = "data:image/webp;base64,UklGRkABAABXRUJQVlA4TDQBAAAvH8AHEMegJpKt5lVIAB34QCtiMJBzqhhKvg01kWw1n5x6qBCAXzpkIAgHlDmpiSQp2osPG4jAC0rx8EZIuCL8ITsCQYjOWuqENwIA9PUARFg742pjFPRhh6DI5RwYepD1wwdbntEEwPEXAOpnconxbsNMpLbHPdOpMziMbFtpIsh/2AWi/bf6LT8VnBfR/wm48GoK+LWpR33D1K3hnz3AlXzALx4TPMaYCR5FXfKxTxpjm6IurpFFMB372f2AU5bdnyprmuiyskJ1ybqv8c2oTp32yBMEUr6lFMAK5ZbYXr5mLJQIUxetBchERsFxCj6xAu6YTBi4ow+UWXCQ424y0Kfi7TIEFhy9k1VpGfKfkCmlBipIpvrygeLEXLnMy+zLnF1fvjX+g/ur8d1fNP2L5pdWAA==";
 var PAGE_TITLES = {
   growing: ["GROWING", "What is growing and ready on your farm"],
-  digging: ["DIGGING", "Beach bounty treasure map"],
+  digging: ["DESERT DIGGING", "Beach bounty treasure map"],
+  cavesolver: ["CAVE DIGGING", "Best odds for every tile of your Myco Bin patches"],
   potionroom: ["POTION HOUSE", "Find the right potion combination"],
   boost: ["BOOST", "All boosts and categories"],
   skilltree: ["SKILL TREE", "Skills and ascension ranks"],
@@ -293,6 +300,8 @@ function pageIconHtml(id) {
     case "growing":
       return iconOrFallback("Sunflower", "\u{1F33B}");
     case "digging":
+      return imgHtml(ICON_DATA["sand_shovel.png"]);
+    case "cavesolver":
       return imgHtml(ICON_DATA["sand_shovel.png"]);
     case "potionroom":
       return imgHtml(POTION_ROOM_ICON);
@@ -375,7 +384,7 @@ var NAV_GROUPS = [{
   items: ["profile", "growing"]
 }, {
   label: "Tools",
-  items: ["digging", "potionroom", "fishing", "expansionsim", "resourcecalc", "sflbubbles", "factiondelivery", "coinconverter", "npcgift", "map", "guntershop", "ticketcalc", "experiencecalc", "beginnerguide"]
+  items: ["digging", "cavesolver", "potionroom", "fishing", "expansionsim", "resourcecalc", "sflbubbles", "factiondelivery", "coinconverter", "npcgift", "map", "guntershop", "ticketcalc", "experiencecalc", "beginnerguide"]
 }, {
   label: "Configuration",
   items: ["nodes", "boost", "skilltree", "settings"]

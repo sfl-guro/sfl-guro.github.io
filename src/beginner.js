@@ -355,6 +355,10 @@ const BG_SKILL_THRESHOLDS = {
   aging: {
     2: 3,
     3: 7
+  },
+  cave: {
+    2: 3,
+    3: 6
   }
 };
 

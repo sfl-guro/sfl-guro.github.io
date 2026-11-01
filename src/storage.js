@@ -1,4 +1,4 @@
-import { BASE_CROPS, BASE_FRUITS, BASE_GREENHOUSE, BOOST_TIERS, COLLECTIBLE_MARKET_NAMES, PET_RESOURCE_DEFAULT_MARKET, PET_TRADABLE_RESOURCES, PROFILE_BUMPKIN_CACHE_KEY, RESOURCE_DATA, WEARABLE_MARKET_NAMES, __set_animalWeekly, __set_boostDraftSelectedBoosts, __set_bountyWeekly, __set_choresWeekly, __set_megastoreTickets, __set_npcSkipDays, __set_profitDisplayMode, __set_restockGemMode, __set_seasonDays, __set_ticketBoosts, __set_undeliveredLastSeason, animalAffectionCounts, animalAffectionTools, animalBuds, animalCounts, animalSicknessEstimate, aoeSyncOverrides, ascensionRanks, beeSwarmActiveCount, beeSwarmAffectedPlots, beeSwarmByCrop, boostDraftSelectedBoosts, cmOilTank, cmQueue, coinPerFlower, cookingCounts, cookingExpandedFoods, cropBuds, cropMachineModules, crustaceanChumSelection, feePercent, fertilizerTierScope, fishBuds, flowerSeedOverrides, flowerVarietyOverrides, fruitBuds, fruitCounts, gemFlowerSpent, gemsReceived, globalPlotCount, globalPlotCountTouched, greenhouseBuds, greenhouseCounts, hiveCount, manualCycleOverrides, nodeCounts, nodeCountsTouched, petFoodChecks, petsData, profileBumpkinCache, profitDisplayMode, readFarmVipEnabled, resourceBuds, restockGemMode, safeParse, saltFarmLevel, saltPrimeChancePct, saltSculptureLevel, saltUi, selectedBoosts, selectedHoneyFlower, selectedSkills, selectedSwarmCrop, spiceUsage, syncedSkillLevels, ticketBoosts, toolRecipes, tradeActive, tradeHistory, tradeLifetime, updateBoostSaveBarState, updateProfitModeUI, updateRestockModeUI, weatherDestructionSync } from "./calculator.js";
+import { BASE_CROPS, BASE_FRUITS, BASE_GREENHOUSE, BOOST_TIERS, CAVE_DWELLERS_TRADABLE_RESOURCES, COLLECTIBLE_MARKET_NAMES, PET_RESOURCE_DEFAULT_MARKET, PET_TRADABLE_RESOURCES, PROFILE_BUMPKIN_CACHE_KEY, RESOURCE_DATA, WEARABLE_MARKET_NAMES, __set_animalWeekly, __set_boostDraftSelectedBoosts, __set_bountyWeekly, __set_choresWeekly, __set_megastoreTickets, __set_npcSkipDays, __set_profitDisplayMode, __set_restockGemMode, __set_seasonDays, __set_ticketBoosts, __set_undeliveredLastSeason, animalAffectionCounts, animalAffectionTools, animalBuds, animalCounts, animalSicknessEstimate, aoeSyncOverrides, ascensionRanks, beeSwarmActiveCount, beeSwarmAffectedPlots, beeSwarmByCrop, boostDraftSelectedBoosts, cmOilTank, cmQueue, coinPerFlower, cookingCounts, cookingExpandedFoods, cropBuds, cropMachineModules, crustaceanChumSelection, feePercent, fertilizerTierScope, fishBuds, flowerSeedOverrides, flowerVarietyOverrides, fruitBuds, fruitCounts, gemFlowerSpent, gemsReceived, globalPlotCount, globalPlotCountTouched, greenhouseBuds, greenhouseCounts, hiveCount, manualCycleOverrides, nodeCounts, nodeCountsTouched, petFoodChecks, petsData, profileBumpkinCache, profitDisplayMode, readFarmVipEnabled, resourceBuds, restockGemMode, safeParse, saltFarmLevel, saltPrimeChancePct, saltSculptureLevel, saltUi, selectedBoosts, selectedHoneyFlower, selectedSkills, selectedSwarmCrop, spiceUsage, syncedSkillLevels, ticketBoosts, toolRecipes, tradeActive, tradeHistory, tradeLifetime, updateBoostSaveBarState, updateProfitModeUI, updateRestockModeUI, weatherDestructionSync } from "./calculator.js";
 
 import { __set_animalFlowerCost, __set_bountyFlowerCost, __set_choresFlowerCost, __set_npcFlowerCost, autoFillLivePricesForNewEntries, budFloorPrice, marketItems, petFloorPrice, petResourceCostOverride } from "./prices.js";
 
@@ -432,6 +432,24 @@ export function loadPetResourcesIfNeeded() {
   if (added && typeof saveMarketState === "function") saveMarketState();
 }
 
+export function loadCaveDwellersResourcesIfNeeded() {
+  if (typeof marketItems === "undefined") return;
+  let added = 0;
+  CAVE_DWELLERS_TRADABLE_RESOURCES.forEach(name => {
+    const id = "cavedwellers_" + name.replace(/\s+/g, "_").toLowerCase();
+    if (marketItems.some(m => String(m.id) === id)) return;
+    marketItems.push({
+      id: id,
+      name: name,
+      flowerPrice: 0,
+      isCaveDwellersResource: true
+    });
+    added++;
+  });
+  if (added && typeof saveMarketState === "function") saveMarketState();
+  if (added && typeof autoFillLivePricesForNewEntries === "function") autoFillLivePricesForNewEntries();
+}
+
 function loadNftCollectibleMarketItemsIfNeeded() {
   if (typeof marketItems === "undefined") return;
   let added = 0;
@@ -489,6 +507,8 @@ export function savePetFoodChecks() {
 }
 
 if (typeof loadPetResourcesIfNeeded === "function") setTimeout(loadPetResourcesIfNeeded, 0);
+
+if (typeof loadCaveDwellersResourcesIfNeeded === "function") setTimeout(loadCaveDwellersResourcesIfNeeded, 0);
 
 if (typeof loadNftCollectibleMarketItemsIfNeeded === "function") setTimeout(loadNftCollectibleMarketItemsIfNeeded, 0);
 
