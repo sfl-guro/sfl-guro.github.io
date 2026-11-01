@@ -29,15 +29,17 @@ function pruneStore(store) {
     }
     if (rec.day === today) return;
     if (k === active) {
-      if (Object.keys(rec.stats || {}).length || Object.keys(rec.prev || {}).length) {
+      if (Object.keys(rec.stats || {}).length || Object.keys(rec.prev || {}).length || rec.cook && rec.cook.prev && Object.keys(rec.cook.prev).length) {
         store[k] = {
           day: rec.day,
-          prev: {},
+          prev: rec.prev || {},
           stats: {},
           counters: rec.counters || {},
           inv: rec.inv || {},
           act: rec.act || {},
           power: rec.power || {},
+          amts: rec.amts || {},
+          ym: rec.ym || {},
           syncAt: rec.syncAt || 0,
           cook: carryCook(rec.cook)
         };
@@ -128,7 +130,10 @@ const COOK_LOG_CAP = 200;
 
 const COOK_NO_ESTIMATE = {
   "Fermentation Rack": true,
-  "Aging Shed": true
+  "Aging Shed": true,
+  "Compost Bin": true,
+  "Turbo Composter": true,
+  "Premium Composter": true
 };
 
 const COOK_ESTIMATE_CAP = 500;
@@ -139,6 +144,12 @@ export function dailyHarvestSetIconProvider(fn) {
   iconProvider = typeof fn === "function" ? fn : null;
 }
 
+const COMPOSTER_BUILDINGS = {
+  "Compost Bin": true,
+  "Turbo Composter": true,
+  "Premium Composter": true
+};
+
 function addCookEntry(cook, building, name, amount, count, price, fee, at, estimated) {
   const t = cook.totals[name] || (cook.totals[name] = {
     a: 0,
@@ -146,6 +157,7 @@ function addCookEntry(cook, building, name, amount, count, price, fee, at, estim
     p: 0,
     f: 0
   });
+  if (COMPOSTER_BUILDINGS[building]) t.k = "composter";
   t.a += amount;
   t.c += count;
   if (price > 0) {
@@ -210,6 +222,12 @@ function trackCooking(g, rec, fresh, now) {
       fee: sl.feeRate || 0,
       k: Array.isArray(sl.keys) ? sl.keys : []
     };
+    if (sl.worm && sl.worm.name) entry.w = {
+      name: sl.worm.name,
+      ck: sl.worm.counterKey || "",
+      price: sl.worm.price || 0,
+      fee: sl.worm.feeRate || 0
+    };
     cur[`${base}|${seen[base]}`] = entry;
     if (entry.k.length) cook.hint[entry.k.join("|")] = {
       b: entry.b,
@@ -222,6 +240,8 @@ function trackCooking(g, rec, fresh, now) {
   });
   const prevCtr = cook.ctr && typeof cook.ctr === "object" ? cook.ctr : null;
   const budget = {};
+  const wormIdx = {};
+  const wormRolls = res.worms && typeof res.worms === "object" ? res.worms : {};
   const deltaOf = keys => keys.reduce((sum, k) => sum + Math.max(0, cookCounterNow(activity, k) - prevCtr[k]), 0);
   if (cook.known) {
     const gone = Object.keys(cook.prev).filter(key => !cur[key]).map(key => cook.prev[key]).filter(p => p && present.has(p.b) && typeof p.amount === "number" && p.amount > 0);
@@ -234,11 +254,20 @@ function trackCooking(g, rec, fresh, now) {
         if (budget[id] === undefined) budget[id] = deltaOf(keys);
         if (budget[id] <= 0) return;
         budget[id] -= 1;
-        if (fresh && !(p.readyAt >= start && p.readyAt <= now)) return;
-      } else if (!(p.readyAt <= now) || fresh && !(p.readyAt >= start)) {
+      } else if (!(p.readyAt <= now)) {
         return;
       }
-      addCookEntry(cook, p.b, p.name, p.amount, 1, p.price, p.fee, now, false);
+      const carriedOver = fresh && p.readyAt < start;
+      addCookEntry(cook, p.b, p.name, p.amount, 1, p.price, p.fee, now, carriedOver);
+      const worm = p.w && p.w.name ? p.w : null;
+      const rollFn = worm ? wormRolls[p.b] : null;
+      if (rollFn && gated && worm.ck && typeof prevCtr[worm.ck] === "number") {
+        const wid = worm.ck;
+        const idx = wormIdx[wid] || 0;
+        wormIdx[wid] = idx + 1;
+        const wormAmount = Number(rollFn(prevCtr[wid] + idx));
+        if (wormAmount > 0) addCookEntry(cook, p.b, worm.name, wormAmount, 1, worm.price || 0, worm.fee || 0, now, carriedOver);
+      }
     });
     if (!fresh && activity && prevCtr) {
       Object.keys(cook.hint).forEach(id => {
@@ -252,15 +281,19 @@ function trackCooking(g, rec, fresh, now) {
     }
   }
   const instant = Array.isArray(res.instant) ? res.instant : [];
-  if (cook.known && !fresh && activity && prevCtr) {
+  if (cook.known && activity && prevCtr) {
+    const prevSync = rec.syncAt || 0;
+    const gapScale = fresh && prevSync && prevSync < start ? Math.min(1, Math.max(0, (now - start) / (now - prevSync))) : 1;
     instant.forEach(e => {
       if (!e || !e.key || typeof e.amountAt !== "function" || typeof prevCtr[e.key] !== "number") return;
       const from = Math.floor(prevCtr[e.key]);
-      const to = Math.min(Math.floor(cookCounterNow(activity, e.key)), from + COOK_ESTIMATE_CAP);
+      const total = Math.min(Math.floor(cookCounterNow(activity, e.key)) - from, COOK_ESTIMATE_CAP);
+      const scaled = fresh ? Math.round(total * gapScale) : total;
+      const to = from + Math.max(0, scaled);
       for (let n = from; n < to; n++) {
         const amount = e.amountAt(n);
         if (!(amount > 0)) continue;
-        addCookEntry(cook, e.building || "Kitchen", e.name, amount, 1, e.price, e.feeRate || 0, now, false);
+        addCookEntry(cook, e.building || "Kitchen", e.name, amount, 1, e.price, e.feeRate || 0, now, fresh);
       }
     });
   }
@@ -270,12 +303,12 @@ function trackCooking(g, rec, fresh, now) {
     const p = cook.prev[key];
     if (!p || present.has(p.b)) return;
     kept[key] = p;
-    (Array.isArray(p.k) ? p.k : []).forEach(k => {
+    (Array.isArray(p.k) ? p.k : []).concat(p.w && p.w.ck ? [ p.w.ck ] : []).forEach(k => {
       if (prevCtr && typeof prevCtr[k] === "number") ctr[k] = prevCtr[k];
     });
   });
   if (activity) Object.keys(cur).forEach(key => {
-    cur[key].k.forEach(k => {
+    cur[key].k.concat(cur[key].w && cur[key].w.ck ? [ cur[key].w.ck ] : []).forEach(k => {
       ctr[k] = cookCounterNow(activity, k);
     });
   });
@@ -620,6 +653,8 @@ export function dailyHarvestTrack(g, farmId) {
     act: old && old.act ? old.act : {},
     flow: old && old.flow ? old.flow : {},
     power: old && old.power ? old.power : {},
+    amts: old && old.amts ? old.amts : {},
+    ym: old && old.ym ? old.ym : {},
     syncAt: old && old.syncAt ? old.syncAt : 0,
     cook: carryCook(old && old.cook)
   };
@@ -655,17 +690,20 @@ export function dailyHarvestTrack(g, farmId) {
     const oilTs = Object.values(groups.Oil.nodes).filter(n => n.legacy && n.ts).map(n => n.ts);
     if (oilTs.length) oilBatchMin = Math.max(...oilTs) - WOOD_BATCH_MS;
   }
-  const keys = new Set([ ...Object.keys(groups), ...Object.keys(rec.prev) ]);
+  const priorGroups = fresh ? old && old.prev ? old.prev : {} : rec.prev;
+  const keys = new Set([ ...Object.keys(groups), ...Object.keys(rec.prev), ...Object.keys(priorGroups) ]);
   keys.forEach(groupKey => {
     const invItem = inventoryItemFor(groupKey, groups[groupKey] ? groups[groupKey].kind : "");
     if (invItem && inventory) invNowMap[invItem] = Number(inventory[invItem]) || 0;
     const grp = groups[groupKey] || {
-      mode: rec.prev[groupKey] ? rec.prev[groupKey].mode : "ts",
-      noCounter: rec.prev[groupKey] ? !!rec.prev[groupKey].noCounter : false,
+      mode: priorGroups[groupKey] ? priorGroups[groupKey].mode : "ts",
+      noCounter: priorGroups[groupKey] ? !!priorGroups[groupKey].noCounter : false,
+      kind: priorGroups[groupKey] ? priorGroups[groupKey].kind : undefined,
       nodes: {}
     };
     const ids = Object.keys(grp.nodes);
     const prev = fresh ? null : rec.prev[groupKey] || null;
+    const carried = fresh && priorGroups[groupKey] ? priorGroups[groupKey] : null;
     let st = rec.stats[groupKey];
     if (!st) st = rec.stats[groupKey] = {
       total: ids.length,
@@ -682,8 +720,23 @@ export function dailyHarvestTrack(g, farmId) {
     if (fresh) {
       const honeyMoved = grp.mode !== "honey" || cNow !== null && cPrev !== null && cNow > cPrev;
       ids.forEach(id => {
-        if (honeyMoved && grp.nodes[id].ts >= start) events.push(id);
+        if (!honeyMoved) return;
+        const node = grp.nodes[id];
+        if (node.ts >= start) {
+          events.push(id);
+          return;
+        }
+        const was = carried && carried.mode === "ts" && carried.nodes[id] ? carried.nodes[id] : null;
+        if (grp.mode === "ts" && was && node.ts > was.ts && (!(node.shift > 0) || realStamp(groupKey, node, now) >= start)) events.push(id);
       });
+      if (carried && grp.mode === "key" && carried.mode === "key") {
+        Object.keys(carried.nodes).forEach(id => {
+          if (events.includes(id)) return;
+          const c = grp.nodes[id];
+          const pk = String(carried.nodes[id].key);
+          if (!c || c.key !== pk && !pk.startsWith(`${c.key}:`)) events.push(id);
+        });
+      }
     } else if (prev) {
       if (grp.mode === "ts") {
         ids.forEach(id => {
@@ -738,7 +791,9 @@ export function dailyHarvestTrack(g, farmId) {
     const sorted = events.slice().sort();
     const per = Math.floor(extras / sorted.length);
     const rem = extras % sorted.length;
-    const snap = metaFarm === fid && yieldMeta[groupKey] && yieldMeta[groupKey].nodes ? yieldMeta[groupKey].nodes : null;
+    const ref = rec.ym && rec.ym[groupKey] ? rec.ym[groupKey] : null;
+    const snapMem = metaFarm === fid && yieldMeta[groupKey] && yieldMeta[groupKey].nodes ? yieldMeta[groupKey].nodes : null;
+    const snap = snapMem || (ref && ref.nodes) || null;
     const buckets = {};
     sorted.forEach((id, i) => {
       const inc = (hiddenOnly ? 0 : 1) + per + (i < rem ? 1 : 0);
@@ -758,7 +813,9 @@ export function dailyHarvestTrack(g, farmId) {
       b.t = Math.max(b.t, t);
       b.n += 1;
       b.ids.push(id);
-      const oilAmt = groupKey === "Oil" ? oilAmountOf(g, id) : null;
+      const known = rec.amts ? rec.amts[id] : null;
+      const prevAmt = typeof known === "number" && known > 0 ? known : null;
+      const oilAmt = groupKey === "Oil" ? prevAmt !== null ? prevAmt : oilAmountOf(g, id) : null;
       if (oilAmt !== null) b.y += oilAmt; else if (snap && typeof snap[id] === "number") b.y += snap[id]; else b.miss = true;
     });
     const honeyTotal = grp.mode === "honey" && cNow !== null && cPrev !== null && cNow > cPrev ? cNow - cPrev : null;
@@ -803,6 +860,21 @@ export function dailyHarvestTrack(g, farmId) {
     entries.forEach(e => {
       if (honeyTotal !== null) e.y = honeyTotal * e.n / nSum;
     });
+    if (honeyTotal === null && ref && ref.per > 0) entries.forEach(e => {
+      if (e.y !== null && e.y !== undefined) return;
+      if (Array.isArray(ref.products) && ref.products.length > 1) {
+        e.p = {};
+        let sum = 0;
+        ref.products.forEach(pr => {
+          const v = e.n * pr.per;
+          e.p[pr.name] = v;
+          sum += v;
+        });
+        e.y = sum;
+      } else {
+        e.y = e.n * ref.per;
+      }
+    });
     const invItemNow = inventoryItemFor(groupKey, grp.kind);
     const invBefore = invItemNow && typeof invPrev[invItemNow] === "number" ? invPrev[invItemNow] : null;
     const invAfter = invItemNow && typeof invNowMap[invItemNow] === "number" ? invNowMap[invItemNow] : null;
@@ -829,6 +901,12 @@ export function dailyHarvestTrack(g, farmId) {
   });
   trackCooking(g, rec, fresh, now);
   rec.prev = groups;
+  const amtsNow = {};
+  Object.keys(g.oilReserves || {}).forEach(id => {
+    const a = oilAmountOf(g, id);
+    if (a !== null) amtsNow[id] = a;
+  });
+  rec.amts = amtsNow;
   rec.power = Object.assign({}, knownPower);
   Object.keys(POWER_KINDS).forEach(skill => {
     if (typeof powerNow[skill] === "number") rec.power[skill] = powerNow[skill];
@@ -874,8 +952,9 @@ export function dailyCookingInfo(building, farmId) {
   if (!items.length) return null;
   items.sort((a, b) => b.item.c - a.item.c || a.name.localeCompare(b.name));
   const lastAt = items.reduce((max, e) => e.item.log.reduce((m, l) => Math.max(m, l.t || 0), max), 0);
+  const composter = !!COMPOSTER_BUILDINGS[building];
   return {
-    rounds: items.reduce((sum, e) => sum + e.item.c, 0),
+    rounds: composter ? items.reduce((max, e) => Math.max(max, e.item.c), 0) : items.reduce((sum, e) => sum + e.item.c, 0),
     estimated: !!bld.est,
     lastAt: lastAt,
     items: items
@@ -978,9 +1057,28 @@ export function dailyHarvestSetYield(groupKey, perNode, iconHtml, nodeQty, econ,
   if (iconHtml) meta.icon = iconHtml;
   const store = metaStore;
   const rec = store[metaFid];
+  let ymChanged = false;
+  if (rec && typeof rec === "object") {
+    const ymNext = {
+      per: meta.per,
+      nodes: meta.nodes,
+      products: meta.products ? meta.products.map(pr => ({
+        name: pr.name,
+        per: pr.per
+      })) : null
+    };
+    rec.ym = rec.ym || {};
+    if (JSON.stringify(rec.ym[groupKey] || null) !== JSON.stringify(ymNext)) {
+      rec.ym[groupKey] = ymNext;
+      ymChanged = true;
+    }
+  }
   const st = rec && rec.stats ? rec.stats[groupKey] : null;
-  if (!st || !Array.isArray(st.log)) return;
-  let changed = resolvePending(st, groupKey);
+  if (!st || !Array.isArray(st.log)) {
+    if (ymChanged) saveStore();
+    return;
+  }
+  let changed = resolvePending(st, groupKey) || ymChanged;
   if (meta.per) st.log.forEach(e => {
     if (e.y === null || e.y === undefined) {
       if (meta.products) {
@@ -1009,7 +1107,9 @@ const LOG_KIND_OF = {
   greenhouse: "greenhouse"
 };
 
-function addLogTotal(totals, name, kind, amount, rounds, price, feeRate) {
+const LOG_VERSION = 2;
+
+function addLogTotal(totals, name, kind, amount, rounds, price, feeRate, ver) {
   const value = Math.round(amount * 100) / 100;
   if (!(value > 0) || !isFinite(value)) return;
   const cur = totals[name];
@@ -1019,6 +1119,7 @@ function addLogTotal(totals, name, kind, amount, rounds, price, feeRate) {
   };
   const c = Math.max(cur && cur.c || 0, Number.isFinite(rounds) ? Math.floor(rounds) : 0);
   if (c > 0) entry.c = c;
+  if (ver > 0) entry.v = ver;
   const p = typeof price === "number" && isFinite(price) && price > 0 ? price : cur && cur.p || 0;
   if (p > 0) {
     entry.p = Math.round(p * 1e6) / 1e6;
@@ -1042,7 +1143,7 @@ function animalLogTotals(totals, groupKey, st) {
         parts[i] += v;
       });
     });
-    products.forEach((pr, i) => addLogTotal(totals, pr.name, "animal", parts[i], rounds, pr.price, pr.feeRate));
+    products.forEach((pr, i) => addLogTotal(totals, pr.name, "animal", parts[i], rounds, pr.price, pr.feeRate, LOG_VERSION));
     return;
   }
   if (!meta.productName) return;
@@ -1050,7 +1151,7 @@ function animalLogTotals(totals, groupKey, st) {
   st.log.forEach(e => {
     if (typeof e.y === "number") amount += e.y; else if (meta.per) amount += e.n * meta.per;
   });
-  addLogTotal(totals, meta.productName, "animal", amount, rounds, meta.price, meta.feeRate);
+  addLogTotal(totals, meta.productName, "animal", amount, rounds, meta.price, meta.feeRate, LOG_VERSION);
 }
 
 export function dailyHarvestTotals(farmId) {
@@ -1075,13 +1176,13 @@ export function dailyHarvestTotals(farmId) {
       if (typeof e.y === "number") amount += e.y; else if (per) amount += e.n * per;
     });
     const gm = yieldMeta[groupKey];
-    addLogTotal(totals, groupKey, logKind, amount, roundsFromStats(st).rounds, gm && gm.price, gm && gm.feeRate);
+    addLogTotal(totals, groupKey, logKind, amount, roundsFromStats(st).rounds, gm && gm.price, gm && gm.feeRate, logKind === "beehive" ? 0 : LOG_VERSION);
   });
   const cookTotals = rec.cook && rec.cook.totals ? rec.cook.totals : {};
   Object.keys(cookTotals).forEach(name => {
     const t = cookTotals[name];
     if (!t || !LOG_NAME_RE.test(name)) return;
-    addLogTotal(totals, name, "cooking", t.a, t.c, t.p, t.f);
+    addLogTotal(totals, name, t.k === "composter" ? "composter" : "cooking", t.a, t.c, t.p, t.f);
   });
   return {
     day: rec.day,
@@ -1181,6 +1282,12 @@ const KIND_META = {
     action: "collected",
     unit: "slots",
     palette: [ "#ffb347", "#fff3a0", "#e43b44" ]
+  },
+  composter: {
+    verb: "Collected",
+    action: "collected",
+    unit: "batches",
+    palette: [ "#8a5a2b", "#5fcf4a", "#c9f07a" ]
   }
 };
 
@@ -1209,7 +1316,7 @@ function escapeAttr(s) {
 
 export function dailyHarvestBadgeHtml(groupKey, kind, iconHtml, farmId) {
   if (!KIND_META[kind]) return "";
-  const info = kind === "cooking" ? dailyCookingInfo(groupKey, farmId) : dailyHarvestInfo(groupKey, farmId);
+  const info = kind === "cooking" || kind === "composter" ? dailyCookingInfo(groupKey, farmId) : dailyHarvestInfo(groupKey, farmId);
   if (!info) return "";
   return `<span class="daily-harvest-badge guro-frame dh-${kind}" role="button" tabindex="0" data-dh-key="${escapeAttr(groupKey)}" data-dh-kind="${kind}" data-dh-farm="${escapeAttr(farmId || "")}"><span class="dh-ord">${info.estimated ? "~" : ""}${info.rounds}x</span><span class="dh-icon">${iconHtml || ""}${effectSvg(kind)}</span></span>`;
 }
@@ -1377,9 +1484,9 @@ function cookingItemLogHtml(entry) {
   return `<div class="dh-pop-log guro-frame">${head}<div class="dh-log-list">${rows}</div>${sumHtml}</div>`;
 }
 
-function openCookingPop(badgeEl) {
+function openCookingPop(badgeEl, kind) {
   const building = badgeEl.getAttribute("data-dh-key");
-  const meta = KIND_META.cooking;
+  const meta = KIND_META[kind];
   const info = dailyCookingInfo(building, badgeEl.getAttribute("data-dh-farm") || "");
   if (!info) return;
   closeDailyPop();
@@ -1387,11 +1494,11 @@ function openCookingPop(badgeEl) {
   const iconHtml = iconEl ? iconEl.innerHTML : "";
   const times = `${info.estimated ? "~" : ""}${info.rounds}x`;
   const safeName = escapeAttr(building);
-  const bodyText = `Your ${safeName} has finished and handed over ${times} today. Each finished cook that is collected counts as one harvest, and every item below keeps its own record.`;
+  const bodyText = kind === "composter" ? `Your ${safeName} has finished and handed over ${times} today. Each finished batch that is collected counts as one harvest, and the fertiliser and worms below keep their own records.` : `Your ${safeName} has finished and handed over ${times} today. Each finished cook that is collected counts as one harvest, and every item below keeps its own record.`;
   const now = Date.now();
   const itemsHtml = info.items.map(cookingItemLogHtml).join("");
   const farm = badgeEl.getAttribute("data-dh-farm") || store0Last();
-  const html = `<div class="dh-pop-back" id="dailyHarvestPop"><div class="dh-pop guro-frame dh-cooking" role="dialog" aria-modal="true"><div class="dh-pop-top"><span class="dh-pop-top-title">Daily Harvest · UTC</span><span class="dh-pop-top-acts"><button type="button" class="dh-pop-log-btn" data-dh-log="${escapeAttr(farm)}">Log</button><button type="button" class="dh-pop-x" data-dh-close="1" aria-label="Close"></button></span></div><div class="dh-pop-head"><span class="dh-pop-icon guro-frame dh-icon">${iconHtml}</span><div class="dh-pop-headtext guro-frame"><div class="dh-pop-title dh-pop-title-solo">${safeName}</div></div><span class="dh-pop-ord guro-frame">${times}</span></div><div class="dh-pop-main guro-frame">${meta.verb} <b>${times}</b> today</div><p class="dh-pop-text">${bodyText}</p><div class="dh-pop-stats guro-frame"><div class="dh-stat"><span>Accuracy</span><b>${info.estimated ? "Estimated" : "Exact"}</b></div><div class="dh-stat"><span>Items</span><b>${info.items.length}</b></div><div class="dh-stat"><span>Last collected</span><b>${formatClock(info.lastAt)}</b></div><div class="dh-stat"><span>Resets in</span><b>${formatResetIn(now)}</b></div></div>${itemsHtml}${info.estimated ? `<p class="dh-pop-text dh-pop-note">Rows marked with ~ were collected between syncs and are estimated from your lifetime activity counters.</p>` : ""}</div></div>`;
+  const html = `<div class="dh-pop-back" id="dailyHarvestPop"><div class="dh-pop guro-frame dh-${kind}" role="dialog" aria-modal="true"><div class="dh-pop-top"><span class="dh-pop-top-title">Daily Harvest · UTC</span><span class="dh-pop-top-acts"><button type="button" class="dh-pop-log-btn" data-dh-log="${escapeAttr(farm)}">Log</button><button type="button" class="dh-pop-x" data-dh-close="1" aria-label="Close"></button></span></div><div class="dh-pop-head"><span class="dh-pop-icon guro-frame dh-icon">${iconHtml}</span><div class="dh-pop-headtext guro-frame"><div class="dh-pop-title dh-pop-title-solo">${safeName}</div></div><span class="dh-pop-ord guro-frame">${times}</span></div><div class="dh-pop-main guro-frame">${meta.verb} <b>${times}</b> today</div><p class="dh-pop-text">${bodyText}</p><div class="dh-pop-stats guro-frame"><div class="dh-stat"><span>Accuracy</span><b>${info.estimated ? "Estimated" : "Exact"}</b></div><div class="dh-stat"><span>Items</span><b>${info.items.length}</b></div><div class="dh-stat"><span>Last collected</span><b>${formatClock(info.lastAt)}</b></div><div class="dh-stat"><span>Resets in</span><b>${formatResetIn(now)}</b></div></div>${itemsHtml}${info.estimated ? `<p class="dh-pop-text dh-pop-note">Rows marked with ~ were collected between syncs and are estimated from your lifetime activity counters.</p>` : ""}</div></div>`;
   document.body.insertAdjacentHTML("beforeend", html);
   document.documentElement.classList.add("dh-pop-lock");
 }
@@ -1399,8 +1506,8 @@ function openCookingPop(badgeEl) {
 function openDailyPop(badgeEl) {
   const groupKey = badgeEl.getAttribute("data-dh-key");
   const kind = badgeEl.getAttribute("data-dh-kind");
-  if (kind === "cooking") {
-    openCookingPop(badgeEl);
+  if (kind === "cooking" || kind === "composter") {
+    openCookingPop(badgeEl, kind);
     return;
   }
   const meta = KIND_META[kind];

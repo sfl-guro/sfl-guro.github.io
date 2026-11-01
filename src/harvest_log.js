@@ -25,7 +25,8 @@ const KIND_ORDER = {
   greenhouse: 3,
   animal: 4,
   beehive: 5,
-  cooking: 6
+  cooking: 6,
+  composter: 7
 };
 
 let pendingFarm = "";
@@ -94,7 +95,7 @@ async function pushTotals(trackKey) {
   const sig = JSON.stringify([ farmId, data.day, data.totals ]);
   const sent = loadSent();
   if (sent.sig === sig) return;
-  const res = await fetchWithTimeout(HARVEST_LOG_BASE + "/log", {
+  const post = totals => fetchWithTimeout(HARVEST_LOG_BASE + "/log", {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
@@ -102,9 +103,20 @@ async function pushTotals(trackKey) {
     body: JSON.stringify({
       farmId: farmId,
       day: data.day,
-      totals: data.totals
+      totals: totals
     })
   });
+  let res = await post(data.totals);
+  if (res.status === 400) {
+    const legacy = {};
+    Object.keys(data.totals).forEach(name => {
+      if (data.totals[name].k !== "composter") legacy[name] = data.totals[name];
+    });
+    if (Object.keys(legacy).length && Object.keys(legacy).length < Object.keys(data.totals).length) {
+      res = await post(legacy);
+      if (res.status < 500) return;
+    }
+  }
   if (res.status < 500) saveSent({
     sig: sig
   });
@@ -223,7 +235,7 @@ function dayHtml(entry, number) {
     const net = netOf(e);
     if (net !== null) totalNet += net;
     const value = net !== null ? `<span class="dh-hlog-val"><span class="dh-hlog-price">(${fmtPrice(e.p)}${flowerHtml()}/U)</span><span class="dh-hlog-net">(+${fmtFlower(net)}${flowerHtml()})</span></span>` : "";
-    const count = e.c > 0 ? `<span class="dh-hlog-count"><span class="dh-hlog-h" role="button" tabindex="0" data-dh-h="1" aria-label="${e.k === "cooking" ? "Collected" : "Harvested"}">${e.k === "cooking" ? "C" : "H"}<span class="dh-hlog-tip">${e.k === "cooking" ? "Collected" : "Harvested"}</span></span>${e.c}x</span>` : "";
+    const count = e.c > 0 ? `<span class="dh-hlog-count"><span class="dh-hlog-h" role="button" tabindex="0" data-dh-h="1" aria-label="${e.k === "cooking" || e.k === "composter" ? "Collected" : "Harvested"}">${e.k === "cooking" || e.k === "composter" ? "C" : "H"}<span class="dh-hlog-tip">${e.k === "cooking" || e.k === "composter" ? "Collected" : "Harvested"}</span></span>${e.c}x</span>` : "";
     return `<div class="dh-hlog-row"><span class="dh-hlog-amt">+${fmtAmount(e.a)}</span><span class="dh-hlog-ico">${itemIcon(name, e.k)}</span><span class="dh-hlog-name">${esc(name)}</span>${value}${count}</div>`;
   }).join("");
   const total = totalNet > 0 ? `<div class="dh-hlog-gain"><span>Total Gained:</span><span class="dh-hlog-gain-val">+${totalNet.toLocaleString("en-US", {
@@ -255,6 +267,13 @@ function mergeLocalToday(days, farmId) {
       today.totals[name] = Object.assign({}, loc);
       return;
     }
+    const lv = loc.v || 0;
+    const cv = cur.v || 0;
+    if (lv > cv) {
+      today.totals[name] = Object.assign({}, loc);
+      return;
+    }
+    if (lv < cv) return;
     const a = Math.max(cur.a, loc.a);
     const c = Math.max(cur.c || 0, loc.c || 0);
     const next = {
@@ -262,6 +281,7 @@ function mergeLocalToday(days, farmId) {
       a: a
     };
     if (c > 0) next.c = c;
+    if (cv > 0) next.v = cv;
     const src = loc.p > 0 ? loc : cur;
     if (src.p > 0) {
       next.p = src.p;

@@ -4220,10 +4220,45 @@ function farmPanelCookingLogSlots(g) {
       });
     });
   });
+  const worms = {};
+  const composterFarmId = farmPanelComposterFarmId(farmPanelGameState);
+  FARM_PANEL_COMPOSTER_NAMES.forEach(name => {
+    const base = BASE_COMPOSTERS[name];
+    const instances = Array.isArray(buildings[name]) ? buildings[name] : null;
+    if (!base || !instances) return;
+    present.push(name);
+    const fig = computeComposterFigures(name);
+    if (composterFarmId != null) worms[name] = counter => {
+      const roll = composterRollWorms(name, composterFarmId, counter, fig);
+      return roll ? roll.worms : 0;
+    };
+    instances.forEach(inst => {
+      if (!inst || !inst.coordinates || !inst.producing || typeof inst.producing.readyAt !== "number") return;
+      const items = inst.producing.items || {};
+      const fertQty = typeof items[base.fertilizer] === "number" ? items[base.fertilizer] : Number(items[base.fertilizer]) || fig.outputQty;
+      if (!(fertQty > 0)) return;
+      slots.push({
+        building: name,
+        name: base.fertilizer,
+        amount: fertQty,
+        readyAt: inst.producing.readyAt,
+        price: farmPanelGetMarketPriceFlower(base.fertilizer) || 0,
+        feeRate: (feePercent || 0) / 100,
+        keys: [ `${name} Collected` ],
+        worm: {
+          name: base.wormName,
+          counterKey: `${base.wormName} Collected`,
+          price: farmPanelGetMarketPriceFlower(base.wormName) || 0,
+          feeRate: (feePercent || 0) / 100
+        }
+      });
+    });
+  });
   const activity = farmPanelField(g, "farmActivity");
   return {
     slots: slots,
     present: present,
+    worms: worms,
     activity: activity && typeof activity === "object" ? activity : null,
     instant: farmPanelInstantCookEntries(g, buildings)
   };
@@ -5065,8 +5100,9 @@ function farmPanelRenderComposterCard(row) {
   const timeRow = `<div class="animal-detail-stat"><span class="label">Compost Time</span><span class="value">${farmPanelFormatSpiceDuration(row.cycleTimeSec)}${row.cycleTimeSec !== row.baseCycleTimeSec ? ` <span class="boost-mult-note">(base ${farmPanelFormatSpiceDuration(row.baseCycleTimeSec)})</span>` : ""}</span></div>`;
   const counterRow = row.wormExact ? `<div class="animal-detail-stat"><span class="label">${escapeHtml(row.wormCounterKey)}</span><span class="value">${row.wormCounterStart}</span></div>` : "";
   const boostListHtml = farmPanelRenderComposterBoostList(row);
+  const dailyBadgeHtml = dailyHarvestBadgeHtml(row.composterName, "composter", composterIcon, farmPanelDailyFarmId());
   const chainHtml = farmPanelRenderComposterChainHtml(row);
-  return `\n  <div class="card animal-merged-card is-profit${expandedCls}" data-search="${row.searchKey}" data-fp-category="composters">\n    <div class="card-toggle">\n      <div class="card-name-row">\n        <span class="card-icon">${composterIcon}</span>\n        <div>\n          <div class="card-name">${escapeHtml(row.composterName)}</div>\n          <div class="card-type-row">\n            <span class="card-type">${row.count} batch${row.count === 1 ? "" : "es"}</span>\n          </div>\n          <div class="animal-fold-row">${productChipsHtml}</div>${valueBlockHtml}\n        </div>\n      </div>\n      <div class="card-collapsed-profit">\n        <span class="harvest-stack">${statusBadgeHtml}</span>\n        <span class="chev">▾</span>\n      </div>\n      ${statusFoldHtml}\n    </div>\n    <div class="card-details">\n      <div class="animal-detail-grid">\n        ${fertDetailRow}\n        ${wormDetailRow}\n        ${mismatchNote}\n        ${reqRow}\n        ${timeRow}\n        ${counterRow}\n      </div>\n      ${chainHtml}\n      ${boostListHtml}\n    </div>\n  </div>`;
+  return `\n  <div class="card animal-merged-card is-profit${expandedCls}" data-search="${row.searchKey}" data-fp-category="composters">\n    <div class="card-toggle">\n      <div class="card-name-row">\n        <span class="card-icon">${composterIcon}</span>\n        <div>\n          <div class="card-name">${escapeHtml(row.composterName)}</div>\n          <div class="card-type-row">\n            <span class="card-type">${row.count} batch${row.count === 1 ? "" : "es"}</span>\n          </div>\n          <div class="animal-fold-row">${productChipsHtml}</div>${valueBlockHtml}\n        </div>\n      </div>\n      <div class="card-collapsed-profit">\n        <span class="harvest-stack">${dailyBadgeHtml}${statusBadgeHtml}</span>\n        <span class="chev">▾</span>\n      </div>\n      ${statusFoldHtml}\n    </div>\n    <div class="card-details">\n      <div class="animal-detail-grid">\n        ${fertDetailRow}\n        ${wormDetailRow}\n        ${mismatchNote}\n        ${reqRow}\n        ${timeRow}\n        ${counterRow}\n      </div>\n      ${chainHtml}\n      ${boostListHtml}\n    </div>\n  </div>`;
 }
 
 function cookingFoodOrFishIcon(name) {
