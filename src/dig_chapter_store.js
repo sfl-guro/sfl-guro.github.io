@@ -9,7 +9,7 @@ export const DIG_CHAPTER_STORE = {
   } ],
   "Cave Dwellers": [ {
     kind: "collectible",
-    name: "Mining Drill",
+    name: "Pot of Luck",
     artefact: "Clover Coin",
     price: 250,
     limit: 1,
