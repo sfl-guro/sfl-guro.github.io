@@ -34,7 +34,7 @@ async function showPage(id) {
   currentModule = mod;
   setActivePageInNav(id);
   setPageTitle(id);
-  document.body.classList.toggle("guro-own-sync", id === "digging" || id === "potionroom" || id === "auctionleaderboard");
+  document.body.classList.toggle("guro-own-sync", id === "digging" || id === "cavesolver" || id === "potionroom" || id === "auctionleaderboard");
   document.body.classList.toggle("guro-show-profile", id === "profile");
   document.body.classList.toggle("guro-show-rate", id === "growing" || id === "coinconverter");
   document.title = page.label + " · SFL GURO";

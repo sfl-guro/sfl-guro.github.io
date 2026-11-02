@@ -225,15 +225,6 @@ export function loadBaseAnimalProduceIfNeeded() {
       added = true;
     }
   });
-  if (!marketItems.some(m => (m.name || "").toLowerCase() === "mud")) {
-    marketItems.push({
-      id: "pig_mud",
-      name: "Mud",
-      flowerPrice: 0,
-      sourceLibId: null
-    });
-    added = true;
-  }
   if (added) {
     saveMarketState();
     autoFillLivePricesForNewEntries();

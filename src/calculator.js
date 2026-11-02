@@ -107,6 +107,8 @@ export const IMAGE_ICONS = {
   "Crafting Box": "data:image/webp;base64,UklGRkoCAABXRUJQVlA4TD4CAAAvLUAJEJfBppEkR33+wstOD+Dz1/Nn470jMDSY2LZV5dzGAFhkIosG6vznYTL+TVa8bCLbdnJu/6sv4ZODfxk4QAFDlfMlyLap2OgP9gDIfk1FpYQhGACCYAAIhtujJiZtTvrW65ZargMDDJBkGJN3jAQwwASwGYBgEIT/O10HhBE2+7sAA0NybLNp/YAJYIAhCIAYBJl+M8i2bdtpG8lySDCSbVxxb8ftuin5/7+7lyvXPK8V0f8JmLxrqpx8xhTDqOlTDJX/R6ni2lEq0kqpp5CQSqGQZIWkMoGkEk0x6JUJJJWqZA5YAigJmFORrF+lkpGkGmOBTahN4Fj0KjWhhcgbACMvhK4Qea8hMAZor5FXhYI5oE2oTQiYgzpGCgFUQG0ADAVUAGUyngpksxUzCkxGOzU6NXS2szucnJ4PZxwcn/bOomRFt8V0HnO26ML2KgH/gNeXBy8zQe2pQKXQHDy1la9DmxULndl0vul0iy4xO6ENRJSH4yaVw14m3RZW7TEbHtpySDra2CtG0mzTLQE33QIvbIbUBiLAcphdkO+NoVtM55tOC+1RaivTWZU9k05caLfpQrsLm7NlG4hc0T4MG6vAKhtny7Zy+S6pm492F65fvSbgLywfE5ezKkt2pe5Cm+3+4GT/7Hzfo8OzHdYvikOd3ZyLfLBdJt4enl8ffV0+JJqLId9bwa4wYBu/rMT3kr0hz27x5i681T93v9/NvQ+1Zq2Y4kNZK9aYPtT3uE++M/ffwKfM+DwA",
   "Hen House": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAAPCAYAAAA71pVKAAAAAXNSR0IArs4c6QAAAYdJREFUKJGdkrtKA0EUhr/ZLESws7ENKQQJrIrbiGCKqCksErSzUxC1shDS+gC+QJ7AwioqgqhILIUNxoV4Q9Q2yCIpJBE3ORZx1l0iBPxhYGbO/51z5qL4Q2/ZnACUvAZrTln95QHoCbxlczJopQD4cGuUvAa7TZPH2nmP1zzZyoteTN4LYVDrzj1l1JqXm4VnAC4/LQAMgHTcJTNdpeQ1+HBrAVjyGqxeXQQJxo6TDGy0ScfdbtZmISlf+wkZSc1Ku93pO0ZSs/K1n5BmISmGbuE/MjPTVUy7e+xRaz58xmCuVa68dCFbgA5mONPtYRZ1swcHk9weLqMS2z1gWKpZSIppdzBtoVMdikZzlQi4ubJObecJAN8xfiv7jgLeMZaeI3y58sLMawaAhyMJeUGdbOUlHXfR1XUgcjF2FPIdg8tPq/vO2qCDpi3B0JDvqB+PgTeeB34+iTeep1WM4TtGYG4VY8Fe3V8EoFWMBSCA2p6ZkrmJ4Z5W++nsuh59qrPrel8oXOgboefSAjVnJg0AAAAASUVORK5CYII=",
   "Water Well": "data:image/webp;base64,UklGRvQBAABXRUJQVlA4TOgBAAAvGMAIEGfhtrZtJXpoRuZQg7s3QEST9EITbrn7TBtsI9tWcnFIiWiAAshc+qQpKnCP3O25rW1biR4OEYsqnE5oj0rItQt3C92ZeWraRpK82n7BLdrDdeUfALDQ+nNmBBQCoD/QR5/67AAQMOD7/6zhViWngnWrhDjP7AUE+JiHAszt5Kh5QOB7wLlc/b9gfc/vvywGeuCRVHmQooBSJDhHo/uIrLESnTFFAx+mrCsBkG3aXtdhGAYEoN+sTMP0KiA2kqRIOmZmZljy37/76pnd96CrO6L/DNy2bSRdr3v3FbVZVWlvOKnQz6zXqmTHp7O3V3KgU/6oppIVM22fGqtqNtksoYsz4ASin9l7OYcqthQbNIbcKwzPbyPYiM1SdEU/+08Tuc2y1mgS3FFZa9FETlfW+oMmcpstbaJ1X7buus/+8Q5gsl5YGmpqCSlDsdaV2QiaYXGJDF6s1VSHIzNTBUwEYtniN/z7lfNtmNmwYSb2mcgar3P9ZcglC7gk9deTly/JIXmx1D25gFNSfxr9mhakX5GyAE/q9F9KipT5GdTpdywiGgRopGQSHDiCBI1QFeGa+vkoM4qqq+AKzkfB7aHIRDxHAqmkR1MRXJ1+hkjtEMTnPPrNj4GH7T4f10KPMcN0pKC0hA==",
+  "Cave": "data:image/webp;base64,UklGRtQCAABXRUJQVlA4TMgCAAAvMYANEMfAJgCANPC5+wX9S1DIXpjWYBwAgJGzmfFqkPYfw3hxgWIV27aS5+7Yp4egIRVJQALXIci2KdEIrnnfAAAI+bAPQ/AHBV9fmgwRngmaDRVbaKVtqX6GJJPD6B+SRifj/Nx89S7Q8xEdL9YG7fdyjl/tSgYKbiNJkqSayzfcd8areo7O+v9XIzIqu18gRfR/Am6XD+UTOzd4U/0M2lA0lA2oH+FcDeS6mqLRy2zAgqTWWUzgRTYUSBa9LBKopvAKzcq5svq85gQKfckiaaCyereg56Twtex17VF9mhdkn19FvmJusVO9U25Z9BbXkO2G2XtZwFTAXrrRUGdFQp1mcVZZL5FFQ0EKq9SCqSCbs0iaSqi5ySHrBus0G3ARIynINgsaMsa6Z3NhL12ZQKNpQxouYqxmi42oYaoNKuS0HrAFDRkTwwanGHN4/18lTEYMNRZ0ntGUy5jvrCB0ipNcjanUcHGfTyB0hCOmhBE3cFgYp/flYzlB6DB0mLjAkcbx6+d8nx+bEz/nX0eMjJUvPdRjqfpS3MByZGw81IPvywPVLWPvcQ7fNw88f8kNeHdHD3Y0Rkx0MuJY/+X9+7Z/OdYx6mw0JMbxUHn3FT0eKjGKhpUN7Hx/cavBE1d34Ph+4XEHDq1mGCfzJ3B44tDQTzDUWGnzwvvm1tCwIW/2cuf9xa3oOellwur9wrPouYZM2fBhZkMx0WQ14IcxXCUxFnjyzwsSYsxljAVb/9SXsmHEZDh0AhIX/vN9+c+T6HnElgXZEIvTf+oixqJWX11o0DDi+WfzTYXn8TuG0dTi6+a3gOELvAkkPMeyvi5vJ36roT7/vBwN47n4urztfoEnfzbfnGI0VPz343b5n803FZ4xtIivt4vf9lCA51Dr6+3iNwU2Tp981berkIXuwQ31KkDZUrjN8jHzxg2UT6iwuM2f50MB",
+  "Pigpen": "data:image/png;base64,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",
   "Pet House": "data:image/webp;base64,UklGRmACAABXRUJQVlA4TFMCAAAvMIAMENfAJgCANDhUoAAVCEsGTlrwEUA/m3y+1WAa21YjHIPN9dC/Y1ConGG3AYKSAAASfAALmMVXZli0TnQnyLap2OgP9gAA+N9/BILfkN/I/yT6UQ1mygxzXQ47l73ABaRijvzsacOFa78vCD2rC+0SgaJ6s6cdRnZTKf/9DBBj247aEIuwGEtkD6b/RoPe/1+QBt6L6L8DR5LipmdHGcB2LthHdIGKp+4KFXKy+mXJjfLTJNek2KSvHKTZVztSoU0BmW0q+vqdhCmjrsCm+xVaSlfM19B+XzTunoYW7eKCZC3atQxj7NERVIUlwxVjBKZAUAcad7XifD5THvgMLvLGrr0ySFBwuQvc7zBIlju+jA0MUnzrWYKLI7zpcBDcPUrh9DIGtFyi4EExrqULGawinOkzBP//7v3/ZwfRlowRXhI5ZldQDZt+96fbzmF8RuRPwykpnhqO7q4syR+E/XCXgqQM3crCsB/WcgX2aWpw5UcuPyJ+GrcfBu1tOvBVmYJ+mPVleqoKWfkO+IbPws6Qxcmg3yxg/vZFoMP2VhPl9PIaDqJe6+MkP8ypRBbCwmxSQZmQbqn4uikhzDatL6wjDAfaPj1tPuCVfPlYP/4gax1OyGZIt4QU8AP09gBxZp+QjR8bK7ql3jKBX0nCdVBTnypHqqGifgp4VuF9lT5VavEwoP4kT0b0fJ5keqonLljr1MDu4c0+Ffawz/oQgKazhze0pDmE7oNoqNqqZpIh76svwREK93BIIGQuvubTNBwrj/eD91AnPgtwqf4LXmwCAA==",
   "Fire Pit": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAASCAYAAABWzo5XAAAETElEQVR4nG1Ua2hTdxw9v/+9Nw+TPk2T1dqXZmhNo9U6t9UXdQriFCeSKoigTKtMxvDBNmF4zT5sA1HY5mQrTgfqpolj0hUZVOMmowpaWyuL1TXVrtW2Nl2aNK8m9/7/+7AhKjvfDpxzOF/OAV6AAEhVl8o+n0fyeTwSAHpRAwA+n0d6lj8nEgJEBPGiqe3Yex5AKJrGhdWskAx9ZPb2L1r/84vngoSqMvJ6uaqCLbPtWTEYHtcdxcWlkUh0z/XOzmqj0QwOQGEctjxr2D29csNw9q9rDXv9qadBQggiInH/85XGRMHic2ebA2u7Qo+hk4QpThfWbdqilVWUCRDIaJD5xbOnDKG2FnzdepuE+LeQLATI729gIvij/dfL7efPnmutm1a3JrO5wcVudnURUxSaXO6Ub3R1YGIiBYvFirY7PboW1bM9LU17U4mBL4Nw6eRTPYYGrz9z9J23jg4lpF0F7vq0Ic9uSmZ12IodMEiEwUd9WLigBiZFAjEJ4cERXGu9yOnRHeZy2mvXe7+7xS619AohQg42KX/++cANTTeaFVNuDoocRUgm4kiMj2HZogWomzcH89zVmOuqworlS+B+ZYEI3LjNR6JpBgCsqb09++2+A6cGwqlXN729g1wzp0nLF9ei2J6P7EQSlaUlqK2uAhccnHNomgbOOaw5VkyyWthg9ElSVcHk0/s3d958GJ9ZUbuUb9u5k1ksRgDApStXwXUdJSWlGBgeRYl9MogBQnAwxqBpWSQSSayoq3cv2h4IyncfDMxJGivxxpr1SGWyMJgVxBJpJNMZkKQgntIQj8fBiMFhy4ckyUhPZJCbV8BeX75a7+ruOXXB2/hETmQ4H02Mo+vOPfbIVgDXLCeGwxGYLflIZzSE+vrAIKBpHFwwmBSG2HgMM6pmkcv7CX24q1EZsUSPMGdJISs0C3avu5s/fjyKP7r7ERlLo6LCCUlWcLP9FkIP+zAwFMafvf3o6x9CTo4Fufk54JLMdqufiodDkRp5w9qVy7Tm3879frW5iOmrtJ6e+0znQtgcDkk2meCudsNht6Gz4xZs8+ZgaulLMBkV/D0Ww/hYFOPRsMi1mjgBwF3fYXdHMNRy5kKgLClkcMmIGfOX8Kqa16jQUUTl5WUgoeHl6VMRjYwhFomiaHIuhgf6Jk4fOWgss5lUuqKqcr3Xq32/f6MjHk0VkyV3SnX17H0//ByoH9LzxOoNW1A+3UkGSYYkA5lMGlPshbjbcS3bfPyw8uaS+T+Z9fhWAgBVVZnX6+XPLj5w7KMPrt/u+aytN8bXbd6hTy2rJEaAxaTgcosf0dB1uX7ujBOr9h3ZRkTi6fpVVWUAEAwGCYDk9/szvxzavbV/NHa868Ewk005YMRA+gSmOawotEiHNn584n1x4AA7CO//nxYAfNPYqOxoasreO6Ouut/7oGZkLKUTMTLKOpWXOIYWvvvVSQ8g+QQ4EcQ/Y+rgf/FurJQAAAAASUVORK5CYII=",
   Kitchen: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAAVCAYAAABLy77vAAAAAXNSR0IArs4c6QAAATxJREFUOI2tk7FqwzAQhn8ZPUgIZOvSju7qrgZPfgP3DQz2A9jgJ2g8hK6BQCBruiZLoO3QoWBwvXXpO6hDe0Y6yY5b8oPBOp0+351+CzD5QaL09fGpFjzHJckhRZkaCTmgpsB6EEHq1cZIKMp0EkwShAJd0zoT/SAZhXm8na/P1nhIURxa83O2BgD1aoP68QE8NkU9KIpDvDy/OQ9GcXgW5OmL65srK4HH/CBRrhYFBYsyxen13QIppSCEwHa9gz7LPKsMj0kAmC3myLMK3EP6IW4Nbgtr2Fxd86G929YgW0hrx4C0P1/OKgAw7ED6vQjlWTv/1GhFurjH+BjkYb8Ut3f3g47lsCF5AHDYL0d/yCgOrUF3TWsYVSg1XAxVOuQxANiud9NAs8W8vz2uPKtA+38a9pgudv0XA30D9pSh9GnxnkEAAAAASUVORK5CYII=",
@@ -328,6 +330,7 @@ export const IMAGE_ICONS = {
   Chicken: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAsAAAALBAMAAABbgmoVAAAABGdBTUEAALGPC/xhBQAAABhQTFRFAAAA/N2L60dPmzRA/a4xvcrdJitE/f3+ojOgvwAAAAF0Uk5TAEDm2GYAAAA/SURBVAjXY2BgMDZgAAJmJWUQlayknMDAwFZeXl7GwJAOpMoTGFJDy9PTQVS4iCOYcnEBC4IoqEqGtJS0BAYASeAR4EkMsk8AAAAASUVORK5CYII=",
   Sheep: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABkAAAAaBAMAAACwU+r+AAAAIGNIUk0AAHomAACAhAAA+gAAAIDoAAB1MAAA6mAAADqYAAAXcJy6UTwAAAAhUExURQAAABUWJMDL3P///+SmcurUqrhvUHQ/OYubtBgUJTpEZpRbIOcAAAACdFJOUwA8WfyxvwAAAAFiS0dEAxEMTPIAAAAHdElNRQfpAhMFHxVjv2NlAAAAw0lEQVQY003PsQrCMBCA4VZEV6+DiJPEFDonUFcpl4B7b3BTqXV1UlcdfAJ9AFef0lzapt5Q+PhLcokinoGI/mapFz2GiNjDEFEgg2jdJg8qg4RIewmtVdqp1m7yqtEIuUnbqCq4Kdz5ZA9aCa1qH8f1TUgU2eXk/7w+3WJoV2dGnOTmhW+rgAWJ3CJuygwmLsFM+sUycBEAHsaQKe7goleJFDSt6FjW0Mm6C2wQ7qFqFLvvF2D+AT6TYzsT3iWoeVJffu7GLo1/CvAwAAAAJXRFWHRkYXRlOmNyZWF0ZQAyMDI1LTAyLTE5VDA1OjMxOjIxKzAwOjAw5iHguwAAACV0RVh0ZGF0ZTptb2RpZnkAMjAyNS0wMi0xOVQwNTozMToyMSswMDowMJd8WAcAAAAodEVYdGRhdGU6dGltZXN0YW1wADIwMjUtMDItMTlUMDU6MzE6MjErMDA6MDDAaXnYAAAAAElFTkSuQmCC",
   Cow: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABkAAAAaCAMAAAB1owf/AAAAIGNIUk0AAHomAACAhAAA+gAAAIDoAAB1MAAA6mAAADqYAAAXcJy6UTwAAAA5UExURQAAABUWJLhvUOSmcpJUQP///8DL3HM+OVppiIubtCYrRFo3NzpEZj8oMp4oNRgUJfd2Iv6uNP7nYdaDcokAAAACdFJOUwA8WfyxvwAAAAFiS0dEBfhv6ccAAAAHdElNRQfpAhMFHxVjv2NlAAAA0ElEQVQoz3WQ4QKDIAiEg1BcjVl7/4fdiZlureuHpx/K0TQN4ulGPP9DDAk+6LfcFYr4Qhgg/hLFnv1KjF8IIJyPQTqChNeK4FCknaRHqiEYbiASFj+AsC6zNLIKLyk9ncAYD0TZjD15MdqJcp2+BAhw2u+YSQOhbDqRF65lkZgxzEtkrYCoNJoBJMY8o40RVUBr1OOXlhCqIOSAyJQbQn/zs0oKyp4hN9CJ1tjHWwMxtW3f3xvWL4JwCLTtG5k7OiOYtcrTHrGvaqPegAusRx/RrAgxMDU4AgAAACV0RVh0ZGF0ZTpjcmVhdGUAMjAyNS0wMi0xOVQwNTozMToyMCswMDowMEBW6w8AAAAldEVYdGRhdGU6bW9kaWZ5ADIwMjUtMDItMTlUMDU6MzE6MjArMDA6MDAxC1OzAAAAKHRFWHRkYXRlOnRpbWVzdGFtcAAyMDI1LTAyLTE5VDA1OjMxOjIxKzAwOjAwwGl52AAAAABJRU5ErkJggg==",
+  Pig: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAZCAYAAAArK+5dAAAAAXNSR0IArs4c6QAAAgtJREFUSImtVT1Lw1AUPZU6xDEgachQKtRFimAGFSwuBf9F/4KTm0MHJ536E+peEERQyFZBHBIIxcWCJcOjKUJGMyjooPdx896rtuqZ3se959yvvAAL4KVz8v7SOXlfxKe0CLlVdwAA+WiKlc7xXL5zGRG5CCIAgNfamlvkWwMqR5YISUwZZImAXfUA4Fsh4wURU0kIlAEXI8FZQtoBr/WiMJWtsPkL+SwRuVDJKe2fBE12XKQ8y2l59+BzfXcDq+5IIgKdqXYqSmr05FQex9JI3IeFpuKr4d62L/dvtU28MhHKYklVzBIhya8vrgBAjiOHXfWQp6m0KY9jOc4cWom81hZEEGI4SbG/4yNPUxkRj46wv+Pj+uIKDbeiZWkUIBGwmVeJ1f0scgBYorKoTeREIojgHp4iSwSyRMA9PJUfnamx9KVrGZBIlggZkVV34NUd4DLQs2RrEUTGXmlN/m+UVlfX9s79zUHDrRQi4FmIIDKPKbtXfYeTFO0wbhYy4GNmVz30un3p3Ov2kY+myEdT9Lp92FUPIoiM5BxlAGiHcfPcx6DhVgoGjm0VjE1zPpykaBjO2mHclCWiCyqVRqCUj5fBZE/kmgCJ4Gu2uZMJP5GD3iJVxCQUPIwL962Nmiaukj8/P93K59okclZbHzi2hWmW42j82Jz3jsih/nBMIr8BkWsCfxHjpBwf6WBB2PNpR/oAAAAASUVORK5CYII=",
   "Flamingo Chicken": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACUUlEQVR42t2WsWsTURzHPxdacLJCh9Ahk0kRSkCwRUjAJiQZ4mBSdHPV1Ek3wWbpUgX7B0isg3RxKSR00CFpc1eIEC6CmAbEJlMp4pChghAo9TkkF68ml95Lj4b6W+7e77173+977/t731MYMtZmQ8J4f1hRlWHnGRsW+H44YE4Lg0QgmhIfC69tE1Jkwf8B5teXGgCJYzcApXyGYGwRuyRcjDikj8BYsTkSx26ev3gKgFZpdHYBW0dhm0AxEhehhSRv3r7r7bziRv/8FYC569ekjkCRAQfAPd074Mc3grlP3eaK2Ce89UFx/ggswAFKyRvdlJrdtz3lBRNhZ7VOhu0dmFpelco7TuBgu9wDNrW8ysF2+XwInBCie5pm9e998PvWvXMkMCoRunY2+P5qjWYh283t3r2Na2ej7/hANNV1y0GXklQVmMEBJv0zlmNL+QxapQHAEtbXsm03LEbiwu/1WYIamqjW9wgV3qNVGiw9e3nqDkgRAPB7fX37q/W9E+204sExMzK8QM3m2H3wGID58lbb/W5G2u8dAoZnrGRzhP+rKmhWa6QVD6XZq+1E5zkPaEC644ab1RqT/hlCC0mKIADbzjgwAtGUUPW6sApVrwtVr4tANCWKkbgwNOPoP6G5ts3en1Y82Kn5MxMwkyjlMzQfPQHgTqMlDXzxRDg+fulyv9pPKx50bX3C3H901PrpCIF+oLq2PgEQjHG46fVBo2X5nR0iYzLgAP65xKGhAQBii6cuYBARRZbAMDGIwMhFqMhqwKmVS98DMmRkquAPQJwGS5gREkYAAAAASUVORK5CYII=",
   "El Pollo Veloz": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABzUlEQVR42tVXMUjDQBR9kbYIUoW2gw7qVHEpLg5GaIhORRBEcKiOVhDEScFJ6FrUSQqCTkrtpAiCOGltwXYQQatQ2tEhDrZQsYPtEIcjIZcmoTVCvT/d/cu9+//l5f8LBxt2OC7K2vnKQ4prF6MLHTaHncyXpib1S3K7THScAe4vMq89v1Lzi3K1ZU2woQG92hO39wCAOW+f7QDYYOBkoRsA4Bec9MJ61fD53L4bACCkQ3J665qzJUIhFpKbDm7DSukGAMAsEDZeQSZeM/QH13p+tY/dUlzkk7QjHjZkQsm8yCcxkg0zxoAQC8mtbnbtXpKMN2cN/Tj7YqgZKZnrv/lSuqH6zFRdmP+k5qPnveq4P+BipA6oEZowAQCFnWHakc1bM8IHIB5LjF5IFE1E7yQktodIW5YkNTMKZOCNvpdJg+o4tfwIAJi+euLYYuBmZkwGADHiROqIdDQxotOFjokm02hEwdAz4bA6GAC+cxUApL+LJR8B83/QB+gD0RxM9gNixEPwQfCVQP5vM1Ii19p7vk6ygQkTOhNLPkRfCPU8FDw3YyIEgFWP1xLEqhQrdlApG4qQjT+jjeAE1aJPZVdL4ItcHXuZHPevS/EPTuajmV6T6b8AAAAASUVORK5CYII=",
   "Janitor Chicken": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAADXklEQVR42tVXXUhTYRh+jI0VmJOpNxYICktoMjMtl8GG6Ob0qroIWhdLbejIC692ERHRlXTRjQwZc60LBckQjJxrMmfoFBvGtKAWGwZmmThaFjoUTxfHc3Z+/VlR64XB973nO+d9vud93+f7BgjYUk0dgb9kEqHgigvnsAQQJ6fGssQAUc/+OADKKBDUmAeUAZBr/kY1D3DtSFhw7RH8Y+Mx8GItAX1wdt8XuWli7l7XW8FnpQWEEAs8AM3vXmW5SqsIfZ6c9sV3AXFTIQYC0wtIzsTpqaxaIboRwbwQBMHL4aeL9YIg4sFZnJj08b4x3lROjzWqdciqFQg4t3i1IFgDp1T1mAhFWT4qSDw4SzPC9FM2EYpi01YCjWqd/gFgMZJRRSiYAuXpOiKxsogBzyjt01aW0Duk5hOhKM9//oleNBiVBmZbCupAYmURj00qXDU2AAAGPKMwWbtYa7SVNjhcg3C4gNDLMTjcPfSztali5NXEsDZVDADIq4kx0nD8YELke71Cjx2uQczf7QAAvHn6g3Rau9CvugHVlWxU3gMs5jYAQLgJdHAqcFpKyLQzFSrMc3x9dhv67V8BkAyEm2KiDDBZoIrSDzVROxLOyjwlFLKq8lLg2TjODt0GpXLEF2DnMhBonkMbCljrudTvlRKJUAeQo588EDtDpMqlFKYMut4K9LTMQf28eLcGYqw0iIHiAaACR6x9pJoO3QHgpxd+aG+FUVaAgHMVAKBrlZJgNGWsDx4rmiYHRcJsbnzUpIJLj+bwGFB43YgbzAheug/lZz5qZYKkmwIC55xogLSEKJWCFJ0Nw7m4np0DoyyF15Pcpuee5DbawzPydIow87qgp2iVPL06tUg+TKXgUa4S+Bah57ZCI7DsAQA82JCkFXx7a/O7hHuNoo5O5jk+ijgahkO42eGBwusmT0WDGTYvkB/1IWLtg9JuSgBALDIp3y/ongzIOrXsVqN8w2EovG4UOm6RTks3aw3VPUq7KRF5e/AL66FqIG4wY9nSjWVLN+IGM6tz0rXMKEJ/o5rQtUrp+xw0ZWyR4aSEa/lRH/LtvvQA0MGZisYEASDg3MKC8proR5iFxy2yfYVI6E8E1/S+9/LDtNZvKaFEejQn3Z7+L4tQtF8PykS6O88Y+wXcymt6tdH0HwAAAABJRU5ErkJggg==",
@@ -1139,6 +1142,10 @@ export const FEED_LABELS = {
   nutriBarley: "Nutri Barley",
   mixedGrain: "Mixed Grain",
   omnifeed: "Omnifeed",
+  beetleGreen: "Green Beetle",
+  beetleBlue: "Blue Beetle",
+  beetlePink: "Pink Beetle",
+  beetleAmber: "Amber Beetle",
   slopBasic: "Basic Slop",
   slopHearty: "Hearty Slop",
   slopRich: "Rich Slop",
@@ -1928,7 +1935,7 @@ function getAnimalXpModifiers(type) {
   let affectionXpMultTotal = 1;
   let loveFlatXpAddTotal = 0;
   active.forEach(b => {
-    if (b.xpMult) xpMultTotal *= b.xpMult;
+    if (b.xpMult && !(beetleFeed && BEETLE_XP_EXCLUDED_BOOSTS.has(b.id))) xpMultTotal *= b.xpMult;
     if (b.affectionXpMult) affectionXpMultTotal += b.affectionXpMult;
     if (b.loveFlatXpAdd) loveFlatXpAddTotal += b.loveFlatXpAdd;
   });
@@ -2075,8 +2082,8 @@ function runAnimalCycleSim(type, scales) {
     const startLevel = levelOf(startXp);
     const startsAtMax = startXp >= maxXp;
     const favouriteFoodKey = getFavouriteFoodKeyAtLevel(startLevel, type);
-    const feedKeyUsed = omnifeedEnabled && type !== "pig" ? "omnifeed" : favouriteFoodKey;
-    const baseFoodXp = getAnimalFoodXpTable(type)[startLevel][feedKeyUsed];
+    const feedKeyUsed = resolveFeedKeyUsed(type, favouriteFoodKey);
+    const baseFoodXp = getBaseFoodXpFor(type, startLevel, feedKeyUsed);
     const boostedFoodXp = Math.max(1e-9, baseFoodXp * mods.xpMultTotal);
     let loveXp = 0;
     if (i > 0) {
@@ -2217,8 +2224,8 @@ export function computeAnimalRealProgress(type, animal, now, readyAt) {
   }
   if (isReadyState) xpGap = 0;
   const favouriteFoodKey = getFavouriteFoodKeyAtLevel(level, type);
-  const feedKeyUsed = omnifeedEnabled && type !== "pig" ? "omnifeed" : favouriteFoodKey;
-  const baseFoodXp = getAnimalFoodXpTable(type)[Math.min(15, Math.max(0, level))][feedKeyUsed];
+  const feedKeyUsed = resolveFeedKeyUsed(type, favouriteFoodKey);
+  const baseFoodXp = getBaseFoodXpFor(type, Math.min(15, Math.max(0, level)), feedKeyUsed);
   const mods = getAnimalXpModifiers(type);
   let realXpMult = mods.xpMultTotal;
   if (type === "pig" && typeof animal.muddy === "boolean") {
@@ -4308,6 +4315,42 @@ export function setAnimalCount(type, field, val) {
 }
 
 let omnifeedEnabled = localStorage.getItem("hl_omnifeed_enabled") === "true";
+
+export const BEETLE_FEED_XP = {
+  beetleGreen: 100,
+  beetleBlue: 200,
+  beetlePink: 400,
+  beetleAmber: 800
+};
+
+const BEETLE_XP_EXCLUDED_BOOSTS = new Set([ "skill_chonky_feed", "pig_onesie" ]);
+
+let beetleFeed = localStorage.getItem("hl_beetle_feed") || "";
+
+if (!BEETLE_FEED_XP[beetleFeed]) beetleFeed = "";
+
+export function getBeetleFeed() {
+  return beetleFeed;
+}
+
+export function setBeetleFeed(key) {
+  beetleFeed = BEETLE_FEED_XP[key] ? key : "";
+  localStorage.setItem("hl_beetle_feed", beetleFeed);
+}
+
+function isBeetleFeedKey(key) {
+  return !!BEETLE_FEED_XP[key];
+}
+
+function resolveFeedKeyUsed(type, favouriteFoodKey) {
+  if (beetleFeed) return beetleFeed;
+  return omnifeedEnabled && type !== "pig" ? "omnifeed" : favouriteFoodKey;
+}
+
+function getBaseFoodXpFor(type, level, feedKey) {
+  if (isBeetleFeedKey(feedKey)) return BEETLE_FEED_XP[feedKey];
+  return getAnimalFoodXpTable(type)[level][feedKey];
+}
 
 export function isOmnifeedEnabled() {
   return omnifeedEnabled;
@@ -14116,7 +14159,31 @@ function getOmnifeedInfo() {
   };
 }
 
+function getBeetleFeedInfo(feedKey) {
+  const name = FEED_LABELS[feedKey];
+  const live = findLivePriceForName(name);
+  const flower = live != null && live > 0 ? live : tradeMarketPrice(name);
+  const unitCost = flower * coinPerFlower;
+  return {
+    cost: unitCost,
+    missing: false,
+    missingCrops: [],
+    breakdown: [ {
+      name: name,
+      qty: 1,
+      unitCost: unitCost,
+      mode: "buy"
+    } ]
+  };
+}
+
+export function getFeedQtyPerFeed(type, feedKeyUsed, feedMultTotal) {
+  if (isBeetleFeedKey(feedKeyUsed)) return 1;
+  return REQUIRED_FOOD_QTY_MAP[type] * feedMultTotal;
+}
+
 export function getActiveFeedInfo(feedKey, visited) {
+  if (isBeetleFeedKey(feedKey)) return getBeetleFeedInfo(feedKey);
   if (isPigFeedKey(feedKey)) return getFeedUnitCost(feedKey, visited);
   return omnifeedEnabled ? getOmnifeedInfo() : getFeedUnitCost(feedKey, visited);
 }
@@ -14190,9 +14257,9 @@ export function computeAnimalTypeFigures(type, visited, levelOverride) {
   const feedXpBase = feedFig.baseFoodXp;
   const feedXpMult = feedFig.xpMultTotal;
   const feedIconUsed = getIcon(feedNameUsed);
-  const feedInfo = getActiveFeedInfo(feedFig.favouriteFoodKey, visited);
+  const feedInfo = getActiveFeedInfo(isBeetleFeedKey(feedKeyUsed) ? feedKeyUsed : feedFig.favouriteFoodKey, visited);
   const requiredQtyPerFeed = REQUIRED_FOOD_QTY_MAP[type];
-  const effectiveFeedQty = freeFeed ? 0 : Math.max(0, feedFig.noOfFeeds * requiredQtyPerFeed * feedMultTotal);
+  const effectiveFeedQty = freeFeed ? 0 : Math.max(0, feedFig.noOfFeeds * getFeedQtyPerFeed(type, feedKeyUsed, feedMultTotal));
   const feedCostCoins = effectiveFeedQty * feedInfo.cost;
   const yields = cfg.products.map((_, pi) => {
     const budPart = Object.values(budAddSum[pi]).length ? Math.max(...Object.values(budAddSum[pi])) : 0;
@@ -14242,7 +14309,7 @@ export function computeAnimalTypeFigures(type, visited, levelOverride) {
     sickHeads: sickHeads,
     freeFeed: freeFeed,
     expNeeded: feedFig.expNeeded,
-    feedQtyPerFeed: requiredQtyPerFeed * feedMultTotal,
+    feedQtyPerFeed: getFeedQtyPerFeed(type, feedKeyUsed, feedMultTotal),
     feedKeyUsed: feedKeyUsed,
     feedNameUsed: feedNameUsed,
     feedIconUsed: feedIconUsed,
@@ -14287,7 +14354,7 @@ export function computeAnimalBountyFeedByLevel(type) {
   let cumulative = 0;
   for (const c of cycles) {
     if (c.isMax) break;
-    if (!freeFeed) cumulative += c.feeds * qtyPerFeed * feedMultTotal * getActiveFeedInfo(c.favouriteFoodKey).cost;
+    if (!freeFeed) cumulative += c.feeds * getFeedQtyPerFeed(type, c.feedKeyUsed, feedMultTotal) * getActiveFeedInfo(isBeetleFeedKey(c.feedKeyUsed) ? c.feedKeyUsed : c.favouriteFoodKey).cost;
     for (let lvl = c.startLevel + 1; lvl <= c.claimLevel; lvl++) {
       if (byLevel[lvl] == null) byLevel[lvl] = cumulative;
     }
@@ -14885,7 +14952,7 @@ async function fetchCommunityFarmDataOnce(farmId) {
   return json;
 }
 
-async function fetchCommunityFarmData(farmId) {
+export async function fetchCommunityFarmData(farmId) {
   if (SFL_COMMUNITY_PROXY_BASE.includes("REPLACE-ME")) {
     throw new Error("Proxy not deployed yet — see sfl-community-proxy-worker.js");
   }
@@ -16063,6 +16130,36 @@ const MUTANT_FISH_CATCH_DATA = {
       odds: .005
     } ]
   },
+  Macropinna: {
+    triggers: [ {
+      fish: "Moray Eel",
+      odds: .015
+    }, {
+      fish: "Coelacanth",
+      odds: .01
+    } ]
+  },
+  Betta: {
+    triggers: [ {
+      fish: "Zebra Turkeyfish",
+      odds: .01
+    }, {
+      fish: "Muskellunge",
+      odds: .02
+    }, {
+      fish: "Blowfish",
+      odds: .01
+    } ]
+  },
+  Manatee: {
+    triggers: [ {
+      fish: "Whale Shark",
+      odds: .004
+    }, {
+      fish: "Sea Bass",
+      odds: .002
+    } ]
+  },
   Crocodile: {
     triggers: [ {
       fish: "Red Snapper",
@@ -16093,6 +16190,21 @@ const MUTANT_FISH_CATCH_DATA = {
 };
 
 const MUTANT_TRIGGER_FISH_INFO = {
+  Blowfish: {
+    likes: [ "Yam" ],
+    baits: [ "Earthworm" ],
+    seasons: [ "Winter" ]
+  },
+  Muskellunge: {
+    likes: [ "Turnip" ],
+    baits: [ "Earthworm" ],
+    seasons: [ "Autumn" ]
+  },
+  "Zebra Turkeyfish": {
+    likes: [ "Beetroot", "Rhubarb" ],
+    baits: [ "Grub", "Fishing Lure" ],
+    seasons: [ "Spring", "Summer" ]
+  },
   Anchovy: {
     likes: [ "Carrot", "Egg" ],
     baits: [ "Earthworm" ],

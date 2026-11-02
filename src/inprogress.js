@@ -1,8 +1,9 @@
 import { ICONS, NPC_ICONS, ALL_ANIMAL_PRODUCTS, ANIMAL_BASE_CYCLE_SEC, ANIMAL_DATA, ANIMAL_PRODUCT_LOOKUP, ASCENSION_RANK_DATA, BAIT_RECIPES, BASE_CROPS, BASE_FRUITS, BASE_GREENHOUSE, BASE_STOCK_TOOLS, BEE_SWARM_ICON, BOOSTS, CALENDAR_SEASONAL_BOOSTS, COIN_ICON, COOKING_BUILDINGS, COOKING_BUILDING_ICONS, COOKING_CAKE_DISHES, COOKING_FOOD_IMAGES, COOKING_RECIPES, CRIMSTONE_KNOWN_IDS, CROPS_GLOBAL_EXCLUDED_FROM_GREENHOUSE, CROP_AOE_RANKS, CROP_HARVEST_SEC, CROP_KNOWN_IDS, CROP_PRNG_EXCLUDE, FARM_LEVEL_NODES, FARM_PANEL_SCROLL_IDLE_MS, FEED_LABELS, FERMENTATION_BAIT_FAMILIES, FERMENTATION_SPICE_KNOWN_IDS, FERMENTATION_STATIC_RECIPES, FISH_AGING_KNOWN_IDS, FISH_SALT_DATA, FLOWER_ICON, FLOWER_SEEDS, FLOWER_VARIETIES, FOOD_KNOWN_IDS, FRUIT_KNOWN_IDS, FRUIT_PRNG_EXCLUDE, GAMESTATE_SECTION_KEYS, GEM_ICON, GOLD_KNOWN_IDS, IMAGE_ICONS, IRON_KNOWN_IDS, MUTANT_TYPE_EMOJI, OIL_BONUS_DROP_AMOUNT, OIL_SINGLE_HARVEST_BASE, PATCH_FRUIT_ONLY_GLOBAL_BOOSTS_EXCLUDED_FROM_GREENHOUSE, RCM_GREENHOUSE_ICON_HTML, REQUIRED_FOOD_QTY_MAP, RESOURCE_DATA, RESOURCE_NODE_TIERS, SALT_BASE_CHARGE_CAP, SALT_BASE_TIME_SEC, SALT_BASE_YIELD, SALT_KNOWN_ID, SPICE_RECIPES, SPICE_STATIC_RECIPES, STONE_KNOWN_IDS, SYNODIC_MONTH_DAYS, TREE_KNOWN_IDS, __farmPanelSaveGameStateHandle, __gameStateSectionLenSigs, __set___farmPanelSaveGameStateHandle, __set___gameStateSectionLenSigs, allResourceBudBoostEntries, applyFarmBoostsOnly, applyFarmSkillsOnly, coinPerFlower, coinsToFlower, computeAgedFishFigures, computeAnimalFeedFigures, computeAnimalRealProgress, computeAnimalTypeFigures, computeAnimalYieldsForLevel, computeBoostedCropStats, computeBoostedStock, computeBoostedFlowerVarietyStats, computeBoostedFruitStats, computeBoostedGreenhouseStats, computeBoostedLavaPitStats, computeBoostedResourceStats, computeComposterFigures, composterRollWorms, BASE_COMPOSTERS, previewSeason, computeDestroyedCropPlotIds, computeHiveStats, computeHoneyRestockBreakdown, computeQtyRestockGems, computeSpiceFigures, currentSeason, escapeHtml, farmIdPromptStartSync, farmSyncExtractBudTraits, farmSyncExtractGameState, farmSyncExtractPetTraits, farmSyncFindBagByNameHeuristic, farmSyncGetAnimalRecords, farmSyncGetCoords, farmSyncGetPetRecords, farmSyncPickActivePlacedInstances, feePercent, fmt, fmtAnimal, fmtAnimalCost, fullMoonSeedStockQty, getActiveAnimalBoosts, getActiveBoostsForHive, getActiveFeedInfo, getActiveSaltRechargeMult, getActiveSaltYieldBonus, getActiveSeasonGuardianName, getAnimalLevelFromXp, getAscensionRank, getBeeSwarmPerSwarmYield, getCropPlotSunshowerSpeedMultiplier, getCurrentChapterMutantSet, getCurrentChapterName, getEffectiveYieldAdd, getNodeIconHtml, getNodeLabel, getPowerHourWindow, getSpiceLickDurationHarvests, getTruffleSeasoningSleeps, getSpiceEffectForAnimalType, isBoostActive, isCropInSeason, isOvernightGroundCrop, isSkillActive, onDeferredInitialRenderDone, parseYieldBoostAmount, resourceBuds, saltSculptureLevel, sculptureEffects, sflPrngChance, syncCookingCountsFromInventory } from "./calculator.js";
 
-import { SFL_COMMUNITY_PROXY_BASE, SFL_NFT_PRICE_API, SFL_PROXY_BASE, computeRestockCost24h, cookingCostMode, cookingIngredientUnitCostCoins, fishSaltCostFlower, getActiveShrineDailyCostStable, getItemCostByName, getRestockGemCost, restocksForMode, getSpiceCostPerUseFlower, hasFreeSaltRakeCost, honeyCostFlowerForSpiceRack, marketItems, pickledVegCost, refinedSaltUnitCostFlower, saltCostFlowerForSpiceRack } from "./prices.js";
+import { findLivePriceForName, SFL_COMMUNITY_PROXY_BASE, SFL_NFT_PRICE_API, SFL_PROXY_BASE, computeRestockCost24h, cookingCostMode, cookingIngredientUnitCostCoins, fishSaltCostFlower, getActiveShrineDailyCostStable, getItemCostByName, getRestockGemCost, restocksForMode, getSpiceCostPerUseFlower, hasFreeSaltRakeCost, honeyCostFlowerForSpiceRack, marketItems, pickledVegCost, refinedSaltUnitCostFlower, saltCostFlowerForSpiceRack } from "./prices.js";
 
 import { getPumpkinPeteQuest } from "./pete_quests.js";
+import { caveBuriedCounts } from "./cave_solver.js";
 
 import { $, hiveClockText, cookFoodIcon, getBoostIcon, getIcon, renderAnimalCardProductDetailRow, renderAnimalYieldGroupsList, renderBeehiveListHtml, renderCardProductDetailRow, renderCostNetInfoTrigger, renderCrimstoneInstantMineBoostHtml, renderCrimstoneNodeYieldList, renderFarmPanelTabContent, renderFruitHarvestsLeftHtml, renderGoldInstantMineBoostHtml, renderNodeTierYieldList, renderOilNodeYieldList, renderPlantYieldNodeList, renderSaltNodeYieldList, renderSeaBlessedBoostHtml, renderTotalsBreakdown, renderTurnaroundBoostHtml } from "./ui.js";
 import { potionTrackFromState, digStreakTrackFromState } from "./calculator.js";
@@ -4653,8 +4654,7 @@ export function farmPanelComputeInProgress(json) {
   const composterCards = farmPanelComputeComposterCards(json);
   const allCards = cards.concat(animalCards).concat(composterCards).concat(cookingCards);
   allCards.sort((a, b) => b.profit - a.profit);
-  const mycoCard = farmPanelComputeMycoCard(json);
-  if (mycoCard) allCards.push(mycoCard);
+  farmPanelComputeMycoCard(json).forEach(card => allCards.push(card));
   const peteQuestCard = farmPanelComputePeteQuestCard(json);
   if (peteQuestCard) allCards.push(peteQuestCard);
   return allCards;
@@ -4736,42 +4736,58 @@ function farmPanelComputeMycoCard(json) {
   try {
     const g = farmSyncExtractGameState(json);
     const cave = farmPanelField(g, "cave");
-    if (!cave || typeof cave !== "object" || !cave.machines || typeof cave.machines !== "object") return null;
+    if (!cave || typeof cave !== "object" || !cave.machines || typeof cave.machines !== "object") return [];
     const ids = Object.keys(cave.machines).sort((a, b) => Number(a) - Number(b));
-    if (!ids.length) return null;
     const now = Date.now();
-    const bins = ids.map(id => {
+    return ids.map(id => {
       const machine = cave.machines[id];
       const batch = machine && machine.batch;
       const readyAtMs = batch ? Number(batch.readyAt) || 0 : 0;
+      const dugCount = batch && batch.dug ? Object.keys(batch.dug).length : 0;
       let state = "idle";
       if (batch) {
-        if (readyAtMs > now) state = "growing"; else if (Object.keys(batch.dug || {}).length < 25) state = "ready";
+        if (readyAtMs > now) state = "growing"; else if (dugCount < 25) state = "ready";
       }
+      let buried = null;
+      if (batch && state !== "idle") {
+        try {
+          buried = caveBuriedCounts(batch);
+        } catch (e) {
+          buried = null;
+        }
+      }
+      const remainingSec = state === "growing" ? (readyAtMs - now) / 1e3 : 0;
+      const skillMap = g && g.bumpkin && g.bumpkin.skills && typeof g.bumpkin.skills === "object" ? g.bumpkin.skills : {};
+      const skillLevel = skillName => {
+        const key = Object.keys(skillMap).find(k => k.trim().toLowerCase() === skillName.toLowerCase());
+        if (!key) return 0;
+        return Math.min(Math.max(Math.round(Number(skillMap[key])) || 1, 1), 3);
+      };
       return {
-        id: id,
+        isMycoCard: true,
+        batchSkills: batch && batch.skills ? batch.skills : null,
+        fungalLevel: skillLevel("Fungal Harvest"),
+        muddyLevel: skillLevel("Muddy Bounty"),
+        twinLevel: skillLevel("Twin Beetles"),
+        binId: id,
+        name: "Myco Bin " + id,
+        searchKey: "myco-bin-" + id,
+        profit: 0,
+        count: 1,
         state: state,
         recipe: batch ? MYCO_RECIPE_LABELS[batch.recipe] || String(batch.recipe) : "",
         readyAtMs: readyAtMs,
-        remainingSec: state === "growing" ? (readyAtMs - now) / 1e3 : 0,
-        dugCount: batch && batch.dug ? Object.keys(batch.dug).length : 0
+        remainingSec: remainingSec,
+        dugCount: dugCount,
+        buried: buried,
+        readyCount: state === "ready" ? 1 : 0,
+        growingCount: state === "growing" ? 1 : 0,
+        idleCount: state === "idle" ? 1 : 0,
+        soonestSec: state === "growing" ? remainingSec : null
       };
     });
-    const growing = bins.filter(b => b.state === "growing");
-    return {
-      isMycoCard: true,
-      name: "Myco Bins",
-      searchKey: "myco-bins",
-      profit: 0,
-      count: bins.length,
-      readyCount: bins.filter(b => b.state === "ready").length,
-      growingCount: growing.length,
-      idleCount: bins.filter(b => b.state === "idle").length,
-      soonestSec: growing.length ? Math.min(...growing.map(b => b.remainingSec)) : null,
-      bins: bins
-    };
   } catch (e) {
-    return null;
+    return [];
   }
 }
 
@@ -5198,37 +5214,112 @@ function farmPanelRenderCookingBoostList(row) {
   return `<div class="section-badge is-boost-label">⚡ Applied Boost</div>${sectionsHtml}`;
 }
 
+function farmPanelMycoPrice(name) {
+  const market = farmPanelGetMarketPriceFlower(name);
+  if (market > 0) return market;
+  const live = findLivePriceForName(name);
+  return live != null && live > 0 ? live : 0;
+}
+
+const MYCO_FUNGAL_BONUS = [ .2, .3, .4 ];
+
+const MYCO_MUDDY_BONUS = [ .1, .2, .3 ];
+
+const MYCO_TWIN_CHANCE = [ .05, .1, .15 ];
+
+function farmPanelMycoBuriedFigures(row) {
+  const buried = row.buried;
+  if (!buried) return null;
+  const fungal = row.fungalLevel ? MYCO_FUNGAL_BONUS[row.fungalLevel - 1] : 0;
+  const muddy = row.muddyLevel ? MYCO_MUDDY_BONUS[row.muddyLevel - 1] : 0;
+  const twin = row.twinLevel ? MYCO_TWIN_CHANCE[row.twinLevel - 1] : 0;
+  const mushroomQty = buried.Mushroom * (1 + fungal);
+  const beetleQty = buried.Beetle * (1 + twin);
+  const mudQty = buried.Mud * (buried.mudPerTile || 1) * (1 + muddy);
+  const weights = buried.beetleWeights || {};
+  const weightTotal = Object.values(weights).reduce((a, v) => a + v, 0) || 1;
+  const beetleUnit = [ "Green Beetle", "Blue Beetle", "Pink Beetle", "Amber Beetle" ].reduce((sum, n) => sum + (weights[n] || 0) / weightTotal * farmPanelMycoPrice(n), 0);
+  const feeRate = (feePercent || 0) / 100;
+  const make = (key, icon, qty, unit) => {
+    const gross = qty * unit;
+    return {
+      key: key,
+      icon: icon,
+      qty: qty,
+      unit: unit,
+      gross: gross,
+      fee: gross * feeRate
+    };
+  };
+  const items = [ make("Mushroom", "Wild Mushroom", mushroomQty, farmPanelMycoPrice("Wild Mushroom")), make("Beetle", "Green Beetle", beetleQty, beetleUnit), make("Mud", "Mud", mudQty, farmPanelMycoPrice("Mud")) ];
+  const gross = items.reduce((a, i) => a + i.gross, 0);
+  const fee = items.reduce((a, i) => a + i.fee, 0);
+  return {
+    items: items,
+    gross: gross,
+    fee: fee,
+    fungal: fungal,
+    muddy: muddy,
+    twin: twin
+  };
+}
+
+function farmPanelMycoBoostListHtml(row, fig) {
+  const parts = [];
+  const bs = row.batchSkills || {};
+  const rowHtml = (name, text) => `<div class="boost-applied-row is-yield">${getBoostIcon(name)}<b>${escapeHtml(name)}</b> <span class="boost-total-value">${text}</span></div>`;
+  if (bs.extraMushroomTiles) parts.push(rowHtml("Mushroom Bloom", `+${bs.extraMushroomTiles} Mushroom tile${bs.extraMushroomTiles === 1 ? "" : "s"}`));
+  if (bs.extraBeetleTiles) parts.push(rowHtml("Beetle Nest", `+${bs.extraBeetleTiles} Beetle tile${bs.extraBeetleTiles === 1 ? "" : "s"}`));
+  if (bs.beetleRarity) parts.push(rowHtml("Rare Breeds", "rarer Beetle odds"));
+  if (fig && fig.fungal) parts.push(rowHtml("Fungal Harvest", `+${fig.fungal} per Mushroom`));
+  if (fig && fig.muddy) parts.push(rowHtml("Muddy Bounty", `x${Math.round((1 + fig.muddy) * 100) / 100} Mud`));
+  if (fig && fig.twin) parts.push(rowHtml("Twin Beetles", `${Math.round(fig.twin * 100)}% chance of +1 Beetle`));
+  if (!parts.length) return "";
+  return `<div class="section-badge is-boost-label">⚡ Applied Boost</div><div class="lib-section-title" style="margin-top:10px;">YIELD</div>${parts.join("")}`;
+}
+
 function farmPanelRenderMycoCard(row) {
   const expandedCls = farmPanelExpandedNames.has(row.searchKey) ? " expanded" : "";
   let statusBadgeHtml;
-  if (row.readyCount > 0 || row.growingCount > 0) {
-    statusBadgeHtml = farmPanelStatusBadgeHtml(row.readyCount, row.growingCount, "Growing");
+  if (row.state === "ready") {
+    statusBadgeHtml = `<span class="harvest-badge is-ready">✅ Ready</span>`;
+  } else if (row.state === "growing") {
+    statusBadgeHtml = `<span class="harvest-badge is-growing">⏳ Growing</span>`;
   } else {
     statusBadgeHtml = `<span class="harvest-badge is-growing">💤 Empty</span>`;
   }
   const statusFoldHtml = guroStatusFoldHtml("Ready", row.soonestSec);
-  const binRows = row.bins.map(b => {
-    let value;
-    if (b.state === "growing") {
-      value = `${escapeHtml(b.recipe)} · <span class="farm-countdown" data-base="${b.remainingSec}">${guroCountdownText(b.remainingSec)}</span>`;
-    } else if (b.state === "ready") {
-      value = `${escapeHtml(b.recipe)} · ✅ Ready to dig (${b.dugCount}/25 dug)`;
-    } else {
-      value = "💤 Empty · feed it to start a batch";
-    }
-    return `<div class="animal-detail-stat"><span class="label">Bin ${escapeHtml(b.id)}</span><span class="value">${value}</span></div>`;
-  }).join("");
-  const summaryRow = `<div class="animal-detail-stat"><span class="label">Running</span><span class="value">${row.growingCount} of ${row.count}</span></div><div class="animal-detail-stat"><span class="label">Ready to dig</span><span class="value">${row.readyCount}</span></div><div class="animal-detail-stat"><span class="label">Empty</span><span class="value">${row.idleCount}</span></div>`;
+  let stateValue;
+  if (row.state === "growing") {
+    stateValue = `${escapeHtml(row.recipe)} · <span class="farm-countdown" data-base="${row.remainingSec}">${guroCountdownText(row.remainingSec)}</span>`;
+  } else if (row.state === "ready") {
+    stateValue = `${escapeHtml(row.recipe)} · ✅ Ready to dig (${row.dugCount}/25 dug)`;
+  } else {
+    stateValue = "💤 Empty · feed it to start a batch";
+  }
+  const fig = farmPanelMycoBuriedFigures(row);
+  const shown = fig ? fig.items.filter(i => i.qty > 0) : [];
+  const chipsHtml = shown.map(i => `\n      <span class="animal-produce-chip myco-produce-chip">\n        <span class="produce-yield">+${fmtCompost(i.qty)}</span>\n        <span class="produce-icon">${getIcon(i.icon)}</span>\n        <span class="produce-name">${i.key}</span>\n      </span>`).join("");
+  const foldRowHtml = chipsHtml ? `<div class="animal-fold-row">${chipsHtml}</div>` : "";
+  const valueBlockHtml = fig && fig.gross > 0 ? guroValueBlockHtml(fig.gross, fig.fee, fmt) : "";
+  const itemRows = shown.map(i => renderAnimalCardProductDetailRow(getIcon(i.icon), i.key, i.qty, i.gross, i.fee)).join("");
+  const priceRows = shown.map(i => `<div class="animal-detail-stat"><span class="label">${i.key} Price/Unit</span><span class="value">${fmt(i.unit)} ${FLOWER_ICON}</span></div>`).join("");
+  const totalsHtml = fig && shown.length ? `
+        <div class="animal-detail-stat"><span class="label">Market Value</span><span class="value">${fmt(fig.gross)} ${FLOWER_ICON}</span></div>
+        <div class="animal-detail-stat"><span class="label">Tax</span><span class="value">${fig.fee > 0 ? `-${fmt(fig.fee)}` : "0"} ${FLOWER_ICON}</span></div>` : "";
+  const netHtml = fig && shown.length ? `<div class="animal-net-row2"><span class="label">Net</span><span class="value is-profit">${fmt(fig.gross - fig.fee)} ${FLOWER_ICON}</span></div>` : "";
+  const boostHtml = farmPanelMycoBoostListHtml(row, fig);
   return `
   <div class="card animal-merged-card${row.readyCount > 0 ? " is-profit" : ""}${expandedCls}" data-search="${row.searchKey}" data-fp-category="myco">
     <div class="card-toggle">
       <div class="card-name-row">
         <span class="card-icon">${getIcon("Myco Bin")}</span>
         <div>
-          <div class="card-name">Myco Bins</div>
+          <div class="card-name">Myco Bin ${escapeHtml(row.binId)}</div>
           <div class="card-type-row">
-            <span class="card-type">${row.count} bin${row.count === 1 ? "" : "s"}</span>
+            <span class="card-type">${row.recipe ? escapeHtml(row.recipe) : "1 bin"}</span>
           </div>
+          ${foldRowHtml}${valueBlockHtml}
         </div>
       </div>
       <div class="card-collapsed-profit">
@@ -5239,9 +5330,13 @@ function farmPanelRenderMycoCard(row) {
     </div>
     <div class="card-details">
       <div class="animal-detail-grid">
-        ${summaryRow}
-        ${binRows}
+        <div class="animal-detail-stat"><span class="label">Status</span><span class="value">${stateValue}</span></div>
+        ${itemRows}
+        ${priceRows}
+        ${totalsHtml}
       </div>
+      ${netHtml}
+      ${boostHtml}
     </div>
   </div>`;
 }

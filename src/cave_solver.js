@@ -439,3 +439,23 @@ export function solveCaveBatch(batch) {
   result.drill = drill;
   return result;
 }
+
+export function caveBuriedCounts(batch) {
+  const hasSeed = isCaveSeed(batch.seed);
+  const skills = batch.skills || {};
+  const counts = Object.assign({}, caveComposition(batch.recipe, skills));
+  const initial = hasSeed ? generateCaveBoard(batch.recipe, batch.seed, skills) : null;
+  const revealed = revealedCaveTiles(batch, initial);
+  Object.keys(revealed).forEach(key => {
+    const type = revealed[key].tile && revealed[key].tile.type;
+    if (type && counts[type] > 0) counts[type] -= 1;
+  });
+  const base = CAVE_RECIPES[batch.recipe] || CAVE_RECIPES.Mushroom;
+  return {
+    Mushroom: counts.Mushroom,
+    Beetle: counts.Beetle,
+    Mud: counts.Mud,
+    mudPerTile: base.mud,
+    beetleWeights: skills.beetleRarity || BEETLE_WEIGHTS
+  };
+}

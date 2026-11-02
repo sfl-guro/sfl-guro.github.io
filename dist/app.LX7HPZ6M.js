@@ -2,7 +2,7 @@ import {
   api,
   initNav,
   initRouter
-} from "./chunk.QGBUAGUH.js";
+} from "./chunk.H42MJTMX.js";
 import {
   initGemPacks
 } from "./chunk.F7REBWYF.js";
@@ -25,11 +25,12 @@ import {
   runDeferredInitialRender,
   setPreviewSeason,
   toast
-} from "./chunk.VO3ZJNBW.js";
+} from "./chunk.FF7GDRHL.js";
 import "./chunk.LPEVZJ4B.js";
 import {
   ICON_DATA
 } from "./chunk.VR6FV3KR.js";
+import "./chunk.HVRY6OMF.js";
 import "./chunk.AS3VMXOQ.js";
 
 // src/footer.js
