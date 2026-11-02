@@ -15,12 +15,14 @@ import {
   BASE_STOCK_FRUITS,
   BASE_STOCK_GREENHOUSE,
   BASE_STOCK_TOOLS,
+  BEETLE_FEED_XP,
   BEE_SWARM_ICON,
   BOOSTS,
   CM_MODULE_SKILL_IDS,
   COIN_ICON,
   CROPS_GLOBAL_EXCLUDED_FROM_GREENHOUSE,
   FARM_LEVEL_NODES,
+  FEED_LABELS,
   FEED_RECIPE,
   FLOWER_ICON,
   FLOWER_VARIETIES,
@@ -79,6 +81,7 @@ import {
   getActiveBoostsForCrop,
   getActiveShrineDailyCost,
   getAnimalCount,
+  getBeetleFeed,
   getBoostIcon,
   getBoostIconAnyFallback,
   getBoostIconSkillFallback,
@@ -154,6 +157,7 @@ import {
   setAnimalAffectionTool,
   setAnimalCount,
   setAutoMaterialModes,
+  setBeetleFeed,
   setFruitCount,
   setGreenhouseCount,
   setHiveCount,
@@ -178,9 +182,10 @@ import {
   toast,
   updateCalcSummary,
   updateSkillSaveBarState
-} from "./chunk.VO3ZJNBW.js";
+} from "./chunk.FF7GDRHL.js";
 import "./chunk.LPEVZJ4B.js";
 import "./chunk.VR6FV3KR.js";
+import "./chunk.HVRY6OMF.js";
 import "./chunk.AS3VMXOQ.js";
 
 // src/rescalc_boosts.js
@@ -5791,13 +5796,23 @@ function openSlopPicker(k) {
     block: "center"
   });
 }
+function beetleRowHtml() {
+  const cur = getBeetleFeed();
+  const opts = [["", "Off"], ["beetleGreen", "Green"], ["beetleBlue", "Blue"], ["beetlePink", "Pink"], ["beetleAmber", "Amber"]];
+  const btns = opts.map((o) => tbtn("beetle", "beetle", o[0], o[1], cur === o[0])).join("");
+  const note = cur ? `<div class="rc-boost-none">${esc8(FEED_LABELS[cur])}: ${BEETLE_FEED_XP[cur]} XP, 1 per feed. Chonky Feed and Pig Onesie do not apply.</div>` : "";
+  return toggleRow(getIcon("Green Beetle"), "Beetle", btns) + note;
+}
 function feedConfigHtml(r) {
-  if (r && r.type === "pig") return slopConfigHtml();
+  if (r && r.type === "pig") {
+    const base = slopConfigHtml();
+    return base.replace('<div class="rc-tool-cfg">', '<div class="rc-tool-cfg">' + beetleRowHtml());
+  }
   const omni = isOmnifeedEnabled();
   const omniRow = toggleRow(getIcon("Omnifeed"), "Omnifeed", tbtn("omni", "omni", "off", "Off", !omni) + tbtn("omni", "omni", "on", "On", omni));
   const crops = omni ? `<div class="rc-boost-none">Omnifeed costs 1${GEM_ICON} per feed, so the ingredients below are not used.</div>` : "";
   const rows = omni ? "" : feedCrops().map((c) => toggleRow(getIcon(c), c, collectBuy("feedmode", c, getMaterialMode("AnimalFeed", c)))).join("");
-  return `<div class="rc-group"><div class="rc-comp-sub">Feed Config</div><div class="rc-tool-cfg">${omniRow}${crops}${rows}</div></div>`;
+  return `<div class="rc-group"><div class="rc-comp-sub">Feed Config</div><div class="rc-tool-cfg">${beetleRowHtml()}${omniRow}${crops}${rows}</div></div>`;
 }
 function medicineConfigHtml(r) {
   const est = getSicknessEstimate(r.type);
@@ -6209,6 +6224,7 @@ function applyAction(btn) {
   else if (act === "medmode") setMedicineIngredientMode(a, b);
   else if (act === "spicemode") setSpiceMaterialMode(a, b);
   else if (act === "omni") setOmnifeedEnabled(b === "on");
+  else if (act === "beetle") setBeetleFeed(b);
   else if (act === "tool") setAnimalAffectionTool(a, b === "on");
   else if (act === "spice") setSpice(btn.getAttribute("data-an-type"), b === "none" ? null : b);
   else return;

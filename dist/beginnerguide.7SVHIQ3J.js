@@ -1,8 +1,9 @@
 import {
   renderBeginnerPanel
-} from "./chunk.VO3ZJNBW.js";
+} from "./chunk.FF7GDRHL.js";
 import "./chunk.LPEVZJ4B.js";
 import "./chunk.VR6FV3KR.js";
+import "./chunk.HVRY6OMF.js";
 import "./chunk.AS3VMXOQ.js";
 
 // src/pages/beginnerguide.js

@@ -3618,7 +3618,7 @@ let marketActiveTab = "resources";
 export function renderMarketList() {
   const wrap = $("marketItemList");
   invalidateCostCache();
-  const tabItems = marketItems.filter(m => marketActiveTab === "nft" ? !!m.isNftCollectible : marketActiveTab === "wearables" ? !!m.isWearable : !m.isNftCollectible && !m.isWearable);
+  const tabItems = marketItems.filter(m => (m.name || "").toLowerCase() !== "mud").filter(m => marketActiveTab === "nft" ? !!m.isNftCollectible : marketActiveTab === "wearables" ? !!m.isWearable : !m.isNftCollectible && !m.isWearable);
   wrap.innerHTML = tabItems.length ? tabItems.map(renderMarketRow).join("") : marketActiveTab === "nft" ? `<div class="lib-empty">No Collectibles yet.</div>` : marketActiveTab === "wearables" ? `<div class="lib-empty">No Wearables items yet.</div>` : `<div class="lib-empty">No items yet — add a seed, tool, or animal above and it'll show up here.</div>`;
   wrap.querySelectorAll(".market-price-tap").forEach(el => el.onclick = () => openMarketPriceEdit(el.dataset.id));
   applyMarketSearchFilter();

@@ -15641,10 +15641,11 @@ body.app-dark .dig-goal-buff{ color:#6fd47d; }
 }
 .cave-title-icon{ display:inline-flex; align-items:center; vertical-align:middle; margin-right:4px; }
 .cave-title-icon img{ width:20px; height:20px; image-rendering:pixelated; }
-.cave-boards{ display:grid; grid-template-columns:1fr; gap:12px; margin-top:8px; }
+.cave-main{ display:grid; grid-template-columns:1fr; gap:12px; margin-top:8px; }
 @media (min-width: 900px){
-  .cave-boards{ grid-template-columns:repeat(2, minmax(0, 1fr)); }
+  .cave-main{ grid-template-columns:repeat(2, minmax(0, 1fr)); align-items:start; }
 }
+.cave-boards{ display:grid; grid-template-columns:1fr; gap:12px; min-width:0; }
 .cave-top-row{ display:grid; grid-template-columns:1fr; gap:12px; margin-top:8px; }
 @media (min-width: 900px){
   .cave-top-row{ grid-template-columns:repeat(2, minmax(0, 1fr)); align-items:stretch; }
@@ -15671,8 +15672,9 @@ body.app-dark .dig-goal-buff{ color:#6fd47d; }
 .cave-pct{ font-size:11px; line-height:1; }
 .cave-clue{ position:absolute; top:1px; right:3px; font-size:10px; font-weight:800; line-height:1; color:#2a1f2d; }
 .cave-best{ box-shadow:0 0 0 2px #2a1f2d inset; }
-.cave-beetle{ display:inline-block; width:14px; height:14px; border-radius:50% 50% 45% 45%; background:var(--bt, #8d6e4a); border:2px solid #2a1f2d; box-sizing:border-box; vertical-align:middle; }
-.cave-grid .dig-cell .cave-beetle{ width:55%; height:55%; }
+.cave-beetle-unknown{ display:inline-flex; align-items:center; justify-content:center; filter:grayscale(1); }
+.cave-beetle-unknown img{ width:16px; height:16px; image-rendering:pixelated; }
+.cave-grid .dig-cell .cave-beetle-unknown{ width:100%; height:100%; }
 .cave-chip{ gap:3px; }
 .cave-chip img, .cave-kind img{ width:16px; height:16px; image-rendering:pixelated; }
 .cave-info b{ font-weight:800; }
@@ -15680,10 +15682,9 @@ body.app-dark .dig-goal-buff{ color:#6fd47d; }
 .cave-kind{ display:inline-flex; align-items:center; gap:3px; }
 .cave-note{ opacity:.85; }
 .cave-board .dig-panel-grid-wrap{ width:100%; box-sizing:border-box; }
-@media (max-width:899px){
-  html body #caveSidePanel.guro-native{ background:transparent !important; border:0 !important; box-shadow:none !important; padding:0 !important; margin:0 !important; border-radius:0 !important; }
-  html body #caveSidePanel #caveCard.dig-panel-card{ background:transparent !important; border:0 !important; box-shadow:none !important; padding:0 0 14px !important; border-radius:0 !important; }
-}
+html body #caveSidePanel.guro-native{ background:transparent !important; border:0 !important; border-image:none !important; box-shadow:none !important; padding:0 !important; margin:0 !important; border-radius:0 !important; }
+html body #caveSidePanel #caveCard.dig-panel-card{ background:transparent !important; border:0 !important; border-image:none !important; box-shadow:none !important; padding:0 0 14px !important; border-radius:0 !important; }
+html body #caveSidePanel #caveCard.dig-panel-card::before, html body #caveSidePanel #caveCard.dig-panel-card::after{ content:none !important; display:none !important; }
 .cave-guide-toggle{ display:none; }
 @media (max-width:899px){
   html body .cave-guide .cave-guide-toggle{ display:inline-block; align-self:flex-start; width:auto; height:auto; min-height:0; margin:0; padding:2px 0; background:none !important; border:0 !important; border-image:none !important; box-shadow:none !important; outline:0; border-radius:0; cursor:pointer; font-family:'Inter',sans-serif; font-size:13px; font-weight:700; text-transform:none; letter-spacing:0; color:var(--ink); text-decoration:underline; text-underline-offset:3px; text-align:left; }
@@ -15692,6 +15693,41 @@ body.app-dark .dig-goal-buff{ color:#6fd47d; }
   html body .cave-info-box.cave-guide.guro-frame:not(.is-open)::before, html body .cave-info-box.cave-guide.guro-frame:not(.is-open)::after{ content:none !important; display:none !important; }
   .cave-guide:not(.is-open) .cave-guide-title, .cave-guide:not(.is-open) .cave-guide-body{ display:none; }
 }
+.cave-tabs{ display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:6px; margin-top:8px; }
+.cave-tab{ min-width:0; padding:8px 4px; font-family:var(--pixel-font); font-size:10px; text-transform:uppercase; letter-spacing:.4px; color:var(--ink); background:var(--wheat-dim); border:2px solid var(--soil-dark); border-radius:0; cursor:pointer; box-shadow:2px 2px 0 rgba(0,0,0,.35); }
+.cave-tab:active{ transform:translate(2px,2px); box-shadow:none; }
+.cave-tab.is-active{ background:var(--sun); box-shadow:inset 0 0 0 2px var(--ink); }
+.cave-merchant-wrap{ min-width:0; }
+.cave-offers{ display:flex; flex-direction:column; gap:6px; margin-top:4px; }
+.cave-offer{ display:flex; flex-direction:column; gap:2px; padding:6px 8px; background:var(--wheat-dim); box-sizing:border-box; }
+.cave-offer.is-locked{ opacity:.55; }
+.cave-offer-main{ display:flex; flex-wrap:wrap; align-items:center; gap:4px 6px; font-family:'Inter',sans-serif; font-size:12px; font-weight:700; color:var(--ink); }
+.cave-offer-have{ font-weight:800; }
+.cave-offer-have.is-enough{ color:var(--profit); }
+.cave-offer-have.is-short{ color:var(--loss); }
+.cave-offer-need{ margin-left:-5px; font-weight:800; color:var(--ink); }
+.cave-offer-item{ display:inline-flex; align-items:center; gap:3px; min-width:0; }
+.cave-offer-item img, .cave-offer-total img{ width:16px; height:16px; image-rendering:pixelated; }
+.cave-offer-arrow{ color:var(--ink-soft); }
+.cave-offer-total{ display:inline-flex; align-items:center; gap:3px; margin-left:auto; font-weight:800; color:var(--ink); }
+.cave-offer-total.is-zero{ color:var(--ink-soft); }
+.cave-offer-meta{ font-family:'Inter',sans-serif; font-size:10px; font-weight:700; color:var(--ink-soft); }
+.cave-running-title{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.cave-tier-tag{ font-family:'Inter',sans-serif; font-size:13px; font-weight:700; letter-spacing:0; text-transform:none; color:var(--ink-soft); white-space:nowrap; }
+.cave-dug-today{ min-width:0; }
+.cave-dug-row{ display:flex; flex-wrap:wrap; align-items:center; gap:4px 10px; margin-top:4px; font-family:'Inter',sans-serif; font-size:12px; font-weight:800; color:var(--ink); }
+.cave-dug-item{ display:inline-flex; align-items:center; gap:3px; white-space:nowrap; }
+.cave-dug-item img{ width:auto; height:16px; image-rendering:pixelated; }
+.cave-offer-pl{ display:inline-flex; align-items:center; gap:2px; margin-left:2px; font-weight:800; }
+.cave-offer-pl.is-gain{ color:var(--profit); }
+.cave-offer-pl.is-lossy{ color:var(--loss); }
+.cave-offer-pl.is-even{ color:var(--ink-soft); }
+body.sfl-theme .cave-offer .cave-offer-pl.is-gain{ color:var(--sfl-profit) !important; }
+body.sfl-theme .cave-offer .cave-offer-pl.is-lossy{ color:var(--sfl-loss) !important; }
+body.app-dark:not(.sfl-theme) .cave-offer{ background:#2a2d36; }
+body.sfl-theme .cave-offer{ background:var(--sfl-outer) !important; }
+body.sfl-theme .cave-offer .cave-offer-have.is-enough{ color:var(--sfl-profit) !important; }
+body.sfl-theme .cave-offer .cave-offer-have.is-short{ color:var(--sfl-loss) !important; }
 .cave-myco-icon{ display:inline-flex; align-items:center; vertical-align:middle; margin-right:4px; }
 .cave-myco-icon img{ width:auto !important; height:18px !important; image-rendering:pixelated; }
 img[alt="Myco Bin"]{ width:auto !important; height:22px !important; max-width:none; image-rendering:pixelated; vertical-align:middle; }
@@ -15709,3 +15745,5 @@ img[alt="Myco Bin"]{ width:auto !important; height:22px !important; max-width:no
 #esBoostsRow .es-boost-card .es-boost-chip-synced{ color:var(--profit,#3d7a42); font-size:9px; font-weight:700; margin-top:2px; }
 #esBoostsRow .es-boost-card .bg-sim-check{ margin-left:auto; width:20px; height:20px; }
 #esBoostsRow .es-boost-card .bg-sim-check input{ width:16px; height:16px; }
+
+html body .guro-grow-content .card-toggle .myco-produce-chip .produce-name{ display:inline !important; }

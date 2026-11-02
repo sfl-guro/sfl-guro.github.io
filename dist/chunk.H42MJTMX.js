@@ -13,7 +13,7 @@ import {
   prices_exports,
   setAppDarkMode,
   ui_exports
-} from "./chunk.VO3ZJNBW.js";
+} from "./chunk.FF7GDRHL.js";
 import {
   KEY_ICON_DATA,
   NAV_ICON_DATA
@@ -43,13 +43,13 @@ var PAGES = [{
   path: "/digging",
   label: "Desert Digging",
   root: "pageDigging",
-  load: () => import("./digging.2GGRDTKF.js")
+  load: () => import("./digging.DAWJLAW7.js")
 }, {
   id: "cavesolver",
   path: "/cave-solver",
   label: "Cave Digging",
   root: "pageCaveSolver",
-  load: () => import("./cavesolver.6VJ2TVGN.js")
+  load: () => import("./cavesolver.Y3TQ77TL.js")
 }, {
   id: "potionroom",
   path: "/potionroom",
@@ -73,7 +73,7 @@ var PAGES = [{
   path: "/settings",
   label: "Settings",
   root: "pageSettings",
-  load: () => import("./settings.BFBZXWYM.js")
+  load: () => import("./settings.2UOD4IOW.js")
 }, {
   id: "nodes",
   path: "/nodes",
@@ -175,13 +175,13 @@ var PAGES = [{
   path: "/experience-calculator",
   label: "Experience Calculator",
   root: "cookingPanel",
-  load: () => import("./experiencecalc.CIBAFZ7N.js")
+  load: () => import("./experiencecalc.PBVJWTKY.js")
 }, {
   id: "beginnerguide",
   path: "/beginner-guide",
   label: "Beginner Guide",
   root: "beginnerPanel",
-  load: () => import("./beginnerguide.ZOZEXN4S.js")
+  load: () => import("./beginnerguide.7SVHIQ3J.js")
 }, {
   id: "fishing",
   path: "/fishing",
@@ -199,7 +199,7 @@ var PAGES = [{
   path: "/resource-calculators",
   label: "Resource Calculators",
   root: "pageResourceCalc",
-  load: () => import("./resourcecalc.DY3H3BDA.js")
+  load: () => import("./resourcecalc.OJMBWQT3.js")
 }, {
   id: "sflbubbles",
   path: "/sflbubbleschart",
@@ -217,13 +217,13 @@ var PAGES = [{
   path: "/userguide",
   label: "User Guide",
   root: "pageUserGuide",
-  load: () => import("./userguide.J7XXYH5G.js")
+  load: () => import("./userguide.MLCVG4WB.js")
 }, {
   id: "profile",
   path: "/profile",
   label: "Profile",
   root: "pageProfile",
-  load: () => import("./profile.ZVSQHNVJ.js")
+  load: () => import("./profile.6N5JYCMQ.js")
 }];
 var DEFAULT_PAGE_ID = "growing";
 function pageById(id) {
@@ -540,7 +540,7 @@ async function showPage(id) {
   currentModule = mod;
   setActivePageInNav(id);
   setPageTitle(id);
-  document.body.classList.toggle("guro-own-sync", id === "digging" || id === "potionroom" || id === "auctionleaderboard");
+  document.body.classList.toggle("guro-own-sync", id === "digging" || id === "cavesolver" || id === "potionroom" || id === "auctionleaderboard");
   document.body.classList.toggle("guro-show-profile", id === "profile");
   document.body.classList.toggle("guro-show-rate", id === "growing" || id === "coinconverter");
   document.title = page.label + " \xB7 SFL GURO";
