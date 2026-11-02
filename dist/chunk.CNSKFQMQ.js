@@ -419,6 +419,8 @@ __export(calculator_exports, {
   computeSpiceFigures: () => computeSpiceFigures,
   cookGetLevelInfo: () => cookGetLevelInfo,
   cookingActiveBuilding: () => cookingActiveBuilding,
+  cookingCategoryEnabled: () => cookingCategoryEnabled,
+  cookingCategoryFoodNames: () => cookingCategoryFoodNames,
   cookingComputeFoodExp: () => cookingComputeFoodExp,
   cookingComputeFoodTime: () => cookingComputeFoodTime,
   cookingComputeTotals: () => cookingComputeTotals,
@@ -806,6 +808,7 @@ __export(calculator_exports, {
   setAutoMaterialModes: () => setAutoMaterialModes,
   setBeetleFeed: () => setBeetleFeed,
   setCookingActiveBuilding: () => setCookingActiveBuilding,
+  setCookingCategoryEnabled: () => setCookingCategoryEnabled,
   setCookingCount: () => setCookingCount,
   setCookingFishCategory: () => setCookingFishCategory,
   setCookingGuaranteedCatchOn: () => setCookingGuaranteedCatchOn,
@@ -4860,6 +4863,12 @@ var CRAFTING_RECIPES = [
     name: "Nefari Doll",
     category: "dolls",
     grid: ["Vase", "Royal Ornament", "Vase", "Vase", "Gilded Doll", "Vase", "Vase", "Vase", "Vase"]
+  },
+  {
+    id: "pig_doll",
+    name: "Pig Doll",
+    category: "dolls",
+    grid: ["Truffle", "Truffle", "Truffle", "Pig Bristles", "Doll", "Pig Bristles", "Pig Bristles", "Pig Bristles", "Pig Bristles"]
   },
   {
     id: "salt_doll",
@@ -20347,13 +20356,27 @@ function renderCookingModeToggle() {
     btn.classList.toggle("active", btn.dataset.mode === cookingCostMode);
   });
 }
+function cookTabCheckHtml(cat) {
+  return `<label class="bg-sim-check" title="Include ${escapeHtml(cat)} in the calculation"><input type="checkbox" data-cook-include="${escapeHtml(cat)}" aria-label="Include ${escapeHtml(cat)}" ${cookingCategoryEnabled(cat) ? "checked" : ""}></label>`;
+}
+function bindCookTabChecks(wrap) {
+  wrap.querySelectorAll("input[data-cook-include]").forEach((input) => {
+    input.onchange = () => {
+      setCookingCategoryEnabled(input.dataset.cookInclude, input.checked);
+      const item = input.closest(".cook-chk-item");
+      if (item) item.classList.toggle("is-off", !input.checked);
+      renderCookingHeader();
+      renderCookingFoodList();
+    };
+  });
+}
 function renderCookingBuildingTabs() {
   const wrap = $("cookBuildingTabs");
   if (!wrap) return;
   wrap.innerHTML = COOKING_BUILDINGS.map((b) => `
-    <button type="button" class="${!cookingFishCategory && b === cookingActiveBuilding ? "active" : ""}" data-building="${escapeHtml(b)}">
+    <span class="cook-chk-item${cookingCategoryEnabled(b) ? "" : " is-off"}">${cookTabCheckHtml(b)}<button type="button" class="${!cookingFishCategory && b === cookingActiveBuilding ? "active" : ""}" data-building="${escapeHtml(b)}">
       ${COOKING_BUILDING_ICONS[b] || ""} ${escapeHtml(b)}
-    </button>
+    </button></span>
   `).join("");
   wrap.querySelectorAll("button").forEach((btn) => {
     btn.onclick = () => {
@@ -20364,6 +20387,7 @@ function renderCookingBuildingTabs() {
       renderCookingFoodList();
     };
   });
+  bindCookTabChecks(wrap);
 }
 function renderCookTotalCostLine(totalFlower, iconHtml2, modeLabel, extraClass, unitCount) {
   const flowerIcon = typeof FLOWER_ICON !== "undefined" ? FLOWER_ICON : "FLOWER";
@@ -20519,7 +20543,10 @@ function renderCookingFoodList() {
   wrap.querySelectorAll(".cook-food-count").forEach((el) => {
     el.onclick = (e) => e.stopPropagation();
     el.oninput = () => {
-      setCookingCount(el.dataset.food, el.value);
+      if (setCookingCount(el.dataset.food, el.value)) {
+        renderCookingBuildingTabs();
+        renderCookingFishTabs();
+      }
       renderCookingHeader();
       const card2 = el.closest(".cook-food-card");
       const n = Number(el.value);
@@ -20626,9 +20653,9 @@ function renderCookingFishTabs() {
   if (!wrap) return;
   const cats = ["Basic Fish", "Aged Fish", "Prime Aged Fish"];
   wrap.innerHTML = cats.map((cat) => `
-    <button type="button" class="${cat === cookingFishCategory ? "active" : ""}" data-fish-category="${escapeHtml(cat)}">
+    <span class="cook-chk-item${cookingCategoryEnabled(cat) ? "" : " is-off"}">${cookTabCheckHtml(cat)}<button type="button" class="${cat === cookingFishCategory ? "active" : ""}" data-fish-category="${escapeHtml(cat)}">
       \u{1F41F} ${escapeHtml(cat)}
-    </button>
+    </button></span>
   `).join("");
   wrap.querySelectorAll("button").forEach((btn) => {
     btn.onclick = () => {
@@ -20639,6 +20666,7 @@ function renderCookingFishTabs() {
       renderCookingFoodList();
     };
   });
+  bindCookTabChecks(wrap);
 }
 function fishIngTotalRowHtml(ingName, qtyPerUnit, coinsPerUnit, effectiveCount) {
   const totalQty = qtyPerUnit * effectiveCount;
@@ -20754,7 +20782,10 @@ function renderFishCatchList(cat) {
   wrap.querySelectorAll(".cook-food-count").forEach((el) => {
     el.onclick = (e) => e.stopPropagation();
     el.oninput = () => {
-      setCookingCount(el.dataset.food, el.value);
+      if (setCookingCount(el.dataset.food, el.value)) {
+        renderCookingBuildingTabs();
+        renderCookingFishTabs();
+      }
       renderCookingHeader();
       const card2 = el.closest(".cook-food-card");
       const n = Number(el.value);
@@ -63169,11 +63200,63 @@ var cookingCounts = safeLSJSON(localStorage.getItem("hl_cooking_counts"), {});
 function getCookingCount(name) {
   return Number(cookingCounts[name]) || 0;
 }
+var COOKING_FISH_CATEGORIES = ["Basic Fish", "Aged Fish", "Prime Aged Fish"];
+var cookingCategoryOff = {};
+var cookingCategoryStash = {};
+function cookingCategoryFoodNames(cat) {
+  if (COOKING_FISH_CATEGORIES.includes(cat)) return FISH_CATCH_NAMES.map((f) => fishInventoryNameForCategory(f, cat));
+  return COOKING_RECIPES[cat] ? Object.keys(COOKING_RECIPES[cat]) : [];
+}
+var cookingFoodCategoryMap = null;
+function cookingCategoryOfFood(name) {
+  if (!cookingFoodCategoryMap) {
+    cookingFoodCategoryMap = {};
+    COOKING_BUILDINGS.concat(COOKING_FISH_CATEGORIES).forEach((cat) => {
+      cookingCategoryFoodNames(cat).forEach((food) => {
+        if (!(food in cookingFoodCategoryMap)) cookingFoodCategoryMap[food] = cat;
+      });
+    });
+  }
+  return cookingFoodCategoryMap[name] || null;
+}
+function cookingCategoryEnabled(cat) {
+  return !cookingCategoryOff[cat];
+}
+function setCookingCategoryEnabled(cat, on) {
+  if (on === cookingCategoryEnabled(cat)) return;
+  const names = cookingCategoryFoodNames(cat);
+  if (on) {
+    delete cookingCategoryOff[cat];
+    const stash = cookingCategoryStash[cat] || {};
+    names.forEach((food) => {
+      if (!getCookingCount(food) && Number(stash[food]) > 0) cookingCounts[food] = Math.floor(Number(stash[food]));
+    });
+    delete cookingCategoryStash[cat];
+  } else {
+    const stash = {};
+    names.forEach((food) => {
+      const c = getCookingCount(food);
+      if (c > 0) stash[food] = c;
+      delete cookingCounts[food];
+    });
+    cookingCategoryOff[cat] = true;
+    cookingCategoryStash[cat] = stash;
+  }
+  saveCookingCounts();
+}
 function setCookingCount(name, val) {
   const n = Math.max(0, Math.floor(Number(val) || 0));
   if (n) cookingCounts[name] = n;
   else delete cookingCounts[name];
+  let reenabled = false;
+  const cat = cookingCategoryOfFood(name);
+  if (n && cat && !cookingCategoryEnabled(cat)) {
+    delete cookingCategoryOff[cat];
+    delete cookingCategoryStash[cat];
+    reenabled = true;
+  }
   saveCookingCounts();
+  return reenabled;
 }
 var cookingActiveBuilding = localStorage.getItem("hl_cooking_active_building") || "Fire Pit";
 function setCookingActiveBuilding(b) {
@@ -63387,6 +63470,8 @@ function syncCookingCountsFromInventory(json) {
   if (!inv || typeof inv !== "object") return {
     matched: 0
   };
+  cookingCategoryOff = {};
+  cookingCategoryStash = {};
   const normalizeInvKey = (s) => String(s || "").trim().toLowerCase();
   const invKeyByNormalized = {};
   Object.keys(inv).forEach((k) => {

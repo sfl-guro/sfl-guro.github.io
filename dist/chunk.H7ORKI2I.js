@@ -13,7 +13,7 @@ import {
   prices_exports,
   setAppDarkMode,
   ui_exports
-} from "./chunk.H6JW2LZH.js";
+} from "./chunk.CNSKFQMQ.js";
 import {
   KEY_ICON_DATA,
   NAV_ICON_DATA
@@ -43,7 +43,7 @@ var PAGES = [{
   path: "/digging",
   label: "Desert Digging",
   root: "pageDigging",
-  load: () => import("./digging.USDBVC7T.js")
+  load: () => import("./digging.KWPAPACQ.js")
 }, {
   id: "cavesolver",
   path: "/cave-solver",
@@ -73,7 +73,7 @@ var PAGES = [{
   path: "/settings",
   label: "Settings",
   root: "pageSettings",
-  load: () => import("./settings.PUGGE5N6.js")
+  load: () => import("./settings.HH23EQDL.js")
 }, {
   id: "nodes",
   path: "/nodes",
@@ -175,13 +175,13 @@ var PAGES = [{
   path: "/experience-calculator",
   label: "Experience Calculator",
   root: "cookingPanel",
-  load: () => import("./experiencecalc.BJBNSBVJ.js")
+  load: () => import("./experiencecalc.FVO4YZ5C.js")
 }, {
   id: "beginnerguide",
   path: "/beginner-guide",
   label: "Beginner Guide",
   root: "beginnerPanel",
-  load: () => import("./beginnerguide.3XK7GCOF.js")
+  load: () => import("./beginnerguide.QSBDSA26.js")
 }, {
   id: "fishing",
   path: "/fishing",
@@ -199,7 +199,7 @@ var PAGES = [{
   path: "/resource-calculators",
   label: "Resource Calculators",
   root: "pageResourceCalc",
-  load: () => import("./resourcecalc.FMKPMUP6.js")
+  load: () => import("./resourcecalc.GHHU7WXT.js")
 }, {
   id: "sflbubbles",
   path: "/sflbubbleschart",
@@ -217,13 +217,13 @@ var PAGES = [{
   path: "/userguide",
   label: "User Guide",
   root: "pageUserGuide",
-  load: () => import("./userguide.EFO2JWKJ.js")
+  load: () => import("./userguide.SOYYI3TK.js")
 }, {
   id: "profile",
   path: "/profile",
   label: "Profile",
   root: "pageProfile",
-  load: () => import("./profile.GVCWLC34.js")
+  load: () => import("./profile.NYHRCBAT.js")
 }];
 var DEFAULT_PAGE_ID = "growing";
 function pageById(id) {
