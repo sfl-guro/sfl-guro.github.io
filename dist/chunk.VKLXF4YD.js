@@ -199,7 +199,7 @@ var PAGES = [{
   path: "/resource-calculators",
   label: "Resource Calculators",
   root: "pageResourceCalc",
-  load: () => import("./resourcecalc.JVW6GKCD.js")
+  load: () => import("./resourcecalc.FMKPMUP6.js")
 }, {
   id: "sflbubbles",
   path: "/sflbubbleschart",
@@ -217,7 +217,7 @@ var PAGES = [{
   path: "/userguide",
   label: "User Guide",
   root: "pageUserGuide",
-  load: () => import("./userguide.GU4GY2WA.js")
+  load: () => import("./userguide.EFO2JWKJ.js")
 }, {
   id: "profile",
   path: "/profile",

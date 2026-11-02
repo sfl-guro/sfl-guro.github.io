@@ -15748,3 +15748,10 @@ img[alt="Myco Bin"]{ width:auto !important; height:22px !important; max-width:no
 #esBoostsRow .es-boost-card .bg-sim-check input{ width:16px; height:16px; }
 
 html body .guro-grow-content .card-toggle .myco-produce-chip .produce-name{ display:inline !important; }
+body.sfl-theme .rc-tool-mat .rc-tool-mat-item,
+body.sfl-theme .rc-tool-cfg .rc-tool-mat-item,
+body.sfl-theme .rc-slop-head .rc-tool-mat-item{ background-color:transparent !important; }
+
+.rc-pop-animals.rc-pop-comp .rc-pop-body{ padding:4px 0 12px; }
+.rc-pop-animals.rc-pop-comp .rc-comp-card{ width:98%; align-self:center; padding:6px; }
+.rc-pop-animals.rc-pop-comp .rc-comp-card .rc-group{ padding:6px; }
