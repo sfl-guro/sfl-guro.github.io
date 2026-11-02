@@ -373,7 +373,7 @@ function tbtn(act, a, b, label, on, type) {
 }
 
 function toggleRow(iconHtml, name, buttonsHtml, qty) {
-  return `<div class="rc-tool-mat"><span class="rc-tool-mat-item">${qty != null ? `<span class="rc-tool-mat-qty">${n2(qty)}</span>` : ""}${iconHtml}<span class="rc-tool-mat-name">${esc(name)}</span></span><span class="es-toolcfg-tog">${buttonsHtml}</span></div>`;
+  return `<div class="rc-tool-mat"><span class="rc-tool-mat-item">${qty != null ? `<span class="rc-tool-mat-qty">${n2(qty)}×</span>` : ""}${iconHtml}<span class="rc-tool-mat-name">${esc(name)}</span></span><span class="es-toolcfg-tog">${buttonsHtml}</span></div>`;
 }
 
 function collectBuy(act, name, mode) {
@@ -489,17 +489,30 @@ function affectionConfigHtml(r) {
 function spiceConfigHtml(r) {
   const cur = r.fig.spiceActiveKey || "none";
   const choose = `<div class="rc-tool-mat"><span class="rc-tool-mat-item"><span class="rc-tool-mat-name">Consumable</span></span><span class="es-toolcfg-tog">${tbtn("spice", "spice", "none", "None", cur === "none", r.type)}${tbtn("spice", "spice", "saltLick", "Salt Lick", cur === "saltLick", r.type)}${tbtn("spice", "spice", "honeyTreat", "Honey Treat", cur === "honeyTreat", r.type)}${tbtn("spice", "spice", "truffleSeasoning", "Truffle Seasoning", cur === "truffleSeasoning", r.type)}</span></div>`;
-  const used = [];
-  [ "Salt Lick", "Honey Treat", "Truffle Seasoning" ].forEach(name => {
-    calc.computeSpiceFigures(name).ingredients.forEach(ing => {
-      if (!ing.hasToggle || used.includes(ing.name)) return;
-      used.push(ing.name);
+  const activeName = cur === "none" ? null : SPICE_LABELS[cur];
+  const parts = [];
+  if (activeName) {
+    const f = calc.computeSpiceFigures(activeName);
+    parts.push(toggleRow(ui.getIcon(activeName), activeName + " (batch output)", "", f.output));
+    f.ingredients.forEach(ing => {
+      if (ing.hasToggle) {
+        parts.push(toggleRow(ui.getIcon(ing.name), ing.name, collectBuy("spicemode", ing.name, calc.spiceMaterialMode(ing.name)), ing.qty));
+        return;
+      }
+      if (ing.name === "Refined Salt") {
+        const rf = calc.computeSpiceFigures("Refined Salt");
+        const salt = rf.ingredients[0];
+        const saltQty = ing.qty * salt.qty / rf.output;
+        parts.push(`<div class="rc-tool-mat"><span class="rc-tool-mat-item"><span class="rc-tool-mat-qty">${n2(ing.qty)}×</span>${ui.getIcon(ing.name)}<span class="rc-tool-mat-name">${esc(ing.name)}</span><span class="rc-mat-val">(${n2(saltQty)}× ${ui.getIcon("Salt")})</span></span><span class="es-toolcfg-tog">${collectBuy("spicemode", "Salt", calc.spiceMaterialMode("Salt"))}</span></div>`);
+        return;
+      }
+      parts.push(toggleRow(ui.getIcon(ing.name), ing.name, "", ing.qty));
     });
-  });
-  const rows = used.map(n => toggleRow(ui.getIcon(n), n, collectBuy("spicemode", n, calc.spiceMaterialMode(n)))).join("");
+  }
+  const rows = parts.length ? parts.join("") : `<div class="rc-boost-none">No consumable selected</div>`;
   const dur = calc.getSpiceLickDurationHarvests();
   const sleeps = calc.getTruffleSeasoningSleeps();
-  const note = `<div class="rc-note">One animal can use one consumable at a time. Salt Lick and Honey Treat last ${dur} harvests. Truffle Seasoning halves the sleep it is spent on and lasts ${sleeps} ${sleeps === 1 ? "sleep" : "sleeps"}, so it is counted as re-applied at every claim.</div>`;
+  const note = `<div class="rc-note">One animal can use one consumable at a time. Salt Lick and Honey Treat last ${dur} harvests. Truffle Seasoning halves the sleep it is spent on and lasts ${sleeps} ${sleeps === 1 ? "sleep" : "sleeps"}, so it is counted as re-applied at every claim. Ingredient quantities are per one Spice Rack batch, as shown in the game. Refined Salt is made from Salt.</div>`;
   return `<div class="rc-group"><div class="rc-comp-sub">Spice Rack</div><div class="rc-tool-cfg">${choose}${rows}${note}</div></div>`;
 }
 
@@ -525,7 +538,18 @@ function materialsHtml(r) {
   const mudValue24 = mudUnits24 * priceOf("Mud");
   if (week && week.spiceActiveKey && r.spice - mudValue24 > 0) {
     const label = SPICE_LABELS[week.spiceActiveKey];
-    rows.push(matRowHtml(ui.getIcon(label), label, week.boostedCycles * r.qty / calc.getSpiceDurationHarvests(week.spiceActiveKey), r.spice - mudValue24, "24hr"));
+    const spiceUnits24 = week.boostedCycles * r.qty / calc.getSpiceDurationHarvests(week.spiceActiveKey);
+    rows.push(matRowHtml(ui.getIcon(label), label, spiceUnits24, r.spice - mudValue24, "24hr"));
+    const sf = calc.computeSpiceFigures(label);
+    sf.ingredients.forEach(ing => {
+      const ingQty = spiceUnits24 * ing.qty / sf.output;
+      const ingValue = spiceUnits24 * ing.cost / sf.output;
+      rows.push(matRowHtml(ui.getIcon(ing.name), ing.name, ingQty, ingValue, "24hr"));
+      if (ing.name === "Refined Salt") {
+        const rf = calc.computeSpiceFigures("Refined Salt");
+        rows.push(matRowHtml(ui.getIcon("Salt"), "Salt", ingQty * rf.ingredients[0].qty / rf.output, ingValue, "24hr"));
+      }
+    });
   }
   if (fig.mudActive) {
     rows.push(matRowHtml(ui.getIcon("Mud"), "Mud", calc.PIG_MUD_PER_APPLICATION * r.qty / fig.mudHarvestsPerCoat, fig.mudCostFlowerPerCycle * r.qty, "1 cycle"));
@@ -715,7 +739,7 @@ function footerHtml() {
 }
 
 function overlayHtml() {
-  return `<div class="rc-pop guro-frame${popup === "computation" ? " rc-pop-comp" : ""}" role="dialog" aria-modal="true" aria-label="${popupTitle()}">
+  return `<div class="rc-pop guro-frame rc-pop-animals${popup === "computation" ? " rc-pop-comp" : ""}" role="dialog" aria-modal="true" aria-label="${popupTitle()}">
     <div class="rc-pop-head"><span class="rc-pop-title">${popupTitle()}</span><button type="button" class="rc-pop-close" data-rc-close aria-label="Close">✕</button></div>
     <div class="rc-pop-body" id="rcPopBody">${popupBodyHtml()}</div>
     <div class="rc-pop-foot">${footerHtml()}</div>
