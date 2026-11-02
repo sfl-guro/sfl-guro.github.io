@@ -121,7 +121,7 @@ export const IMAGE_ICONS = {
   "Camel Bone": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA0AAAAQBAMAAAA/jegKAAAAIGNIUk0AAHomAACAhAAA+gAAAIDoAAB1MAAA6mAAADqYAAAXcJy6UTwAAAAPUExURQAAAMKFafDhxezCn////4iy9o4AAAABdFJOUwBA5thmAAAAAWJLR0QEj2jZUQAAAAd0SU1FB+gHHwUPDXN7Cg8AAABASURBVAjXPYzRDQAhDELpBmed4NoJtPvvZkJRfl6AAADYB8r/0axg4pHkzGqf6hdh3T7eOEjz1InGu715acazAzJfBNFf6G8IAAAAJXRFWHRkYXRlOmNyZWF0ZQAyMDI0LTA3LTMxVDA1OjE1OjEzKzAwOjAwIDsJOAAAACV0RVh0ZGF0ZTptb2RpZnkAMjAyNC0wNy0zMVQwNToxNToxMyswMDowMFFmsYQAAAAodEVYdGRhdGU6dGltZXN0YW1wADIwMjQtMDctMzFUMDU6MTU6MTMrMDA6MDAGc5BbAAAAAElFTkSuQmCC",
   "Otter Pebble": "data:image/webp;base64,UklGRqgAAABXRUJQVlA4TJsAAAAvDoADED+gqG0jNlcS4w7A/aeaRlLg7Fm4A3osvDUK2rZhQ4XS/SsQSALbfrEAQOGRPF1Vqq3X1/4NXNW2YzU3gwGCglfmH+hDAIQKmDW3BlikEup/YSKi/wnMjwfu8/9rAMwR8QZQrggm9JUkDb0Hr4+hHMbsTNtubr6ntcbj/D7TUPMr00Q3juXoRAd3N5VWx3HsFNBbAKiqAAA=",
   "Otty the Otter": "data:image/webp;base64,UklGRgQBAABXRUJQVlA4TPgAAAAvFcAFEF+gtpGk5iP/Ed4T0391dGKmto3/PwqIYbdqoH8KmwBKZFup+NNIRFCjY3X/3QW5AIJsm4qN/mAPAPBcV5NCxWq7/1fbcu3BOV5s/b6tBLi1bauNrqkDSr0E+V//yZB6vWtMPdiAIRw0xYIGBmpQOiXqaWqI6P8EAIJ6d2rVQUValuPplFjK99OyVXFKvlvKamIsWbI0nLLL2fa+A0DfB6eXr+enyqnkXXooOsbm61hkHcC9n8r0N9t1AC+yPRa7XYyhJ++K7DAOm4GnbLPD7m0SBJ5MZCqnMAgCpdyUhuffUt+NQN4oIkEwDOqb+AeAGlQNAA==",
-  "Mining Drill": "data:image/webp;base64,UklGRmYBAABXRUJQVlA4TFoBAAAvIcAGENfANrJtJd81dg1/jPafQUxKCQwdWBtsI9tW8t0dhw5+zWgbRFTBUAAx+Y9gGgBgkrmPG/wA/m/eqEQucHcIsm0qNvqDPQAA/v+/a6NMdPf0LRUEGm46US8G/GSFrJyscTkH67n7HOU5pp5Af0fDdxBjYi+dJkvrNZO5sh3Kcdee8jJAjGS7bcP0CeYcJPXfqIEP8NMVvBfRf0du20gSFfcsp35HZm0h8TKe5NsrF/98i4tZq5tG/zmihWWbbhpGcsDWiWUTNJKBE8PGNVx/7Pd+8Fm7BYQjPXiubiW9bgsHhvoDYE06SS/ofrNT9aQjveRikq5GEflKZJZn1Msj6Ky+EXUPBeq71m7PdU75epf4AUbqOylhgM03v74XZ2mNqUf5wfyBGdTfJf0J3iBZkoKqtgT+SVU1bENk8g3CsscjK6nIeAGQPJJIv4Gi4psQ9w8DYB4A",
+  "Pot of Luck": "data:image/webp;base64,UklGRpIBAABXRUJQVlA4TIYBAAAvH8AGEGdgJJKUb/Dz6i0KRwXqg6YQNdRGskE9n1RqNKAZmerFyhBRFElScznhgGfyLwYdYAGCbJuKjf5gDwD8/9t3qX1hosJ0KlZSN4Nj78EONxckS9umRtWP2w2wnGpuwN3Jj6RmSfXgzmB7Zo93B/dussIzwZ3UrPBjV9Vpcm4hov8K27Zt5JHOR0AXy4VA4dzkXisGZWG665QN4g/qR+OnjE1asVSdERr/dN0ei7b4rJsRvi///ZPx3KntLADeutuzzA4s9vo5PidgXSicGHdiXMGzuNd6Kp2o5UQtOTlnC54oj7oWcyzmuJHZhOBLXtvohftH7WIl9ovgIlFBR/8pjdKtBBe2h7KIjirRIom2d1OF25Jqkibe50B+GLeZJhMfUgDybaRSE0XP58GkStHRMbodVhDD7vA9Gpn3igmEiPHANc+LcDFJDpFC3OZMSZiY50MM3JZKJhYTrYoN1FRsqALShkWGliIsIQDEKCaFRUp5/l+AEAlUMgAEA/Afww8FrQA=",
   "Clover Coin": "data:image/webp;base64,UklGRsIAAABXRUJQVlA4TLYAAAAvDsACEGegJgCQhgYbbj4uKlAfA3hbxRpGIkm5Au9/8JTBUR+FogaKIklqLgfyEwf414IMRECQbVOx0R/sAYD//xGnYi8l2mZSYSXuarnOLPeetwZOa217mvf8FoXEcX6NZAWYoDNAHaBt0AbotiRRENUcLmWp758iov8TALypBGCvZPkA0A5up0jYL6WZXR9CoFs3cr+kZng7GAkcRzjrm7E0H8bnivYaU8+BfjjA/1RjgMpFAA==",
   Coral: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA0AAAAMCAYAAAC5tzfZAAAAAXNSR0IArs4c6QAAALZJREFUKJGNkbENwjAQRd+hKA1FlAHYIGnYgEkyRjxCPAaTeAMaswEDWC5o0oQiOssyMeI6/7v///2zUKnlNm8lZpwVAKkNjV2PjwGAaWh5vM74GDDOSqOEseu5Xt4A3J9rIishr1P+0OY0tPgYGLs+9dQlkYyzoquUqvlain1lytXVoTyGKGEa2kMnIGXVvHJE8DFQE/Ex0JRHKNcpMeOsNHvAeYM1gb8+FtidcuCfqg7nbqXoB5VzYtwE2DiiAAAAAElFTkSuQmCC",
   "Clam Shell": "data:image/webp;base64,UklGRrYAAABXRUJQVlA4TKoAAAAvDMADEFegppEU6NpDAQbwbwENBAe0rxyzbZtU/awH9Pau3IDY2BCDmgAgGEFUUVgSZfZ85z8AkM3jBCv5q5rSeb9HSNTIVAxua21bky/aIws4lA5tPAtkABx67SmZIDACczLE+0T0fwIsykBSvyv5FjUbkFg/zqDjtwHkF0kGCjdVRnUwHZ86B7apP9LFhvWP7zgsXj/eSXjtd6WbNy8zWHvzv97kjwnAEw==",
@@ -10386,8 +10386,8 @@ const HONEY_BOOSTS = [ {
   category: "honey",
   scope: "flowerGlobal",
   flowerTimeMult: .75,
-  flowerExtraChance: 1,
-  note: "×0.75 flower time, chance +1 flower · Temporary, 7 days"
+  flowerExtraChance: .2,
+  note: "×0.75 flower time, 20% chance +1 flower · Temporary, 7 days"
 }, {
   id: "flower_fox",
   name: "Flower Fox",
@@ -32062,6 +32062,13 @@ const FISHING_BOOSTS = [ {
   fishYieldAdd: .2,
   note: "20% chance +1 Fish (collectible)"
 }, {
+  id: "fish_fishers_hourglass",
+  name: "Fisher's Hourglass",
+  category: "fishing",
+  scope: "fishYield",
+  fishYieldAdd: .5,
+  note: "50% chance +1 Fish · Temporary, 4 hours (collectible)"
+}, {
   id: "fish_alba",
   name: "Alba",
   category: "fishing",
@@ -34615,9 +34622,9 @@ const DIG_BOOST_DEFS = [ {
   desc: "+1 Crab per dig",
   crab: 1
 }, {
-  id: "mining_drill",
-  name: "Mining Drill",
-  icon: "Mining Drill",
+  id: "pot_of_luck",
+  name: "Pot of Luck",
+  icon: "Pot of Luck",
   desc: "1/3 chance of +1 Desert Treasure"
 } ];
 

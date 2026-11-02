@@ -14978,7 +14978,8 @@ html body .exp-skill-tab.is-on{ background:var(--sun-deep); color:#fff; }
 .rc-tool-cfg{ display:flex; flex-direction:column; gap:6px; }
 .rc-tool-name{ display:flex; align-items:center; gap:6px; font-size:13px; font-weight:800; }
 .rc-tool-name img{ width:20px; height:20px; image-rendering:pixelated; }
-.rc-tool-mat{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.rc-tool-mat{ display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; }
+.rc-tool-mat .es-toolcfg-tog{ flex-wrap:wrap; flex-shrink:1; min-width:0; }
 .rc-tool-mat-item{ display:inline-flex; align-items:center; gap:4px; font-size:13px; }
 .rc-tool-mat-item img{ width:16px; height:16px; image-rendering:pixelated; }
 .rc-tool-mat-qty{ font-weight:700; }

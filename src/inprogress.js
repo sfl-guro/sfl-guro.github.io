@@ -3101,9 +3101,9 @@ function farmPanelComputeAnimalCards(rawRows) {
     const avgPricePerUnit = totalYieldAll > 0 ? gross / totalYieldAll : 0;
     const avgCostPerUnit = totalYieldAll > 0 ? cost / totalYieldAll : 0;
     const activeAnimalBoosts = getActiveAnimalBoosts(type);
-    const yieldBoosts = activeAnimalBoosts.filter(b => b.yieldAdd || b.yieldMultAll || b.yieldAddAll);
+    const yieldBoosts = activeAnimalBoosts.filter(b => b.yieldAdd || b.yieldMultAll || b.yieldAddAll || b.truffleMult);
     const timeBoosts = activeAnimalBoosts.filter(b => b.timeMult || b.timeMultAll);
-    const costBoosts = activeAnimalBoosts.filter(b => b.feedMult && b.feedMult < 1 || b.feedMultAll && b.feedMultAll < 1);
+    const costBoosts = activeAnimalBoosts.filter(b => b.feedMult || b.feedMultAll || b.xpMult);
     const saltLickYieldByProduct = {};
     const truffleSeasoningYieldByProduct = {};
     let honeyTreatSavingsFlower = 0;
@@ -4848,6 +4848,16 @@ function farmPanelRenderAnimalYieldBoostList(boosts, productNames, products, fal
   const yieldEntries = [];
   (boosts || []).forEach(b => {
     const boostIcon = getBoostIcon(b.name);
+    if (b.truffleMult) {
+      const tp = products && products[0];
+      if (tp) {
+        const extra = tp.totalYield * (b.truffleMult - 1) / b.truffleMult;
+        yieldEntries.push({
+          productIndex: 0,
+          html: `<div class="boost-applied-row is-yield">${boostIcon}<b>${escapeHtml(b.name)}</b> <span class="boost-mult-note">(×${b.truffleMult})</span> <span class="boost-total-value">+${fmtAnimal(extra)}</span>${getIcon(tp.name)}</div>`
+        });
+      }
+    }
     if (b.yieldMultAll) {
       const mult = b.yieldMultAll;
       (products || []).forEach((p, idx) => {
@@ -4893,11 +4903,17 @@ function farmPanelRenderAnimalYieldBoostList(boosts, productNames, products, fal
     const savedNote = secondsSaved != null ? ` <span class="boost-total-value">-${farmPanelFormatSpiceDuration(secondsSaved)}</span>` : "";
     return `<div class="boost-applied-row is-time">${boostIcon}<b>${escapeHtml(b.name)}</b> <span class="boost-mult-note">(-${fmtAnimal(pct)}% cycle time)</span>${savedNote}</div>`;
   });
-  const costHtmlParts = [];
+  const costHtmlParts = (costBoosts || []).map(b => {
+    const parts = [];
+    if (b.feedMult) parts.push(`×${b.feedMult} feed`);
+    if (b.feedMultAll) parts.push(`×${b.feedMultAll} feed`);
+    if (b.xpMult) parts.push(`×${b.xpMult} feed XP`);
+    return `<div class="boost-applied-row is-cost">${getBoostIcon(b.name)}<b>${escapeHtml(b.name)}</b> <span class="boost-mult-note">(${parts.join(", ")})</span></div>`;
+  });
   (spiceBuffCards || []).forEach(card => {
     if (card.category !== "cost") yieldHtmlParts.push(card.html);
   });
-  const sections = [ [ "YIELD", yieldHtmlParts ], [ "TIME REDUCTION", timeHtmlParts ] ].filter(([, parts]) => parts.length);
+  const sections = [ [ "YIELD", yieldHtmlParts ], [ "COST", costHtmlParts ], [ "TIME REDUCTION", timeHtmlParts ] ].filter(([, parts]) => parts.length);
   if (!sections.length) return "";
   const sectionsHtml = sections.map(([label, parts]) => `<div class="lib-section-title" style="margin-top:10px;">${label}</div>${parts.join("")}`).join("");
   return `<div class="section-badge is-boost-label">⚡ Applied Boost</div>${sectionsHtml}`;
@@ -5107,7 +5123,7 @@ function farmPanelRenderAnimalMergedCard(card) {
   const productChipsHtml = card.products.map(p => `\n      <span class="animal-produce-chip">\n        <span class="produce-yield">+${fmtAnimal(p.totalYield)}</span>\n        <span class="produce-icon">${getIcon(p.name)}</span>\n        <span class="produce-name">${escapeHtml(p.name)}</span>\n      </span>`).join("");
   const valueBlockHtml = guroValueBlockHtml(card.gross, card.sellFee, fmtAnimal);
   const productDetailRows = card.products.map(p => renderAnimalCardProductDetailRow(getIcon(p.name), p.name, p.totalYield, p.grossRevenue, p.feeAmount)).join("");
-  const yieldBoostListHtml = farmPanelRenderAnimalYieldBoostList(card.yieldBoosts, card.productNames, card.products, card.count, card.spiceBuffCards, card.timeBoosts, [], card.cycleTimeSec);
+  const yieldBoostListHtml = farmPanelRenderAnimalYieldBoostList(card.yieldBoosts, card.productNames, card.products, card.count, card.spiceBuffCards, card.timeBoosts, card.costBoosts, card.cycleTimeSec);
   const animalYieldGroupsHtml = renderAnimalYieldGroupsList(card);
   return `\n  <div class="card animal-merged-card${isProfit ? " is-profit" : " is-loss"}${expandedCls}" data-search="${card.searchKey}" data-fp-category="animals">\n    <div class="card-toggle">\n      <div class="card-name-row">\n        <span class="card-icon">${animalIcon}</span>\n        <div>\n          <div class="card-name">${escapeHtml(card.typeLabel)}</div>\n          <div class="card-type-row">\n            <span class="card-type">${card.count} animal${card.count === 1 ? "" : "s"}</span>\n            ${badgeHtml}\n          </div>\n          <div class="animal-fold-row">${productChipsHtml}</div>${valueBlockHtml}\n        </div>\n      </div>\n      <div class="card-collapsed-profit">\n        <span class="harvest-stack">${dailyBadgeHtml}${statusBadgeHtml}</span>\n        <span class="chev">▾</span>\n      </div>\n      ${statusFoldHtml}\n    </div>\n    <div class="card-details">\n      <div class="animal-detail-grid">\n        ${productDetailRows}\n        <div class="animal-detail-stat"><span class="label">Market Price/Unit</span><span class="value">${fmtAnimalCost(card.avgPricePerUnit)} ${FLOWER_ICON}</span></div>\n        <div class="animal-detail-stat"><span class="label">Market Value</span><span class="value">${fmtAnimal(card.gross)} ${FLOWER_ICON}</span></div>\n        <div class="animal-detail-stat"><span class="label">Tax</span><span class="value">${card.sellFee > 0 ? `-${fmtAnimalCost(card.sellFee)}` : "0"} ${FLOWER_ICON}</span></div>\n      </div>\n      <div class="animal-net-row2">\n        <span class="label">Net</span>\n        <span class="value ${isProfit ? "is-profit" : "is-loss"}">${fmtAnimal(cardNet)} ${FLOWER_ICON}</span>\n      </div>\n      ${animalYieldGroupsHtml}\n      ${yieldBoostListHtml}\n    </div>\n  </div>`;
 }

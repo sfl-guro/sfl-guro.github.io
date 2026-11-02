@@ -2361,6 +2361,7 @@ export const SFL_COLLECTIBLE_KNOWN_IDS = {
   "Miner's Bed": 3112,
   "Giant Truffle": 3113,
   "Mining Drill": 3114,
+  "Pot of Luck": 3274,
   "Piggy Bank": 3115,
   "Straw House": 3116,
   "Stick House": 3117,
