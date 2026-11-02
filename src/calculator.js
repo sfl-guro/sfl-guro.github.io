@@ -30583,10 +30583,70 @@ export function getCookingCount(name) {
   return Number(cookingCounts[name]) || 0;
 }
 
+const COOKING_FISH_CATEGORIES = [ "Basic Fish", "Aged Fish", "Prime Aged Fish" ];
+
+let cookingCategoryOff = {};
+
+let cookingCategoryStash = {};
+
+export function cookingCategoryFoodNames(cat) {
+  if (COOKING_FISH_CATEGORIES.includes(cat)) return FISH_CATCH_NAMES.map(f => fishInventoryNameForCategory(f, cat));
+  return COOKING_RECIPES[cat] ? Object.keys(COOKING_RECIPES[cat]) : [];
+}
+
+let cookingFoodCategoryMap = null;
+
+function cookingCategoryOfFood(name) {
+  if (!cookingFoodCategoryMap) {
+    cookingFoodCategoryMap = {};
+    COOKING_BUILDINGS.concat(COOKING_FISH_CATEGORIES).forEach(cat => {
+      cookingCategoryFoodNames(cat).forEach(food => {
+        if (!(food in cookingFoodCategoryMap)) cookingFoodCategoryMap[food] = cat;
+      });
+    });
+  }
+  return cookingFoodCategoryMap[name] || null;
+}
+
+export function cookingCategoryEnabled(cat) {
+  return !cookingCategoryOff[cat];
+}
+
+export function setCookingCategoryEnabled(cat, on) {
+  if (on === cookingCategoryEnabled(cat)) return;
+  const names = cookingCategoryFoodNames(cat);
+  if (on) {
+    delete cookingCategoryOff[cat];
+    const stash = cookingCategoryStash[cat] || {};
+    names.forEach(food => {
+      if (!getCookingCount(food) && Number(stash[food]) > 0) cookingCounts[food] = Math.floor(Number(stash[food]));
+    });
+    delete cookingCategoryStash[cat];
+  } else {
+    const stash = {};
+    names.forEach(food => {
+      const c = getCookingCount(food);
+      if (c > 0) stash[food] = c;
+      delete cookingCounts[food];
+    });
+    cookingCategoryOff[cat] = true;
+    cookingCategoryStash[cat] = stash;
+  }
+  saveCookingCounts();
+}
+
 export function setCookingCount(name, val) {
   const n = Math.max(0, Math.floor(Number(val) || 0));
   if (n) cookingCounts[name] = n; else delete cookingCounts[name];
+  let reenabled = false;
+  const cat = cookingCategoryOfFood(name);
+  if (n && cat && !cookingCategoryEnabled(cat)) {
+    delete cookingCategoryOff[cat];
+    delete cookingCategoryStash[cat];
+    reenabled = true;
+  }
   saveCookingCounts();
+  return reenabled;
 }
 
 export let cookingActiveBuilding = localStorage.getItem("hl_cooking_active_building") || "Fire Pit";
@@ -30810,6 +30870,8 @@ export function syncCookingCountsFromInventory(json) {
   if (!inv || typeof inv !== "object") return {
     matched: 0
   };
+  cookingCategoryOff = {};
+  cookingCategoryStash = {};
   const normalizeInvKey = s => String(s || "").trim().toLowerCase();
   const invKeyByNormalized = {};
   Object.keys(inv).forEach(k => {

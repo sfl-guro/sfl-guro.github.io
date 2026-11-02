@@ -136,6 +136,12 @@ const CRAFTING_RECIPES = [
     grid: [ "Vase", "Royal Ornament", "Vase", "Vase", "Gilded Doll", "Vase", "Vase", "Vase", "Vase" ]
   },
   {
+    id: "pig_doll",
+    name: "Pig Doll",
+    category: "dolls",
+    grid: [ "Truffle", "Truffle", "Truffle", "Pig Bristles", "Doll", "Pig Bristles", "Pig Bristles", "Pig Bristles", "Pig Bristles" ]
+  },
+  {
     id: "salt_doll",
     name: "Salt Doll",
     category: "dolls",

@@ -15755,3 +15755,8 @@ body.sfl-theme .rc-slop-head .rc-tool-mat-item{ background-color:transparent !im
 .rc-pop-animals.rc-pop-comp .rc-pop-body{ padding:4px 0 12px; }
 .rc-pop-animals.rc-pop-comp .rc-comp-card{ width:98%; align-self:center; padding:6px; }
 .rc-pop-animals.rc-pop-comp .rc-comp-card .rc-group{ padding:6px; }
+
+.cook-chk-item{ display:inline-flex; align-items:center; gap:2px; }
+.cook-chk-item .bg-sim-check{ width:22px; height:22px; margin-left:0; }
+.cook-chk-item .bg-sim-check input{ width:18px; height:18px; }
+.cook-chk-item.is-off button{ opacity:.55; }
