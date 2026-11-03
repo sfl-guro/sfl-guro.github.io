@@ -15760,3 +15760,11 @@ body.sfl-theme .rc-slop-head .rc-tool-mat-item{ background-color:transparent !im
 .cook-chk-item .bg-sim-check{ width:22px; height:22px; margin-left:0; }
 .cook-chk-item .bg-sim-check input{ width:18px; height:18px; }
 .cook-chk-item.is-off button{ opacity:.55; }
+.rc-tile-pn img{ width:12px; height:12px; image-rendering:pixelated; vertical-align:middle; }
+.rc-tile-animal .rc-tile-pq{ min-width:34px; }
+.rc-tiles.rc-tiles-bristles{ gap:4px; }
+.rc-tiles-bristles .rc-tile.rc-tile-animal{ min-height:0; padding:3px 8px; gap:6px; }
+.rc-tiles-bristles .rc-tile-animal .rc-tile-icon{ width:20px; height:20px; }
+.rc-tiles-bristles .rc-tile-animal .rc-tile-icon img{ max-width:20px; max-height:20px; }
+.rc-tiles-bristles .rc-tile-prods{ gap:0; }
+.rc-tiles-bristles .rc-tile-pn{ display:inline-flex; align-items:center; gap:3px; }

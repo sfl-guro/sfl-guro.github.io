@@ -406,7 +406,9 @@ __export(calculator_exports, {
   computeHoneyRestockBreakdown: () => computeHoneyRestockBreakdown,
   computeLavaPitFigures: () => computeLavaPitFigures,
   computeMachineRestockGems: () => computeMachineRestockGems,
+  computeMudCostBreakdown: () => computeMudCostBreakdown,
   computeObsidianWeeklyProfit: () => computeObsidianWeeklyProfit,
+  computePigBristlesPlan: () => computePigBristlesPlan,
   computePigTradeIn: () => computePigTradeIn,
   computeQtyRestockGems: () => computeQtyRestockGems,
   computeResourceFigures: () => computeResourceFigures,
@@ -14561,6 +14563,146 @@ function renderAnimalCard(type) {
     </div>
   </div>`;
 }
+var PIG_BRISTLE_BASIS_KEY = "guro_pig_bristle_basis";
+var PIG_BRISTLE_TARGET_KEY = "guro_pig_bristle_target";
+function readPigBristleBasis() {
+  try {
+    return localStorage.getItem(PIG_BRISTLE_BASIS_KEY) === "gross" ? "gross" : "net";
+  } catch (e) {
+    return "net";
+  }
+}
+function readPigBristleTarget() {
+  try {
+    const v = parseFloat(localStorage.getItem(PIG_BRISTLE_TARGET_KEY));
+    return isFinite(v) && v > 0 ? Math.floor(v) : 0;
+  } catch (e) {
+    return 0;
+  }
+}
+function pigBristlePickHtml(title, row3, plan, target) {
+  if (!row3) return "";
+  const price = plan.bristlePrice;
+  const profitLine = price > 0 ? `<div class="lib-item-meta">Sells ${fmt(row3.valueFlower)} ${FLOWER_ICON} \u2192 ${row3.valueFlower - row3.costFlower >= 0 ? "+" : ""}${fmt(row3.valueFlower - row3.costFlower)} ${FLOWER_ICON} per pig</div>` : "";
+  const targetLine = target > 0 ? `<div class="lib-item-meta">${fmt(row3.pigsNeeded)} pigs for ${fmt(target)} Bristles \xB7 ${fmt(row3.targetCostFlower)} ${FLOWER_ICON} total</div>` : "";
+  return `
+    <div class="lib-item-row" style="margin:0 0 4px;">
+      <span class="lib-item-icon">${getIcon("Pig Bristles")}</span>
+      <div class="lib-item-main">
+        <div class="lib-item-name">${title}: Lv${row3.level} \u2192 ${fmt(row3.bristles)} Bristles</div>
+        <div class="lib-item-meta">${fmt(row3.costPerBristle)} ${FLOWER_ICON} per Bristle \xB7 ${fmt(row3.costFlower)} ${FLOWER_ICON} per pig \xB7 ${formatDuration(row3.days * 86400)} \xB7 ${fmt(row3.perDay)} Bristles/day</div>
+        ${profitLine}
+        ${targetLine}
+      </div>
+    </div>`;
+}
+function renderPigBristlesCard() {
+  const basis = readPigBristleBasis();
+  const target = readPigBristleTarget();
+  const plan = computePigBristlesPlan(basis, target);
+  const isExpanded = expandedAnimalCards.has("pig bristles");
+  const best = plan.cheapest;
+  const summary = best ? `Lv${best.level} \xB7 ${fmt(best.costPerBristle)} ${FLOWER_ICON}/Bristle` : "No data";
+  const subtitle = best ? `Cheapest: trade in at Lv${best.level} for ${fmt(best.bristles)} Bristles` : "Pig data unavailable";
+  const rowsHtml = plan.rows.map((r, i) => {
+    const isBest = best && r.level === best.level;
+    const prevBristles = i > 0 ? plan.rows[i - 1].bristles : 0;
+    const marginal = r.marginalPerBristle != null ? `+${fmt(r.bristles - prevBristles)} Bristles for ${fmt(r.marginalPerBristle)} ${FLOWER_ICON} each` : "First tradeable level";
+    const targetPart = target > 0 ? ` \xB7 ${fmt(r.pigsNeeded)} pigs \xB7 ${fmt(r.targetCostFlower)} ${FLOWER_ICON}` : "";
+    return `
+    <div class="lib-item-row" style="margin:0 0 3px;padding:4px 8px;${isBest ? "background:var(--paper-dim);" : ""}">
+      <span class="lib-item-icon">${getIcon("Pig Bristles")}</span>
+      <div class="lib-item-main">
+        <div class="lib-item-name">Lv${r.level} \xB7 ${fmt(r.bristles)} Bristles${isBest ? " \u2605" : ""}</div>
+        <div class="lib-item-meta">${fmt(r.cycles)} cycles \xB7 ${formatDuration(r.days * 86400)} \xB7 ${fmt(r.costFlower)} ${FLOWER_ICON} per pig${targetPart}</div>
+        <div class="lib-item-meta">${marginal}</div>
+      </div>
+      <div class="lib-item-price">${fmt(r.costPerBristle)}<small>/Bristle</small></div>
+    </div>`;
+  }).join("");
+  const basisNote = basis === "gross" ? "Gross cost: pig + feed + medicine + Mud/spice, produce not counted." : `Net cost: pig + feed + medicine + Mud/spice, minus the produce sold on the way${feePercent > 0 ? ` (after ${feePercent}% fee)` : ""}.`;
+  return `
+  <div class="card${isExpanded ? " expanded" : ""}" id="pigBristlesCard" data-search="pig bristles">
+    <div class="card-toggle">
+      <div class="card-name-row">
+        <span class="card-icon">${getIcon("Pig Bristles")}</span>
+        <div>
+          <div class="card-name">Pig Bristles Planner</div>
+          <div class="card-type">${subtitle}</div>
+        </div>
+      </div>
+      <div class="card-collapsed-profit">
+        <span class="pvalue-mini">${summary}</span>
+        <span class="chev">\u25BE</span>
+      </div>
+    </div>
+    <div class="card-details">
+      <div class="lib-section-title" style="margin-top:6px;">\u2699\uFE0F Settings</div>
+      <div class="cook-mode-toggle" style="margin:6px 0;">
+        <button type="button" class="btn btn-ghost pig-bristle-basis${basis === "net" ? " active" : ""}" data-basis="net">Net of produce</button>
+        <button type="button" class="btn btn-ghost pig-bristle-basis${basis === "gross" ? " active" : ""}" data-basis="gross">Gross cost</button>
+      </div>
+      <div class="lib-item-row" style="margin:4px 0;">
+        <span class="lib-item-icon">${getIcon("Pig Bristles")}</span>
+        <div class="lib-item-main">
+          <div class="lib-item-name">Bristles needed</div>
+          <div class="lib-item-meta">Leave 0 to just compare levels</div>
+        </div>
+        <input type="number" class="pig-bristle-target" min="0" step="1" inputmode="numeric" value="${target}" style="width:72px;text-align:center;font-weight:800;">
+      </div>
+      <div class="field-hint">${basisNote}</div>
+      <div class="lib-section-title" style="margin-top:10px;">\u{1F3C6} Best Ways</div>
+      ${pigBristlePickHtml("Cheapest per Bristle", plan.cheapest, plan, target)}
+      ${pigBristlePickHtml("Most Bristles per day", plan.fastest, plan, target)}
+      ${pigBristlePickHtml("Most Bristles per pig", plan.most, plan, target)}
+      <div class="lib-section-title" style="margin-top:10px;">\u{1F4CA} Trade-in by Level</div>
+      ${rowsHtml || `<div class="field-hint">No tradeable Pig level found.</div>`}
+      <div class="field-hint" style="margin-top:6px;">Each row buys a new Pig, feeds it with your current boosts, Mud and spice settings, then trades it in at that level. Pigs run in parallel, so extra Pigs cost more but not more time. Sickness and shrine costs are not included.</div>
+    </div>
+  </div>`;
+}
+function attachPigBristlesEvents(wrap) {
+  const card2 = wrap.querySelector("#pigBristlesCard");
+  if (!card2) return;
+  const refresh = () => {
+    const wasExpanded = card2.classList.contains("expanded");
+    const tmp = document.createElement("div");
+    tmp.innerHTML = renderPigBristlesCard();
+    const next = tmp.firstElementChild;
+    if (wasExpanded) next.classList.add("expanded");
+    card2.replaceWith(next);
+    attachPigBristlesEvents(wrap);
+  };
+  const toggle = card2.querySelector(".card-toggle");
+  if (toggle) {
+    toggle.onclick = () => {
+      if (expandedAnimalCards.has("pig bristles")) expandedAnimalCards.delete("pig bristles");
+      else expandedAnimalCards.add("pig bristles");
+      card2.classList.toggle("expanded");
+    };
+  }
+  card2.querySelectorAll(".pig-bristle-basis").forEach((btn) => {
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      try {
+        localStorage.setItem(PIG_BRISTLE_BASIS_KEY, btn.dataset.basis);
+      } catch (err) {
+      }
+      refresh();
+    };
+  });
+  const input = card2.querySelector(".pig-bristle-target");
+  if (input) {
+    input.onchange = () => {
+      const v = Math.max(0, Math.floor(parseFloat(input.value) || 0));
+      try {
+        localStorage.setItem(PIG_BRISTLE_TARGET_KEY, String(v));
+      } catch (err) {
+      }
+      refresh();
+    };
+  }
+}
 function renderAnimalsList() {
   const wrap = $("animalsItemList");
   if (!wrap) return;
@@ -14575,7 +14717,7 @@ function renderAnimalsList() {
     end: focused.selectionEnd
   } : null;
   withPreservedCardScrolls(wrap, () => {
-    wrap.innerHTML = Object.keys(ANIMAL_DATA).map(renderAnimalCard).join("");
+    wrap.innerHTML = Object.keys(ANIMAL_DATA).map(renderAnimalCard).join("") + renderPigBristlesCard();
   });
   if (loveFocus) {
     const el = wrap.querySelector(`.animal-love-input[data-animal="${loveFocus.animal}"][data-tool="${loveFocus.tool}"]`);
@@ -14606,6 +14748,7 @@ function renderAnimalsList() {
   });
   attachAnimalFeedByLevelToggles(wrap);
   attachAnimalFeedConsumptionToggles(wrap);
+  attachPigBristlesEvents(wrap);
 }
 function getIcon(name) {
   const cacheKey = name || "";
@@ -36088,6 +36231,140 @@ function computePigTradeIn(levelOverride) {
     tradeable: base > 0
   };
 }
+function computePigBristlesPlan(basis, target, opts) {
+  const o = opts || {};
+  if (o.mud == null && o.medicine !== false && o.spice == null) return computePigBristlesPlanCore(basis, target);
+  const boostsSnap = selectedBoosts.slice();
+  const sickSnap = animalSicknessEstimate.pig;
+  const spiceSnap = {};
+  Object.keys(spiceUsage).forEach((k) => {
+    spiceSnap[k] = {
+      pig: spiceUsage[k].pig,
+      active: spiceUsage[k].active
+    };
+  });
+  try {
+    if (o.mud === true && !selectedBoosts.includes("pig_mud")) selectedBoosts.push("pig_mud");
+    if (o.mud === false) {
+      for (let i = selectedBoosts.length - 1; i >= 0; i--) if (selectedBoosts[i] === "pig_mud") selectedBoosts.splice(i, 1);
+    }
+    if (o.medicine === false) animalSicknessEstimate.pig = {
+      sickHeads: 0
+    };
+    if (o.spice != null) Object.keys(spiceUsage).forEach((k) => {
+      const on = k === o.spice;
+      spiceUsage[k].pig = on;
+      if (on) spiceUsage[k].active = true;
+    });
+    return computePigBristlesPlanCore(basis, target);
+  } finally {
+    selectedBoosts.length = 0;
+    boostsSnap.forEach((b) => selectedBoosts.push(b));
+    if (sickSnap === void 0) delete animalSicknessEstimate.pig;
+    else animalSicknessEstimate.pig = sickSnap;
+    Object.keys(spiceSnap).forEach((k) => {
+      spiceUsage[k].pig = spiceSnap[k].pig;
+      spiceUsage[k].active = spiceSnap[k].active;
+    });
+  }
+}
+function computePigBristlesPlanCore(basis, target) {
+  const type = "pig";
+  const useGross = basis === "gross";
+  const sim = runAnimalCycleSim(type, getAffectionScales(type));
+  const cfg = ANIMAL_DATA[type];
+  const buyFlower = coinsToFlower(ANIMAL_BUY_COINS[type]);
+  const bristlePriceItem = marketItems.find((x) => (x.name || "").toLowerCase() === "pig bristles");
+  const bristlePrice = bristlePriceItem ? bristlePriceItem.flowerPrice || 0 : 0;
+  const figCache = {};
+  const rows = [];
+  let grossFlower = buyFlower, produceFlower = 0, seconds = 0, cycles = 0;
+  let feedsTotal = 0, feedQtyTotal = 0, feedFlower = 0, medicineFlower = 0, mudFlower = 0, spiceFlower = 0;
+  let mudUnits = 0, spiceUnits = 0, spiceKey = null, mudOn = false;
+  const slopQty = {}, ingredientQty = {};
+  for (const c of sim) {
+    if (c.isMax) break;
+    cycles++;
+    const lvl = Math.min(15, Math.max(1, c.claimLevel));
+    if (!figCache[lvl]) figCache[lvl] = computeAnimalTypeFigures(type, void 0, lvl);
+    const fig = figCache[lvl];
+    grossFlower += coinsToFlower(fig.totalCostCoinsPerAnimal);
+    seconds += fig.cycleTimeSec;
+    feedsTotal += fig.feedCount;
+    feedQtyTotal += fig.effectiveFeedQty;
+    slopQty[fig.feedNameUsed] = (slopQty[fig.feedNameUsed] || 0) + fig.effectiveFeedQty;
+    const slopBd = fig.feedInfo && fig.feedInfo.breakdown && fig.feedInfo.breakdown[0];
+    if (slopBd) ingredientQty[slopBd.name] = (ingredientQty[slopBd.name] || 0) + fig.effectiveFeedQty * slopBd.qty;
+    feedFlower += coinsToFlower(fig.feedCostCoins);
+    medicineFlower += fig.medicineFlowerPerLevel;
+    const mudPer = fig.mudActive ? fig.mudCostFlowerPerCycle : 0;
+    mudFlower += mudPer;
+    spiceFlower += fig.consumablesFlowerPerLevel - mudPer;
+    if (fig.mudActive) {
+      mudOn = true;
+      mudUnits += PIG_MUD_PER_APPLICATION / fig.mudHarvestsPerCoat;
+    }
+    if (fig.spiceActiveKey) {
+      spiceKey = fig.spiceActiveKey;
+      spiceUnits += 1 / getSpiceDurationHarvests(fig.spiceActiveKey);
+    }
+    cfg.products.forEach((pname, idx) => {
+      const m = marketItems.find((x) => (x.name || "").toLowerCase() === pname.toLowerCase());
+      const price = m ? m.flowerPrice || 0 : 0;
+      produceFlower += fig.yields[idx] * price * (1 - feePercent / 100);
+    });
+    const trade = computePigTradeIn(lvl);
+    if (!trade.tradeable || !(trade.amount > 0)) continue;
+    const costFlower = useGross ? grossFlower : grossFlower - produceFlower;
+    rows.push({
+      level: lvl,
+      cycles,
+      bristles: trade.amount,
+      grossFlower,
+      produceFlower,
+      netFlower: grossFlower - produceFlower,
+      costFlower,
+      days: seconds / 86400,
+      costPerBristle: costFlower / trade.amount,
+      perDay: trade.amount / Math.max(1e-9, seconds / 86400),
+      valueFlower: trade.amount * bristlePrice,
+      feeds: feedsTotal,
+      feedQty: feedQtyTotal,
+      slops: Object.assign({}, slopQty),
+      ingredients: Object.assign({}, ingredientQty),
+      feedFlower,
+      medicineFlower,
+      mudFlower,
+      spiceFlower,
+      mudOn,
+      mudUnits,
+      spiceKey,
+      spiceUnits
+    });
+  }
+  rows.forEach((r, i) => {
+    const prev = rows[i - 1];
+    r.marginalPerBristle = prev && r.bristles > prev.bristles ? (r.costFlower - prev.costFlower) / (r.bristles - prev.bristles) : null;
+    const need = target > 0 ? Math.ceil(target / r.bristles) : 0;
+    r.pigsNeeded = need;
+    r.targetCostFlower = need * r.costFlower;
+  });
+  let cheapest = null, fastest = null, most = null;
+  rows.forEach((r) => {
+    if (!cheapest || r.costPerBristle < cheapest.costPerBristle) cheapest = r;
+    if (!fastest || r.perDay > fastest.perDay) fastest = r;
+    if (!most || r.bristles > most.bristles || r.bristles === most.bristles && r.costFlower < most.costFlower) most = r;
+  });
+  return {
+    rows,
+    cheapest,
+    fastest,
+    most,
+    bristlePrice,
+    buyFlower,
+    basis: useGross ? "gross" : "net"
+  };
+}
 function computeAnimalYieldsForLevel(type, level, realFeedBuffName) {
   const cfg = ANIMAL_DATA[type];
   const lvl = Math.min(15, Math.max(1, parseInt(level) || 1));
@@ -47474,7 +47751,9 @@ function computeAnimalTypeFigures(type, visited, levelOverride) {
   const costPerCureFlower = cureFree ? 0 : computeMedicineCostFlower(visited) * cureCostMult;
   const medicineFlowerPerLevel = cureFree ? 0 : costPerCureFlower * curesPerLevel;
   const mudHarvestsPerCoat = BOOSTS.some((b) => b.id === "vibraphone" && isBoostActive(b.id)) ? 2 : 1;
-  const mudCostFlowerPerCycle = mudActive ? PIG_MUD_PER_APPLICATION * getMudFlowerUnitPrice() / mudHarvestsPerCoat : 0;
+  const mudBreakdown = mudActive ? computeMudCostBreakdown() : null;
+  const mudUnitFlower = mudBreakdown ? mudBreakdown.unitFlower : 0;
+  const mudCostFlowerPerCycle = mudActive ? PIG_MUD_PER_APPLICATION * mudUnitFlower / mudHarvestsPerCoat : 0;
   const consumablesFlowerPerLevel = spice.costFlowerPerCyclePerAnimal + mudCostFlowerPerCycle;
   const sickHeads = getEffectiveSickHeads(type);
   const extraCoinsPerLevel = (medicineFlowerPerLevel + consumablesFlowerPerLevel) * coinPerFlower;
@@ -47507,6 +47786,8 @@ function computeAnimalTypeFigures(type, visited, levelOverride) {
     spiceCostFlowerPerCycle: spice.costFlowerPerCyclePerAnimal,
     mudActive,
     mudCostFlowerPerCycle,
+    mudUnitFlower,
+    mudBreakdown,
     mudHarvestsPerCoat,
     costPerCureFlower,
     sickHeads,
@@ -47533,9 +47814,86 @@ var ANIMAL_BUY_COINS = {
   sheep: 120,
   pig: 100
 };
+var CAVE_MUD_CROP_AMOUNTS = {
+  Sunflower: 500,
+  Potato: 80,
+  Rhubarb: 40,
+  Pumpkin: 20,
+  Zucchini: 20,
+  Carrot: 10,
+  Yam: 10,
+  Cabbage: 5,
+  Broccoli: 5,
+  Soybean: 3,
+  Beetroot: 3,
+  Pepper: 3,
+  Cauliflower: 2,
+  Parsnip: 2,
+  Eggplant: 2,
+  Corn: 2,
+  Onion: 2,
+  Wheat: 2,
+  Turnip: 2,
+  Radish: 2,
+  Kale: 2,
+  Artichoke: 2,
+  Barley: 2,
+  Rice: 1,
+  Olive: 1
+};
+var CAVE_PATCH_TILE_COUNT = 25;
+var CAVE_MUD_RECIPE_MUD_TILES = 20;
+var CAVE_MUD_RECIPE_MUD_PER_TILE = 2;
+var CAVE_DRILLS_PER_PATCH = 9;
+function caveSkillValue(id) {
+  if (!isSkillActive(id)) return 0;
+  return getSkillRankValue(id, 0) || 0;
+}
+function computeMudCostBreakdown() {
+  const bloom = caveSkillValue("skill_mushroom_bloom");
+  const mudTiles = Math.max(0, CAVE_MUD_RECIPE_MUD_TILES - bloom);
+  const bountyMult = getSkillRankMult("skill_muddy_bounty");
+  const mudPerBatch = mudTiles * CAVE_MUD_RECIPE_MUD_PER_TILE * bountyMult;
+  const leanMult = getSkillRankMult("skill_lean_compost");
+  let crop = null;
+  Object.keys(CAVE_MUD_CROP_AMOUNTS).forEach((name) => {
+    const unit = getItemCostByName(name);
+    if (!(unit > 0) || !isFinite(unit)) return;
+    const qty = CAVE_MUD_CROP_AMOUNTS[name] * leanMult;
+    const coins = unit * qty;
+    if (!crop || coins < crop.coins) crop = {
+      name,
+      qty,
+      coins
+    };
+  });
+  const shovelKeep = caveSkillValue("skill_sturdy_shovel") / 100;
+  const drillKeep = caveSkillValue("skill_sturdy_drill") / 100;
+  const shovelCount = CAVE_PATCH_TILE_COUNT * (1 - shovelKeep);
+  const drillCount = CAVE_DRILLS_PER_PATCH * (1 - drillKeep);
+  const shovelCoins = shovelCount * digToolUnitCoins("Sand Shovel");
+  const drillCoins = drillCount * digToolUnitCoins("Sand Drill");
+  const useDrill = drillCoins < shovelCoins;
+  const tool = {
+    name: useDrill ? "Sand Drill" : "Sand Shovel",
+    count: useDrill ? drillCount : shovelCount,
+    coins: useDrill ? drillCoins : shovelCoins
+  };
+  const cropCoins = crop ? crop.coins : 0;
+  const totalCoins = cropCoins + tool.coins;
+  const unitCoins = mudPerBatch > 0 ? totalCoins / mudPerBatch : 0;
+  return {
+    mudPerBatch,
+    crop,
+    cropCoins,
+    tool,
+    totalCoins,
+    unitCoins,
+    unitFlower: coinsToFlower(unitCoins)
+  };
+}
 function getMudFlowerUnitPrice() {
-  const m = marketItems.find((x) => (x.name || "").toLowerCase() === "mud");
-  return m ? m.flowerPrice || 0 : 0;
+  return computeMudCostBreakdown().unitFlower;
 }
 var BOUNTIFUL_BOUNTIES_RANKS = [0.5, 0.75, 1];
 function computeAnimalBountyFeedByLevel(type) {
@@ -73206,7 +73564,7 @@ export {
   setAnimalAffectionCount,
   setAnimalAffectionTool,
   computeAnimalAffectionSummary,
-  computePigTradeIn,
+  computePigBristlesPlan,
   BASE_CROPS,
   BASE_FRUITS,
   BASE_STOCK_CROPS,
@@ -73295,6 +73653,7 @@ export {
   SPICE_ANIMAL_TYPES,
   getTruffleSeasoningSleeps,
   getSpiceDurationHarvests,
+  getSpiceEffectForAnimalType,
   isSkillActive,
   isSkillDraftDirty,
   updateSkillSaveBarState,
