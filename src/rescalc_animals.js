@@ -9,6 +9,8 @@ const STORE_KEY = "guro_rc_animals_v1";
 
 const MAX_CUSTOM_CYCLES = 100000;
 
+const BRISTLE_SPICE_KEYS = ["none", "saltLick", "honeyTreat", "truffleSeasoning"];
+
 const SPICE_LABELS = {
   saltLick: "Salt Lick",
   honeyTreat: "Honey Treat",
@@ -36,6 +38,7 @@ let restoreFns = [];
 let animalsDraft = null;
 let listening = false;
 let detailsOpen = false;
+let bristleInfoOpen = false;
 
 function esc(s) {
   return calc.escapeHtml(String(s));
@@ -60,12 +63,26 @@ function iconOf(type) {
 function loadState() {
   const base = {
     selected: [],
-    cycles: {}
+    cycles: {},
+    bristles: false,
+    bristleBasis: "net",
+    bristleOpts: {
+      medicine: true,
+      spice: null,
+      mud: null
+    }
   };
   try {
     const raw = JSON.parse(localStorage.getItem(STORE_KEY) || "null");
     if (raw && typeof raw === "object") {
       if (Array.isArray(raw.selected)) base.selected = raw.selected.filter(isType);
+      base.bristles = raw.bristles === true;
+      base.bristleBasis = raw.bristleBasis === "gross" ? "gross" : "net";
+      if (raw.bristleOpts && typeof raw.bristleOpts === "object") {
+        base.bristleOpts.medicine = raw.bristleOpts.medicine !== false;
+        base.bristleOpts.spice = BRISTLE_SPICE_KEYS.includes(raw.bristleOpts.spice) ? raw.bristleOpts.spice : raw.bristleOpts.spice === false ? "none" : null;
+        base.bristleOpts.mud = typeof raw.bristleOpts.mud === "boolean" ? raw.bristleOpts.mud : null;
+      }
       if (raw.cycles && typeof raw.cycles === "object") Object.keys(raw.cycles).forEach(k => {
         const v = Math.floor(Number(raw.cycles[k]));
         if (isType(k) && isFinite(v) && v > 0) base.cycles[k] = Math.min(v, MAX_CUSTOM_CYCLES);
@@ -235,10 +252,195 @@ function totalsOf(rows) {
 }
 
 function cropCellsHtml() {
-  return typeNames().map(n => {
+  const animals = typeNames().map(n => {
     const on = state.selected.includes(n);
     return `<label class="rc-crop guro-frame${on ? " is-on" : ""}"><span class="rc-crop-icon">${iconOf(n)}</span><span class="rc-crop-name">${esc(labelOf(n))}</span><input type="checkbox" data-rc-crop="${esc(n)}"${on ? " checked" : ""} aria-label="${esc(labelOf(n))}"></label>`;
   }).join("");
+  const bon = state.bristles;
+  const bristles = `<label class="rc-crop guro-frame${bon ? " is-on" : ""}"><span class="rc-crop-icon">${ui.getIcon("Pig Bristles")}</span><span class="rc-crop-name">Bristles</span><input type="checkbox" data-rc-bristles${bon ? " checked" : ""} aria-label="Bristles"></label>`;
+  return animals + bristles;
+}
+
+function focusTypes() {
+  const list = state.selected.filter(isType);
+  if (state.bristles && !list.includes("pig") && isType("pig")) list.push("pig");
+  return list;
+}
+
+function bristleOpts() {
+  return {
+    medicine: state.bristleOpts.medicine,
+    spice: state.bristleOpts.spice,
+    mud: state.bristleOpts.mud
+  };
+}
+
+function bristleMedicineHtml() {
+  const r = compute("pig");
+  const view = Object.assign({}, r, {
+    fig: Object.assign({}, r.fig, {
+      mudActive: bristleMudOn()
+    })
+  });
+  const html = medicineConfigHtml(view);
+  return html.replace('<div class="rc-tool-cfg">', '<div class="rc-tool-cfg"><div class="rc-note">Medicine only costs something when your Pig heads and sick heads are above 0 and Mud is off.</div>');
+}
+
+function bristleSpiceConfigHtml() {
+  const key = bristleSpiceKey();
+  const name = key === "none" ? null : SPICE_LABELS[key];
+  const rows = name ? spiceIngredientRowsHtml(name) : `<div class="rc-boost-none">No consumable selected</div>`;
+  return `<div class="rc-group"><div class="rc-comp-sub">Spice Rack${name ? " (" + esc(name) + ")" : ""}</div><div class="rc-tool-cfg">${rows}</div></div>`;
+}
+
+function bristleMudOn() {
+  return state.bristleOpts.mud == null ? calc.isBoostActive("pig_mud") : state.bristleOpts.mud;
+}
+
+function bristleSpiceKey() {
+  if (state.bristleOpts.spice != null) return state.bristleOpts.spice;
+  return calc.getSpiceEffectForAnimalType("pig").activeKey || "none";
+}
+
+function bristleSpiceRowHtml() {
+  const cur = bristleSpiceKey();
+  const btn = (key, text) => `<button type="button" class="es-mode-btn es-toolcfg-tbtn${cur === key ? " active" : ""}" data-rc-bopt="spice:${key}">${text}</button>`;
+  return `<div class="rc-tool-mat"><span class="rc-tool-mat-item"><span class="rc-tool-mat-name">Spice Rack</span></span><span class="es-toolcfg-tog">${btn("none", "None")}${btn("saltLick", "Salt Lick")}${btn("honeyTreat", "Honey Treat")}${btn("truffleSeasoning", "Truffle Seasoning")}</span></div>`;
+}
+
+function bristleToggleHtml(key, iconName, label, on) {
+  const btn = (v, text, active) => `<button type="button" class="es-mode-btn es-toolcfg-tbtn${active ? " active" : ""}" data-rc-bopt="${key}:${v}">${text}</button>`;
+  return `<div class="rc-tool-mat"><span class="rc-tool-mat-item">${ui.getIcon(iconName)}<span class="rc-tool-mat-name">${label}</span></span><span class="es-toolcfg-tog">${btn("off", "Off", !on)}${btn("on", "On", on)}</span></div>`;
+}
+
+function bristleOptionsHtml() {
+  const rows = bristleToggleHtml("medicine", "Barn Delight", "Medicine", state.bristleOpts.medicine) + bristleToggleHtml("mud", "Mud", "Mud", bristleMudOn()) + bristleSpiceRowHtml();
+  return `<div class="rc-group"><div class="rc-comp-sub">Cost Options</div><div class="rc-tool-cfg">${rows}</div></div>`;
+}
+
+function listQty(map) {
+  return Object.keys(map).filter(k => map[k] > 0).map(k => `<span>${ui.getIcon(k)} ${esc(k)} ×${n2(map[k])}</span>`).join("<br>") || "—";
+}
+
+function bristleData() {
+  prices.invalidateCostCache();
+  const plan = calc.computePigBristlesPlan(state.bristleBasis, 0, bristleOpts());
+  const feeFrac = (calc.feePercent || 0) / 100;
+  const priced = plan.bristlePrice > 0;
+  const seen = {};
+  const rows = [];
+  plan.rows.forEach(r => {
+    if (seen[r.level]) return;
+    seen[r.level] = true;
+    const value = r.valueFlower * (1 - feeFrac);
+    const profit = priced ? value - r.costFlower : 0;
+    rows.push(Object.assign({}, r, {
+      value: value,
+      profit: profit,
+      profitPerDay: priced ? profit / Math.max(1e-9, r.days) : 0
+    }));
+  });
+  rows.forEach((r, i) => {
+    const prev = rows[i - 1];
+    r.marginal = prev && r.bristles > prev.bristles ? (r.costFlower - prev.costFlower) / (r.bristles - prev.bristles) : null;
+  });
+  const pick = better => rows.reduce((b, r) => !b || better(r, b) ? r : b, null);
+  return {
+    rows: rows,
+    priced: priced,
+    price: plan.bristlePrice,
+    buyFlower: plan.buyFlower,
+    feeFrac: feeFrac,
+    bestProfit: priced ? pick((r, b) => r.profit > b.profit) : null,
+    cheapest: pick((r, b) => r.costPerBristle < b.costPerBristle),
+    most: pick((r, b) => r.bristles > b.bristles || r.bristles === b.bristles && r.costFlower < b.costFlower),
+    fastest: pick((r, b) => r.perDay > b.perDay)
+  };
+}
+
+function bristleBoxHtml(label, row, subFn) {
+  if (!row) return valueBoxHtml(label, "—");
+  return valueBoxHtml(label, `Lv${row.level} · ${n2(row.bristles)}${ui.getIcon("Pig Bristles")}`, "", `<span class="rc-kv-sub">${subFn(row)}</span>`);
+}
+
+function bristleTileHtml(r, data) {
+  const good = !data.priced || r.profit >= 0;
+  const star = data.bestProfit && data.bestProfit.level === r.level ? " ★" : "";
+  const profit = data.priced ? flowerSigned(r.profit) : "—";
+  return `<div class="rc-tile rc-tile-animal guro-frame ${good ? "is-profit" : "is-loss"}" data-rc-level="${r.level}"><span class="rc-tile-icon">${iconOf("pig")}</span><span class="rc-tile-prods"><span class="rc-tile-prod"><span class="rc-tile-pq">Lv${r.level}${star}</span><span class="rc-tile-pn">×${n2(r.bristles)}${ui.getIcon("Pig Bristles")}</span><span class="rc-tile-pv">${profit}</span></span><span class="rc-tile-prod"><span class="rc-tile-pn">Cost ${flowerHtml(r.costFlower)}</span></span></span></div>`;
+}
+
+function bristlesBlockHtml() {
+  if (!state.bristles) return "";
+  const data = bristleData();
+  const net = state.bristleBasis !== "gross";
+  const modes = `<div class="rc-modes" role="group" aria-label="Cost basis"><button type="button" class="rc-mode guro-frame${net ? " is-on" : ""}" data-rc-bbasis="net" aria-pressed="${net ? "true" : "false"}">Net Cost</button><button type="button" class="rc-mode guro-frame${net ? "" : " is-on"}" data-rc-bbasis="gross" aria-pressed="${net ? "false" : "true"}">Gross Cost</button></div>`;
+  const tools = `<div class="rc-tools"><button type="button" class="rc-tool guro-frame" data-rc-open="skills">Skills</button><button type="button" class="rc-tool guro-frame" data-rc-open="boost">Boost</button><button type="button" class="rc-tool guro-frame" data-rc-open="animals">Animals</button></div>`;
+  const basisNote = net ? `Net Cost: pig, feed, medicine and Mud or spice, minus the produce sold on the way${(calc.feePercent || 0) > 0 ? ` after the ${calc.feePercent}% fee` : ""}.` : "Gross Cost: pig, feed, medicine and Mud or spice, with the produce not counted.";
+  const note = `<div class="rc-note">Medicine uses your sick heads estimate. Spice uses the consumable you picked in the Pig computation. Mud follows your Boost setting until you change it here, and with Mud on there is no sickness and feed XP is higher. ${basisNote} Each level buys a new Pig, feeds it from Lv1 with your current skills, boosts, Mud and spice settings, then trades it in at that level. Pigs run in parallel, so more Pigs cost more but not more time.</div>`;
+  const infoRow = `<div class="rc-details-row"><button type="button" class="rc-linktext" data-rc-binfo aria-expanded="${bristleInfoOpen ? "true" : "false"}">Info</button></div>${bristleInfoOpen ? note : ""}${data.priced ? "" : `<div class="rc-note is-warn">Pig Bristles has no market price yet, so value and profit are not shown.</div>`}`;
+  if (!data.rows.length) return `<section class="rc-block guro-frame" aria-label="Bristles results"><div class="rc-block-title">Bristles Calculator</div>${modes}${tools}${bristleOptionsHtml()}<div class="rc-empty">No tradeable Pig level found.</div></section>`;
+  const boxes = `<div class="rc-values">
+    ${bristleBoxHtml("Best Profit", data.bestProfit, r => `${flowerSigned(r.profit)} per pig`)}
+    ${bristleBoxHtml("Cheapest / Bristle", data.cheapest, r => `${flowerHtml(r.costPerBristle)} each`)}
+    ${bristleBoxHtml("Most Bristles", data.most, r => `${flowerHtml(r.costFlower)} cost`)}
+    ${bristleBoxHtml("Most / Day", data.fastest, r => `${n2(r.perDay)} per day`)}
+  </div>`;
+  const tiles = `<div class="rc-tiles-wrap guro-frame"><div class="rc-tiles rc-tiles-animals rc-tiles-bristles">${data.rows.map(r => bristleTileHtml(r, data)).join("")}</div></div>`;
+  return `<section class="rc-block guro-frame" aria-label="Bristles results">
+    <div class="rc-block-title">Bristles Calculator</div>
+    ${modes}
+    ${tools}
+    ${bristleOptionsHtml()}
+    ${infoRow}
+    ${tiles}
+    ${boxes}
+    <div class="rc-details-row"><button type="button" class="rc-linktext" data-rc-open="bristles">Computation</button></div>
+  </section>`;
+}
+
+function bristleCardHtml(r, data) {
+  const icon = ui.getIcon("Pig Bristles");
+  const profit = data.priced ? `<span class="${r.profit >= 0 ? "is-profit" : "is-loss"}">${signed(r.profit, fl)}${calc.FLOWER_ICON}</span>` : "—";
+  const profitDay = data.priced ? `<span class="${r.profitPerDay >= 0 ? "is-profit" : "is-loss"}">${signed(r.profitPerDay, fl)}${calc.FLOWER_ICON}</span>` : "—";
+  const marginal = r.marginal != null ? flowerHtml(r.marginal) : "—";
+  return `<article class="rc-comp-card guro-frame">
+    <header class="rc-comp-head"><span class="rc-comp-icon">${iconOf("pig")}</span><span class="rc-comp-name">Pig · Lv${r.level}</span><span class="rc-comp-nodes">${icon} ${n2(r.bristles)}</span></header>
+    <div class="rc-group"><div class="rc-kv-grid">
+      ${kv("Cycles", n2(r.cycles))}
+      ${kv("Time", esc(calc.formatDuration(r.days * 86400)))}
+      ${kv("Bristles / Trade-in", `${n2(r.bristles)}${icon}`)}
+      ${kv("Bristles / Day", `${n2(r.perDay)}${icon}`)}
+      ${kv("Total Feeds", n2(r.feeds))}
+      ${kv("Feed Qty", n2(r.feedQty))}
+      ${kv("Feed Used", listQty(r.slops), "rc-kv-wide")}
+      ${kv("Slop Ingredients", listQty(r.ingredients), "rc-kv-wide")}
+      ${kv("Pig Price", flowerHtml(data.buyFlower))}
+      ${kv("Feed Cost", flowerHtml(r.feedFlower))}
+      ${kv("Medicine Cost", flowerHtml(r.medicineFlower))}
+      ${kv("Mud Used", r.mudOn ? `${ui.getIcon("Mud")} ×${n2(r.mudUnits)}` : "Off")}
+      ${kv("Mud Cost", flowerHtml(r.mudFlower))}
+      ${kv("Spice Used", r.spiceKey ? `${ui.getIcon(SPICE_LABELS[r.spiceKey])} ${esc(SPICE_LABELS[r.spiceKey])} ×${n2(r.spiceUnits)}` : "None")}
+      ${kv("Spice Cost", flowerHtml(r.spiceFlower))}
+      ${kv("Gross Cost", flowerHtml(r.grossFlower))}
+      ${kv("Produce Sold", flowerHtml(r.produceFlower))}
+      ${kv("Total Cost", flowerHtml(r.costFlower))}
+      ${kv("Cost / Bristle", flowerHtml(r.costPerBristle))}
+      ${kv("Extra Cost / Bristle", marginal)}
+      ${kv("Bristles Value", data.priced ? flowerHtml(r.value) : "—")}
+      ${kv("Profit / Day", profitDay)}
+      ${kv("Profit / Pig", profit, "rc-kv-wide rc-kv-net")}
+    </div></div>
+  </article>`;
+}
+
+function bristlesBodyHtml() {
+  const data = bristleData();
+  if (!data.rows.length) return `<div class="rc-empty">No tradeable Pig level found.</div>`;
+  const hint = `<div class="rc-pop-hint">${state.bristleBasis === "gross" ? "Gross cost" : "Net cost"} per Pig for every level it can be traded in at.${(data.feeFrac || 0) > 0 ? ` Bristles value is after the ${calc.feePercent}% market fee.` : ""} Extra Cost / Bristle is what you pay for each additional Bristle compared with the level before.</div>`;
+  return hint + feedConfigHtml({
+    type: "pig"
+  }) + bristleMedicineHtml() + bristleSpiceConfigHtml() + data.rows.map(r => bristleCardHtml(r, data)).join("");
 }
 
 function tileProductHtml(pr) {
@@ -295,6 +497,7 @@ function pickerHtml() {
 
 function resultsHtml() {
   const rows = computeAll();
+  if (state.bristles && !state.selected.length) return "";
   return `<section class="rc-block guro-frame" aria-label="Animals results">
     <div class="rc-modes rc-modes-one" role="group" aria-label="Calculation mode"><button type="button" class="rc-mode guro-frame is-on" aria-pressed="true">24Hrs Mode</button></div>
     <div class="rc-tools">
@@ -311,7 +514,7 @@ function render() {
   if (!host) return;
   const scroller = document.scrollingElement;
   const y = scroller ? scroller.scrollTop : 0;
-  host.innerHTML = pickerHtml() + resultsHtml();
+  host.innerHTML = pickerHtml() + resultsHtml() + bristlesBlockHtml();
   if (scroller) scroller.scrollTop = y;
 }
 
@@ -323,12 +526,11 @@ function refreshResults() {
     return;
   }
   const blocks = host.querySelectorAll(".rc-block");
-  if (blocks[1]) {
-    const tmp = document.createElement("div");
-    tmp.innerHTML = resultsHtml();
-    blocks[1].replaceWith(tmp.firstElementChild);
-  }
-  if (popup === "computation") renderOverlayBody();
+  for (let i = blocks.length - 1; i >= 1; i--) blocks[i].remove();
+  const tmp = document.createElement("div");
+  tmp.innerHTML = resultsHtml() + bristlesBlockHtml();
+  while (tmp.firstChild) host.appendChild(tmp.firstChild);
+  if (popup === "computation" || popup === "bristles") renderOverlayBody();
 }
 
 function boostEffectParts(b, products) {
@@ -486,30 +688,32 @@ function affectionConfigHtml(r) {
   return `<div class="rc-group"><div class="rc-comp-sub">Affection Tools</div><div class="rc-tool-cfg"><div class="rc-note">${n2(s.qty)} heads × ${s.opportunities} love actions = ${n2(s.capacity)} per cycle. Leave a use field empty to go back to the automatic count.</div>${cols}</div></div>`;
 }
 
+function spiceIngredientRowsHtml(activeName) {
+  const parts = [];
+  const f = calc.computeSpiceFigures(activeName);
+  parts.push(toggleRow(ui.getIcon(activeName), activeName + " (batch output)", "", f.output));
+  f.ingredients.forEach(ing => {
+    if (ing.hasToggle) {
+      parts.push(toggleRow(ui.getIcon(ing.name), ing.name, collectBuy("spicemode", ing.name, calc.spiceMaterialMode(ing.name)), ing.qty));
+      return;
+    }
+    if (ing.name === "Refined Salt") {
+      const rf = calc.computeSpiceFigures("Refined Salt");
+      const salt = rf.ingredients[0];
+      const saltQty = ing.qty * salt.qty / rf.output;
+      parts.push(`<div class="rc-tool-mat"><span class="rc-tool-mat-item"><span class="rc-tool-mat-qty">${n2(ing.qty)}×</span>${ui.getIcon(ing.name)}<span class="rc-tool-mat-name">${esc(ing.name)}</span><span class="rc-mat-val">(${n2(saltQty)}× ${ui.getIcon("Salt")})</span></span><span class="es-toolcfg-tog">${collectBuy("spicemode", "Salt", calc.spiceMaterialMode("Salt"))}</span></div>`);
+      return;
+    }
+    parts.push(toggleRow(ui.getIcon(ing.name), ing.name, "", ing.qty));
+  });
+  return parts.join("");
+}
+
 function spiceConfigHtml(r) {
   const cur = r.fig.spiceActiveKey || "none";
   const choose = `<div class="rc-tool-mat"><span class="rc-tool-mat-item"><span class="rc-tool-mat-name">Consumable</span></span><span class="es-toolcfg-tog">${tbtn("spice", "spice", "none", "None", cur === "none", r.type)}${tbtn("spice", "spice", "saltLick", "Salt Lick", cur === "saltLick", r.type)}${tbtn("spice", "spice", "honeyTreat", "Honey Treat", cur === "honeyTreat", r.type)}${tbtn("spice", "spice", "truffleSeasoning", "Truffle Seasoning", cur === "truffleSeasoning", r.type)}</span></div>`;
   const activeName = cur === "none" ? null : SPICE_LABELS[cur];
-  const parts = [];
-  if (activeName) {
-    const f = calc.computeSpiceFigures(activeName);
-    parts.push(toggleRow(ui.getIcon(activeName), activeName + " (batch output)", "", f.output));
-    f.ingredients.forEach(ing => {
-      if (ing.hasToggle) {
-        parts.push(toggleRow(ui.getIcon(ing.name), ing.name, collectBuy("spicemode", ing.name, calc.spiceMaterialMode(ing.name)), ing.qty));
-        return;
-      }
-      if (ing.name === "Refined Salt") {
-        const rf = calc.computeSpiceFigures("Refined Salt");
-        const salt = rf.ingredients[0];
-        const saltQty = ing.qty * salt.qty / rf.output;
-        parts.push(`<div class="rc-tool-mat"><span class="rc-tool-mat-item"><span class="rc-tool-mat-qty">${n2(ing.qty)}×</span>${ui.getIcon(ing.name)}<span class="rc-tool-mat-name">${esc(ing.name)}</span><span class="rc-mat-val">(${n2(saltQty)}× ${ui.getIcon("Salt")})</span></span><span class="es-toolcfg-tog">${collectBuy("spicemode", "Salt", calc.spiceMaterialMode("Salt"))}</span></div>`);
-        return;
-      }
-      parts.push(toggleRow(ui.getIcon(ing.name), ing.name, "", ing.qty));
-    });
-  }
-  const rows = parts.length ? parts.join("") : `<div class="rc-boost-none">No consumable selected</div>`;
+  const rows = activeName ? spiceIngredientRowsHtml(activeName) : `<div class="rc-boost-none">No consumable selected</div>`;
   const dur = calc.getSpiceLickDurationHarvests();
   const sleeps = calc.getTruffleSeasoningSleeps();
   const note = `<div class="rc-note">One animal can use one consumable at a time. Salt Lick and Honey Treat last ${dur} harvests. Truffle Seasoning halves the sleep it is spent on and lasts ${sleeps} ${sleeps === 1 ? "sleep" : "sleeps"}, so it is counted as re-applied at every claim. Ingredient quantities are per one Spice Rack batch, as shown in the game. Refined Salt is made from Salt.</div>`;
@@ -535,7 +739,7 @@ function materialsHtml(r) {
     });
   }
   const mudUnits24 = fig.mudActive ? calc.PIG_MUD_PER_APPLICATION * r.qty * r.cycles / fig.mudHarvestsPerCoat : 0;
-  const mudValue24 = mudUnits24 * priceOf("Mud");
+  const mudValue24 = fig.mudActive ? mudUnits24 * fig.mudUnitFlower : 0;
   if (week && week.spiceActiveKey && r.spice - mudValue24 > 0) {
     const label = SPICE_LABELS[week.spiceActiveKey];
     const spiceUnits24 = week.boostedCycles * r.qty / calc.getSpiceDurationHarvests(week.spiceActiveKey);
@@ -554,6 +758,15 @@ function materialsHtml(r) {
   if (fig.mudActive) {
     rows.push(matRowHtml(ui.getIcon("Mud"), "Mud", calc.PIG_MUD_PER_APPLICATION * r.qty / fig.mudHarvestsPerCoat, fig.mudCostFlowerPerCycle * r.qty, "1 cycle"));
     rows.push(matRowHtml(ui.getIcon("Mud"), "Mud", mudUnits24, mudValue24, "24hr"));
+    const mb = fig.mudBreakdown;
+    if (mb && mb.mudPerBatch > 0) {
+      const mudPerCycle = calc.PIG_MUD_PER_APPLICATION * r.qty / fig.mudHarvestsPerCoat;
+      [[mudPerCycle, "1 cycle"], [mudUnits24, "24hr"]].forEach(([mudQty, label]) => {
+        const share = mudQty / mb.mudPerBatch;
+        if (mb.crop) rows.push(matRowHtml(ui.getIcon(mb.crop.name), mb.crop.name, mb.crop.qty * share, calc.coinsToFlower(mb.cropCoins * share), label));
+        rows.push(matRowHtml(ui.getIcon(mb.tool.name), mb.tool.name, mb.tool.count * share, calc.coinsToFlower(mb.tool.coins * share), label));
+      });
+    }
   }
   const matRows = rows.length ? rows.join("") : `<div class="rc-boost-none">No material used</div>`;
   const yieldRows = r.products.map((p, i) => matRowHtml(ui.getIcon(p), p, fig.yields[i] * r.qty, fig.yields[i] * r.qty * priceOf(p), "1 cycle") + matRowHtml(ui.getIcon(p), p, r.yields[i], r.yields[i] * priceOf(p), "24hr")).join("");
@@ -569,12 +782,8 @@ function pigKvHtml(r) {
   if (r.type !== "pig") return "";
   const fig = r.fig;
   const bd = fig.feedInfo && fig.feedInfo.breakdown && fig.feedInfo.breakdown[0];
-  const trade = calc.computePigTradeIn(fig.level);
-  const bristlePrice = priceOf("Pig Bristles");
   const parts = [];
   if (bd) parts.push(kv("Slop Ingredient", `${ui.getIcon(bd.name)} ${esc(bd.name)} ×${n2(bd.qty)} / Slop`, "rc-kv-wide"));
-  parts.push(kv("Bristles / Trade-in", trade.tradeable ? `${n2(trade.amount)}${ui.getIcon("Pig Bristles")}` : "Not tradeable below Lv3"));
-  parts.push(kv("Bristles Value", trade.tradeable ? flowerHtml(trade.amount * bristlePrice) : "—"));
   if (fig.mudActive) parts.push(kv("Mud / Cycle", flowerHtml(fig.mudCostFlowerPerCycle * r.qty)));
   return parts.join("\n      ");
 }
@@ -637,8 +846,9 @@ function computationBodyHtml() {
 }
 
 function boostBodyHtml() {
-  if (!state.selected.length) return `<div class="rc-empty">Select at least one animal to see the boosts that affect it.</div>`;
-  const subjects = state.selected.map(n => ({
+  const types = focusTypes();
+  if (!types.length) return `<div class="rc-empty">Select at least one animal to see the boosts that affect it.</div>`;
+  const subjects = types.map(n => ({
     name: labelOf(n),
     type: n,
     icon: iconOf(n)
@@ -653,7 +863,7 @@ function boostBodyHtml() {
     noteSkip: /AOE|expected/i,
     allLabel: "Boost for All Selected Animals"
   });
-  return `<div class="rc-pop-hint">Boosts that affect ${state.selected.length > 1 ? "your selected animals" : esc(labelOf(state.selected[0]))}. Tap a boost to switch it on or off, then press Save.</div>${html || `<div class="rc-empty">No boosts found.</div>`}`;
+  return `<div class="rc-pop-hint">Boosts that affect ${types.length > 1 ? "your selected animals" : esc(labelOf(types[0]))}. Tap a boost to switch it on or off, then press Save.</div>${html || `<div class="rc-empty">No boosts found.</div>`}`;
 }
 
 function draftValue(type, field) {
@@ -664,8 +874,9 @@ function draftValue(type, field) {
 }
 
 function animalsBodyHtml() {
-  if (!state.selected.length) return `<div class="rc-empty">Select at least one animal to edit its heads and level.</div>`;
-  const rows = state.selected.map(t => {
+  const types = focusTypes();
+  if (!types.length) return `<div class="rc-empty">Select at least one animal to edit its heads and level.</div>`;
+  const rows = types.map(t => {
     const qty = draftValue(t, "qty");
     const level = draftValue(t, "level");
     return `<label class="rc-node-row guro-frame"><span class="rc-node-icon">${iconOf(t)}</span><span class="rc-node-text"><span class="rc-node-name">${esc(labelOf(t))} Heads</span><span class="rc-node-used">How many you own</span></span><input type="number" min="0" step="1" inputmode="numeric" data-an-draft="${esc(t)}:qty" value="${qty ? qty : ""}" placeholder="0"></label>
@@ -678,6 +889,7 @@ function popupTitle() {
   if (popup === "skills") return "Animal Skills";
   if (popup === "boost") return "Animal Boosts";
   if (popup === "animals") return "Animals";
+  if (popup === "bristles") return "Bristles Computation";
   return "Computation";
 }
 
@@ -685,6 +897,7 @@ function popupBodyHtml() {
   if (popup === "boost") return boostBodyHtml();
   if (popup === "animals") return animalsBodyHtml();
   if (popup === "computation") return computationBodyHtml();
+  if (popup === "bristles") return bristlesBodyHtml();
   return `<div class="rc-pop-hint">Animal skills from the Skill Tree. Changes here also change the Skill Tree. Press Save to apply them.</div><div id="rcSkillSlot"></div>`;
 }
 
@@ -739,7 +952,7 @@ function footerHtml() {
 }
 
 function overlayHtml() {
-  return `<div class="rc-pop guro-frame rc-pop-animals${popup === "computation" ? " rc-pop-comp" : ""}" role="dialog" aria-modal="true" aria-label="${popupTitle()}">
+  return `<div class="rc-pop guro-frame rc-pop-animals${popup === "computation" || popup === "bristles" ? " rc-pop-comp" : ""}" role="dialog" aria-modal="true" aria-label="${popupTitle()}">
     <div class="rc-pop-head"><span class="rc-pop-title">${popupTitle()}</span><button type="button" class="rc-pop-close" data-rc-close aria-label="Close">✕</button></div>
     <div class="rc-pop-body" id="rcPopBody">${popupBodyHtml()}</div>
     <div class="rc-pop-foot">${footerHtml()}</div>
@@ -813,7 +1026,7 @@ function closePopup(force) {
     } ]);
     return;
   }
-  const wasComputation = popup === "computation";
+  const wasComputation = popup === "computation" || popup === "bristles";
   destroyPopup();
   if (!wasComputation) refreshResults();
 }
@@ -947,10 +1160,39 @@ function toggleCrop(name, input) {
   refreshResults();
 }
 
+function toggleBristles(input) {
+  state.bristles = !!input.checked;
+  saveState();
+  const label = input.closest(".rc-crop");
+  if (label) label.classList.toggle("is-on", state.bristles);
+  refreshResults();
+}
+
 function onClick(e) {
   const details = e.target.closest("[data-rc-details]");
   if (details) {
     detailsOpen = !detailsOpen;
+    refreshResults();
+    return;
+  }
+  const binfo = e.target.closest("[data-rc-binfo]");
+  if (binfo) {
+    bristleInfoOpen = !bristleInfoOpen;
+    refreshResults();
+    return;
+  }
+  const bopt = e.target.closest("[data-rc-bopt]");
+  if (bopt) {
+    const parts = bopt.getAttribute("data-rc-bopt").split(":");
+    state.bristleOpts[parts[0]] = parts[0] === "spice" ? parts[1] : parts[1] === "on";
+    saveState();
+    refreshResults();
+    return;
+  }
+  const basis = e.target.closest("[data-rc-bbasis]");
+  if (basis) {
+    state.bristleBasis = basis.getAttribute("data-rc-bbasis") === "gross" ? "gross" : "net";
+    saveState();
     refreshResults();
     return;
   }
@@ -961,6 +1203,7 @@ function onClick(e) {
 function onChange(e) {
   const t = e.target;
   if (t && t.dataset && t.dataset.rcCrop != null) toggleCrop(t.dataset.rcCrop, t);
+  else if (t && t.dataset && t.dataset.rcBristles != null) toggleBristles(t);
 }
 
 function onDocChange(e) {
@@ -1000,13 +1243,14 @@ function onDocClick(e) {
     openCycleEditor(editCycle.getAttribute("data-rc-edit-cycle"));
     return;
   }
+  const inComp = popup === "computation" || popup === "bristles";
   const slopOpen = e.target.closest("[data-an-slop-open]");
-  if (slopOpen && popup === "computation") {
+  if (slopOpen && inComp) {
     openSlopPicker(slopOpen.getAttribute("data-an-slop-open"));
     return;
   }
   const act = e.target.closest("[data-an-act]");
-  if (act && popup === "computation") {
+  if (act && inComp) {
     applyAction(act);
     return;
   }
@@ -1052,6 +1296,7 @@ export function mountAnimalsCalculator(root) {
   prices.invalidateCostCache();
   state = loadState();
   detailsOpen = false;
+  bristleInfoOpen = false;
   host.addEventListener("click", onClick);
   host.addEventListener("change", onChange);
   document.addEventListener("click", onDocClick);

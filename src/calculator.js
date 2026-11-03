@@ -2306,6 +2306,141 @@ export function computePigTradeIn(levelOverride) {
   };
 }
 
+export function computePigBristlesPlan(basis, target, opts) {
+  const o = opts || {};
+  if (o.mud == null && o.medicine !== false && o.spice == null) return computePigBristlesPlanCore(basis, target);
+  const boostsSnap = selectedBoosts.slice();
+  const sickSnap = animalSicknessEstimate.pig;
+  const spiceSnap = {};
+  Object.keys(spiceUsage).forEach(k => {
+    spiceSnap[k] = {
+      pig: spiceUsage[k].pig,
+      active: spiceUsage[k].active
+    };
+  });
+  try {
+    if (o.mud === true && !selectedBoosts.includes("pig_mud")) selectedBoosts.push("pig_mud");
+    if (o.mud === false) {
+      for (let i = selectedBoosts.length - 1; i >= 0; i--) if (selectedBoosts[i] === "pig_mud") selectedBoosts.splice(i, 1);
+    }
+    if (o.medicine === false) animalSicknessEstimate.pig = {
+      sickHeads: 0
+    };
+    if (o.spice != null) Object.keys(spiceUsage).forEach(k => {
+      const on = k === o.spice;
+      spiceUsage[k].pig = on;
+      if (on) spiceUsage[k].active = true;
+    });
+    return computePigBristlesPlanCore(basis, target);
+  } finally {
+    selectedBoosts.length = 0;
+    boostsSnap.forEach(b => selectedBoosts.push(b));
+    if (sickSnap === undefined) delete animalSicknessEstimate.pig; else animalSicknessEstimate.pig = sickSnap;
+    Object.keys(spiceSnap).forEach(k => {
+      spiceUsage[k].pig = spiceSnap[k].pig;
+      spiceUsage[k].active = spiceSnap[k].active;
+    });
+  }
+}
+
+function computePigBristlesPlanCore(basis, target) {
+  const type = "pig";
+  const useGross = basis === "gross";
+  const sim = runAnimalCycleSim(type, getAffectionScales(type));
+  const cfg = ANIMAL_DATA[type];
+  const buyFlower = coinsToFlower(ANIMAL_BUY_COINS[type]);
+  const bristlePriceItem = marketItems.find(x => (x.name || "").toLowerCase() === "pig bristles");
+  const bristlePrice = bristlePriceItem ? bristlePriceItem.flowerPrice || 0 : 0;
+  const figCache = {};
+  const rows = [];
+  let grossFlower = buyFlower, produceFlower = 0, seconds = 0, cycles = 0;
+  let feedsTotal = 0, feedQtyTotal = 0, feedFlower = 0, medicineFlower = 0, mudFlower = 0, spiceFlower = 0;
+  let mudUnits = 0, spiceUnits = 0, spiceKey = null, mudOn = false;
+  const slopQty = {}, ingredientQty = {};
+  for (const c of sim) {
+    if (c.isMax) break;
+    cycles++;
+    const lvl = Math.min(15, Math.max(1, c.claimLevel));
+    if (!figCache[lvl]) figCache[lvl] = computeAnimalTypeFigures(type, undefined, lvl);
+    const fig = figCache[lvl];
+    grossFlower += coinsToFlower(fig.totalCostCoinsPerAnimal);
+    seconds += fig.cycleTimeSec;
+    feedsTotal += fig.feedCount;
+    feedQtyTotal += fig.effectiveFeedQty;
+    slopQty[fig.feedNameUsed] = (slopQty[fig.feedNameUsed] || 0) + fig.effectiveFeedQty;
+    const slopBd = fig.feedInfo && fig.feedInfo.breakdown && fig.feedInfo.breakdown[0];
+    if (slopBd) ingredientQty[slopBd.name] = (ingredientQty[slopBd.name] || 0) + fig.effectiveFeedQty * slopBd.qty;
+    feedFlower += coinsToFlower(fig.feedCostCoins);
+    medicineFlower += fig.medicineFlowerPerLevel;
+    const mudPer = fig.mudActive ? fig.mudCostFlowerPerCycle : 0;
+    mudFlower += mudPer;
+    spiceFlower += fig.consumablesFlowerPerLevel - mudPer;
+    if (fig.mudActive) {
+      mudOn = true;
+      mudUnits += PIG_MUD_PER_APPLICATION / fig.mudHarvestsPerCoat;
+    }
+    if (fig.spiceActiveKey) {
+      spiceKey = fig.spiceActiveKey;
+      spiceUnits += 1 / getSpiceDurationHarvests(fig.spiceActiveKey);
+    }
+    cfg.products.forEach((pname, idx) => {
+      const m = marketItems.find(x => (x.name || "").toLowerCase() === pname.toLowerCase());
+      const price = m ? m.flowerPrice || 0 : 0;
+      produceFlower += fig.yields[idx] * price * (1 - feePercent / 100);
+    });
+    const trade = computePigTradeIn(lvl);
+    if (!trade.tradeable || !(trade.amount > 0)) continue;
+    const costFlower = useGross ? grossFlower : grossFlower - produceFlower;
+    rows.push({
+      level: lvl,
+      cycles: cycles,
+      bristles: trade.amount,
+      grossFlower: grossFlower,
+      produceFlower: produceFlower,
+      netFlower: grossFlower - produceFlower,
+      costFlower: costFlower,
+      days: seconds / 86400,
+      costPerBristle: costFlower / trade.amount,
+      perDay: trade.amount / Math.max(1e-9, seconds / 86400),
+      valueFlower: trade.amount * bristlePrice,
+      feeds: feedsTotal,
+      feedQty: feedQtyTotal,
+      slops: Object.assign({}, slopQty),
+      ingredients: Object.assign({}, ingredientQty),
+      feedFlower: feedFlower,
+      medicineFlower: medicineFlower,
+      mudFlower: mudFlower,
+      spiceFlower: spiceFlower,
+      mudOn: mudOn,
+      mudUnits: mudUnits,
+      spiceKey: spiceKey,
+      spiceUnits: spiceUnits
+    });
+  }
+  rows.forEach((r, i) => {
+    const prev = rows[i - 1];
+    r.marginalPerBristle = prev && r.bristles > prev.bristles ? (r.costFlower - prev.costFlower) / (r.bristles - prev.bristles) : null;
+    const need = target > 0 ? Math.ceil(target / r.bristles) : 0;
+    r.pigsNeeded = need;
+    r.targetCostFlower = need * r.costFlower;
+  });
+  let cheapest = null, fastest = null, most = null;
+  rows.forEach(r => {
+    if (!cheapest || r.costPerBristle < cheapest.costPerBristle) cheapest = r;
+    if (!fastest || r.perDay > fastest.perDay) fastest = r;
+    if (!most || r.bristles > most.bristles || r.bristles === most.bristles && r.costFlower < most.costFlower) most = r;
+  });
+  return {
+    rows: rows,
+    cheapest: cheapest,
+    fastest: fastest,
+    most: most,
+    bristlePrice: bristlePrice,
+    buyFlower: buyFlower,
+    basis: useGross ? "gross" : "net"
+  };
+}
+
 export function computeAnimalYieldsForLevel(type, level, realFeedBuffName) {
   const cfg = ANIMAL_DATA[type];
   const lvl = Math.min(15, Math.max(1, parseInt(level) || 1));
@@ -14273,7 +14408,9 @@ export function computeAnimalTypeFigures(type, visited, levelOverride) {
   const costPerCureFlower = cureFree ? 0 : computeMedicineCostFlower(visited) * cureCostMult;
   const medicineFlowerPerLevel = cureFree ? 0 : costPerCureFlower * curesPerLevel;
   const mudHarvestsPerCoat = BOOSTS.some(b => b.id === "vibraphone" && isBoostActive(b.id)) ? 2 : 1;
-  const mudCostFlowerPerCycle = mudActive ? PIG_MUD_PER_APPLICATION * getMudFlowerUnitPrice() / mudHarvestsPerCoat : 0;
+  const mudBreakdown = mudActive ? computeMudCostBreakdown() : null;
+  const mudUnitFlower = mudBreakdown ? mudBreakdown.unitFlower : 0;
+  const mudCostFlowerPerCycle = mudActive ? PIG_MUD_PER_APPLICATION * mudUnitFlower / mudHarvestsPerCoat : 0;
   const consumablesFlowerPerLevel = spice.costFlowerPerCyclePerAnimal + mudCostFlowerPerCycle;
   const sickHeads = getEffectiveSickHeads(type);
   const extraCoinsPerLevel = (medicineFlowerPerLevel + consumablesFlowerPerLevel) * coinPerFlower;
@@ -14306,6 +14443,8 @@ export function computeAnimalTypeFigures(type, visited, levelOverride) {
     spiceCostFlowerPerCycle: spice.costFlowerPerCyclePerAnimal,
     mudActive: mudActive,
     mudCostFlowerPerCycle: mudCostFlowerPerCycle,
+    mudUnitFlower: mudUnitFlower,
+    mudBreakdown: mudBreakdown,
     mudHarvestsPerCoat: mudHarvestsPerCoat,
     costPerCureFlower: costPerCureFlower,
     sickHeads: sickHeads,
@@ -14334,9 +14473,93 @@ const ANIMAL_BUY_COINS = {
   pig: 100
 };
 
+const CAVE_MUD_CROP_AMOUNTS = {
+  Sunflower: 500,
+  Potato: 80,
+  Rhubarb: 40,
+  Pumpkin: 20,
+  Zucchini: 20,
+  Carrot: 10,
+  Yam: 10,
+  Cabbage: 5,
+  Broccoli: 5,
+  Soybean: 3,
+  Beetroot: 3,
+  Pepper: 3,
+  Cauliflower: 2,
+  Parsnip: 2,
+  Eggplant: 2,
+  Corn: 2,
+  Onion: 2,
+  Wheat: 2,
+  Turnip: 2,
+  Radish: 2,
+  Kale: 2,
+  Artichoke: 2,
+  Barley: 2,
+  Rice: 1,
+  Olive: 1
+};
+
+const CAVE_PATCH_TILE_COUNT = 25;
+
+const CAVE_MUD_RECIPE_MUD_TILES = 20;
+
+const CAVE_MUD_RECIPE_MUD_PER_TILE = 2;
+
+const CAVE_DRILLS_PER_PATCH = 9;
+
+function caveSkillValue(id) {
+  if (!isSkillActive(id)) return 0;
+  return getSkillRankValue(id, 0) || 0;
+}
+
+export function computeMudCostBreakdown() {
+  const bloom = caveSkillValue("skill_mushroom_bloom");
+  const mudTiles = Math.max(0, CAVE_MUD_RECIPE_MUD_TILES - bloom);
+  const bountyMult = getSkillRankMult("skill_muddy_bounty");
+  const mudPerBatch = mudTiles * CAVE_MUD_RECIPE_MUD_PER_TILE * bountyMult;
+  const leanMult = getSkillRankMult("skill_lean_compost");
+  let crop = null;
+  Object.keys(CAVE_MUD_CROP_AMOUNTS).forEach(name => {
+    const unit = getItemCostByName(name);
+    if (!(unit > 0) || !isFinite(unit)) return;
+    const qty = CAVE_MUD_CROP_AMOUNTS[name] * leanMult;
+    const coins = unit * qty;
+    if (!crop || coins < crop.coins) crop = {
+      name: name,
+      qty: qty,
+      coins: coins
+    };
+  });
+  const shovelKeep = caveSkillValue("skill_sturdy_shovel") / 100;
+  const drillKeep = caveSkillValue("skill_sturdy_drill") / 100;
+  const shovelCount = CAVE_PATCH_TILE_COUNT * (1 - shovelKeep);
+  const drillCount = CAVE_DRILLS_PER_PATCH * (1 - drillKeep);
+  const shovelCoins = shovelCount * digToolUnitCoins("Sand Shovel");
+  const drillCoins = drillCount * digToolUnitCoins("Sand Drill");
+  const useDrill = drillCoins < shovelCoins;
+  const tool = {
+    name: useDrill ? "Sand Drill" : "Sand Shovel",
+    count: useDrill ? drillCount : shovelCount,
+    coins: useDrill ? drillCoins : shovelCoins
+  };
+  const cropCoins = crop ? crop.coins : 0;
+  const totalCoins = cropCoins + tool.coins;
+  const unitCoins = mudPerBatch > 0 ? totalCoins / mudPerBatch : 0;
+  return {
+    mudPerBatch: mudPerBatch,
+    crop: crop,
+    cropCoins: cropCoins,
+    tool: tool,
+    totalCoins: totalCoins,
+    unitCoins: unitCoins,
+    unitFlower: coinsToFlower(unitCoins)
+  };
+}
+
 export function getMudFlowerUnitPrice() {
-  const m = marketItems.find(x => (x.name || "").toLowerCase() === "mud");
-  return m ? m.flowerPrice || 0 : 0;
+  return computeMudCostBreakdown().unitFlower;
 }
 
 const BOUNTIFUL_BOUNTIES_RANKS = [ .5, .75, 1 ];
