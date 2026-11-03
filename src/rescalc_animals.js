@@ -332,9 +332,14 @@ function bristleData() {
   plan.rows.forEach(r => {
     if (seen[r.level]) return;
     seen[r.level] = true;
-    const value = r.valueFlower * (1 - feeFrac);
+    const grossValue = r.valueFlower;
+    const tax = grossValue * feeFrac;
+    const value = grossValue - tax;
     const profit = priced ? value - r.costFlower : 0;
     rows.push(Object.assign({}, r, {
+      unitPrice: plan.bristlePrice,
+      grossValue: grossValue,
+      tax: tax,
       value: value,
       profit: profit,
       profitPerDay: priced ? profit / Math.max(1e-9, r.days) : 0
@@ -373,13 +378,10 @@ function bristleTileHtml(r, data) {
 function bristlesBlockHtml() {
   if (!state.bristles) return "";
   const data = bristleData();
-  const net = state.bristleBasis !== "gross";
-  const modes = `<div class="rc-modes" role="group" aria-label="Cost basis"><button type="button" class="rc-mode guro-frame${net ? " is-on" : ""}" data-rc-bbasis="net" aria-pressed="${net ? "true" : "false"}">Net Cost</button><button type="button" class="rc-mode guro-frame${net ? "" : " is-on"}" data-rc-bbasis="gross" aria-pressed="${net ? "false" : "true"}">Gross Cost</button></div>`;
   const tools = `<div class="rc-tools"><button type="button" class="rc-tool guro-frame" data-rc-open="skills">Skills</button><button type="button" class="rc-tool guro-frame" data-rc-open="boost">Boost</button><button type="button" class="rc-tool guro-frame" data-rc-open="animals">Animals</button></div>`;
-  const basisNote = net ? `Net Cost: pig, feed, medicine and Mud or spice, minus the produce sold on the way${(calc.feePercent || 0) > 0 ? ` after the ${calc.feePercent}% fee` : ""}.` : "Gross Cost: pig, feed, medicine and Mud or spice, with the produce not counted.";
-  const note = `<div class="rc-note">Medicine uses your sick heads estimate. Spice uses the consumable you picked in the Pig computation. Mud follows your Boost setting until you change it here, and with Mud on there is no sickness and feed XP is higher. ${basisNote} Each level buys a new Pig, feeds it from Lv1 with your current skills, boosts, Mud and spice settings, then trades it in at that level. Pigs run in parallel, so more Pigs cost more but not more time.</div>`;
+  const note = `<div class="rc-note">Medicine uses your sick heads estimate. Spice uses the consumable you picked in the Pig computation. Mud follows your Boost setting until you change it here, and with Mud on there is no sickness and feed XP is higher. Cost is the Pig, feed, medicine and Mud or spice only. Truffle sold on the way is shown separately and is not counted in the Bristles cost or profit. Each level buys a new Pig, feeds it from Lv1 with your current skills, boosts, Mud and spice settings, then trades it in at that level. Pigs run in parallel, so more Pigs cost more but not more time.</div>`;
   const infoRow = `<div class="rc-details-row"><button type="button" class="rc-linktext" data-rc-binfo aria-expanded="${bristleInfoOpen ? "true" : "false"}">Info</button></div>${bristleInfoOpen ? note : ""}${data.priced ? "" : `<div class="rc-note is-warn">Pig Bristles has no market price yet, so value and profit are not shown.</div>`}`;
-  if (!data.rows.length) return `<section class="rc-block guro-frame" aria-label="Bristles results"><div class="rc-block-title">Bristles Calculator</div>${modes}${tools}${bristleOptionsHtml()}<div class="rc-empty">No tradeable Pig level found.</div></section>`;
+  if (!data.rows.length) return `<section class="rc-block guro-frame" aria-label="Bristles results"><div class="rc-block-title">Bristles Calculator</div>${tools}${bristleOptionsHtml()}<div class="rc-empty">No tradeable Pig level found.</div></section>`;
   const boxes = `<div class="rc-values">
     ${bristleBoxHtml("Best Profit", data.bestProfit, r => `${flowerSigned(r.profit)} per pig`)}
     ${bristleBoxHtml("Cheapest / Bristle", data.cheapest, r => `${flowerHtml(r.costPerBristle)} each`)}
@@ -389,7 +391,6 @@ function bristlesBlockHtml() {
   const tiles = `<div class="rc-tiles-wrap guro-frame"><div class="rc-tiles rc-tiles-animals rc-tiles-bristles">${data.rows.map(r => bristleTileHtml(r, data)).join("")}</div></div>`;
   return `<section class="rc-block guro-frame" aria-label="Bristles results">
     <div class="rc-block-title">Bristles Calculator</div>
-    ${modes}
     ${tools}
     ${bristleOptionsHtml()}
     ${infoRow}
@@ -422,12 +423,14 @@ function bristleCardHtml(r, data) {
       ${kv("Mud Cost", flowerHtml(r.mudFlower))}
       ${kv("Spice Used", r.spiceKey ? `${ui.getIcon(SPICE_LABELS[r.spiceKey])} ${esc(SPICE_LABELS[r.spiceKey])} ×${n2(r.spiceUnits)}` : "None")}
       ${kv("Spice Cost", flowerHtml(r.spiceFlower))}
-      ${kv("Gross Cost", flowerHtml(r.grossFlower))}
-      ${kv("Produce Sold", flowerHtml(r.produceFlower))}
+      ${r.produceQty > 0 ? kv(`${esc(r.produceName)} Yield (${r.produceMinLv === r.produceMaxLv ? "Lv" + r.produceMinLv : "Lv" + r.produceMinLv + "-" + r.produceMaxLv})`, `+${n2(r.produceQty)}${ui.getIcon(r.produceName)} (${flowerHtml(r.produceFlower)})`, "rc-kv-wide") : ""}
       ${kv("Total Cost", flowerHtml(r.costFlower))}
       ${kv("Cost / Bristle", flowerHtml(r.costPerBristle))}
       ${kv("Extra Cost / Bristle", marginal)}
-      ${kv("Bristles Value", data.priced ? flowerHtml(r.value) : "—")}
+      ${kv("Market Price / Unit", data.priced ? flowerHtml(r.unitPrice) : "—")}
+      ${kv("Bristles Value", data.priced ? flowerHtml(r.grossValue) : "—")}
+      ${kv(`Tax${data.feeFrac > 0 ? " (" + n2(data.feeFrac * 100) + "%)" : ""}`, data.priced ? flowerHtml(r.tax) : "—")}
+      ${kv("Net Value", data.priced ? flowerHtml(r.value) : "—")}
       ${kv("Profit / Day", profitDay)}
       ${kv("Profit / Pig", profit, "rc-kv-wide rc-kv-net")}
     </div></div>
@@ -437,7 +440,7 @@ function bristleCardHtml(r, data) {
 function bristlesBodyHtml() {
   const data = bristleData();
   if (!data.rows.length) return `<div class="rc-empty">No tradeable Pig level found.</div>`;
-  const hint = `<div class="rc-pop-hint">${state.bristleBasis === "gross" ? "Gross cost" : "Net cost"} per Pig for every level it can be traded in at.${(data.feeFrac || 0) > 0 ? ` Bristles value is after the ${calc.feePercent}% market fee.` : ""} Extra Cost / Bristle is what you pay for each additional Bristle compared with the level before.</div>`;
+  const hint = `<div class="rc-pop-hint">Cost per Pig for every level it can be traded in at.${(data.feeFrac || 0) > 0 ? ` The ${calc.feePercent}% tax is taken from Bristles Value to get Net Value.` : ""} Profit / Pig is Net Value minus Total Cost, so a negative Total Cost is added to your profit. Extra Cost / Bristle is what you pay for each additional Bristle compared with the level before.</div>`;
   return hint + feedConfigHtml({
     type: "pig"
   }) + bristleMedicineHtml() + bristleSpiceConfigHtml() + data.rows.map(r => bristleCardHtml(r, data)).join("");
