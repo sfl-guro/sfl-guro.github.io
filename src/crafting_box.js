@@ -142,6 +142,12 @@ const CRAFTING_RECIPES = [
     grid: [ "Truffle", "Truffle", "Truffle", "Pig Bristles", "Doll", "Pig Bristles", "Pig Bristles", "Pig Bristles", "Pig Bristles" ]
   },
   {
+    id: "pig_plush",
+    name: "Pig Plush",
+    category: "dolls",
+    grid: [ "", "", "", "", "", "", "", "", "" ]
+  },
+  {
     id: "salt_doll",
     name: "Salt Doll",
     category: "dolls",
