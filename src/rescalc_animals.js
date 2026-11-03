@@ -797,8 +797,8 @@ function spiceLabelFor(rows) {
 
 function computationCardHtml(r) {
   const fig = r.fig;
-  const yieldHead = r.products.map((p, i) => `${n2(fig.yields[i])}${ui.getIcon(p)}`).join(" ");
-  const yieldTotal = r.products.map((p, i) => `${n2(r.yields[i])}${ui.getIcon(p)}`).join(" ");
+  const yieldHead = r.products.map((p, i) => `+${n2(fig.yields[i])}${ui.getIcon(p)}`).join(" ");
+  const yieldTotal = r.products.map((p, i) => `+${n2(r.yields[i])}${ui.getIcon(p)}`).join(" ");
   const aff = fig.affectionFigures;
   return `<article class="rc-comp-card guro-frame">
     <header class="rc-comp-head"><span class="rc-comp-icon">${iconOf(r.type)}</span><span class="rc-comp-name">${esc(r.label)} · Lv${r.level}</span><span class="rc-comp-nodes">${iconOf(r.type)} ${n2(r.qty)}</span></header>
@@ -825,6 +825,8 @@ function computationCardHtml(r) {
     <div class="rc-kv-grid">
       ${kv("Total Cycle", totalCycleHtml(r))}
       ${kv("Total Yield", yieldTotal)}
+      ${r.week ? kv("Level Reached", `Lv${r.week.levelReached}`) : ""}
+      ${r.week ? kv("Cycles To Level", n2(r.week.cyclesToLevel)) : ""}
       ${kv("Total Gross", flowerSigned(r.gross))}
       ${kv("Total Feed Cost", flowerHtml(r.feed))}
       ${kv("Total Medicine Cost", flowerHtml(r.medicine))}
