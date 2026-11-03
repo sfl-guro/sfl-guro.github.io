@@ -183,7 +183,7 @@ import {
   toast,
   updateCalcSummary,
   updateSkillSaveBarState
-} from "./chunk.ZECXDZJ3.js";
+} from "./chunk.6IKVWLT6.js";
 import "./chunk.LPEVZJ4B.js";
 import "./chunk.VR6FV3KR.js";
 import "./chunk.HVRY6OMF.js";
@@ -6122,8 +6122,8 @@ function spiceLabelFor(rows) {
 }
 function computationCardHtml7(r) {
   const fig = r.fig;
-  const yieldHead = r.products.map((p, i) => `${n28(fig.yields[i])}${getIcon(p)}`).join(" ");
-  const yieldTotal = r.products.map((p, i) => `${n28(r.yields[i])}${getIcon(p)}`).join(" ");
+  const yieldHead = r.products.map((p, i) => `+${n28(fig.yields[i])}${getIcon(p)}`).join(" ");
+  const yieldTotal = r.products.map((p, i) => `+${n28(r.yields[i])}${getIcon(p)}`).join(" ");
   const aff = fig.affectionFigures;
   return `<article class="rc-comp-card guro-frame">
     <header class="rc-comp-head"><span class="rc-comp-icon">${iconOf(r.type)}</span><span class="rc-comp-name">${esc8(r.label)} \xB7 Lv${r.level}</span><span class="rc-comp-nodes">${iconOf(r.type)} ${n28(r.qty)}</span></header>
@@ -6150,6 +6150,8 @@ function computationCardHtml7(r) {
     <div class="rc-kv-grid">
       ${kv7("Total Cycle", totalCycleHtml7(r))}
       ${kv7("Total Yield", yieldTotal)}
+      ${r.week ? kv7("Level Reached", `Lv${r.week.levelReached}`) : ""}
+      ${r.week ? kv7("Cycles To Level", n28(r.week.cyclesToLevel)) : ""}
       ${kv7("Total Gross", flowerSigned7(r.gross))}
       ${kv7("Total Feed Cost", flowerHtml7(r.feed))}
       ${kv7("Total Medicine Cost", flowerHtml7(r.medicine))}

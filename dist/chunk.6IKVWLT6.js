@@ -36003,25 +36003,26 @@ function computeAnimalAffectionSummary(type) {
     opportunities: ANIMAL_LOVE_OPPORTUNITIES_PER_CYCLE
   };
 }
-function runAnimalCycleSim(type, scales) {
+function runAnimalCycleSim(type, scales, startXp) {
   const thresholds = ANIMAL_XP_THRESHOLDS[type];
   const mods = getAnimalXpModifiers(type);
   const maxXp = thresholds[15];
   const maxCycleXp = maxXp - thresholds[14];
   const levelOf = (xp2) => getAnimalLevelFromXp(type, xp2, true);
   const cycles = [];
-  let xp = 0;
+  const customStart = typeof startXp === "number" && isFinite(startXp) && startXp >= 0;
+  let xp = customStart ? startXp : 0;
   let maxCycles = 0;
   for (let i = 0; i < 160 && maxCycles < 16; i++) {
-    const startXp = xp;
-    const startLevel = levelOf(startXp);
-    const startsAtMax = startXp >= maxXp;
+    const startXp2 = xp;
+    const startLevel = levelOf(startXp2);
+    const startsAtMax = startXp2 >= maxXp;
     const favouriteFoodKey = getFavouriteFoodKeyAtLevel(startLevel, type);
     const feedKeyUsed = resolveFeedKeyUsed(type, favouriteFoodKey);
     const baseFoodXp = getBaseFoodXpFor(type, startLevel, feedKeyUsed);
     const boostedFoodXp = Math.max(1e-9, baseFoodXp * mods.xpMultTotal);
     let loveXp = 0;
-    if (i > 0) {
+    if (i > 0 || customStart) {
       loveXp = computeAnimalAffectionFigures(type, startLevel, scales, mods).avgPerCycle;
       xp += loveXp;
     }
@@ -36039,7 +36040,7 @@ function runAnimalCycleSim(type, scales) {
       claimLevel: levelOf(xp),
       feeds,
       loveXp,
-      xpStart: startXp,
+      xpStart: startXp2,
       xpEnd: xp,
       favouriteFoodKey,
       feedKeyUsed,
@@ -36068,14 +36069,24 @@ function getAnimalCycleRecord(type, level, scales) {
   }
   return cycles.find((c) => c.claimLevel >= target) || cycles[cycles.length - 1];
 }
-function computeAnimalFeedFigures(type, level) {
+function getAnimalStartCycle(type, level, scales) {
+  const target = Math.min(15, Math.max(1, parseInt(level) || 1));
+  if (target >= 15) return getAnimalCycleRecord(type, 15, scales);
+  const sc = scales === void 0 ? getAffectionScales(type) : scales;
+  const chain = runAnimalCycleSim(type, sc);
+  const hit = chain.find((c) => c.startLevel === target);
+  if (hit) return hit;
+  return runAnimalCycleSim(type, sc, ANIMAL_XP_THRESHOLDS[type][target])[0];
+}
+function computeAnimalFeedFigures(type, level, cycleOverride) {
   const displayLevel = Math.min(15, Math.max(1, parseInt(level) || 1));
   const thresholds = ANIMAL_XP_THRESHOLDS[type];
   const mods = getAnimalXpModifiers(type);
   const scales = getAffectionScales(type);
-  const record = getAnimalCycleRecord(type, displayLevel, scales);
+  const record = cycleOverride || getAnimalStartCycle(type, displayLevel, scales);
   const affection = computeAnimalAffectionFigures(type, record.startLevel, scales, mods);
   return {
+    claimLevel: record.claimLevel,
     favouriteFoodKey: record.favouriteFoodKey,
     feedKeyUsed: record.feedKeyUsed,
     noOfFeeds: record.feeds,
@@ -36286,7 +36297,7 @@ function computePigBristlesPlanCore(basis, target) {
     if (c.isMax) break;
     cycles++;
     const lvl = Math.min(15, Math.max(1, c.claimLevel));
-    if (!figCache[lvl]) figCache[lvl] = computeAnimalTypeFigures(type, void 0, lvl);
+    if (!figCache[lvl]) figCache[lvl] = computeAnimalTypeFigures(type, void 0, Math.max(1, c.startLevel), c);
     const fig = figCache[lvl];
     grossFlower += coinsToFlower(fig.totalCostCoinsPerAnimal);
     seconds += fig.cycleTimeSec;
@@ -47696,12 +47707,12 @@ function getActiveAnimalBoosts(type) {
   return active;
 }
 var ANIMAL_BASE_CYCLE_SEC = 86400;
-function computeAnimalTypeFigures(type, visited, levelOverride) {
+function computeAnimalTypeFigures(type, visited, levelOverride, cycleOverride) {
   const cfg = ANIMAL_DATA[type];
   const counts = getAnimalCount(type);
   const level = levelOverride != null ? Math.min(15, Math.max(1, parseInt(levelOverride) || 1)) : Math.min(15, Math.max(1, parseInt(counts.level) || 1));
   const qty = Math.max(0, parseFloat(counts.qty) || 0);
-  const lvlData = cfg.levels[level - 1];
+  let lvlData = cfg.levels[level - 1];
   const active = getActiveAnimalBoosts(type);
   let feedMultTotal = 1, yieldMultAllTotal = 1, timeMultTotal = 1, freeFeed = false, cureFree = false, cureCostMult = 1;
   const productCount = cfg.products.length;
@@ -47740,7 +47751,9 @@ function computeAnimalTypeFigures(type, visited, levelOverride) {
   feedMultTotal *= spice.feedMultAll;
   yieldMultAllTotal *= spice.yieldMultAll;
   timeMultTotal *= spice.timeMultAll;
-  const feedFig = computeAnimalFeedFigures(type, level);
+  const feedFig = computeAnimalFeedFigures(type, level, cycleOverride);
+  const claimLevel = Math.min(15, Math.max(level, parseInt(feedFig.claimLevel) || level));
+  lvlData = cfg.levels[claimLevel - 1];
   const feedKeyUsed = feedFig.feedKeyUsed;
   const feedNameUsed = FEED_LABELS[feedKeyUsed];
   const feedXpPerFeed = feedFig.boostedFoodXp;
@@ -47776,6 +47789,7 @@ function computeAnimalTypeFigures(type, visited, levelOverride) {
   return {
     type,
     level,
+    claimLevel,
     qty,
     lvlData,
     feedInfo,
@@ -48004,27 +48018,34 @@ function computeAnimalWeeklyFigures(type, manualCyclesPerWeek) {
   const boostedCycles = usingSpice ? seasoned ? cyclesPerWeek : Math.min(getSpiceLickDurationHarvests(), cyclesPerWeek) : 0;
   const unboostedCycles = Math.max(0, cyclesPerWeek - boostedCycles);
   const scales = getAffectionScales(type);
-  const simCycles = runAnimalCycleSim(type, scales);
+  let simCycles = runAnimalCycleSim(type, scales);
   let simIdx = simCycles.findIndex((c) => c.startLevel === startLevel);
-  if (simIdx === -1) simIdx = simCycles.length - 1;
+  if (simIdx === -1) {
+    simCycles = runAnimalCycleSim(type, scales, ANIMAL_XP_THRESHOLDS[type][startLevel]);
+    simIdx = 0;
+  }
+  const startIdx = simIdx;
   const figCacheWith = {};
   const figCacheBase = {};
   const savedSalt = spiceUsage.saltLick[type], savedHoney = spiceUsage.honeyTreat[type], savedSeasoning = spiceUsage.truffleSeasoning[type];
-  function figAtLevel(level, withSpice) {
+  function figAtLevel(level, withSpice, cyc) {
     const cache = withSpice ? figCacheWith : figCacheBase;
-    if (cache[level]) return cache[level];
+    const useCycle = !!cyc && !cyc.isMax;
+    const lv = useCycle ? Math.max(1, cyc.startLevel) : level;
+    const key = useCycle ? cyc.startLevel + "|" + cyc.feeds + "|" + cyc.loveXp + "|" + cyc.xpStart : "lvl" + lv;
+    if (cache[key]) return cache[key];
     if (!withSpice) {
       spiceUsage.saltLick[type] = false;
       spiceUsage.honeyTreat[type] = false;
       spiceUsage.truffleSeasoning[type] = false;
     }
-    const fig = computeAnimalTypeFigures(type, void 0, level);
+    const fig = computeAnimalTypeFigures(type, void 0, lv, useCycle ? cyc : void 0);
     if (!withSpice) {
       spiceUsage.saltLick[type] = savedSalt;
       spiceUsage.honeyTreat[type] = savedHoney;
       spiceUsage.truffleSeasoning[type] = savedSeasoning;
     }
-    cache[level] = fig;
+    cache[key] = fig;
     return fig;
   }
   const figBaseStart = figAtLevel(startLevel, false);
@@ -48035,12 +48056,14 @@ function computeAnimalWeeklyFigures(type, manualCyclesPerWeek) {
   const yieldsWeek = figWithStart.yields.map(() => 0);
   let lastFigWith = figWithStart;
   let idx = simIdx;
+  let levelReached = startLevel;
   for (let n = 0; n < cyclesPerWeek; n++) {
     const cyc = simCycles[Math.min(idx, simCycles.length - 1)];
     const level = Math.min(15, Math.max(1, cyc.claimLevel || startLevel));
+    levelReached = level;
     const isBoosted = n < boostedCycles;
-    const figWith = figAtLevel(level, true);
-    const figBase = figAtLevel(level, false);
+    const figWith = figAtLevel(level, true, cyc);
+    const figBase = figAtLevel(level, false, cyc);
     const withP = computeAnimalProfit(figWith);
     const baseP = computeAnimalProfit(figBase);
     const activeFig = isBoosted ? figWith : figBase;
@@ -48061,7 +48084,11 @@ function computeAnimalWeeklyFigures(type, manualCyclesPerWeek) {
     lastFigWith = figWith;
     if (!cyc.isMax && idx < simCycles.length - 1) idx++;
   }
+  const cyclesToLevelIdx = simCycles.findIndex((c) => c.claimLevel >= levelReached);
+  const cyclesToLevel = cyclesPerWeek <= 0 ? 0 : cyclesToLevelIdx === -1 ? simCycles.length - startIdx : Math.max(1, cyclesToLevelIdx - startIdx + 1);
   return {
+    levelReached,
+    cyclesToLevel,
     usingSpice,
     spiceActiveKey: figWithStart.spiceActiveKey,
     cyclesPerWeek,
@@ -51885,7 +51912,8 @@ function computeAnimalBaseCoinFigures(type) {
   const lvlData = cfg.levels[level - 1];
   const feedInfo = getFeedUnitCost(lvlData.feed);
   const feedCostCoins = lvlData.qty * feedInfo.cost;
-  const yields = cfg.products.map((_, pi) => lvlData.y[pi]);
+  const claimData = cfg.levels[Math.min(15, level + 1) - 1];
+  const yields = cfg.products.map((_, pi) => claimData.y[pi]);
   const totalYieldUnits = yields.reduce((a, v) => a + v, 0);
   const costPerUnit = totalYieldUnits > 0 ? feedCostCoins / totalYieldUnits : 0;
   return {
