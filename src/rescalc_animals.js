@@ -810,7 +810,7 @@ function computationCardHtml(r) {
       ${kv("Feeds / Cycle", n2(fig.feedCount))}
       ${kv("Feed Qty / Feed", n2(fig.feedQtyPerFeed))}
       ${kv("XP / Feed", `${n2(fig.feedXpPerFeed)} XP`)}
-      ${kv("XP Needed", `${n2(fig.expNeeded)} XP`)}
+      ${fig.xpCycle > 0 ? kv("XP Progress", `${n2(fig.xpProgress)}/${n2(fig.xpCycle)} EXP`) : kv("XP Needed", `${n2(fig.expNeeded)} XP`)}
       ${kv("Affection XP / Cycle", `${n2(fig.loveXpPerCycle)} XP`)}
       ${kv("Cost / Cure", flowerHtml(fig.costPerCureFlower))}
       ${kv("Sick Heads", n2(fig.sickHeads))}
