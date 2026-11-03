@@ -1970,7 +1970,7 @@ function getAffectionScales(type) {
   if (!keys.length) return null;
   const head = getConfiguredAnimalHeads().find(h => h.type === type);
   if (!head || head.qty <= 0) return null;
-  const defaults = computeAnimalAffectionFigures(type, head.level - 1, null);
+  const defaults = computeAnimalAffectionFigures(type, head.level, null, undefined, head.level - 1);
   const scales = {};
   keys.forEach(k => {
     const tool = defaults.tools.find(t => t.key === k);
@@ -1985,14 +1985,30 @@ function getAffectionScales(type) {
   return scales;
 }
 
-export function computeAnimalAffectionFigures(type, fromLevel, scales, modsIn) {
+export function computeAnimalAffectionFigures(type, fromLevel, scales, modsIn, prevLevel) {
   const effectiveScales = scales === undefined ? getAffectionScales(type) : scales;
   const mods = modsIn || getAnimalXpModifiers(type);
-  const chances = ANIMAL_LOVE_CHANCES[Math.min(15, Math.max(0, fromLevel))];
-  const totalWeight = chances.pettingHand + chances.brush + chances.musicBox;
+  const curLevel = Math.min(15, Math.max(0, fromLevel));
+  const prvLevel = prevLevel === undefined || prevLevel === null ? curLevel : Math.min(15, Math.max(0, prevLevel));
+  const shareOf = (lv, isPrev) => {
+    if (isPrev && lv <= 0) return {
+      pettingHand: 1,
+      brush: 0,
+      musicBox: 0
+    };
+    const ch = ANIMAL_LOVE_CHANCES[lv];
+    const w = ch.pettingHand + ch.brush + ch.musicBox;
+    return {
+      pettingHand: w ? ch.pettingHand / w : 0,
+      brush: w ? ch.brush / w : 0,
+      musicBox: w ? ch.musicBox / w : 0
+    };
+  };
+  const curShare = shareOf(curLevel, false);
+  const prvShare = shareOf(prvLevel, true);
   const opportunities = ANIMAL_LOVE_OPPORTUNITIES_PER_CYCLE;
   const tools = Object.keys(ANIMAL_LOVE_ITEM_XP).map(key => {
-    const chance = totalWeight ? (chances[key] || 0) / totalWeight : 0;
+    const chance = ((curShare[key] || 0) + (prvShare[key] || 0)) / 2;
     const owned = !!animalAffectionTools[key];
     const xpEach = (ANIMAL_LOVE_ITEM_XP[key] + mods.loveFlatXpAddTotal) * mods.affectionXpMultTotal;
     let uses = owned ? opportunities * chance : 0;
@@ -2054,10 +2070,10 @@ export function computeAnimalAffectionSummary(type) {
   });
   if (head) {
     const scales = getAffectionScales(type);
-    computeAnimalAffectionFigures(type, head.level - 1, null, mods).tools.forEach(t => {
+    computeAnimalAffectionFigures(type, head.level, null, mods, head.level - 1).tools.forEach(t => {
       tools[t.key].defaultCount = qty * t.uses;
     });
-    computeAnimalAffectionFigures(type, head.level - 1, scales, mods).tools.forEach(t => {
+    computeAnimalAffectionFigures(type, head.level, scales, mods, head.level - 1).tools.forEach(t => {
       tools[t.key].count = qty * t.uses;
       tools[t.key].xp = qty * t.uses * t.xpEach;
     });
@@ -2080,6 +2096,7 @@ function runAnimalCycleSim(type, scales, startXp) {
   const customStart = typeof startXp === "number" && isFinite(startXp) && startXp >= 0;
   let xp = customStart ? startXp : 0;
   let maxCycles = 0;
+  let prevStartLevel = null;
   for (let i = 0; i < 160 && maxCycles < 16; i++) {
     const startXp = xp;
     const startLevel = levelOf(startXp);
@@ -2090,7 +2107,7 @@ function runAnimalCycleSim(type, scales, startXp) {
     const boostedFoodXp = Math.max(1e-9, baseFoodXp * mods.xpMultTotal);
     let loveXp = 0;
     if (i > 0 || customStart) {
-      loveXp = computeAnimalAffectionFigures(type, startLevel, scales, mods).avgPerCycle;
+      loveXp = computeAnimalAffectionFigures(type, startLevel, scales, mods, prevStartLevel).avgPerCycle;
       xp += loveXp;
     }
     let ready = !startsAtMax && levelOf(xp) !== startLevel;
@@ -2103,6 +2120,7 @@ function runAnimalCycleSim(type, scales, startXp) {
     }
     cycles.push({
       startLevel: startLevel,
+      prevStartLevel: prevStartLevel,
       claimLevel: levelOf(xp),
       feeds: feeds,
       loveXp: loveXp,
@@ -2114,6 +2132,7 @@ function runAnimalCycleSim(type, scales, startXp) {
       boostedFoodXp: boostedFoodXp,
       isMax: startsAtMax
     });
+    prevStartLevel = startLevel;
     if (startsAtMax) maxCycles++;
   }
   return cycles;
@@ -2147,13 +2166,19 @@ function getAnimalStartCycle(type, level, scales) {
   return runAnimalCycleSim(type, sc, ANIMAL_XP_THRESHOLDS[type][target])[0];
 }
 
+function maxCarry(record, thresholds) {
+  const cycleXp = thresholds[15] - thresholds[14];
+  if (!(cycleXp > 0) || !(record.xpStart >= thresholds[15])) return 0;
+  return ((record.xpStart - thresholds[15]) % cycleXp + cycleXp) % cycleXp;
+}
+
 export function computeAnimalFeedFigures(type, level, cycleOverride) {
   const displayLevel = Math.min(15, Math.max(1, parseInt(level) || 1));
   const thresholds = ANIMAL_XP_THRESHOLDS[type];
   const mods = getAnimalXpModifiers(type);
   const scales = getAffectionScales(type);
   const record = cycleOverride || getAnimalStartCycle(type, displayLevel, scales);
-  const affection = computeAnimalAffectionFigures(type, record.startLevel, scales, mods);
+  const affection = computeAnimalAffectionFigures(type, record.startLevel, scales, mods, record.prevStartLevel);
   return {
     claimLevel: record.claimLevel,
     favouriteFoodKey: record.favouriteFoodKey,
@@ -2166,7 +2191,9 @@ export function computeAnimalFeedFigures(type, level, cycleOverride) {
     affection: affection,
     xpGap: Math.max(0, thresholds[Math.min(15, record.startLevel + 1)] - record.xpStart),
     carryIn: Math.max(0, record.xpStart - thresholds[record.startLevel]),
-    expNeeded: record.isMax ? Math.max(0, thresholds[15] - thresholds[14] - record.loveXp) : Math.max(0, thresholds[Math.min(15, record.startLevel + 1)] - record.xpStart - record.loveXp)
+    xpCycle: record.isMax ? thresholds[15] - thresholds[14] : 0,
+    xpProgress: record.isMax ? Math.min(thresholds[15] - thresholds[14], maxCarry(record, thresholds) + record.loveXp) : 0,
+    expNeeded: record.isMax ? Math.max(0, thresholds[15] - thresholds[14] - maxCarry(record, thresholds) - record.loveXp) : Math.max(0, thresholds[Math.min(15, record.startLevel + 1)] - record.xpStart - record.loveXp)
   };
 }
 
@@ -14475,6 +14502,8 @@ export function computeAnimalTypeFigures(type, visited, levelOverride, cycleOver
     sickHeads: sickHeads,
     freeFeed: freeFeed,
     expNeeded: feedFig.expNeeded,
+    xpProgress: feedFig.xpProgress,
+    xpCycle: feedFig.xpCycle,
     feedQtyPerFeed: getFeedQtyPerFeed(type, feedKeyUsed, feedMultTotal),
     feedKeyUsed: feedKeyUsed,
     feedNameUsed: feedNameUsed,
@@ -39238,6 +39267,8 @@ function simAnimalRow(type, qty, level) {
         animalLabel: cfg.label,
         feedName: fig.feedNameUsed,
         expNeeded: fig.expNeeded,
+        xpProgress: fig.xpProgress,
+        xpCycle: fig.xpCycle,
         feedNeeded: fig.feedCount,
         feedTotal: fig.freeFeed ? 0 : fig.feedCount * fig.feedQtyPerFeed * q,
         dayEach: q > 0 ? (feedCycle + loveCycle) * cycles / q : 0,

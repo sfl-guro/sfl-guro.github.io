@@ -183,7 +183,7 @@ import {
   toast,
   updateCalcSummary,
   updateSkillSaveBarState
-} from "./chunk.6IKVWLT6.js";
+} from "./chunk.U6TKFVV7.js";
 import "./chunk.LPEVZJ4B.js";
 import "./chunk.VR6FV3KR.js";
 import "./chunk.HVRY6OMF.js";
@@ -6135,7 +6135,7 @@ function computationCardHtml7(r) {
       ${kv7("Feeds / Cycle", n28(fig.feedCount))}
       ${kv7("Feed Qty / Feed", n28(fig.feedQtyPerFeed))}
       ${kv7("XP / Feed", `${n28(fig.feedXpPerFeed)} XP`)}
-      ${kv7("XP Needed", `${n28(fig.expNeeded)} XP`)}
+      ${fig.xpCycle > 0 ? kv7("XP Progress", `${n28(fig.xpProgress)}/${n28(fig.xpCycle)} EXP`) : kv7("XP Needed", `${n28(fig.expNeeded)} XP`)}
       ${kv7("Affection XP / Cycle", `${n28(fig.loveXpPerCycle)} XP`)}
       ${kv7("Cost / Cure", flowerHtml7(fig.costPerCureFlower))}
       ${kv7("Sick Heads", n28(fig.sickHeads))}
