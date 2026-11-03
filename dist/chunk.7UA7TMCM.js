@@ -36278,7 +36278,7 @@ function computePigBristlesPlanCore(basis, target) {
   const bristlePrice = bristlePriceItem ? bristlePriceItem.flowerPrice || 0 : 0;
   const figCache = {};
   const rows = [];
-  let grossFlower = buyFlower, produceFlower = 0, seconds = 0, cycles = 0;
+  let grossFlower = buyFlower, produceFlower = 0, produceQty = 0, produceMinLv = 0, produceMaxLv = 0, seconds = 0, cycles = 0;
   let feedsTotal = 0, feedQtyTotal = 0, feedFlower = 0, medicineFlower = 0, mudFlower = 0, spiceFlower = 0;
   let mudUnits = 0, spiceUnits = 0, spiceKey = null, mudOn = false;
   const slopQty = {}, ingredientQty = {};
@@ -36311,17 +36311,27 @@ function computePigBristlesPlanCore(basis, target) {
     cfg.products.forEach((pname, idx) => {
       const m = marketItems.find((x) => (x.name || "").toLowerCase() === pname.toLowerCase());
       const price = m ? m.flowerPrice || 0 : 0;
-      produceFlower += fig.yields[idx] * price * (1 - feePercent / 100);
+      const y = fig.yields[idx] || 0;
+      produceFlower += y * price * (1 - feePercent / 100);
+      if (y > 0) {
+        produceQty += y;
+        produceMinLv = produceMinLv ? Math.min(produceMinLv, lvl) : lvl;
+        produceMaxLv = Math.max(produceMaxLv, lvl);
+      }
     });
     const trade = computePigTradeIn(lvl);
     if (!trade.tradeable || !(trade.amount > 0)) continue;
-    const costFlower = useGross ? grossFlower : grossFlower - produceFlower;
+    const costFlower = grossFlower;
     rows.push({
       level: lvl,
       cycles,
       bristles: trade.amount,
       grossFlower,
       produceFlower,
+      produceQty,
+      produceMinLv,
+      produceMaxLv,
+      produceName: cfg.products[0],
       netFlower: grossFlower - produceFlower,
       costFlower,
       days: seconds / 86400,
