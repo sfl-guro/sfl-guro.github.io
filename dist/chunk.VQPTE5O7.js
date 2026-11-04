@@ -72303,20 +72303,34 @@ function trackCoins(g, rec, fresh, prevSyncAt, start, now) {
   };
   const cc = rec.cc && typeof rec.cc === "object" ? rec.cc : {};
   const scale = fresh && prevSyncAt && prevSyncAt < start ? Math.min(1, Math.max(0, (now - start) / (now - prevSyncAt))) : 1;
-  if (Number.isFinite(spentNow) && typeof cc.s === "number" && spentNow > cc.s) {
-    coin.s += (spentNow - cc.s) * scale;
+  const spentDelta = Number.isFinite(spentNow) && typeof cc.s === "number" && spentNow > cc.s ? spentNow - cc.s : 0;
+  const earnedDelta = Number.isFinite(earnedNow) && typeof cc.e === "number" && earnedNow > cc.e ? earnedNow - cc.e : 0;
+  if (spentDelta > 0) {
+    coin.s += spentDelta * scale;
     if (scale < 1) coin.est = true;
   }
-  if (Number.isFinite(earnedNow) && typeof cc.e === "number" && earnedNow > cc.e) {
-    coin.e += (earnedNow - cc.e) * scale;
+  if (earnedDelta > 0) {
+    coin.e += earnedDelta * scale;
     if (scale < 1) coin.est = true;
   }
   const balance = Number(g.coins);
+  const prevBalance = typeof cc.b === "number" ? cc.b : !fresh && typeof coin.b === "number" ? coin.b : NaN;
+  if (Number.isFinite(balance) && Number.isFinite(prevBalance)) {
+    const untracked = balance - prevBalance - earnedDelta + spentDelta;
+    if (untracked > 5e-3) {
+      coin.e += untracked * scale;
+      if (scale < 1) coin.est = true;
+    } else if (untracked < -5e-3) {
+      coin.s += -untracked * scale;
+      if (scale < 1) coin.est = true;
+    }
+  }
   if (Number.isFinite(balance)) coin.b = balance;
   rec.coin = coin;
   rec.cc = {
     s: Number.isFinite(spentNow) ? spentNow : cc.s,
-    e: Number.isFinite(earnedNow) ? earnedNow : cc.e
+    e: Number.isFinite(earnedNow) ? earnedNow : cc.e,
+    b: Number.isFinite(balance) ? balance : cc.b
   };
 }
 function dailyHarvestTrack(g, farmId) {
