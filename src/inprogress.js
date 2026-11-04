@@ -7,7 +7,7 @@ import { caveBuriedCounts } from "./cave_solver.js";
 
 import { $, hiveClockText, cookFoodIcon, getBoostIcon, getIcon, renderAnimalCardProductDetailRow, renderAnimalYieldGroupsList, renderBeehiveListHtml, renderCardProductDetailRow, renderCostNetInfoTrigger, renderCrimstoneInstantMineBoostHtml, renderCrimstoneNodeYieldList, renderFarmPanelTabContent, renderFruitHarvestsLeftHtml, renderGoldInstantMineBoostHtml, renderNodeTierYieldList, renderOilNodeYieldList, renderPlantYieldNodeList, renderSaltNodeYieldList, renderSeaBlessedBoostHtml, renderTotalsBreakdown, renderTurnaroundBoostHtml } from "./ui.js";
 import { potionTrackFromState, digStreakTrackFromState } from "./calculator.js";
-import { dailyHarvestTrack, dailyHarvestBadgeHtml, dailyHarvestSetYield, dailyHarvestSetResolver, dailyHarvestSetCookingProvider, dailyHarvestSetIconProvider } from "./daily_harvest.js";
+import { dailyHarvestTrack, dailyHarvestBadgeHtml, dailyHarvestSetYield, dailyHarvestSetResolver, dailyHarvestSetCookingProvider, dailyHarvestSetIconProvider, dailyHarvestSetToolProvider, dailyHarvestNodeToolMult } from "./daily_harvest.js";
 
 import { harvestLogArm } from "./harvest_log.js";
 
@@ -5477,6 +5477,7 @@ function farmPanelResolveHarvestPending(groupKey, pend) {
     });
   }
   const out = {};
+  const chopsOut = {};
   const now = Date.now();
   const types = Object.keys(byType);
   for (let t = 0; t < types.length; t++) {
@@ -5499,6 +5500,7 @@ function farmPanelResolveHarvestPending(groupKey, pend) {
       const consumed = chains.reduce((sum, chain) => sum + chain.length, 0);
       if (consumed !== after - prev) return null;
       slot.nodes.forEach((entry, i) => {
+        chopsOut[entry.id] = chains[i].length * dailyHarvestNodeToolMult(entry.node);
         out[entry.id] = chains[i].reduce((sum, roll) => sum + ((groupKey === "Wood" ? farmPanelComputeExactWoodYieldForNode(entry.node, type, roll) : farmPanelComputeExactGoldYieldForNode(json, entry.node, type, roll, now)) || 0), 0);
       });
     } else {
@@ -5506,12 +5508,63 @@ function farmPanelResolveHarvestPending(groupKey, pend) {
       if (!rolls) return undefined;
       if (count !== after - prev) return null;
       slot.nodes.forEach((entry, i) => {
+        chopsOut[entry.id] = dailyHarvestNodeToolMult(entry.node);
         out[entry.id] = (groupKey === "Stone" ? farmPanelComputeExactStoneYieldForNode(json, entry.node, type, rolls[i], now) : farmPanelComputeExactIronYieldForNode(json, entry.node, type, rolls[i], now)) || 0;
       });
     }
   }
-  return out;
+  return {
+    y: out,
+    c: chopsOut
+  };
 }
+
+const FARM_PANEL_GROUP_TOOLS = {
+  Wood: {
+    tool: "Axe",
+    free: [ "foreman_beaver" ],
+    half: [ "logger" ]
+  },
+  Stone: {
+    tool: "Pickaxe",
+    free: [ "quarry" ],
+    half: []
+  },
+  Iron: {
+    tool: "Stone Pickaxe",
+    free: [],
+    half: []
+  },
+  Gold: {
+    tool: "Iron Pickaxe",
+    free: [],
+    half: []
+  },
+  Crimstone: {
+    tool: "Gold Pickaxe",
+    free: [ "crimstone_spikes_hair" ],
+    half: []
+  },
+  Oil: {
+    tool: "Oil Drill",
+    free: [ "infernal_drill" ],
+    half: []
+  }
+};
+
+function farmPanelToolInfoForGroup(groupKey) {
+  const def = FARM_PANEL_GROUP_TOOLS[groupKey];
+  if (!def) return null;
+  let factor = 1;
+  if (def.free.some(id => isBoostActive(id))) factor = 0; else if (def.half.some(id => isBoostActive(id))) factor = .5;
+  return {
+    tool: def.tool,
+    factor: factor,
+    icon: getIcon(def.tool)
+  };
+}
+
+dailyHarvestSetToolProvider(farmPanelToolInfoForGroup);
 
 dailyHarvestSetResolver(farmPanelResolveHarvestPending);
 

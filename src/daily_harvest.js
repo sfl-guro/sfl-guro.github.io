@@ -40,6 +40,7 @@ function pruneStore(store) {
           power: rec.power || {},
           amts: rec.amts || {},
           ym: rec.ym || {},
+          cc: rec.cc || {},
           syncAt: rec.syncAt || 0,
           cook: carryCook(rec.cook)
         };
@@ -142,6 +143,67 @@ var iconProvider;
 
 export function dailyHarvestSetIconProvider(fn) {
   iconProvider = typeof fn === "function" ? fn : null;
+}
+
+var toolProvider;
+
+export function dailyHarvestSetToolProvider(fn) {
+  toolProvider = typeof fn === "function" ? fn : null;
+}
+
+const TOOL_GROUPS = {
+  Wood: true,
+  Stone: true,
+  Iron: true,
+  Gold: true,
+  Crimstone: true,
+  Oil: true
+};
+
+const TIER_TOOL_MULT = {
+  "Ancient Tree": 4,
+  "Sacred Tree": 16,
+  "Fused Stone Rock": 4,
+  "Reinforced Stone Rock": 16,
+  "Refined Iron Rock": 4,
+  "Tempered Iron Rock": 16,
+  "Pure Gold Rock": 4,
+  "Prime Gold Rock": 16
+};
+
+function actKeyToolMult(key) {
+  return TIER_TOOL_MULT[String(key).replace(/ (Chopped|Mined)$/, "")] || 1;
+}
+
+export function dailyHarvestNodeToolMult(node) {
+  if (!node || typeof node !== "object") return 1;
+  if (typeof node.name === "string" && TIER_TOOL_MULT[node.name]) return TIER_TOOL_MULT[node.name];
+  const m = Number(node.multiplier);
+  return Number.isFinite(m) && m >= 1 ? m : 1;
+}
+
+function toolInfoFor(groupKey) {
+  if (!toolProvider || !TOOL_GROUPS[groupKey]) return null;
+  try {
+    const info = toolProvider(groupKey);
+    if (!info || !info.tool) return null;
+    const factor = typeof info.factor === "number" && isFinite(info.factor) && info.factor >= 0 ? info.factor : 1;
+    return {
+      tool: info.tool,
+      factor: factor,
+      icon: info.icon || ""
+    };
+  } catch (e) {
+    return null;
+  }
+}
+
+function roundTools(v) {
+  return Math.round(v * 100) / 100;
+}
+
+function fmtTools(v) {
+  return Number.isInteger(v) ? String(v) : v.toFixed(2);
 }
 
 const COMPOSTER_BUILDINGS = {
@@ -497,6 +559,15 @@ function kindOfGroup(groupKey) {
   return "";
 }
 
+const TOOL_BAG_KEYS = {
+  Wood: "trees",
+  Stone: "stones",
+  Iron: "iron",
+  Gold: "gold",
+  Crimstone: "crimstones",
+  Oil: "oilReserves"
+};
+
 const NODE_BAGS = [ [ "trees", "Wood", n => n.wood && n.wood.choppedAt ], [ "stones", "Stone", n => n.stone && n.stone.minedAt ], [ "iron", "Iron", n => n.stone && n.stone.minedAt ], [ "gold", "Gold", n => n.stone && n.stone.minedAt ], [ "crimstones", "Crimstone", n => n.stone && n.stone.minedAt ], [ "oilReserves", "Oil", n => n.oil && n.oil.drilledAt ] ];
 
 function isCropMachineActive(g, now) {
@@ -631,6 +702,34 @@ function roundsFromStats(st) {
   };
 }
 
+function trackCoins(g, rec, fresh, prevSyncAt, start, now) {
+  const fa = g.farmActivity && typeof g.farmActivity === "object" ? g.farmActivity : null;
+  const spentNow = fa ? Number(fa["Coins Spent"]) : NaN;
+  const earnedNow = fa ? Number(fa["Coins Earned"]) : NaN;
+  const coin = rec.coin && typeof rec.coin === "object" ? rec.coin : {
+    s: 0,
+    e: 0,
+    est: false
+  };
+  const cc = rec.cc && typeof rec.cc === "object" ? rec.cc : {};
+  const scale = fresh && prevSyncAt && prevSyncAt < start ? Math.min(1, Math.max(0, (now - start) / (now - prevSyncAt))) : 1;
+  if (Number.isFinite(spentNow) && typeof cc.s === "number" && spentNow > cc.s) {
+    coin.s += (spentNow - cc.s) * scale;
+    if (scale < 1) coin.est = true;
+  }
+  if (Number.isFinite(earnedNow) && typeof cc.e === "number" && earnedNow > cc.e) {
+    coin.e += (earnedNow - cc.e) * scale;
+    if (scale < 1) coin.est = true;
+  }
+  const balance = Number(g.coins);
+  if (Number.isFinite(balance)) coin.b = balance;
+  rec.coin = coin;
+  rec.cc = {
+    s: Number.isFinite(spentNow) ? spentNow : cc.s,
+    e: Number.isFinite(earnedNow) ? earnedNow : cc.e
+  };
+}
+
 export function dailyHarvestTrack(g, farmId) {
   if (!g || typeof g !== "object") return;
   const now = Date.now();
@@ -655,6 +754,12 @@ export function dailyHarvestTrack(g, farmId) {
     power: old && old.power ? old.power : {},
     amts: old && old.amts ? old.amts : {},
     ym: old && old.ym ? old.ym : {},
+    cc: old && old.cc ? old.cc : {},
+    coin: {
+      s: 0,
+      e: 0,
+      est: false
+    },
     syncAt: old && old.syncAt ? old.syncAt : 0,
     cook: carryCook(old && old.cook)
   };
@@ -795,6 +900,28 @@ export function dailyHarvestTrack(g, farmId) {
     const snapMem = metaFarm === fid && yieldMeta[groupKey] && yieldMeta[groupKey].nodes ? yieldMeta[groupKey].nodes : null;
     const snap = snapMem || (ref && ref.nodes) || null;
     const buckets = {};
+    const toolInfo = toolInfoFor(groupKey);
+    const toolBag = toolInfo ? g[TOOL_BAG_KEYS[groupKey]] : null;
+    const nodeToolMult = id => toolBag && toolBag[id] ? dailyHarvestNodeToolMult(toolBag[id]) : 1;
+    let avgToolMult = 1;
+    let dTools = 0;
+    if (toolInfo) {
+      let dChops = 0;
+      if (COUNTER_PATTERNS[groupKey]) {
+        Object.keys(actNow).forEach(k => {
+          if (!COUNTER_PATTERNS[groupKey](k)) return;
+          const d = Math.max(0, actNow[k] - (typeof actPrev[k] === "number" ? actPrev[k] : actNow[k]));
+          dChops += d;
+          dTools += d * actKeyToolMult(k);
+        });
+      }
+      if (dChops > 0) {
+        avgToolMult = dTools / dChops;
+      } else if (sorted.length) {
+        avgToolMult = sorted.reduce((sum, id) => sum + nodeToolMult(id), 0) / sorted.length;
+      }
+      st.tool = toolInfo.tool;
+    }
     sorted.forEach((id, i) => {
       const inc = (hiddenOnly ? 0 : 1) + per + (i < rem ? 1 : 0);
       st.counts[id] = (st.counts[id] || 0) + inc;
@@ -808,10 +935,12 @@ export function dailyHarvestTrack(g, farmId) {
         n: 0,
         y: 0,
         miss: false,
+        tl: 0,
         ids: []
       });
       b.t = Math.max(b.t, t);
       b.n += 1;
+      b.tl += nodeToolMult(id);
       b.ids.push(id);
       const known = rec.amts ? rec.amts[id] : null;
       const prevAmt = typeof known === "number" && known > 0 ? known : null;
@@ -826,6 +955,7 @@ export function dailyHarvestTrack(g, farmId) {
         n: b.n,
         y: b.miss ? null : b.y
       };
+      if (toolInfo) entry.tl = roundTools(b.tl * toolInfo.factor);
       if (resolvable) entry.ids = b.ids;
       return entry;
     });
@@ -853,6 +983,12 @@ export function dailyHarvestTrack(g, farmId) {
         n: extras,
         y: mean ? mean * extras : null
       };
+      if (toolInfo) {
+        const bucketRaw = Object.values(buckets).reduce((sum, b) => sum + b.tl, 0);
+        const exactSpan = !fresh && !hiddenOnly && dTools > 0;
+        const rawExtra = exactSpan ? Math.max(0, dTools - bucketRaw) : extras * avgToolMult;
+        extraEntry.tl = roundTools(rawExtra * toolInfo.factor);
+      }
       if (pendId) extraEntry.xpid = pendId;
       entries.push(extraEntry);
     }
@@ -889,7 +1025,9 @@ export function dailyHarvestTrack(g, farmId) {
     const mergedLog = (st.log || []).concat(entries);
     const overflow = mergedLog.length - LOG_CAP;
     if (overflow > 0) {
-      st.dropped = (st.dropped || 0) + mergedLog.slice(0, overflow).reduce((sum, e) => sum + (typeof e.y === "number" ? e.y : 0), 0);
+      const gone = mergedLog.slice(0, overflow);
+      st.dropped = (st.dropped || 0) + gone.reduce((sum, e) => sum + (typeof e.y === "number" ? e.y : 0), 0);
+      st.droppedTl = (st.droppedTl || 0) + gone.reduce((sum, e) => sum + (typeof e.tl === "number" ? e.tl : 0), 0);
     }
     st.log = mergedLog.slice(-LOG_CAP);
     if (estimated) st.est = true;
@@ -914,6 +1052,7 @@ export function dailyHarvestTrack(g, farmId) {
   rec.inv = Object.assign({}, invPrev, invNowMap);
   rec.act = Object.assign({}, actPrev, actNow);
   rec.flow = Object.assign({}, flowPrev, flowNow);
+  trackCoins(g, rec, fresh, prevSyncAt, start, now);
   rec.syncAt = now;
   store[fid] = rec;
   saveStore();
@@ -935,6 +1074,7 @@ export function dailyHarvestInfo(groupKey, farmId) {
     lastAt: st.lastAt,
     estimated: !!st.est,
     dropped: typeof st.dropped === "number" ? st.dropped : 0,
+    droppedTl: typeof st.droppedTl === "number" ? st.droppedTl : 0,
     log: Array.isArray(st.log) ? st.log : []
   };
 }
@@ -965,25 +1105,31 @@ function resolvePending(st, groupKey) {
   if (!st.pend || !pendResolver) return false;
   let changed = false;
   Object.keys(st.pend).forEach(pid => {
-    let amounts;
+    let resolved;
     try {
-      amounts = pendResolver(groupKey, st.pend[pid]);
+      resolved = pendResolver(groupKey, st.pend[pid]);
     } catch (e) {
-      amounts = null;
+      resolved = null;
     }
-    if (amounts === undefined) return;
+    if (resolved === undefined) return;
+    const amounts = resolved ? resolved.y : null;
+    const chops = resolved && resolved.c ? resolved.c : null;
+    const toolInfo = chops ? toolInfoFor(groupKey) : null;
     if (amounts) {
       st.log = st.log.filter(e => e.xpid !== pid);
       st.log.forEach(e => {
         if (e.pid !== pid || !Array.isArray(e.ids)) return;
         let sum = 0;
+        let tools = 0;
         let ok = true;
         e.ids.forEach(id => {
           if (typeof amounts[id] === "number") sum += amounts[id]; else ok = false;
+          if (chops && typeof chops[id] === "number") tools += chops[id];
         });
         if (ok) {
           e.y = sum;
           e.exact = true;
+          if (toolInfo) e.tl = roundTools(tools * toolInfo.factor);
         }
       });
     }
@@ -1109,7 +1255,7 @@ const LOG_KIND_OF = {
 
 const LOG_VERSION = 2;
 
-function addLogTotal(totals, name, kind, amount, rounds, price, feeRate, ver) {
+function addLogTotal(totals, name, kind, amount, rounds, price, feeRate, ver, tools) {
   const value = Math.round(amount * 100) / 100;
   if (!(value > 0) || !isFinite(value)) return;
   const cur = totals[name];
@@ -1117,6 +1263,8 @@ function addLogTotal(totals, name, kind, amount, rounds, price, feeRate, ver) {
     k: kind,
     a: cur ? Math.round((cur.a + value) * 100) / 100 : value
   };
+  const toolSum = roundTools((typeof tools === "number" && isFinite(tools) && tools > 0 ? tools : 0) + (cur && cur.tl || 0));
+  if (toolSum > 0) entry.tl = toolSum;
   const c = Math.max(cur && cur.c || 0, Number.isFinite(rounds) ? Math.floor(rounds) : 0);
   if (c > 0) entry.c = c;
   if (ver > 0) entry.v = ver;
@@ -1176,7 +1324,8 @@ export function dailyHarvestTotals(farmId) {
       if (typeof e.y === "number") amount += e.y; else if (per) amount += e.n * per;
     });
     const gm = yieldMeta[groupKey];
-    addLogTotal(totals, groupKey, logKind, amount, roundsFromStats(st).rounds, gm && gm.price, gm && gm.feeRate, logKind === "beehive" ? 0 : LOG_VERSION);
+    const toolsUsed = logKind === "node" ? (typeof st.droppedTl === "number" ? st.droppedTl : 0) + st.log.reduce((sum, e) => sum + (typeof e.tl === "number" ? e.tl : 0), 0) : 0;
+    addLogTotal(totals, groupKey, logKind, amount, roundsFromStats(st).rounds, gm && gm.price, gm && gm.feeRate, logKind === "beehive" ? 0 : LOG_VERSION, toolsUsed);
   });
   const cookTotals = rec.cook && rec.cook.totals ? rec.cook.totals : {};
   Object.keys(cookTotals).forEach(name => {
@@ -1184,9 +1333,20 @@ export function dailyHarvestTotals(farmId) {
     if (!t || !LOG_NAME_RE.test(name)) return;
     addLogTotal(totals, name, t.k === "composter" ? "composter" : "cooking", t.a, t.c, t.p, t.f);
   });
+  const coin = rec.coin;
+  const round2 = v => Math.round(v * 100) / 100;
+  const coins = coin && (coin.s > 0 || coin.e > 0) ? {
+    e: round2(coin.e),
+    s: round2(coin.s)
+  } : null;
+  if (coins) {
+    if (typeof coin.b === "number" && isFinite(coin.b)) coins.b = round2(coin.b);
+    if (coin.est) coins.est = 1;
+  }
   return {
     day: rec.day,
-    totals: totals
+    totals: totals,
+    coins: coins
   };
 }
 
@@ -1426,29 +1586,40 @@ function logHtml(groupKey, info) {
   const sorted = info.log.slice().sort((a, b) => b.t - a.t);
   if (!sorted.length) return "";
   let total = info.dropped || 0;
+  let toolTotal = info.droppedTl || 0;
   const merged = [];
   sorted.forEach(e => {
     const y = typeof e.y === "number" ? e.y : meta.per ? e.n * meta.per : null;
+    const tl = typeof e.tl === "number" ? e.tl : 0;
     if (y !== null) total += y;
+    toolTotal += tl;
     const last = merged[merged.length - 1];
     if (last && last.t - e.t <= LOG_MERGE_GAP) {
       if (y !== null) last.y = (last.y || 0) + y;
+      last.tl += tl;
       return;
     }
     merged.push({
       t: e.t,
-      y
+      y,
+      tl: tl
     });
   });
+  const toolInfo = toolTotal > 0 ? toolInfoFor(groupKey) : null;
+  const toolIcon = toolInfo ? toolInfo.icon : "";
   const rows = merged.map(e => {
     const amount = e.y === null ? "—" : `+${formatLogYield(e.y)}`;
-    return `<div class="dh-log-row"><span>${formatLogClock(e.t)}</span><span class="dh-log-yield">${amount}<span class="dh-log-ico">${meta.icon}</span></span></div>`;
+    if (!toolInfo) return `<div class="dh-log-row"><span>${formatLogClock(e.t)}</span><span class="dh-log-yield">${amount}<span class="dh-log-ico">${meta.icon}</span></span></div>`;
+    const used = e.tl > 0 ? `<span class="dh-log-yield dh-log-tools">×${fmtTools(e.tl)}<span class="dh-log-ico">${toolIcon}</span></span>` : `<span class="dh-log-tools">—</span>`;
+    return `<div class="dh-log-row dh-log-row-tools"><span>${formatLogClock(e.t)}</span>${used}<span class="dh-log-yield dh-log-yield-end">${amount}<span class="dh-log-ico">${meta.icon}</span></span></div>`;
   }).join("");
+  const toolRow = toolInfo ? `<div class="dh-log-row"><span>Tools used</span><span class="dh-log-yield">×${fmtTools(roundTools(toolTotal))}<span class="dh-log-ico">${toolIcon}</span></span></div>` : "";
+  const headHtml = toolInfo ? `<div class="dh-log-head dh-log-head-tools"><span>Time</span><span>Tools</span><span>Harvested</span></div>` : `<div class="dh-log-head"><span>Time</span><span>Harvested</span></div>`;
   const gross = total * meta.price;
   const net = gross - gross * meta.feeRate;
   const valueRows = meta.price > 0 ? `<div class="dh-log-row"><span>Gross</span><span class="dh-log-yield">${formatLogYield(gross)}<span class="dh-log-ico">${FLOWER_ICON}</span></span></div><div class="dh-log-row"><span>Net</span><span class="dh-log-yield">${formatLogYield(net)}<span class="dh-log-ico">${FLOWER_ICON}</span></span></div>` : "";
-  const sumHtml = `<div class="dh-log-sum"><div class="dh-log-row dh-log-total"><span>Total</span><span class="dh-log-yield">+${formatLogYield(total)}<span class="dh-log-ico">${meta.icon}</span></span></div>${valueRows}</div>`;
-  return `<div class="dh-pop-log guro-frame"><div class="dh-log-head"><span>Time</span><span>Harvested</span></div><div class="dh-log-list">${rows}</div>${sumHtml}</div>`;
+  const sumHtml = `<div class="dh-log-sum"><div class="dh-log-row dh-log-total"><span>Total</span><span class="dh-log-yield">+${formatLogYield(total)}<span class="dh-log-ico">${meta.icon}</span></span></div>${toolRow}${valueRows}</div>`;
+  return `<div class="dh-pop-log guro-frame">${headHtml}<div class="dh-log-list">${rows}</div>${sumHtml}</div>`;
 }
 
 function closeDailyPop() {
