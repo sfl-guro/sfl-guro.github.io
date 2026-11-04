@@ -802,6 +802,8 @@ function onClick(e) {
   const season = e.target.closest("[data-rc-season]");
   if (season) {
     state.season = season.getAttribute("data-rc-season");
+    calc.setSeasonOverride(state.season);
+    prices.invalidateCostCache();
     saveState();
     const seasons = host.querySelector("#rcSeasons");
     const crops = host.querySelector("#rcCrops");
@@ -891,6 +893,8 @@ export function mountGreenhouseCalculator(root, appApi) {
   api = appApi;
   prices.invalidateCostCache();
   state = loadState();
+  calc.setSeasonOverride(state.season);
+  prices.invalidateCostCache();
   detailsOpen = false;
   syncGemRatio();
   host.addEventListener("click", onClick);
@@ -906,6 +910,8 @@ export function mountGreenhouseCalculator(root, appApi) {
 }
 
 export function unmountGreenhouseCalculator() {
+  calc.setSeasonOverride(null);
+  prices.invalidateCostCache();
   if (popup) destroyPopup();
   if (promptEl) {
     promptEl.remove();

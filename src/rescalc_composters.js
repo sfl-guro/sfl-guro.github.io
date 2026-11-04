@@ -580,6 +580,8 @@ function onClick(e) {
   const season = e.target.closest("[data-rc-season]");
   if (season) {
     state.season = season.getAttribute("data-rc-season");
+    calc.setSeasonOverride(state.season);
+    prices.invalidateCostCache();
     saveState();
     const seasons = host.querySelector("#rcSeasons");
     if (seasons) seasons.innerHTML = seasonCardsHtml();
@@ -654,6 +656,8 @@ export function mountComposterCalculator(root) {
   host = root;
   prices.invalidateCostCache();
   state = loadState();
+  calc.setSeasonOverride(state.season);
+  prices.invalidateCostCache();
   detailsOpen = false;
   host.addEventListener("click", onClick);
   host.addEventListener("change", onChange);
@@ -666,6 +670,8 @@ export function mountComposterCalculator(root) {
 }
 
 export function unmountComposterCalculator() {
+  calc.setSeasonOverride(null);
+  prices.invalidateCostCache();
   if (popup) destroyPopup();
   if (promptEl) {
     promptEl.remove();

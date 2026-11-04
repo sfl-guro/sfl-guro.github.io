@@ -172,6 +172,7 @@ import {
   setSaltFarmLevel,
   setSculptureLevel,
   setSculpturePerk,
+  setSeasonOverride,
   setSelectedHoneyFlower,
   setSelectedSwarmCrop,
   setSkillCategory,
@@ -183,7 +184,7 @@ import {
   toast,
   updateCalcSummary,
   updateSkillSaveBarState
-} from "./chunk.U6TKFVV7.js";
+} from "./chunk.TYEF37A3.js";
 import "./chunk.LPEVZJ4B.js";
 import "./chunk.VR6FV3KR.js";
 import "./chunk.HVRY6OMF.js";
@@ -1040,6 +1041,8 @@ function onClick(e) {
   const season = e.target.closest("[data-rc-season]");
   if (season) {
     state.season = season.getAttribute("data-rc-season");
+    setSeasonOverride(state.season);
+    invalidateCostCache();
     saveState();
     const seasons = host.querySelector("#rcSeasons");
     const crops = host.querySelector("#rcCrops");
@@ -1111,6 +1114,8 @@ function mountCropsCalculator(root, appApi) {
   loadBaseCropsIfNeeded();
   invalidateCostCache();
   state = loadState();
+  setSeasonOverride(state.season);
+  invalidateCostCache();
   detailsOpen = false;
   syncGemRatio();
   host.addEventListener("click", onClick);
@@ -1125,6 +1130,8 @@ function mountCropsCalculator(root, appApi) {
   render();
 }
 function unmountCropsCalculator() {
+  setSeasonOverride(null);
+  invalidateCostCache();
   if (popup) destroyPopup();
   if (promptEl) {
     promptEl.remove();
@@ -1935,6 +1942,8 @@ function onClick2(e) {
   const season = e.target.closest("[data-rc-season]");
   if (season) {
     state2.season = season.getAttribute("data-rc-season");
+    setSeasonOverride(state2.season);
+    invalidateCostCache();
     saveState2();
     const seasons = host2.querySelector("#rcSeasons");
     const crops = host2.querySelector("#rcCrops");
@@ -2009,6 +2018,8 @@ function mountFruitsCalculator(root, appApi) {
   api2 = appApi;
   invalidateCostCache();
   state2 = loadState2();
+  setSeasonOverride(state2.season);
+  invalidateCostCache();
   detailsOpen2 = false;
   syncGemRatio2();
   host2.addEventListener("click", onClick2);
@@ -2023,6 +2034,8 @@ function mountFruitsCalculator(root, appApi) {
   render2();
 }
 function unmountFruitsCalculator() {
+  setSeasonOverride(null);
+  invalidateCostCache();
   if (popup2) destroyPopup2();
   if (promptEl2) {
     promptEl2.remove();
@@ -2793,6 +2806,8 @@ function onClick3(e) {
   const season = e.target.closest("[data-rc-season]");
   if (season) {
     state3.season = season.getAttribute("data-rc-season");
+    setSeasonOverride(state3.season);
+    invalidateCostCache();
     saveState3();
     const seasons = host3.querySelector("#rcSeasons");
     const crops = host3.querySelector("#rcCrops");
@@ -2875,6 +2890,8 @@ function mountGreenhouseCalculator(root, appApi) {
   api3 = appApi;
   invalidateCostCache();
   state3 = loadState3();
+  setSeasonOverride(state3.season);
+  invalidateCostCache();
   detailsOpen3 = false;
   syncGemRatio3();
   host3.addEventListener("click", onClick3);
@@ -2889,6 +2906,8 @@ function mountGreenhouseCalculator(root, appApi) {
   render3();
 }
 function unmountGreenhouseCalculator() {
+  setSeasonOverride(null);
+  invalidateCostCache();
   if (popup3) destroyPopup3();
   if (promptEl3) {
     promptEl3.remove();
@@ -5288,6 +5307,8 @@ function onClick6(e) {
   const season = e.target.closest("[data-rc-season]");
   if (season) {
     state6.season = season.getAttribute("data-rc-season");
+    setSeasonOverride(state6.season);
+    invalidateCostCache();
     saveState6();
     const seasons = host6.querySelector("#rcSeasons");
     if (seasons) seasons.innerHTML = seasonCardsHtml4();
@@ -5359,6 +5380,8 @@ function mountObsidianCalculator(root) {
   loadBaseCropsIfNeeded();
   invalidateCostCache();
   state6 = loadState6();
+  setSeasonOverride(state6.season);
+  invalidateCostCache();
   detailsOpen6 = false;
   host6.addEventListener("click", onClick6);
   document.addEventListener("click", onDocClick6);
@@ -5371,6 +5394,8 @@ function mountObsidianCalculator(root) {
   render6();
 }
 function unmountObsidianCalculator() {
+  setSeasonOverride(null);
+  invalidateCostCache();
   setAutoMaterialModes({});
   invalidateCostCache();
   if (popup6) destroyPopup6();
@@ -7903,6 +7928,8 @@ function onClick9(e) {
   const season = e.target.closest("[data-rc-season]");
   if (season) {
     state9.season = season.getAttribute("data-rc-season");
+    setSeasonOverride(state9.season);
+    invalidateCostCache();
     saveState9();
     const seasons = host9.querySelector("#rcSeasons");
     if (seasons) seasons.innerHTML = seasonCardsHtml5();
@@ -7971,6 +7998,8 @@ function mountComposterCalculator(root) {
   host9 = root;
   invalidateCostCache();
   state9 = loadState9();
+  setSeasonOverride(state9.season);
+  invalidateCostCache();
   detailsOpen9 = false;
   host9.addEventListener("click", onClick9);
   host9.addEventListener("change", onChange7);
@@ -7982,6 +8011,8 @@ function mountComposterCalculator(root) {
   render9();
 }
 function unmountComposterCalculator() {
+  setSeasonOverride(null);
+  invalidateCostCache();
   if (popup9) destroyPopup9();
   if (promptEl9) {
     promptEl9.remove();
