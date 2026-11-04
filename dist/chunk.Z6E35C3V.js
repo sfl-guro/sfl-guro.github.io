@@ -47357,7 +47357,7 @@ function computeComposterFigures(composterName, visited) {
   const wormMin = Math.max(0, Math.min(...wormAmounts) * wormBaseMult + wormAddTotal);
   const wormMax = Math.max(0, Math.max(...wormAmounts) * wormBaseMult + wormAddTotal);
   const reqs = SEASON_COMPOST_REQUIREMENTS[getActiveSeason()] && SEASON_COMPOST_REQUIREMENTS[getActiveSeason()][composterName] || [];
-  const ingredientCostCoins = reqs.reduce((sum, r) => sum + (r.qty || 0) * getItemCostByName(r.item, visited ? new Set(visited) : visited), 0);
+  const ingredientCostCoins = reqs.reduce((sum, r) => sum + (r.qty || 0) * getMaterialUnitCostCoins(r.item, getMaterialMode("Composter", r.item) === "buy" ? "buy" : "collect", visited ? new Set(visited) : visited), 0);
   const costPerUnitCoins = outputQty > 0 ? ingredientCostCoins / outputQty : 0;
   return {
     fertilizer: d.fertilizer,
