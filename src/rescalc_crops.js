@@ -745,6 +745,8 @@ function onClick(e) {
   const season = e.target.closest("[data-rc-season]");
   if (season) {
     state.season = season.getAttribute("data-rc-season");
+    calc.setSeasonOverride(state.season);
+    prices.invalidateCostCache();
     saveState();
     const seasons = host.querySelector("#rcSeasons");
     const crops = host.querySelector("#rcCrops");
@@ -823,6 +825,8 @@ export function mountCropsCalculator(root, appApi) {
   loadBaseCropsIfNeeded();
   prices.invalidateCostCache();
   state = loadState();
+  calc.setSeasonOverride(state.season);
+  prices.invalidateCostCache();
   detailsOpen = false;
   syncGemRatio();
   host.addEventListener("click", onClick);
@@ -838,6 +842,8 @@ export function mountCropsCalculator(root, appApi) {
 }
 
 export function unmountCropsCalculator() {
+  calc.setSeasonOverride(null);
+  prices.invalidateCostCache();
   if (popup) destroyPopup();
   if (promptEl) {
     promptEl.remove();

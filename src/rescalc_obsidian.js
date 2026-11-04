@@ -637,6 +637,8 @@ function onClick(e) {
   const season = e.target.closest("[data-rc-season]");
   if (season) {
     state.season = season.getAttribute("data-rc-season");
+    calc.setSeasonOverride(state.season);
+    prices.invalidateCostCache();
     saveState();
     const seasons = host.querySelector("#rcSeasons");
     if (seasons) seasons.innerHTML = seasonCardsHtml();
@@ -714,6 +716,8 @@ export function mountObsidianCalculator(root) {
   loadBaseCropsIfNeeded();
   prices.invalidateCostCache();
   state = loadState();
+  calc.setSeasonOverride(state.season);
+  prices.invalidateCostCache();
   detailsOpen = false;
   host.addEventListener("click", onClick);
   document.addEventListener("click", onDocClick);
@@ -727,6 +731,8 @@ export function mountObsidianCalculator(root) {
 }
 
 export function unmountObsidianCalculator() {
+  calc.setSeasonOverride(null);
+  prices.invalidateCostCache();
   calc.setAutoMaterialModes({});
   prices.invalidateCostCache();
   if (popup) destroyPopup();

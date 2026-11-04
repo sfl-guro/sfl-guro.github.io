@@ -556,6 +556,7 @@ __export(calculator_exports, {
   getActiveSaltBoosts: () => getActiveSaltBoosts,
   getActiveSaltRechargeMult: () => getActiveSaltRechargeMult,
   getActiveSaltYieldBonus: () => getActiveSaltYieldBonus,
+  getActiveSeason: () => getActiveSeason,
   getActiveSeasonGuardianName: () => getActiveSeasonGuardianName,
   getAgingMaxXPLocal: () => getAgingMaxXPLocal,
   getAllMaterialCandidates: () => getAllMaterialCandidates,
@@ -840,6 +841,7 @@ __export(calculator_exports, {
   setSaltFarmLevel: () => setSaltFarmLevel,
   setSculptureLevel: () => setSculptureLevel,
   setSculpturePerk: () => setSculpturePerk,
+  setSeasonOverride: () => setSeasonOverride,
   setSelectedHoneyFlower: () => setSelectedHoneyFlower,
   setSelectedSwarmCrop: () => setSelectedSwarmCrop,
   setSkillCategory: () => setSkillCategory,
@@ -37841,7 +37843,7 @@ function getCropSeasons(name) {
   return d && Array.isArray(d.seasons) && d.seasons.length ? d.seasons : SEASON_ORDER.slice();
 }
 function isCropInSeason(name, season) {
-  season = season || previewSeason;
+  season = season || getActiveSeason();
   return getCropSeasons(name).includes(season);
 }
 function getFruitSeasons(name) {
@@ -37864,6 +37866,13 @@ function getRealSeason(now) {
 var currentSeason = getRealSeason();
 var previewSeason = currentSeason;
 var selectedSeason = previewSeason;
+var seasonOverride = null;
+function setSeasonOverride(season) {
+  seasonOverride = SEASON_ORDER.includes(season) ? season : null;
+}
+function getActiveSeason() {
+  return seasonOverride || previewSeason;
+}
 function setPreviewSeason(season) {
   previewSeason = season;
   selectedSeason = season;
@@ -39126,7 +39135,7 @@ function computeBoostedLavaPitStatsUncached(baseTimeSec) {
   };
 }
 function computeLavaPitFigures(season) {
-  season = season || previewSeason;
+  season = season || getActiveSeason();
   const recipe = LAVA_PIT_RECIPES[season];
   const boosted = computeBoostedLavaPitStats(recipe.time);
   let materialsCost = 0;
@@ -45575,8 +45584,9 @@ function isFertilizerTierEnabled(tier) {
 function isSeasonLocked(boost) {
   if (!boost) return false;
   if (simWeatherMode && (boost.guardianSeason || SIM_WEATHER_BOOST_NAMES.has(boost.limitedBoostName))) return false;
-  if (boost.seasons && boost.seasons.length) return !boost.seasons.includes(previewSeason);
-  return !!(boost.season && boost.season !== previewSeason);
+  const activeSeason = getActiveSeason();
+  if (boost.seasons && boost.seasons.length) return !boost.seasons.includes(activeSeason);
+  return !!(boost.season && boost.season !== activeSeason);
 }
 var __boostIdMap = null;
 var __boostIdMapLen = -1;
@@ -45638,7 +45648,7 @@ var SEASON_GUARDIAN_IDS = {
   Winter: "winter_guardian"
 };
 function isSeasonGuardianActive() {
-  const id = SEASON_GUARDIAN_IDS[previewSeason];
+  const id = SEASON_GUARDIAN_IDS[getActiveSeason()];
   return !!id && isBoostActive(id);
 }
 function isSimWeatherBoost(b) {
@@ -45658,7 +45668,7 @@ function weatherGuardianDoubles(b, ctx) {
   return simWeatherEligibleSeasons(b, ctx.name, ctx.kind).some((s) => isBoostActive(SEASON_GUARDIAN_IDS[s]));
 }
 function getActiveSeasonGuardianName() {
-  const id = SEASON_GUARDIAN_IDS[currentSeason];
+  const id = SEASON_GUARDIAN_IDS[seasonOverride || currentSeason];
   return id && isBoostActive(id) ? id : null;
 }
 function getCropPlotSunshowerSpeedMultiplier() {
@@ -45668,7 +45678,7 @@ function getCropPlotSunshowerSpeedMultiplier() {
 function getActiveBoostsForCrop(cropName) {
   const base = BASE_CROPS[cropName];
   const tier = base ? base.tier : null;
-  return BOOSTS.filter((b) => (b.category || "crops") === "crops" && isBoostActive(b.id) && (b.scope === "global" && (!b.composterFertilizer || isFertilizerTierEnabled(tier)) || b.scope === "skillGlobal" || b.scope === "tier" && b.target === tier || b.scope === "tierEffects" || b.scope === "crop" && (b.target || "").toLowerCase() === (cropName || "").toLowerCase())).filter((b) => b.id !== "hoot" || isOvernightGroundCrop(cropName)).filter((b) => b.id !== "blossom_ward" || currentSeason === "Spring" && isCropInSeason(cropName, "Spring")).filter((b) => b.id !== "frozen_heart" || currentSeason === "Winter" && isCropInSeason(cropName, "Winter")).filter((b) => b.id !== "solflare_aegis" || isCropInSeason(cropName, "Summer")).filter((b) => b.id !== "autumns_embrace" || isCropInSeason(cropName, "Autumn")).filter((b) => weatherBoostAppliesToItem(b, cropName, "crop"));
+  return BOOSTS.filter((b) => (b.category || "crops") === "crops" && isBoostActive(b.id) && (b.scope === "global" && (!b.composterFertilizer || isFertilizerTierEnabled(tier)) || b.scope === "skillGlobal" || b.scope === "tier" && b.target === tier || b.scope === "tierEffects" || b.scope === "crop" && (b.target || "").toLowerCase() === (cropName || "").toLowerCase())).filter((b) => b.id !== "hoot" || isOvernightGroundCrop(cropName)).filter((b) => b.id !== "blossom_ward" || getActiveSeason() === "Spring" && isCropInSeason(cropName, "Spring")).filter((b) => b.id !== "frozen_heart" || getActiveSeason() === "Winter" && isCropInSeason(cropName, "Winter")).filter((b) => b.id !== "solflare_aegis" || isCropInSeason(cropName, "Summer")).filter((b) => b.id !== "autumns_embrace" || isCropInSeason(cropName, "Autumn")).filter((b) => weatherBoostAppliesToItem(b, cropName, "crop"));
 }
 function getFertilizerPotencyMult(fertName) {
   let mult = 1;
@@ -47346,7 +47356,7 @@ function computeComposterFigures(composterName, visited) {
   const wormAvg = wormAmounts.reduce((sum, a) => sum + Math.max(0, a * wormBaseMult + wormAddTotal), 0) / wormAmounts.length;
   const wormMin = Math.max(0, Math.min(...wormAmounts) * wormBaseMult + wormAddTotal);
   const wormMax = Math.max(0, Math.max(...wormAmounts) * wormBaseMult + wormAddTotal);
-  const reqs = SEASON_COMPOST_REQUIREMENTS[previewSeason] && SEASON_COMPOST_REQUIREMENTS[previewSeason][composterName] || [];
+  const reqs = SEASON_COMPOST_REQUIREMENTS[getActiveSeason()] && SEASON_COMPOST_REQUIREMENTS[getActiveSeason()][composterName] || [];
   const ingredientCostCoins = reqs.reduce((sum, r) => sum + (r.qty || 0) * getItemCostByName(r.item, visited ? new Set(visited) : visited), 0);
   const costPerUnitCoins = outputQty > 0 ? ingredientCostCoins / outputQty : 0;
   return {
@@ -73662,6 +73672,7 @@ export {
   getRealSeason,
   currentSeason,
   previewSeason,
+  setSeasonOverride,
   setPreviewSeason,
   getPlotCount,
   setPlotCount,
