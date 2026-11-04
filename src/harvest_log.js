@@ -4,7 +4,7 @@ import { getIcon, cookFoodIcon } from "./ui.js";
 
 import { ICON_DATA } from "./icon_data.js";
 
-import { FLOWER_ICON, COOKING_FOOD_IMAGES } from "./calculator.js";
+import { FLOWER_ICON, COIN_ICON, COOKING_FOOD_IMAGES, toolRecipes } from "./calculator.js";
 
 const HARVEST_LOG_BASE = "https://sfl-harvest-log.bossweki.workers.dev";
 
@@ -60,6 +60,88 @@ function fetchWithTimeout(url, opts) {
   });
 }
 
+const TOOLS_KEY = "hl_hlog_tl_v1";
+const APPLY_KEY = "hl_hlog_apply_tools";
+const TOOLS_MAX_DAYS = 400;
+
+const GROUP_TOOL = {
+  Wood: "Axe",
+  Stone: "Pickaxe",
+  Iron: "Stone Pickaxe",
+  Gold: "Iron Pickaxe",
+  Crimstone: "Gold Pickaxe",
+  Oil: "Oil Drill"
+};
+
+const DEDUCT_ITEMS = [ "Wood", "Stone", "Iron", "Gold", "Crimstone" ];
+
+let applyTools = false;
+
+try {
+  applyTools = localStorage.getItem(APPLY_KEY) === "1";
+} catch (e) {}
+
+function setApplyTools(on) {
+  applyTools = !!on;
+  try {
+    localStorage.setItem(APPLY_KEY, applyTools ? "1" : "0");
+  } catch (e) {}
+}
+
+function loadTools(farmId) {
+  try {
+    const raw = JSON.parse(localStorage.getItem(TOOLS_KEY) || "null");
+    if (raw && raw.farm === farmId && raw.days && typeof raw.days === "object") return raw;
+  } catch (e) {}
+  return {
+    farm: farmId,
+    days: {}
+  };
+}
+
+function rememberTools(farmId, data) {
+  if (!farmId || !data || !data.totals) return;
+  const found = {};
+  Object.keys(data.totals).forEach(name => {
+    const e = data.totals[name];
+    if (e && e.tl > 0) found[name] = e.tl;
+  });
+  if (!Object.keys(found).length) return;
+  const store = loadTools(farmId);
+  store.days[data.day] = found;
+  const keys = Object.keys(store.days).sort();
+  while (keys.length > TOOLS_MAX_DAYS) delete store.days[keys.shift()];
+  try {
+    localStorage.setItem(TOOLS_KEY, JSON.stringify(store));
+  } catch (e) {}
+}
+
+function withLocalTools(list) {
+  const farmId = currentFarmId();
+  if (!farmId) return list;
+  const store = loadTools(farmId);
+  return list.map(d => {
+    const lt = store.days[d.day];
+    if (!lt) return d;
+    const totals = Object.assign({}, d.totals);
+    let changed = false;
+    Object.keys(lt).forEach(name => {
+      const e = totals[name];
+      if (e && !(e.tl > 0) && lt[name] > 0) {
+        totals[name] = Object.assign({}, e, {
+          tl: lt[name]
+        });
+        changed = true;
+      }
+    });
+    return changed ? {
+      day: d.day,
+      totals: totals,
+      coins: d.coins || null
+    } : d;
+  });
+}
+
 const FARM_KEY = "hl_hlog_farm";
 const FARM_RE = /^\d{1,20}$/;
 
@@ -92,7 +174,9 @@ async function pushTotals(trackKey) {
   if (!farmId) return;
   const data = dailyHarvestTotals(trackKey);
   if (!data || !Object.keys(data.totals).length) return;
-  const sig = JSON.stringify([ farmId, data.day, data.totals ]);
+  rememberTools(farmId, data);
+  const coinSig = data.coins ? [ data.coins.e, data.coins.s ] : null;
+  const sig = JSON.stringify([ farmId, data.day, data.totals, coinSig ]);
   const sent = loadSent();
   if (sent.sig === sig) return;
   const post = totals => fetchWithTimeout(HARVEST_LOG_BASE + "/log", {
@@ -103,18 +187,28 @@ async function pushTotals(trackKey) {
     body: JSON.stringify({
       farmId: farmId,
       day: data.day,
-      totals: totals
+      totals: totals,
+      coins: data.coins || undefined
     })
   });
   let res = await post(data.totals);
   if (res.status === 400) {
-    const legacy = {};
+    const plain = {};
     Object.keys(data.totals).forEach(name => {
-      if (data.totals[name].k !== "composter") legacy[name] = data.totals[name];
+      const e = Object.assign({}, data.totals[name]);
+      delete e.tl;
+      plain[name] = e;
     });
-    if (Object.keys(legacy).length && Object.keys(legacy).length < Object.keys(data.totals).length) {
-      res = await post(legacy);
-      if (res.status < 500) return;
+    res = await post(plain);
+    if (res.status === 400) {
+      const legacy = {};
+      Object.keys(plain).forEach(name => {
+        if (plain[name].k !== "composter") legacy[name] = plain[name];
+      });
+      if (Object.keys(legacy).length && Object.keys(legacy).length < Object.keys(plain).length) {
+        res = await post(legacy);
+        if (res.status < 500) return;
+      }
     }
   }
   if (res.status < 500) saveSent({
@@ -228,38 +322,103 @@ function taxNoteHtml(list) {
   return `Total Gained and item values are net: Gross − Tax${tax ? ` (current tax ${tax})` : ""}.`;
 }
 
+function toolRecipeFor(tool) {
+  const list = Array.isArray(toolRecipes) ? toolRecipes : [];
+  return list.find(t => t && t.name === tool && t.locked) || list.find(t => t && t.name === tool) || null;
+}
+
+function toolCostsFor(totals) {
+  const used = {};
+  let any = false;
+  Object.keys(totals).forEach(name => {
+    const e = totals[name];
+    const tool = GROUP_TOOL[name];
+    if (!e || e.k !== "node" || !tool || !(e.tl > 0)) return;
+    any = true;
+    const recipe = toolRecipeFor(tool);
+    if (!recipe || !Array.isArray(recipe.materials)) return;
+    recipe.materials.forEach(m => {
+      if (!m || !DEDUCT_ITEMS.includes(m.name)) return;
+      used[m.name] = (used[m.name] || 0) + e.tl * (Number(m.qty) || 0);
+    });
+  });
+  return {
+    any: any,
+    used: used
+  };
+}
+
+function totalsAfterTools(totals, used) {
+  const out = Object.assign({}, totals);
+  Object.keys(used).forEach(name => {
+    const e = out[name];
+    if (!e) return;
+    const adjusted = Object.assign({}, e, {
+      a: Math.round((e.a - used[name]) * 100) / 100
+    });
+    delete adjusted.n;
+    delete adjusted.g;
+    out[name] = adjusted;
+  });
+  return out;
+}
+
+function signed(n, fmt) {
+  return `${n < 0 ? "-" : "+"}${fmt(Math.abs(n))}`;
+}
+
+function coinsHtml(c) {
+  if (!c || !(c.e > 0 || c.s > 0)) return "";
+  const mark = c.est ? "~" : "";
+  const net = c.e - c.s;
+  const ico = `<span class="dh-hlog-coin-ico">${COIN_ICON}</span>`;
+  const row = (label, value, cls) => `<div class="dh-hlog-coin-row"><span>${label}</span><span class="dh-hlog-coin-val${cls ? ` ${cls}` : ""}">${value}${ico}</span></div>`;
+  const balance = typeof c.b === "number" && isFinite(c.b) ? row("Balance", fmtAmount(c.b), "") : "";
+  return `<div class="dh-hlog-coins">${balance}${row("Earned Coins", `${mark}+${fmtAmount(c.e)}`, "pos")}${row("Spend Coins", `${mark}-${fmtAmount(c.s)}`, "neg")}${row("Net", `${mark}${signed(net, fmtAmount)}`, net < 0 ? "neg" : "pos")}</div>`;
+}
+
 function dayHtml(entry, number) {
   let totalNet = 0;
-  const rows = sortedNames(entry.totals).map(name => {
-    const e = entry.totals[name];
+  const costs = toolCostsFor(entry.totals);
+  const view = applyTools && costs.any ? totalsAfterTools(entry.totals, costs.used) : entry.totals;
+  const rows = sortedNames(view).map(name => {
+    const e = view[name];
     const net = netOf(e);
     if (net !== null) totalNet += net;
-    const value = net !== null ? `<span class="dh-hlog-val"><span class="dh-hlog-price">(${fmtPrice(e.p)}${flowerHtml()}/U)</span><span class="dh-hlog-net">(+${fmtFlower(net)}${flowerHtml()})</span></span>` : "";
+    const value = net !== null ? `<span class="dh-hlog-val"><span class="dh-hlog-price">(${fmtPrice(e.p)}${flowerHtml()}/U)</span><span class="dh-hlog-net">(${signed(net, fmtFlower)}${flowerHtml()})</span></span>` : "";
     const count = e.c > 0 ? `<span class="dh-hlog-count"><span class="dh-hlog-h" role="button" tabindex="0" data-dh-h="1" aria-label="${e.k === "cooking" || e.k === "composter" ? "Collected" : "Harvested"}">${e.k === "cooking" || e.k === "composter" ? "C" : "H"}<span class="dh-hlog-tip">${e.k === "cooking" || e.k === "composter" ? "Collected" : "Harvested"}</span></span>${e.c}x</span>` : "";
-    return `<div class="dh-hlog-row"><span class="dh-hlog-amt">+${fmtAmount(e.a)}</span><span class="dh-hlog-ico">${itemIcon(name, e.k)}</span><span class="dh-hlog-name">${esc(name)}</span>${value}${count}</div>`;
+    return `<div class="dh-hlog-row"><span class="dh-hlog-amt">${signed(e.a, fmtAmount)}</span><span class="dh-hlog-ico">${itemIcon(name, e.k)}</span><span class="dh-hlog-name">${esc(name)}</span>${value}${count}</div>`;
   }).join("");
-  const total = totalNet > 0 ? `<div class="dh-hlog-gain"><span>Total Gained:</span><span class="dh-hlog-gain-val">+${totalNet.toLocaleString("en-US", {
+  const toolBtn = costs.any ? `<button type="button" class="dh-hlog-apply guro-frame${applyTools ? " on" : ""}" data-dh-tools="1" aria-pressed="${applyTools ? "true" : "false"}">Apply Tools</button>` : "";
+  const total = totalNet > 0 || costs.any ? `<div class="dh-hlog-gain${toolBtn ? " dh-hlog-gain-tools" : ""}">${toolBtn}<span class="dh-hlog-gain-sum"><span>Total Gained:</span><span class="dh-hlog-gain-val">${signed(totalNet, n => n.toLocaleString("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
-  })}${flowerHtml()}</span></div>` : "";
-  return `<div class="dh-hlog-day guro-frame"><div class="dh-hlog-dayhead"><span class="dh-hlog-no">#${number}</span><span class="dh-hlog-date">${dateLabel(entry.day)}</span></div>${rows}${total}</div>`;
+  }))}${flowerHtml()}</span></span></div>` : "";
+  return `<div class="dh-hlog-day guro-frame"><div class="dh-hlog-dayhead"><span class="dh-hlog-no">#${number}</span><span class="dh-hlog-date">${dateLabel(entry.day)}</span></div>${rows}${total}${coinsHtml(entry.coins)}</div>`;
 }
 
 function mergeLocalToday(days, farmId) {
+  return withLocalTools(mergeToday(days, farmId));
+}
+
+function mergeToday(days, farmId) {
   const local = dailyHarvestTotals(farmId);
   if (!local || !Object.keys(local.totals).length) return days;
   const out = days.map(d => ({
     day: d.day,
-    totals: Object.assign({}, d.totals)
+    totals: Object.assign({}, d.totals),
+    coins: d.coins || null
   }));
   let today = out.find(d => d.day === local.day);
   if (!today) {
     today = {
       day: local.day,
-      totals: {}
+      totals: {},
+      coins: null
     };
     out.push(today);
   }
+  if (local.coins && (!today.coins || local.coins.e + local.coins.s >= today.coins.e + today.coins.s)) today.coins = local.coins;
   Object.keys(local.totals).forEach(name => {
     const cur = today.totals[name];
     const loc = local.totals[name];
@@ -276,11 +435,13 @@ function mergeLocalToday(days, farmId) {
     if (lv < cv) return;
     const a = Math.max(cur.a, loc.a);
     const c = Math.max(cur.c || 0, loc.c || 0);
+    const tl = Math.max(cur.tl || 0, loc.tl || 0);
     const next = {
       k: loc.a > cur.a ? loc.k : cur.k,
       a: a
     };
     if (c > 0) next.c = c;
+    if (tl > 0) next.tl = tl;
     if (cv > 0) next.v = cv;
     const src = loc.p > 0 ? loc : cur;
     if (src.p > 0) {
@@ -299,18 +460,26 @@ const CACHE_MAX_DAYS = 400;
 function loadCache(farmId) {
   try {
     const c = JSON.parse(localStorage.getItem(CACHE_KEY) || "null");
-    if (c && c.farm === farmId && c.days && typeof c.days === "object") return c;
+    if (c && c.farm === farmId && c.days && typeof c.days === "object") {
+      if (!c.coins || typeof c.coins !== "object") c.coins = {};
+      return c;
+    }
   } catch (e) {}
   return {
     farm: farmId,
     days: {},
+    coins: {},
     at: 0
   };
 }
 
 function saveCache(c) {
   const keys = Object.keys(c.days).sort();
-  while (keys.length > CACHE_MAX_DAYS) delete c.days[keys.shift()];
+  while (keys.length > CACHE_MAX_DAYS) {
+    const old = keys.shift();
+    delete c.days[old];
+    if (c.coins) delete c.coins[old];
+  }
   try {
     localStorage.setItem(CACHE_KEY, JSON.stringify(c));
   } catch (e) {}
@@ -337,6 +506,10 @@ async function refreshCache(farmId, cache) {
       cache.days[d.day] = d.totals;
       changed = true;
     }
+    if (d.coins && typeof d.coins === "object" && JSON.stringify(cache.coins[d.day] || null) !== JSON.stringify(d.coins)) {
+      cache.coins[d.day] = d.coins;
+      changed = true;
+    }
   });
   cache.at = Date.now();
   saveCache(cache);
@@ -346,7 +519,8 @@ async function refreshCache(farmId, cache) {
 function cacheToList(cache) {
   return Object.keys(cache.days).map(day => ({
     day: day,
-    totals: cache.days[day]
+    totals: cache.days[day],
+    coins: cache.coins && cache.coins[day] ? cache.coins[day] : null
   }));
 }
 
@@ -393,7 +567,7 @@ function renderList(body, list, notice) {
   lastList = list;
   lastNotice = notice;
   if (!list.length) return false;
-  const sig = JSON.stringify([ notice, showCount, list ]);
+  const sig = JSON.stringify([ notice, showCount, applyTools, list ]);
   const taxEl = document.getElementById("dhLogTax");
   if (taxEl) taxEl.textContent = taxNoteHtml(list);
   if (sig === renderedSig && body.childElementCount) return true;
@@ -532,6 +706,16 @@ export async function harvestLogInlineOpen(host) {
   inlineState.notice = "";
   inlineRender();
 }
+
+document.addEventListener("click", ev => {
+  const btn = ev.target && ev.target.closest ? ev.target.closest("[data-dh-tools]") : null;
+  if (!btn) return;
+  ev.stopPropagation();
+  ev.preventDefault();
+  setApplyTools(!applyTools);
+  rerender();
+  inlineRender();
+}, true);
 
 document.addEventListener("dh-open-log", ev => {
   openLog(ev && ev.detail && ev.detail.farm ? String(ev.detail.farm) : "");
