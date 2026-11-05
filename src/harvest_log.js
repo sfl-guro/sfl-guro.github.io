@@ -4,7 +4,9 @@ import { getIcon, cookFoodIcon } from "./ui.js";
 
 import { ICON_DATA } from "./icon_data.js";
 
-import { FLOWER_ICON, COIN_ICON, COOKING_FOOD_IMAGES, toolRecipes } from "./calculator.js";
+import { FLOWER_ICON, COIN_ICON, COOKING_FOOD_IMAGES } from "./calculator.js";
+
+import { craftedToolsInit, craftedToolsPrepare, craftedToolsViewFor, craftedToolsSync, craftedToolsPush } from "./crafted_tools.js";
 
 const HARVEST_LOG_BASE = "https://sfl-harvest-log.bossweki.workers.dev";
 
@@ -63,17 +65,6 @@ function fetchWithTimeout(url, opts) {
 const TOOLS_KEY = "hl_hlog_tl_v1";
 const APPLY_KEY = "hl_hlog_apply_tools";
 const TOOLS_MAX_DAYS = 400;
-
-const GROUP_TOOL = {
-  Wood: "Axe",
-  Stone: "Pickaxe",
-  Iron: "Stone Pickaxe",
-  Gold: "Iron Pickaxe",
-  Crimstone: "Gold Pickaxe",
-  Oil: "Oil Drill"
-};
-
-const DEDUCT_ITEMS = [ "Wood", "Stone", "Iron", "Gold", "Crimstone" ];
 
 let applyTools = false;
 
@@ -153,6 +144,28 @@ export function harvestLogSetFarm(id) {
   } catch (e) {}
 }
 
+export function harvestLogRequest(path, opts) {
+  return fetchWithTimeout(HARVEST_LOG_BASE + path, opts);
+}
+
+export function harvestLogFarmId() {
+  return currentFarmId();
+}
+
+export function harvestLogCachedDays(farmId) {
+  return mergeLocalToday(cacheToList(loadCache(farmId)), farmId);
+}
+
+export async function harvestLogLoadDays(farmId) {
+  const cache = loadCache(farmId);
+  if (!Object.keys(cache.days).length || Date.now() - cache.at >= CACHE_FRESH_MS) {
+    try {
+      await refreshCache(farmId, cache);
+    } catch (e) {}
+  }
+  return mergeLocalToday(cacheToList(cache), farmId);
+}
+
 function currentFarmId() {
   const tries = [];
   try {
@@ -224,7 +237,9 @@ function flush() {
   const farmId = pendingFarm;
   pendingFarm = "";
   if (!farmId) return;
-  pushTotals(farmId).catch(() => {});
+  pushTotals(farmId).catch(() => {}).finally(() => {
+    craftedToolsPush(farmId).catch(() => {});
+  });
 }
 
 export function harvestLogArm(farmId) {
@@ -322,30 +337,16 @@ function taxNoteHtml(list) {
   return `Total Gained and item values are net: Gross − Tax${tax ? ` (current tax ${tax})` : ""}.`;
 }
 
-function toolRecipeFor(tool) {
-  const list = Array.isArray(toolRecipes) ? toolRecipes : [];
-  return list.find(t => t && t.name === tool && t.locked) || list.find(t => t && t.name === tool) || null;
+function fmtCount(n) {
+  return Number.isInteger(n) ? n.toLocaleString("en-US") : n.toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
 }
 
-function toolCostsFor(totals) {
-  const used = {};
-  let any = false;
-  Object.keys(totals).forEach(name => {
-    const e = totals[name];
-    const tool = GROUP_TOOL[name];
-    if (!e || e.k !== "node" || !tool || !(e.tl > 0)) return;
-    any = true;
-    const recipe = toolRecipeFor(tool);
-    if (!recipe || !Array.isArray(recipe.materials)) return;
-    recipe.materials.forEach(m => {
-      if (!m || !DEDUCT_ITEMS.includes(m.name)) return;
-      used[m.name] = (used[m.name] || 0) + e.tl * (Number(m.qty) || 0);
-    });
-  });
-  return {
-    any: any,
-    used: used
-  };
+function craftedRowsHtml(crafted) {
+  const rows = crafted.tools.map(t => `<div class="dh-hlog-row"><span class="dh-hlog-amt">×${fmtCount(t.c)}</span><span class="dh-hlog-ico">${getIcon(t.name)}</span><span class="dh-hlog-name">${esc(t.name)}</span></div>`).join("");
+  return `<div class="dh-hlog-crafted"><div class="dh-hlog-crafted-label">Crafted Tools</div>${rows}</div>`;
 }
 
 function totalsAfterTools(totals, used) {
@@ -379,8 +380,9 @@ function coinsHtml(c) {
 
 function dayHtml(entry, number) {
   let totalNet = 0;
-  const costs = toolCostsFor(entry.totals);
-  const view = applyTools && costs.any ? totalsAfterTools(entry.totals, costs.used) : entry.totals;
+  const crafted = craftedToolsViewFor(entry.day);
+  const showCrafted = applyTools && !!crafted;
+  const view = showCrafted ? totalsAfterTools(entry.totals, crafted.own) : entry.totals;
   const rows = sortedNames(view).map(name => {
     const e = view[name];
     const net = netOf(e);
@@ -389,12 +391,13 @@ function dayHtml(entry, number) {
     const count = e.c > 0 ? `<span class="dh-hlog-count"><span class="dh-hlog-h" role="button" tabindex="0" data-dh-h="1" aria-label="${e.k === "cooking" || e.k === "composter" ? "Collected" : "Harvested"}">${e.k === "cooking" || e.k === "composter" ? "C" : "H"}<span class="dh-hlog-tip">${e.k === "cooking" || e.k === "composter" ? "Collected" : "Harvested"}</span></span>${e.c}x</span>` : "";
     return `<div class="dh-hlog-row"><span class="dh-hlog-amt">${signed(e.a, fmtAmount)}</span><span class="dh-hlog-ico">${itemIcon(name, e.k)}</span><span class="dh-hlog-name">${esc(name)}</span>${value}${count}</div>`;
   }).join("");
-  const toolBtn = costs.any ? `<button type="button" class="dh-hlog-apply guro-frame${applyTools ? " on" : ""}" data-dh-tools="1" aria-pressed="${applyTools ? "true" : "false"}">Apply Tools</button>` : "";
-  const total = totalNet > 0 || costs.any ? `<div class="dh-hlog-gain${toolBtn ? " dh-hlog-gain-tools" : ""}">${toolBtn}<span class="dh-hlog-gain-sum"><span>Total Gained:</span><span class="dh-hlog-gain-val">${signed(totalNet, n => n.toLocaleString("en-US", {
+  const toolBtn = crafted ? `<button type="button" class="fd-lb-tab dh-hlog-craftbtn guro-frame${applyTools ? " active" : ""}" data-dh-tools="1" aria-pressed="${applyTools ? "true" : "false"}">Crafted Tools</button>` : "";
+  const craftedBlock = showCrafted ? craftedRowsHtml(crafted) : "";
+  const total = totalNet > 0 || crafted ? `<div class="dh-hlog-gain${toolBtn ? " dh-hlog-gain-tools" : ""}">${toolBtn}<span class="dh-hlog-gain-sum"><span>Total Gained:</span><span class="dh-hlog-gain-val">${signed(totalNet, n => n.toLocaleString("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   }))}${flowerHtml()}</span></span></div>` : "";
-  return `<div class="dh-hlog-day guro-frame"><div class="dh-hlog-dayhead"><span class="dh-hlog-no">#${number}</span><span class="dh-hlog-date">${dateLabel(entry.day)}</span></div>${rows}${total}${coinsHtml(entry.coins)}</div>`;
+  return `<div class="dh-hlog-day guro-frame"><div class="dh-hlog-dayhead"><span class="dh-hlog-no">#${number}</span><span class="dh-hlog-date">${dateLabel(entry.day)}</span></div>${rows}${craftedBlock}${total}${coinsHtml(entry.coins)}</div>`;
 }
 
 function mergeLocalToday(days, farmId) {
@@ -567,7 +570,8 @@ function renderList(body, list, notice) {
   lastList = list;
   lastNotice = notice;
   if (!list.length) return false;
-  const sig = JSON.stringify([ notice, showCount, applyTools, list ]);
+  const craftedSig = craftedToolsPrepare(list, currentFarmId());
+  const sig = JSON.stringify([ notice, showCount, applyTools, craftedSig, list ]);
   const taxEl = document.getElementById("dhLogTax");
   if (taxEl) taxEl.textContent = taxNoteHtml(list);
   if (sig === renderedSig && body.childElementCount) return true;
@@ -601,6 +605,12 @@ async function openLog(trackKey) {
   const token = ++openToken;
   showCount = PAGE_SIZE;
   body.scrollTop = 0;
+  craftedToolsSync(farmId).then(changed => {
+    if (changed && token === openToken) {
+      renderedSig = "";
+      rerender();
+    }
+  });
   const cache = loadCache(farmId);
   const hasCache = Object.keys(cache.days).length > 0;
   if (hasCache) {
@@ -642,6 +652,7 @@ function inlineRender() {
   const host = inlineState.host;
   if (!host || !host.isConnected) return;
   const list = inlineState.list;
+  craftedToolsPrepare(list, currentFarmId());
   const asc = list.slice().sort((a, b) => a.day < b.day ? -1 : a.day > b.day ? 1 : 0);
   const cards = asc.map((entry, i) => dayHtml(entry, i + 1)).reverse();
   const more = cards.length > inlineState.showCount ? `<div class="dh-hlog-more"><button type="button" class="dh-pop-log-btn" data-pf-hmore="1">Show more (${cards.length - inlineState.showCount} older)</button></div>` : "";
@@ -672,6 +683,9 @@ export async function harvestLogInlineOpen(host) {
     inlineMessage("Sync your Farm ID first to see your history.");
     return;
   }
+  craftedToolsSync(farmId).then(changed => {
+    if (changed && token === inlineState.token) inlineRender();
+  });
   const cache = loadCache(farmId);
   const hasCache = Object.keys(cache.days).length > 0;
   if (hasCache) {
@@ -728,3 +742,11 @@ window.addEventListener("keydown", ev => {
   ev.stopPropagation();
   closeLog();
 }, true);
+
+craftedToolsInit({
+  getIcon: name => getIcon(name),
+  request: (path, opts) => harvestLogRequest(path, opts),
+  farmId: () => harvestLogFarmId(),
+  cachedDays: farmId => harvestLogCachedDays(farmId),
+  loadDays: farmId => harvestLogLoadDays(farmId)
+});

@@ -47,8 +47,10 @@ let tab = "info";
 
 let harvestMod = null;
 
+let craftedMod = null;
+
 function tabsHtml() {
-  return `<div class="pf-switch"><button type="button" class="fd-lb-tab pf-sw-btn${tab === "info" ? " active" : ""}" data-pf-tab="info">Info</button><button type="button" class="fd-lb-tab pf-sw-btn${tab === "harvest" ? " active" : ""}" data-pf-tab="harvest">Harvest Log</button></div>`;
+  return `<div class="pf-switch"><button type="button" class="fd-lb-tab pf-sw-btn${tab === "info" ? " active" : ""}" data-pf-tab="info">Info</button><button type="button" class="fd-lb-tab pf-sw-btn${tab === "harvest" ? " active" : ""}" data-pf-tab="harvest">Harvest Log</button><button type="button" class="fd-lb-tab pf-sw-btn${tab === "crafted" ? " active" : ""}" data-pf-tab="crafted">Crafted Tools</button></div>`;
 }
 
 async function renderHarvest() {
@@ -65,10 +67,25 @@ async function renderHarvest() {
   harvestMod.harvestLogInlineOpen(host);
 }
 
+async function renderCrafted() {
+  if (!rootEl) return;
+  rootEl.innerHTML = `${tabsHtml()}<div class="pf-hlog-host ct-host" id="pfCraftedHost"></div>`;
+  const host = rootEl.querySelector("#pfCraftedHost");
+  try {
+    if (!craftedMod) craftedMod = await import("../crafted_tools.js");
+  } catch (e) {
+    if (host) host.innerHTML = `<div class="dh-hlog-msg">Couldn't load crafted tools. Check your connection.</div>`;
+    return;
+  }
+  if (!rootEl || tab !== "crafted" || !host || !host.isConnected) return;
+  craftedMod.craftedToolsOpen(host);
+}
+
 function setTab(next) {
   if (next === tab) return;
   tab = next;
   if (tab !== "harvest" && harvestMod) harvestMod.harvestLogInlineClose();
+  if (tab !== "crafted" && craftedMod) craftedMod.craftedToolsClose();
   render();
 }
 
@@ -124,6 +141,10 @@ function render() {
   if (!rootEl) return;
   if (tab === "harvest") {
     renderHarvest();
+    return;
+  }
+  if (tab === "crafted") {
+    renderCrafted();
     return;
   }
   const keep = rootEl.querySelector("#pfSearchInput");
@@ -206,9 +227,11 @@ function addCurrent() {
 function onClick(e) {
   const tabBtn = e.target.closest("[data-pf-tab]");
   if (tabBtn) {
-    setTab(tabBtn.dataset.pfTab === "harvest" ? "harvest" : "info");
+    const nextTab = tabBtn.dataset.pfTab;
+    setTab(nextTab === "harvest" || nextTab === "crafted" ? nextTab : "info");
     return;
   }
+  if (tab === "crafted") return;
   if (tab === "harvest") {
     const hBadge = e.target.closest("[data-dh-h]");
     rootEl.querySelectorAll(".dh-hlog-h.open").forEach(el => {
@@ -327,6 +350,7 @@ export function unmount() {
   if (!rootEl) return;
   tab = "info";
   if (harvestMod) harvestMod.harvestLogInlineClose();
+  if (craftedMod) craftedMod.craftedToolsClose();
   rootEl.removeEventListener("click", onClick);
   rootEl.removeEventListener("input", onInput);
   rootEl.removeEventListener("change", onChange);

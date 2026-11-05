@@ -80,7 +80,7 @@ function chipHtml(shape, idx) {
       html += `<div class="dig-god-cell">${n ? getIcon(n) : ""}</div>`;
     }
   }
-  return `<button type="button" class="dig-god-chip${idx === selected ? " is-selected" : ""}" data-god-idx="${idx}" style="grid-template-columns:repeat(${w}, 12px);grid-template-rows:repeat(${h}, 12px);">${html}</button>`;
+  return `<button type="button" class="dig-god-chip guro-frame${idx === selected ? " is-selected" : ""}" data-god-idx="${idx}" style="grid-template-columns:repeat(${w}, 12px);grid-template-rows:repeat(${h}, 12px);">${html}</button>`;
 }
 
 function renderChips(solved) {
