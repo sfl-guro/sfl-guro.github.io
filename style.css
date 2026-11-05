@@ -94,6 +94,7 @@ body.app-dark .fp-boost-tier.active .fp-tier-check{ color:#d8dce2 !important; }
 body.app-dark .cook-levelup-pill{ color:#d8dce2 !important; }
 body.app-dark .cook-mode-toggle .btn.active{ color:#d8dce2 !important; }
 body.app-dark .cook-building-tabs button.active{ color:#d8dce2 !important; }
+body.app-dark .cave-tab.active{ color:#d8dce2 !important; }
 body.app-dark .market-tab-btn.active{ color:#d8dce2 !important; }
 body.app-dark .pet-cat-btn.active{ color:#d8dce2 !important; }
 body.app-dark .pet-cat-btn:active{ color:#d8dce2 !important; }
@@ -7237,9 +7238,9 @@ body.sfl-theme button,
 body.sfl-theme .btn,
 body.sfl-theme [class*="btn"]:where(:not(.boost-btn-stack):not(.more-menu-btn-wrap):not(.panel-boost-nodes-btn)),
 body.sfl-theme [class*="Btn"],
-body.sfl-theme [class*="-tab"]:where(:not(.main-tab-modal):not(.es-island-tabs):not(.farm-panel-tab-content):not(.betty-tabs):not(.cook-building-tabs):not(.gunter-tabs):not(.market-tabs):not(.rcm-tabs):not(.trade-tabs):not(.profile-tabgrid):not(.profile-tradable-tab-subtotal):not(.mutant-map-table):not(.mutant-map-table-header):not(.mutant-map-table-row):not(.mutant-map-table-cell)),
-body.sfl-theme [class*="tab-"]:where(:not(.main-tab-modal):not(.es-island-tabs):not(.farm-panel-tab-content):not(.betty-tabs):not(.cook-building-tabs):not(.gunter-tabs):not(.market-tabs):not(.rcm-tabs):not(.trade-tabs):not(.profile-tabgrid):not(.profile-tradable-tab-subtotal)),
-body.sfl-theme [class*="Tab"]:where(:not(.main-tab-modal):not(.es-island-tabs):not(.farm-panel-tab-content):not(.betty-tabs):not(.cook-building-tabs):not(.gunter-tabs):not(.market-tabs):not(.rcm-tabs):not(.trade-tabs):not(.profile-tabgrid):not(.profile-tradable-tab-subtotal)),
+body.sfl-theme [class*="-tab"]:where(:not(.main-tab-modal):not(.es-island-tabs):not(.farm-panel-tab-content):not(.betty-tabs):not(.cave-tabs):not(.cook-building-tabs):not(.gunter-tabs):not(.market-tabs):not(.rcm-tabs):not(.trade-tabs):not(.profile-tabgrid):not(.profile-tradable-tab-subtotal):not(.mutant-map-table):not(.mutant-map-table-header):not(.mutant-map-table-row):not(.mutant-map-table-cell)),
+body.sfl-theme [class*="tab-"]:where(:not(.main-tab-modal):not(.es-island-tabs):not(.farm-panel-tab-content):not(.betty-tabs):not(.cave-tabs):not(.cook-building-tabs):not(.gunter-tabs):not(.market-tabs):not(.rcm-tabs):not(.trade-tabs):not(.profile-tabgrid):not(.profile-tradable-tab-subtotal)),
+body.sfl-theme [class*="Tab"]:where(:not(.main-tab-modal):not(.es-island-tabs):not(.farm-panel-tab-content):not(.betty-tabs):not(.cave-tabs):not(.cook-building-tabs):not(.gunter-tabs):not(.market-tabs):not(.rcm-tabs):not(.trade-tabs):not(.profile-tabgrid):not(.profile-tradable-tab-subtotal)),
 body.sfl-theme [class*="toggle"] button,
 body.sfl-theme [class*="toggle"],
 body.sfl-theme [class*="nav"]:not(.cfm-nav){
@@ -7258,7 +7259,7 @@ body.sfl-theme [class*="nav"]:not(.cfm-nav){
 body.sfl-theme button:active,
 body.sfl-theme .btn:active,
 body.sfl-theme [class*="btn"]:not(.boost-btn-stack):not(.more-menu-btn-wrap):not(.panel-boost-nodes-btn):active,
-body.sfl-theme [class*="-tab"]:where(:not(.main-tab-modal):not(.es-island-tabs):not(.farm-panel-tab-content):not(.betty-tabs):not(.cook-building-tabs):not(.gunter-tabs):not(.market-tabs):not(.rcm-tabs):not(.trade-tabs):not(.profile-tabgrid):not(.profile-tradable-tab-subtotal):not(.mutant-map-table):not(.mutant-map-table-header):not(.mutant-map-table-row):not(.mutant-map-table-cell)):active,
+body.sfl-theme [class*="-tab"]:where(:not(.main-tab-modal):not(.es-island-tabs):not(.farm-panel-tab-content):not(.betty-tabs):not(.cave-tabs):not(.cook-building-tabs):not(.gunter-tabs):not(.market-tabs):not(.rcm-tabs):not(.trade-tabs):not(.profile-tabgrid):not(.profile-tradable-tab-subtotal):not(.mutant-map-table):not(.mutant-map-table-header):not(.mutant-map-table-row):not(.mutant-map-table-cell)):active,
 body.sfl-theme [class*="toggle"] button:active{
   transform:scale(0.99) !important;
   border-image:var(--sfl-btn-pressed-image) 3 3 4 3 fill !important;
@@ -8397,6 +8398,7 @@ body.sfl-theme .restock-mode-btn.active,
 body.sfl-theme .cfm-nav-btn.active,
 body.sfl-theme #calcModeHarvestBtn.active,
 body.sfl-theme #calcModeBoughtBtn.active,
+body.sfl-theme .cave-tab.active,
 body.sfl-theme .profit-mode-btn.active{
   background-color:var(--sfl-outer) !important;
   color:var(--sfl-text) !important;
@@ -15697,7 +15699,7 @@ html body #caveSidePanel #caveCard.dig-panel-card::before, html body #caveSidePa
 .cave-tabs{ display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:6px; margin-top:8px; }
 .cave-tab{ min-width:0; padding:8px 4px; font-family:var(--pixel-font); font-size:10px; text-transform:uppercase; letter-spacing:.4px; color:var(--ink); background:var(--wheat-dim); border:2px solid var(--soil-dark); border-radius:0; cursor:pointer; box-shadow:2px 2px 0 rgba(0,0,0,.35); }
 .cave-tab:active{ transform:translate(2px,2px); box-shadow:none; }
-.cave-tab.is-active{ background:var(--sun); box-shadow:inset 0 0 0 2px var(--ink); }
+.cave-tab.active{ background:var(--sun); box-shadow:inset 0 0 0 2px var(--ink); }
 .cave-merchant-wrap{ min-width:0; }
 .cave-offers{ display:flex; flex-direction:column; gap:6px; margin-top:4px; }
 .cave-offer{ display:flex; flex-direction:column; gap:2px; padding:6px 8px; background:var(--wheat-dim); box-sizing:border-box; }

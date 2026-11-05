@@ -2,7 +2,7 @@ import {
   api,
   initNav,
   initRouter
-} from "./chunk.BKGYPCEB.js";
+} from "./chunk.NR2DZEGO.js";
 import {
   initGemPacks
 } from "./chunk.F7REBWYF.js";

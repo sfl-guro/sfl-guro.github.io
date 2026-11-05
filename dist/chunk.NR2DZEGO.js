@@ -49,7 +49,7 @@ var PAGES = [{
   path: "/cave-solver",
   label: "Cave Digging",
   root: "pageCaveSolver",
-  load: () => import("./cavesolver.Y3TQ77TL.js")
+  load: () => import("./cavesolver.LYBVU6WI.js")
 }, {
   id: "potionroom",
   path: "/potionroom",
@@ -217,7 +217,7 @@ var PAGES = [{
   path: "/userguide",
   label: "User Guide",
   root: "pageUserGuide",
-  load: () => import("./userguide.UL4EPS47.js")
+  load: () => import("./userguide.FFWVZSMW.js")
 }, {
   id: "profile",
   path: "/profile",
