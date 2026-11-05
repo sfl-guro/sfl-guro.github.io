@@ -11,6 +11,8 @@ import { dailyHarvestTrack, dailyHarvestBadgeHtml, dailyHarvestSetYield, dailyHa
 
 import { harvestLogArm } from "./harvest_log.js";
 
+import { craftedToolsTrack } from "./crafted_tools.js";
+
 export function farmPanelDetectNodeTier(resourceName, node) {
   const tiers = RESOURCE_NODE_TIERS[resourceName];
   if (!tiers) return null;
@@ -6187,6 +6189,7 @@ export function farmPanelSaveGameState(json, isFullSync, syncedFarmId) {
       const trackFarmId = String(syncedFarmId || json.id || farmPanelGetLastInfo().id || "");
       if (trackFarmId) {
         dailyHarvestTrack(farmSyncExtractGameState(json), trackFarmId);
+        craftedToolsTrack(farmSyncExtractGameState(json), trackFarmId);
         harvestLogArm(trackFarmId);
       }
     }
