@@ -2334,7 +2334,7 @@ export function computePigTradeIn(levelOverride) {
     if (b.bristleMult) mult *= b.bristleMult;
   });
   const spice = getSpiceEffectForAnimalType("pig");
-  const amount = base > 0 ? roundClaimProduce(Math.max(0, (base + flat) * mult * spice.yieldMultAll)) : 0;
+  const amount = base > 0 ? roundClaimProduce(Math.max(0, base * mult * spice.yieldMultAll + flat)) : 0;
   const sickAmount = roundClaimProduce(amount * SICK_ANIMAL_REWARD_MULTIPLIER);
   return {
     level: level,
@@ -2528,7 +2528,7 @@ export function computeAnimalYieldsForLevel(type, level, realFeedBuffName) {
   const yields = cfg.products.map((_, pi) => {
     const budPart = Object.values(budAddSum[pi]).length ? Math.max(...Object.values(budAddSum[pi])) : 0;
     const flatPart = yieldAdd[pi] - budPart;
-    return roundClaimProduce(Math.max(0, ((lvlData.y[pi] + flatPart) * productMult[pi] + budPart) * yieldMultAllTotal));
+    return roundClaimProduce(Math.max(0, lvlData.y[pi] * productMult[pi] * yieldMultAllTotal + flatPart + budPart));
   });
   return {
     yields: yields,
@@ -14463,7 +14463,7 @@ export function computeAnimalTypeFigures(type, visited, levelOverride, cycleOver
   const yields = cfg.products.map((_, pi) => {
     const budPart = Object.values(budAddSum[pi]).length ? Math.max(...Object.values(budAddSum[pi])) : 0;
     const flatPart = yieldAdd[pi] - budPart;
-    return roundClaimProduce(Math.max(0, ((lvlData.y[pi] + flatPart) * productMult[pi] + budPart) * yieldMultAllTotal));
+    return roundClaimProduce(Math.max(0, lvlData.y[pi] * productMult[pi] * yieldMultAllTotal + flatPart + budPart));
   });
   const totalYieldUnits = yields.reduce((a, v) => a + v, 0);
   const curesPerLevel = getCuresPerLevelForType(type);

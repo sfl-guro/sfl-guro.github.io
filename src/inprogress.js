@@ -3112,7 +3112,7 @@ function farmPanelComputeAnimalCards(rawRows) {
         truffleSeasoningYieldByProduct[r.name] = (truffleSeasoningYieldByProduct[r.name] || 0) + r.qty * .5;
       }
       if (r.feedBuffName === "Salt Lick" && typeof r.qty === "number") {
-        saltLickYieldByProduct[r.name] = (saltLickYieldByProduct[r.name] || 0) + r.qty * (1 - 1 / 1.05);
+        saltLickYieldByProduct[r.name] = (saltLickYieldByProduct[r.name] || 0) + Math.max(0, r.qty - animalFlatYield(activeAnimalBoosts, meta.products.indexOf(r.name))) * (1 - 1 / 1.05);
       }
       if (r.feedBuffName === "Honey Treat" && typeof r.feedCostFlowerShare === "number") {
         honeyTreatSavingsFlower += r.feedCostFlowerShare / 3;
@@ -4840,18 +4840,33 @@ export function farmPanelComputeStocks(json) {
   return rows;
 }
 
+function animalFlatYield(boosts, idx) {
+  let flat = 0;
+  const buds = {};
+  (boosts || []).forEach(b => {
+    if (b.yieldAddAll) flat += b.yieldAddAll;
+    if (b.productIndex === idx && b.yieldAdd) {
+      if (b.isBud && b.budId) buds[b.budId] = (buds[b.budId] || 0) + b.yieldAdd; else flat += b.yieldAdd;
+    }
+  });
+  const vals = Object.values(buds);
+  return flat + (vals.length ? Math.max(...vals) : 0);
+}
+
 function farmPanelRenderAnimalYieldBoostList(boosts, productNames, products, fallbackCount, spiceBuffCards, timeBoosts, costBoosts, cycleTimeSec) {
   const countForProduct = pname => {
     const match = products && products.find(p => p.name === pname);
     return match && typeof match.count === "number" ? match.count : fallbackCount || 0;
   };
+  const flatPerAnimal = idx => animalFlatYield(boosts, idx);
+  const scaledPart = (p, idx) => Math.max(0, p.totalYield - flatPerAnimal(idx) * (typeof p.count === "number" ? p.count : fallbackCount || 0));
   const yieldEntries = [];
   (boosts || []).forEach(b => {
     const boostIcon = getBoostIcon(b.name);
     if (b.truffleMult) {
       const tp = products && products[0];
       if (tp) {
-        const extra = tp.totalYield * (b.truffleMult - 1) / b.truffleMult;
+        const extra = scaledPart(tp, 0) * (b.truffleMult - 1) / b.truffleMult;
         yieldEntries.push({
           productIndex: 0,
           html: `<div class="boost-applied-row is-yield">${boostIcon}<b>${escapeHtml(b.name)}</b> <span class="boost-mult-note">(×${b.truffleMult})</span> <span class="boost-total-value">+${fmtAnimal(extra)}</span>${getIcon(tp.name)}</div>`
@@ -4861,7 +4876,7 @@ function farmPanelRenderAnimalYieldBoostList(boosts, productNames, products, fal
     if (b.yieldMultAll) {
       const mult = b.yieldMultAll;
       (products || []).forEach((p, idx) => {
-        const extra = p.totalYield * (mult - 1) / mult;
+        const extra = scaledPart(p, idx) * (mult - 1) / mult;
         const picon = getIcon(p.name);
         yieldEntries.push({
           productIndex: idx,

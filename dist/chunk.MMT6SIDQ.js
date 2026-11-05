@@ -30613,7 +30613,7 @@ function farmPanelComputeAnimalCards(rawRows) {
         truffleSeasoningYieldByProduct[r.name] = (truffleSeasoningYieldByProduct[r.name] || 0) + r.qty * 0.5;
       }
       if (r.feedBuffName === "Salt Lick" && typeof r.qty === "number") {
-        saltLickYieldByProduct[r.name] = (saltLickYieldByProduct[r.name] || 0) + r.qty * (1 - 1 / 1.05);
+        saltLickYieldByProduct[r.name] = (saltLickYieldByProduct[r.name] || 0) + Math.max(0, r.qty - animalFlatYield(activeAnimalBoosts, meta.products.indexOf(r.name))) * (1 - 1 / 1.05);
       }
       if (r.feedBuffName === "Honey Treat" && typeof r.feedCostFlowerShare === "number") {
         honeyTreatSavingsFlower += r.feedCostFlowerShare / 3;
@@ -32298,18 +32298,33 @@ function farmPanelComputeStocks(json) {
   rows.sort((a, b) => b.profit - a.profit);
   return rows;
 }
+function animalFlatYield(boosts, idx) {
+  let flat = 0;
+  const buds = {};
+  (boosts || []).forEach((b) => {
+    if (b.yieldAddAll) flat += b.yieldAddAll;
+    if (b.productIndex === idx && b.yieldAdd) {
+      if (b.isBud && b.budId) buds[b.budId] = (buds[b.budId] || 0) + b.yieldAdd;
+      else flat += b.yieldAdd;
+    }
+  });
+  const vals = Object.values(buds);
+  return flat + (vals.length ? Math.max(...vals) : 0);
+}
 function farmPanelRenderAnimalYieldBoostList(boosts, productNames, products, fallbackCount, spiceBuffCards, timeBoosts, costBoosts, cycleTimeSec) {
   const countForProduct = (pname) => {
     const match = products && products.find((p) => p.name === pname);
     return match && typeof match.count === "number" ? match.count : fallbackCount || 0;
   };
+  const flatPerAnimal = (idx) => animalFlatYield(boosts, idx);
+  const scaledPart = (p, idx) => Math.max(0, p.totalYield - flatPerAnimal(idx) * (typeof p.count === "number" ? p.count : fallbackCount || 0));
   const yieldEntries = [];
   (boosts || []).forEach((b) => {
     const boostIcon = getBoostIcon(b.name);
     if (b.truffleMult) {
       const tp = products && products[0];
       if (tp) {
-        const extra = tp.totalYield * (b.truffleMult - 1) / b.truffleMult;
+        const extra = scaledPart(tp, 0) * (b.truffleMult - 1) / b.truffleMult;
         yieldEntries.push({
           productIndex: 0,
           html: `<div class="boost-applied-row is-yield">${boostIcon}<b>${escapeHtml(b.name)}</b> <span class="boost-mult-note">(\xD7${b.truffleMult})</span> <span class="boost-total-value">+${fmtAnimal(extra)}</span>${getIcon(tp.name)}</div>`
@@ -32319,7 +32334,7 @@ function farmPanelRenderAnimalYieldBoostList(boosts, productNames, products, fal
     if (b.yieldMultAll) {
       const mult = b.yieldMultAll;
       (products || []).forEach((p, idx) => {
-        const extra = p.totalYield * (mult - 1) / mult;
+        const extra = scaledPart(p, idx) * (mult - 1) / mult;
         const picon = getIcon(p.name);
         yieldEntries.push({
           productIndex: idx,
@@ -36311,7 +36326,7 @@ function computePigTradeIn(levelOverride) {
     if (b.bristleMult) mult *= b.bristleMult;
   });
   const spice = getSpiceEffectForAnimalType("pig");
-  const amount = base > 0 ? roundClaimProduce(Math.max(0, (base + flat) * mult * spice.yieldMultAll)) : 0;
+  const amount = base > 0 ? roundClaimProduce(Math.max(0, base * mult * spice.yieldMultAll + flat)) : 0;
   const sickAmount = roundClaimProduce(amount * SICK_ANIMAL_REWARD_MULTIPLIER);
   return {
     level,
@@ -36503,7 +36518,7 @@ function computeAnimalYieldsForLevel(type, level, realFeedBuffName) {
   const yields = cfg.products.map((_, pi) => {
     const budPart = Object.values(budAddSum[pi]).length ? Math.max(...Object.values(budAddSum[pi])) : 0;
     const flatPart = yieldAdd[pi] - budPart;
-    return roundClaimProduce(Math.max(0, ((lvlData.y[pi] + flatPart) * productMult[pi] + budPart) * yieldMultAllTotal));
+    return roundClaimProduce(Math.max(0, lvlData.y[pi] * productMult[pi] * yieldMultAllTotal + flatPart + budPart));
   });
   return {
     yields,
@@ -47854,7 +47869,7 @@ function computeAnimalTypeFigures(type, visited, levelOverride, cycleOverride) {
   const yields = cfg.products.map((_, pi) => {
     const budPart = Object.values(budAddSum[pi]).length ? Math.max(...Object.values(budAddSum[pi])) : 0;
     const flatPart = yieldAdd[pi] - budPart;
-    return roundClaimProduce(Math.max(0, ((lvlData.y[pi] + flatPart) * productMult[pi] + budPart) * yieldMultAllTotal));
+    return roundClaimProduce(Math.max(0, lvlData.y[pi] * productMult[pi] * yieldMultAllTotal + flatPart + budPart));
   });
   const totalYieldUnits = yields.reduce((a, v) => a + v, 0);
   const curesPerLevel = getCuresPerLevelForType(type);
