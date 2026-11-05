@@ -200,7 +200,7 @@ function statusHtml(cave, ids, now) {
 }
 
 function tabsHtml(ids) {
-  const buttons = ids.map(id => `<button type="button" class="cave-tab${id === selectedBin ? " is-active" : ""}" data-cave-tab="${esc(id)}">Bin ${esc(id)}</button>`).join("");
+  const buttons = ids.map(id => `<button type="button" class="cave-tab${id === selectedBin ? " active" : ""}" data-cave-tab="${esc(id)}">Bin ${esc(id)}</button>`).join("");
   return `<div class="cave-tabs">${buttons}</div>`;
 }
 

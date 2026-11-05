@@ -184,7 +184,7 @@ function statusHtml(cave, ids, now) {
   return `<div class="cave-info-box guro-frame"><div class="cave-board-title cave-running-title"><span><span class="cave-myco-icon">${apiRef.ui.getIcon("Myco Bin")}</span> Myco Bins running</span><span class="cave-tier-tag">Cave Tier ${tier}</span></div>${summary}<div class="cave-bin-list">${rows.join("")}</div></div>`;
 }
 function tabsHtml(ids) {
-  const buttons = ids.map((id) => `<button type="button" class="cave-tab${id === selectedBin ? " is-active" : ""}" data-cave-tab="${esc(id)}">Bin ${esc(id)}</button>`).join("");
+  const buttons = ids.map((id) => `<button type="button" class="cave-tab${id === selectedBin ? " active" : ""}" data-cave-tab="${esc(id)}">Bin ${esc(id)}</button>`).join("");
   return `<div class="cave-tabs">${buttons}</div>`;
 }
 function merchantTimerText(visit, now) {
