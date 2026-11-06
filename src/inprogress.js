@@ -2937,7 +2937,16 @@ function farmPanelComputeInProgressRaw(json, opts) {
           isMaxCycle: progress.isMaxCycle,
           feedsToNextCount: progress.noOfFeeds,
           feedQtyToNext: feedQtyToNext,
-          feedToNextName: remainingFeedLabel
+          feedToNextName: remainingFeedLabel,
+          shortId: String(animalId).slice(0, 8),
+          xpNow: progress.xp,
+          xpGap: progress.xpGap,
+          xpPerFeed: progress.boostedFoodXp,
+          claimLevel: progress.claimLevel,
+          loveXp: progress.expectedLoveXp,
+          loveItem: animal.item || "",
+          isReady: ready,
+          fedThisCycle: !sick && !ready && !progress.isReadyState && (stateStr === "happy" || stateStr === "sad" || stateStr === "" && (awakeAt != null || asleepAt != null))
         });
       });
     });
@@ -2994,41 +3003,19 @@ function farmPanelBuildAnimalProductStats(rows) {
 function farmPanelComputeAnimalYieldGroups(type, meta) {
   const list = farmPanelAnimalYieldGroupsByType[type] || [];
   if (!list.length) return [];
-  const byKey = new Map;
-  list.forEach(a => {
-    const key = String(a.level) + (a.isReadyState ? "r" : "");
-    if (!byKey.has(key)) {
-      byKey.set(key, {
-        level: a.level,
-        xpMin: a.xp,
-        xpMax: a.xp,
-        count: 0,
-        feedQty: 0,
-        feedName: a.feedName,
-        nextThreshold: a.nextThreshold,
-        nextLevelLabel: a.nextLevelLabel,
-        isMaxCycle: a.isMaxCycle,
-        feedsToNextCount: 0,
-        feedQtyToNext: 0,
-        feedToNextName: a.feedToNextName,
-        yields: (meta.products || []).map(() => 0)
-      });
-    }
-    const g = byKey.get(key);
-    g.count += 1;
-    g.feedQty += a.feedQty || 0;
-    g.feedQtyToNext += a.feedQtyToNext || 0;
-    g.feedsToNextCount += a.feedsToNextCount || 0;
-    if (a.xp < g.xpMin) g.xpMin = a.xp;
-    if (a.xp > g.xpMax) g.xpMax = a.xp;
+  const sorted = list.slice().sort((a, b) => b.level - a.level || b.xp - a.xp);
+  return sorted.map((a, i) => {
+    const yields = (meta.products || []).map(() => 0);
     a.products.forEach((pname, idx) => {
       const productIdx = meta.products.indexOf(pname);
-      if (productIdx >= 0) g.yields[productIdx] += a.yields[idx] || 0;
+      if (productIdx >= 0) yields[productIdx] += a.yields[idx] || 0;
     });
+    return {
+      ...a,
+      number: i + 1,
+      yields: yields
+    };
   });
-  const groups = Array.from(byKey.values());
-  groups.sort((a, b) => a.level - b.level);
-  return groups;
 }
 
 function farmPanelFormatSpiceDuration(sec) {

@@ -38,6 +38,8 @@ let restoreFns = [];
 let animalsDraft = null;
 let listening = false;
 let detailsOpen = false;
+
+let levelsOpen = false;
 let bristleInfoOpen = false;
 
 function esc(s) {
@@ -484,11 +486,44 @@ function valuesHtml(rows) {
   </div>`;
 }
 
+function feedExpRowsHtml(table, keys) {
+  return keys.map(key => {
+    const ranges = [];
+    for (let idx = 0; idx < 15; idx++) {
+      const xp = table[idx][key];
+      const last = ranges[ranges.length - 1];
+      if (last && last.xp === xp) last.to = idx + 1; else ranges.push({ xp: xp, from: idx + 1, to: idx + 1 });
+    }
+    return ranges.map(r => `<div class="ct-trow an-lv-row an-fd-row"><span class="ct-tcell">${ui.getIcon(calc.FEED_LABELS[key])}<span>${esc(calc.FEED_LABELS[key])}</span></span><span>${n2(r.xp)}</span><span>${r.from === r.to ? r.from : r.from + "–" + r.to}</span></div>`).join("");
+  }).join("");
+}
+
+function feedsInfoHtml() {
+  const head = `<div class="ct-trow ct-thead an-lv-row an-fd-row"><span>Feed</span><span>Exp</span><span>Level</span></div>`;
+  const group = (title, rows) => `<div class="an-lv-block"><div class="an-lv-head"><span class="an-lv-name">${title}</span></div>${head}${rows}</div>`;
+  const beetleRows = Object.keys(calc.BEETLE_FEED_XP).map(key => `<div class="ct-trow an-lv-row an-fd-row"><span class="ct-tcell">${ui.getIcon(calc.FEED_LABELS[key])}<span>${esc(calc.FEED_LABELS[key])}</span></span><span>${n2(calc.BEETLE_FEED_XP[key])}</span><span>1–15</span></div>`).join("");
+  return group("Chicken, Sheep, Cow Feeds", feedExpRowsHtml(calc.getAnimalFoodXpTable("chicken"), [ "kernelBlend", "hay", "nutriBarley", "mixedGrain", "omnifeed" ])) + group("Pig Feeds", feedExpRowsHtml(calc.getAnimalFoodXpTable("pig"), [ "slopBasic", "slopHearty", "slopRich", "slopGourmet" ])) + group("Beetle Feeds", beetleRows);
+}
+
+function levelsInfoHtml() {
+  const blocks = Object.keys(calc.ANIMAL_DATA).map(type => {
+    const data = calc.ANIMAL_DATA[type];
+    const th = calc.ANIMAL_XP_THRESHOLDS[type];
+    const rows = data.levels.map((lv, i) => {
+      const level = i + 1;
+      const xp = th[level] - th[level - 1];
+      return `<div class="ct-trow an-lv-row"><span>${level}</span><span>${n2(xp)}</span><span class="ct-tcell">${ui.getIcon(calc.FEED_LABELS[lv.feed])}<span>×${n2(lv.qty)}</span></span></div>`;
+    }).join("");
+    return `<div class="an-lv-block"><div class="an-lv-head"><span class="an-lv-icon">${iconOf(type)}</span><span class="an-lv-name">${esc(data.label)}</span></div><div class="ct-trow ct-thead an-lv-row"><span>Level</span><span>Exp</span><span>Feed / Qty</span></div>${rows}</div>`;
+  }).join("");
+  return `<div class="an-lv-list">${feedsInfoHtml()}${blocks}</div>`;
+}
+
 function modeNoteHtml() {
   const heads = state.selected.reduce((s, n) => s + (calc.getAnimalCount(n).qty || 0), 0);
   const warn = state.selected.length && heads <= 0 ? `<div class="rc-note is-warn">The selected animals have 0 heads, so every result is 0. Open Animals above and enter your heads.</div>` : "";
   const text = `24Hrs Mode: every selected animal is fed, loved and collected for all the cycles that fit in 24 hours. XP left over after a level up carries into the next cycle, and the feed, affection and level change as the animals level up.`;
-  return `<div class="rc-details-row"><button type="button" class="rc-linktext" data-rc-details aria-expanded="${detailsOpen ? "true" : "false"}">Details</button></div>${detailsOpen ? `<div class="rc-note">${text}</div>` : ""}${warn}`;
+  return `<div class="rc-details-row"><button type="button" class="rc-linktext" data-rc-levels aria-expanded="${levelsOpen ? "true" : "false"}">Base Exp</button></div>${levelsOpen ? levelsInfoHtml() : ""}<div class="rc-details-row"><button type="button" class="rc-linktext" data-rc-details aria-expanded="${detailsOpen ? "true" : "false"}">Details</button></div>${detailsOpen ? `<div class="rc-note">${text}</div>` : ""}${warn}`;
 }
 
 function pickerHtml() {
@@ -655,7 +690,14 @@ function beetleRowHtml() {
   const opts = [ [ "", "Off" ], [ "beetleGreen", "Green" ], [ "beetleBlue", "Blue" ], [ "beetlePink", "Pink" ], [ "beetleAmber", "Amber" ] ];
   const btns = opts.map(o => tbtn("beetle", "beetle", o[0], o[1], cur === o[0])).join("");
   const note = cur ? `<div class="rc-boost-none">${esc(calc.FEED_LABELS[cur])}: ${calc.BEETLE_FEED_XP[cur]} XP, 1 per feed. Chonky Feed and Pig Onesie do not apply.</div>` : "";
-  return toggleRow(ui.getIcon("Green Beetle"), "Beetle", btns) + note;
+  let modeRow = "";
+  if (cur) {
+    const mode = calc.getBeetleFeedMode();
+    const unit = calc.getBeetleCollectUnitFlower();
+    const modeNote = mode === "collect" ? `<div class="rc-boost-none">${unit > 0 ? `Collect uses the Beetle Calculator cost per Beetle: ${fl(unit)}${calc.FLOWER_ICON}/u.` : "The Beetle Calculator has no cost yet, so the market price is used."}</div>` : "";
+    modeRow = toggleRow(ui.getIcon(calc.FEED_LABELS[cur]), calc.FEED_LABELS[cur], collectBuy("beetlemode", cur, mode)) + modeNote;
+  }
+  return toggleRow(ui.getIcon("Green Beetle"), "Beetle", btns) + note + modeRow;
 }
 
 function feedConfigHtml(r) {
@@ -1148,6 +1190,7 @@ function applyAction(btn) {
   else if (act === "spicemode") calc.setSpiceMaterialMode(a, b);
   else if (act === "omni") calc.setOmnifeedEnabled(b === "on");
   else if (act === "beetle") calc.setBeetleFeed(b);
+  else if (act === "beetlemode") calc.setBeetleFeedMode(b);
   else if (act === "tool") calc.setAnimalAffectionTool(a, b === "on");
   else if (act === "spice") setSpice(btn.getAttribute("data-an-type"), b === "none" ? null : b);
   else return;
@@ -1174,6 +1217,12 @@ function toggleBristles(input) {
 }
 
 function onClick(e) {
+  const levels = e.target.closest("[data-rc-levels]");
+  if (levels) {
+    levelsOpen = !levelsOpen;
+    refreshResults();
+    return;
+  }
   const details = e.target.closest("[data-rc-details]");
   if (details) {
     detailsOpen = !detailsOpen;
@@ -1301,6 +1350,7 @@ export function mountAnimalsCalculator(root) {
   prices.invalidateCostCache();
   state = loadState();
   detailsOpen = false;
+  levelsOpen = false;
   bristleInfoOpen = false;
   host.addEventListener("click", onClick);
   host.addEventListener("change", onChange);

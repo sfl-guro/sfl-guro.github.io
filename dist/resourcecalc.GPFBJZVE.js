@@ -5,6 +5,7 @@ import {
 import {
   ANIMAL_DATA,
   ANIMAL_LOVE_ITEM_XP,
+  ANIMAL_XP_THRESHOLDS,
   BASE_COMPOSTERS,
   BASE_CROPS,
   BASE_CROP_MACHINE,
@@ -15,6 +16,7 @@ import {
   BASE_STOCK_FRUITS,
   BASE_STOCK_GREENHOUSE,
   BASE_STOCK_TOOLS,
+  BASE_STOCK_TREASURE_TOOLS,
   BEETLE_FEED_XP,
   BEE_SWARM_ICON,
   BOOSTS,
@@ -71,8 +73,12 @@ import {
   draftToggleBoost,
   escapeHtml,
   farmLevelMaxNodes,
+  farmPanelGameState,
   farmPanelGetMarketPriceFlower,
+  farmSyncCollectEquippedAndPlacedNames,
+  farmSyncExtractGameState,
   feePercent,
+  findLivePriceForName,
   findTool,
   flowerPerGem,
   fmt,
@@ -81,7 +87,11 @@ import {
   getActiveBoostsForCrop,
   getActiveShrineDailyCost,
   getAnimalCount,
+  getAnimalFoodXpTable,
+  getAscensionRank,
+  getBeetleCollectUnitFlower,
   getBeetleFeed,
+  getBeetleFeedMode,
   getBoostIcon,
   getBoostIconAnyFallback,
   getBoostIconSkillFallback,
@@ -158,7 +168,9 @@ import {
   setAnimalAffectionTool,
   setAnimalCount,
   setAutoMaterialModes,
+  setBeetleCollectCostProvider,
   setBeetleFeed,
+  setBeetleFeedMode,
   setFruitCount,
   setGreenhouseCount,
   setHiveCount,
@@ -184,7 +196,7 @@ import {
   toast,
   updateCalcSummary,
   updateSkillSaveBarState
-} from "./chunk.EQVVM6QM.js";
+} from "./chunk.F6OYXDZH.js";
 import "./chunk.LPEVZJ4B.js";
 import "./chunk.VR6FV3KR.js";
 import "./chunk.KKGBFBSS.js";
@@ -4224,15 +4236,15 @@ function appliedBoostHtml5(r) {
 }
 function sculptureHtml(r) {
   const total = SCULPTURE_LEVELS.length;
-  const level = saltSculptureLevel;
-  const chips = [0, 1, 2, 3, 4, 5, 6].map((n) => `<button type="button" class="rc-lvl es-mode-btn es-toolcfg-tbtn${level === n ? " active" : ""}" data-rc-sculpt-level="${n}" aria-pressed="${level === n ? "true" : "false"}">${n}</button>`).join("");
+  const level2 = saltSculptureLevel;
+  const chips = [0, 1, 2, 3, 4, 5, 6].map((n) => `<button type="button" class="rc-lvl es-mode-btn es-toolcfg-tbtn${level2 === n ? " active" : ""}" data-rc-sculpt-level="${n}" aria-pressed="${level2 === n ? "true" : "false"}">${n}</button>`).join("");
   const perks = SCULPTURE_EFFECTS_LIST.map((text, i) => {
     const lv = i + 1;
     const on = isSculpturePerkOn(lv);
     return `<div class="rc-perk-row guro-frame${on ? " is-on" : ""}"><span class="rc-perk-lv">Lv.${lv}</span><span class="rc-perk-text">${esc6(text)}</span><button type="button" class="es-mode-btn es-toolcfg-tbtn${on ? " active" : ""}" data-rc-perk="${lv}" aria-pressed="${on ? "true" : "false"}">${on ? "On" : "Off"}</button></div>`;
   }).join("");
   return `<div class="rc-group"><div class="rc-comp-sub">Sculpture</div>
-    <div class="rc-sculpt-head"><span class="rc-sculpt-icon">${getIcon("Salt Sculpture")}</span><span class="rc-sculpt-name">Salt Sculpture</span><span class="rc-sculpt-level">Level ${n26(level)}/${total}</span></div>
+    <div class="rc-sculpt-head"><span class="rc-sculpt-icon">${getIcon("Salt Sculpture")}</span><span class="rc-sculpt-name">Salt Sculpture</span><span class="rc-sculpt-level">Level ${n26(level2)}/${total}</span></div>
     <div class="rc-lvl-row">${chips}</div>
     <div class="rc-perks">${perks}</div>
     <div class="rc-boost-none">Tap a level to set it, then switch each perk On or Off.</div>
@@ -4348,10 +4360,10 @@ function levelValue() {
 }
 function nodesBodyHtml5() {
   const maxLevel = FARM_LEVEL_NODES.length;
-  const level = Math.max(1, Math.min(maxLevel, Math.floor(Number(levelValue())) || 1));
-  const cap = FARM_LEVEL_NODES[level - 1];
-  return `<div class="rc-pop-hint">Enter your Salt Farm level and how many Salt nodes you have, then press Save. A level ${level} farm holds up to ${cap} node${cap === 1 ? "" : "s"}.</div>
-    <label class="rc-node-row guro-frame"><span class="rc-node-icon">${getIcon("Salt")}</span><span class="rc-node-text"><span class="rc-node-name">Salt Farm Level</span><span class="rc-node-used">1 to ${maxLevel}</span></span><input type="number" min="1" max="${maxLevel}" step="1" inputmode="numeric" data-rc-salt-level value="${level}"></label>
+  const level2 = Math.max(1, Math.min(maxLevel, Math.floor(Number(levelValue())) || 1));
+  const cap = FARM_LEVEL_NODES[level2 - 1];
+  return `<div class="rc-pop-hint">Enter your Salt Farm level and how many Salt nodes you have, then press Save. A level ${level2} farm holds up to ${cap} node${cap === 1 ? "" : "s"}.</div>
+    <label class="rc-node-row guro-frame"><span class="rc-node-icon">${getIcon("Salt")}</span><span class="rc-node-text"><span class="rc-node-name">Salt Farm Level</span><span class="rc-node-used">1 to ${maxLevel}</span></span><input type="number" min="1" max="${maxLevel}" step="1" inputmode="numeric" data-rc-salt-level value="${level2}"></label>
     <label class="rc-node-row guro-frame"><span class="rc-node-icon">${getIcon("Salt")}</span><span class="rc-node-text"><span class="rc-node-name">Salt Node</span><span class="rc-node-used">Used by: Salt</span></span><input type="number" min="0" max="${cap}" step="1" inputmode="numeric" data-rc-salt-nodes value="${nodeValue2()}"></label>`;
 }
 function popupTitle5() {
@@ -5457,6 +5469,7 @@ var restoreFns7 = [];
 var animalsDraft = null;
 var listening7 = false;
 var detailsOpen7 = false;
+var levelsOpen = false;
 var bristleInfoOpen = false;
 function esc8(s) {
   return escapeHtml(String(s));
@@ -5861,11 +5874,42 @@ function valuesHtml7(rows) {
     <button type="button" class="rc-linktext" data-rc-open="computation"${rows.length ? "" : " disabled"}>Computation</button>
   </div>`;
 }
+function feedExpRowsHtml(table, keys) {
+  return keys.map((key) => {
+    const ranges = [];
+    for (let idx = 0; idx < 15; idx++) {
+      const xp = table[idx][key];
+      const last = ranges[ranges.length - 1];
+      if (last && last.xp === xp) last.to = idx + 1;
+      else ranges.push({ xp, from: idx + 1, to: idx + 1 });
+    }
+    return ranges.map((r) => `<div class="ct-trow an-lv-row an-fd-row"><span class="ct-tcell">${getIcon(FEED_LABELS[key])}<span>${esc8(FEED_LABELS[key])}</span></span><span>${n28(r.xp)}</span><span>${r.from === r.to ? r.from : r.from + "\u2013" + r.to}</span></div>`).join("");
+  }).join("");
+}
+function feedsInfoHtml() {
+  const head = `<div class="ct-trow ct-thead an-lv-row an-fd-row"><span>Feed</span><span>Exp</span><span>Level</span></div>`;
+  const group = (title, rows) => `<div class="an-lv-block"><div class="an-lv-head"><span class="an-lv-name">${title}</span></div>${head}${rows}</div>`;
+  const beetleRows = Object.keys(BEETLE_FEED_XP).map((key) => `<div class="ct-trow an-lv-row an-fd-row"><span class="ct-tcell">${getIcon(FEED_LABELS[key])}<span>${esc8(FEED_LABELS[key])}</span></span><span>${n28(BEETLE_FEED_XP[key])}</span><span>1\u201315</span></div>`).join("");
+  return group("Chicken, Sheep, Cow Feeds", feedExpRowsHtml(getAnimalFoodXpTable("chicken"), ["kernelBlend", "hay", "nutriBarley", "mixedGrain", "omnifeed"])) + group("Pig Feeds", feedExpRowsHtml(getAnimalFoodXpTable("pig"), ["slopBasic", "slopHearty", "slopRich", "slopGourmet"])) + group("Beetle Feeds", beetleRows);
+}
+function levelsInfoHtml() {
+  const blocks = Object.keys(ANIMAL_DATA).map((type) => {
+    const data = ANIMAL_DATA[type];
+    const th = ANIMAL_XP_THRESHOLDS[type];
+    const rows = data.levels.map((lv, i) => {
+      const level2 = i + 1;
+      const xp = th[level2] - th[level2 - 1];
+      return `<div class="ct-trow an-lv-row"><span>${level2}</span><span>${n28(xp)}</span><span class="ct-tcell">${getIcon(FEED_LABELS[lv.feed])}<span>\xD7${n28(lv.qty)}</span></span></div>`;
+    }).join("");
+    return `<div class="an-lv-block"><div class="an-lv-head"><span class="an-lv-icon">${iconOf(type)}</span><span class="an-lv-name">${esc8(data.label)}</span></div><div class="ct-trow ct-thead an-lv-row"><span>Level</span><span>Exp</span><span>Feed / Qty</span></div>${rows}</div>`;
+  }).join("");
+  return `<div class="an-lv-list">${feedsInfoHtml()}${blocks}</div>`;
+}
 function modeNoteHtml7() {
   const heads = state7.selected.reduce((s, n) => s + (getAnimalCount(n).qty || 0), 0);
   const warn = state7.selected.length && heads <= 0 ? `<div class="rc-note is-warn">The selected animals have 0 heads, so every result is 0. Open Animals above and enter your heads.</div>` : "";
   const text = `24Hrs Mode: every selected animal is fed, loved and collected for all the cycles that fit in 24 hours. XP left over after a level up carries into the next cycle, and the feed, affection and level change as the animals level up.`;
-  return `<div class="rc-details-row"><button type="button" class="rc-linktext" data-rc-details aria-expanded="${detailsOpen7 ? "true" : "false"}">Details</button></div>${detailsOpen7 ? `<div class="rc-note">${text}</div>` : ""}${warn}`;
+  return `<div class="rc-details-row"><button type="button" class="rc-linktext" data-rc-levels aria-expanded="${levelsOpen ? "true" : "false"}">Base Exp</button></div>${levelsOpen ? levelsInfoHtml() : ""}<div class="rc-details-row"><button type="button" class="rc-linktext" data-rc-details aria-expanded="${detailsOpen7 ? "true" : "false"}">Details</button></div>${detailsOpen7 ? `<div class="rc-note">${text}</div>` : ""}${warn}`;
 }
 function pickerHtml7() {
   return `<section class="rc-block guro-frame" aria-label="Animals Calculator">
@@ -6016,7 +6060,14 @@ function beetleRowHtml() {
   const opts = [["", "Off"], ["beetleGreen", "Green"], ["beetleBlue", "Blue"], ["beetlePink", "Pink"], ["beetleAmber", "Amber"]];
   const btns = opts.map((o) => tbtn("beetle", "beetle", o[0], o[1], cur === o[0])).join("");
   const note = cur ? `<div class="rc-boost-none">${esc8(FEED_LABELS[cur])}: ${BEETLE_FEED_XP[cur]} XP, 1 per feed. Chonky Feed and Pig Onesie do not apply.</div>` : "";
-  return toggleRow(getIcon("Green Beetle"), "Beetle", btns) + note;
+  let modeRow = "";
+  if (cur) {
+    const mode = getBeetleFeedMode();
+    const unit = getBeetleCollectUnitFlower();
+    const modeNote = mode === "collect" ? `<div class="rc-boost-none">${unit > 0 ? `Collect uses the Beetle Calculator cost per Beetle: ${fl7(unit)}${FLOWER_ICON}/u.` : "The Beetle Calculator has no cost yet, so the market price is used."}</div>` : "";
+    modeRow = toggleRow(getIcon(FEED_LABELS[cur]), FEED_LABELS[cur], collectBuy("beetlemode", cur, mode)) + modeNote;
+  }
+  return toggleRow(getIcon("Green Beetle"), "Beetle", btns) + note + modeRow;
 }
 function feedConfigHtml(r) {
   if (r && r.type === "pig") {
@@ -6230,9 +6281,9 @@ function animalsBodyHtml() {
   if (!types.length) return `<div class="rc-empty">Select at least one animal to edit its heads and level.</div>`;
   const rows = types.map((t) => {
     const qty = draftValue(t, "qty");
-    const level = draftValue(t, "level");
+    const level2 = draftValue(t, "level");
     return `<label class="rc-node-row guro-frame"><span class="rc-node-icon">${iconOf(t)}</span><span class="rc-node-text"><span class="rc-node-name">${esc8(labelOf(t))} Heads</span><span class="rc-node-used">How many you own</span></span><input type="number" min="0" step="1" inputmode="numeric" data-an-draft="${esc8(t)}:qty" value="${qty ? qty : ""}" placeholder="0"></label>
-    <label class="rc-node-row guro-frame"><span class="rc-node-icon">${iconOf(t)}</span><span class="rc-node-text"><span class="rc-node-name">${esc8(labelOf(t))} Level</span><span class="rc-node-used">Current level, 1 to 15</span></span><input type="number" min="1" max="15" step="1" inputmode="numeric" data-an-draft="${esc8(t)}:level" value="${level ? level : 1}" placeholder="1"></label>`;
+    <label class="rc-node-row guro-frame"><span class="rc-node-icon">${iconOf(t)}</span><span class="rc-node-text"><span class="rc-node-name">${esc8(labelOf(t))} Level</span><span class="rc-node-used">Current level, 1 to 15</span></span><input type="number" min="1" max="15" step="1" inputmode="numeric" data-an-draft="${esc8(t)}:level" value="${level2 ? level2 : 1}" placeholder="1"></label>`;
   }).join("");
   return `<div class="rc-pop-hint">Enter your heads and the current level of each animal, then press Save.</div>${rows}`;
 }
@@ -6476,6 +6527,7 @@ function applyAction(btn) {
   else if (act === "spicemode") setSpiceMaterialMode(a, b);
   else if (act === "omni") setOmnifeedEnabled(b === "on");
   else if (act === "beetle") setBeetleFeed(b);
+  else if (act === "beetlemode") setBeetleFeedMode(b);
   else if (act === "tool") setAnimalAffectionTool(a, b === "on");
   else if (act === "spice") setSpice(btn.getAttribute("data-an-type"), b === "none" ? null : b);
   else return;
@@ -6500,6 +6552,12 @@ function toggleBristles(input) {
   refreshResults7();
 }
 function onClick7(e) {
+  const levels = e.target.closest("[data-rc-levels]");
+  if (levels) {
+    levelsOpen = !levelsOpen;
+    refreshResults7();
+    return;
+  }
   const details = e.target.closest("[data-rc-details]");
   if (details) {
     detailsOpen7 = !detailsOpen7;
@@ -6619,6 +6677,7 @@ function mountAnimalsCalculator(root) {
   invalidateCostCache();
   state7 = loadState7();
   detailsOpen7 = false;
+  levelsOpen = false;
   bristleInfoOpen = false;
   host7.addEventListener("click", onClick7);
   host7.addEventListener("change", onChange5);
@@ -6912,10 +6971,10 @@ function tankHtml(totals) {
   const cap = getCropMachineOilCap();
   const tank = Math.max(0, Math.min(cap, cmOilTank));
   const left = Math.max(0, tank - totals.oil);
-  const pct = cap > 0 ? left / cap * 100 : 0;
+  const pct2 = cap > 0 ? left / cap * 100 : 0;
   const covered = tank + 1e-9 >= totals.oil;
   return `<div class="rc-comp-sub">${getIcon("Oil")} Oil Tank</div>
-    <div class="rcm-bar guro-frame"><div class="rcm-bar-fill" style="width:${pct}%"></div></div>
+    <div class="rcm-bar guro-frame"><div class="rcm-bar-fill" style="width:${pct2}%"></div></div>
     <label class="rc-node-row guro-frame"><span class="rc-node-icon">${getIcon("Oil")}</span><span class="rc-node-text"><span class="rc-node-name">Oil in tank</span><span class="rc-node-used">Holds up to ${n29(cap)} (${n29(getCropMachineOilCapHours())}h of fuel)</span></span><input type="number" min="0" max="${cap}" step="any" inputmode="decimal" data-rcm-tank value="${n29(tank).replace(/,/g, "")}"></label>
     <div class="rcm-actions">
       <button type="button" class="rc-tool guro-frame" data-rcm-act="fill">Fill Tank</button>
@@ -8043,20 +8102,196 @@ function composterCalculatorCanLeave() {
   return true;
 }
 
-// src/rescalc_honey.js
-var MAX_ROWS = 40;
+// src/rescalc_beetles.js
+var STORE_KEY10 = "guro_rc_beetles_v1";
+var PATCH_TILES = 25;
+var BATCH_SEC = 12 * 3600;
+var MAX_BINS = 8;
+var SHOVEL_COINS = 20;
+var SHOVEL_MATERIALS = [{
+  name: "Wood",
+  qty: 2
+}, {
+  name: "Stone",
+  qty: 1
+}];
+var MAGIC_CHANCE = 0.1;
+var RECIPES = {
+  Mushroom: {
+    label: "Mushroom Mix",
+    icon: "Wild Mushroom",
+    mushroom: 6,
+    beetle: 2,
+    mudMult: 1
+  },
+  Beetle: {
+    label: "Beetle Mix",
+    icon: "Green Beetle",
+    mushroom: 3,
+    beetle: 5,
+    mudMult: 1
+  },
+  Mud: {
+    label: "Mud Mix",
+    icon: "Mud",
+    mushroom: 3,
+    beetle: 2,
+    mudMult: 2
+  }
+};
+var RECIPE_ORDER = ["Mushroom", "Beetle", "Mud"];
+var FIXED_INGREDIENTS = {
+  Mushroom: {
+    Wood: 10
+  },
+  Beetle: {
+    Egg: 30
+  }
+};
+var MUD_CROPS = {
+  Sunflower: 500,
+  Potato: 80,
+  Rhubarb: 40,
+  Pumpkin: 20,
+  Zucchini: 20,
+  Carrot: 10,
+  Yam: 10,
+  Cabbage: 5,
+  Broccoli: 5,
+  Soybean: 3,
+  Beetroot: 3,
+  Pepper: 3,
+  Cauliflower: 2,
+  Parsnip: 2,
+  Eggplant: 2,
+  Corn: 2,
+  Onion: 2,
+  Wheat: 2,
+  Turnip: 2,
+  Radish: 2,
+  Kale: 2,
+  Artichoke: 2,
+  Barley: 2,
+  Rice: 1,
+  Olive: 1
+};
+var BEETLES = ["Green Beetle", "Blue Beetle", "Pink Beetle", "Amber Beetle"];
+var BEETLE_XP_KEY = {
+  "Green Beetle": "beetleGreen",
+  "Blue Beetle": "beetleBlue",
+  "Pink Beetle": "beetlePink",
+  "Amber Beetle": "beetleAmber"
+};
+var BASE_WEIGHTS = [40, 30, 20, 10];
+var RARE_WEIGHTS = [[35, 35, 15, 15], [30, 30, 20, 20], [25, 25, 25, 25]];
+var SKILLS = {
+  lean: {
+    id: "skill_lean_compost",
+    name: "Lean Compost",
+    ranks: [0.95, 0.9, 0.85]
+  },
+  rapid: {
+    id: "skill_rapid_mycelium",
+    name: "Rapid Mycelium",
+    ranks: [0.95, 0.9, 0.85]
+  },
+  bloom: {
+    id: "skill_mushroom_bloom",
+    name: "Mushroom Bloom",
+    ranks: [1, 2, 3]
+  },
+  nest: {
+    id: "skill_beetle_nest",
+    name: "Beetle Nest",
+    ranks: [1, 2, 3]
+  },
+  muddy: {
+    id: "skill_muddy_bounty",
+    name: "Muddy Bounty",
+    ranks: [0.1, 0.2, 0.3]
+  },
+  fungal: {
+    id: "skill_fungal_harvest",
+    name: "Fungal Harvest",
+    ranks: [0.2, 0.3, 0.4]
+  },
+  shovel: {
+    id: "skill_sturdy_shovel",
+    name: "Sturdy Shovel",
+    ranks: [0.1, 0.2, 0.3]
+  },
+  rare: {
+    id: "skill_rare_breeds",
+    name: "Rare Breeds",
+    ranks: [1, 2, 3]
+  },
+  twin: {
+    id: "skill_twin_beetles",
+    name: "Twin Beetles",
+    ranks: [0.05, 0.1, 0.15]
+  }
+};
+var DIG_MODES = [{
+  id: "find",
+  label: "Until Beetles Found"
+}, {
+  id: "full",
+  label: "Clear Whole Patch"
+}];
+var VIEW_MODES = [{
+  id: "batch",
+  label: "Per Batch"
+}, {
+  id: "day",
+  label: "Per Day"
+}];
 var host10 = null;
+var state10 = null;
 var popup10 = null;
 var overlayEl10 = null;
 var promptEl10 = null;
 var restoreFns10 = [];
-var hivesDraft = null;
+var binsDraft = null;
 var listening10 = false;
 var detailsOpen10 = false;
-var openMenu = null;
 var savedSkillCategory10 = null;
 function esc11(s) {
   return escapeHtml(String(s));
+}
+function loadState10() {
+  const base = {
+    view: "day",
+    dig: "find",
+    recipe: "Beetle",
+    crop: "Carrot",
+    recipeManual: false,
+    cropManual: false,
+    digs: 0,
+    bins: 0
+  };
+  try {
+    const raw = JSON.parse(localStorage.getItem(STORE_KEY10) || "null");
+    if (raw && typeof raw === "object") {
+      if (raw.view === "day" || raw.view === "batch") base.view = raw.view;
+      if (raw.dig === "full" || raw.dig === "find") base.dig = raw.dig;
+      if (RECIPES[raw.recipe]) base.recipe = raw.recipe;
+      if (Object.prototype.hasOwnProperty.call(MUD_CROPS, raw.crop)) base.crop = raw.crop;
+      base.recipeManual = raw.recipeManual === true;
+      base.cropManual = raw.cropManual === true;
+      const d = Math.floor(Number(raw.digs));
+      if (isFinite(d) && d > 0) base.digs = Math.min(d, PATCH_TILES);
+      const b = Math.floor(Number(raw.bins));
+      if (isFinite(b) && b > 0) base.bins = Math.min(b, MAX_BINS);
+    }
+  } catch (e) {
+  }
+  return base;
+}
+function saveState10() {
+  try {
+    localStorage.setItem(STORE_KEY10, JSON.stringify(state10));
+  } catch (e) {
+  }
 }
 function n211(n) {
   if (!isFinite(n)) return "\u2014";
@@ -8080,8 +8315,918 @@ function signed10(n, f) {
   if (n < 0 && r !== "0") return "-" + r;
   return r;
 }
+function flowerSigned9(n) {
+  return `${signed10(n, fl10)}${FLOWER_ICON}`;
+}
 function flowerHtml10(n) {
   return `${fl10(n)}${FLOWER_ICON}`;
+}
+function pct(n) {
+  return `${n211(n)}%`;
+}
+function level(def) {
+  if (!isSkillActive(def.id)) return 0;
+  return Math.min(Math.max(getAscensionRank(def.id), 1), def.ranks.length);
+}
+function skillValue(def, fallback) {
+  const l = level(def);
+  return l ? def.ranks[l - 1] : fallback;
+}
+function priceOf2(name) {
+  const m = farmPanelGetMarketPriceFlower(name);
+  if (m > 0) return m;
+  const live = findLivePriceForName(name);
+  return live != null && isFinite(live) && live > 0 ? live : 0;
+}
+function syncedBins() {
+  try {
+    if (!farmPanelGameState) return 0;
+    const g = farmSyncExtractGameState(farmPanelGameState);
+    const cave = g && g.cave;
+    if (!cave || !cave.machines || typeof cave.machines !== "object") return 0;
+    return Math.min(Object.keys(cave.machines).length, MAX_BINS);
+  } catch (e) {
+    return 0;
+  }
+}
+function effectiveBins() {
+  if (state10.bins > 0) return Math.min(state10.bins, MAX_BINS);
+  return Math.max(1, syncedBins());
+}
+function mushroomBoosts() {
+  const out = {
+    wild: 0,
+    list: []
+  };
+  try {
+    if (!farmPanelGameState) return out;
+    const g = farmSyncExtractGameState(farmPanelGameState);
+    const placed = farmSyncCollectEquippedAndPlacedNames(g);
+    if (placed.has("Mushroom House")) {
+      out.wild += 0.2;
+      out.list.push({
+        name: "Mushroom House",
+        value: "+0.2 Wild Mushroom"
+      });
+    }
+    if (placed.has("Fairy Circle")) {
+      out.wild += 0.2;
+      out.list.push({
+        name: "Fairy Circle",
+        value: "+0.2 Wild Mushroom"
+      });
+    }
+    const equipped = g && g.bumpkin && g.bumpkin.equipped;
+    if (equipped && Object.values(equipped).includes("Mushroom Hat")) {
+      out.wild += 0.1;
+      out.list.push({
+        name: "Mushroom Hat",
+        value: "+0.1 Wild Mushroom"
+      });
+    }
+  } catch (e) {
+  }
+  return out;
+}
+function cheaperMode(name) {
+  if (name.toLowerCase() === "oil") return "collect";
+  const collect = getMaterialUnitCostCoins(name, "collect");
+  const buy = getMaterialUnitCostCoins(name, "buy");
+  if (!(buy > 0)) return "collect";
+  if (!(collect > 0)) return "collect";
+  return buy < collect ? "buy" : "collect";
+}
+function resKey(recipe) {
+  return "Cave_" + recipe;
+}
+function toolsKey() {
+  return "Cave_Tools";
+}
+function fixedIngredients(recipe) {
+  return FIXED_INGREDIENTS[recipe];
+}
+function refreshAutoModes3() {
+  const map = {};
+  setAutoMaterialModes(map);
+  invalidateCostCache();
+  const add = (res, name) => {
+    if (hasManualMaterialMode(res, name)) return;
+    map[res + ":" + name] = cheaperMode(name);
+  };
+  Object.keys(FIXED_INGREDIENTS).forEach((r) => Object.keys(FIXED_INGREDIENTS[r]).forEach((n) => add(resKey(r), n)));
+  Object.keys(MUD_CROPS).forEach((n) => add(resKey("Mud"), n));
+  SHOVEL_MATERIALS.forEach((m) => add(toolsKey(), m.name));
+  setAutoMaterialModes(map);
+  invalidateCostCache();
+}
+function matUnit(res, name) {
+  return getMaterialUnitCostCoins(name, getMaterialMode(res, name));
+}
+function cheapestCrop() {
+  let best = null;
+  let bestCost = Infinity;
+  let fallback = null;
+  Object.keys(MUD_CROPS).forEach((name) => {
+    if (fallback == null) fallback = name;
+    const cost = MUD_CROPS[name] * matUnit(resKey("Mud"), name);
+    if (cost > 0 && cost < bestCost) {
+      bestCost = cost;
+      best = name;
+    }
+  });
+  return best || fallback;
+}
+function activeCrop() {
+  return state10.cropManual ? state10.crop : cheapestCrop();
+}
+function ingredientBase(recipe) {
+  if (recipe === "Mud") {
+    const o = {};
+    const crop = activeCrop();
+    o[crop] = MUD_CROPS[crop];
+    return o;
+  }
+  return fixedIngredients(recipe);
+}
+function recipeBaseCost(recipe) {
+  const base = ingredientBase(recipe);
+  return Object.keys(base).reduce((sum, name) => sum + base[name] * matUnit(resKey(recipe), name), 0);
+}
+function cheapestRecipe() {
+  let best = null;
+  let bestCost = Infinity;
+  RECIPE_ORDER.forEach((id) => {
+    const cost = recipeBaseCost(id);
+    if (cost > 0 && cost < bestCost) {
+      bestCost = cost;
+      best = id;
+    }
+  });
+  return best || RECIPE_ORDER[0];
+}
+function activeRecipe() {
+  return state10.recipeManual ? state10.recipe : cheapestRecipe();
+}
+function compute9() {
+  refreshAutoModes3();
+  const recipeId = activeRecipe();
+  const rec = RECIPES[recipeId];
+  const bins = effectiveBins();
+  const lean = skillValue(SKILLS.lean, 1);
+  const rapid = skillValue(SKILLS.rapid, 1);
+  const bloom = skillValue(SKILLS.bloom, 0);
+  const nest = recipeId === "Beetle" ? skillValue(SKILLS.nest, 0) : 0;
+  const muddy = skillValue(SKILLS.muddy, 0);
+  const fungal = skillValue(SKILLS.fungal, 0);
+  const keep = skillValue(SKILLS.shovel, 0);
+  const twin = skillValue(SKILLS.twin, 0);
+  const rareLevel = level(SKILLS.rare);
+  const weights = rareLevel ? RARE_WEIGHTS[rareLevel - 1] : BASE_WEIGHTS;
+  const mush = mushroomBoosts();
+  const mTiles = rec.mushroom + bloom;
+  const bTiles = rec.beetle + nest;
+  const uTiles = PATCH_TILES - mTiles - bTiles;
+  const full = state10.dig === "full";
+  const estDigs = bTiles + (PATCH_TILES - bTiles) * bTiles / (bTiles + 1);
+  const manualShovels = !full && state10.digs > 0 ? state10.digs : 0;
+  const manualDigs = manualShovels ? Math.min(PATCH_TILES, Math.max(bTiles, manualShovels / (1 - keep))) : 0;
+  let fracOther = bTiles / (bTiles + 1);
+  let dugTiles = estDigs;
+  if (full) {
+    fracOther = 1;
+    dugTiles = PATCH_TILES;
+  } else if (manualDigs) {
+    dugTiles = manualDigs;
+    fracOther = PATCH_TILES > bTiles ? (manualDigs - bTiles) / (PATCH_TILES - bTiles) : 0;
+  }
+  const dugMushroom = mTiles * fracOther;
+  const dugMud = uTiles * fracOther;
+  const shovels = manualShovels ? manualShovels : Math.ceil(dugTiles * (1 - keep) - 1e-9);
+  const estShovels = Math.ceil(estDigs * (1 - keep) - 1e-9);
+  const beetleTotal = bTiles * (1 + twin);
+  const items = [];
+  BEETLES.forEach((b, i) => {
+    items.push({
+      name: b,
+      qty: beetleTotal * weights[i] / 100,
+      kind: "beetle"
+    });
+  });
+  const wildAmt = 1 + fungal + mush.wild;
+  const magicAmt = 1 + fungal;
+  items.push({
+    name: "Wild Mushroom",
+    qty: dugMushroom * (1 - MAGIC_CHANCE) * wildAmt,
+    kind: "mushroom"
+  });
+  items.push({
+    name: "Magic Mushroom",
+    qty: dugMushroom * MAGIC_CHANCE * magicAmt,
+    kind: "mushroom"
+  });
+  items.push({
+    name: "Mud",
+    qty: dugMud * rec.mudMult * (1 + muddy),
+    kind: "mud"
+  });
+  const feeRate = (feePercent || 0) / 100;
+  let gross = 0;
+  let feedXp = 0;
+  items.forEach((it) => {
+    it.price = priceOf2(it.name);
+    it.gross = it.qty * it.price;
+    gross += it.gross;
+    if (it.kind === "beetle") {
+      it.xp = it.qty * (BEETLE_FEED_XP[BEETLE_XP_KEY[it.name]] || 0);
+      feedXp += it.xp;
+    }
+  });
+  const res = resKey(recipeId);
+  let ingCoins = 0;
+  const ingredients = Object.keys(ingredientBase(recipeId)).map((name) => {
+    const qty = ingredientBase(recipeId)[name] * lean;
+    const mode = getMaterialMode(res, name);
+    const unitCost = getMaterialUnitCostCoins(name, mode);
+    const lineCost = unitCost * qty;
+    ingCoins += lineCost;
+    return {
+      name,
+      qty,
+      unitCost,
+      lineCost,
+      mode,
+      res
+    };
+  });
+  let shovelUnitCoins = SHOVEL_COINS;
+  const toolMats = SHOVEL_MATERIALS.map((m) => {
+    const mode = getMaterialMode(toolsKey(), m.name);
+    const unitCost = getMaterialUnitCostCoins(m.name, mode);
+    shovelUnitCoins += unitCost * m.qty;
+    return {
+      name: m.name,
+      qty: m.qty,
+      unitCost,
+      mode,
+      res: toolsKey()
+    };
+  });
+  const shovelCoins = shovels * shovelUnitCoins;
+  const batchSec = BATCH_SEC * rapid;
+  const perDay = 86400 / batchSec;
+  const scale = bins * (state10.view === "day" ? perDay : 1);
+  const stockQty = computeBoostedStock(BASE_STOCK_TREASURE_TOOLS["Sand Shovel"], "tool", "Sand Shovel");
+  const gemPerRestock = getRestockGemCostIndividual("tool");
+  const shareCount = toolRestockShareCount();
+  const restockFlowerEach = stockQty > 0 ? gemsToFlower(gemPerRestock) / Math.max(1, shareCount) / stockQty : 0;
+  const binRestockCost = shovels * restockFlowerEach;
+  const binGross = gross;
+  const binCost = coinsToFlower(ingCoins + shovelCoins) + binRestockCost;
+  const out = {
+    recipeId,
+    rec,
+    bins,
+    items,
+    tiles: {
+      mushroom: mTiles,
+      beetle: bTiles,
+      mud: uTiles
+    },
+    full,
+    manualDigs,
+    manualShovels,
+    estDigs,
+    estShovels,
+    crop: activeCrop(),
+    dugTiles,
+    shovels,
+    keep,
+    twin,
+    weights,
+    rareLevel,
+    lean,
+    rapid,
+    batchSec,
+    perDay,
+    scale,
+    view: state10.view,
+    feeRate,
+    ingredients,
+    toolMats,
+    shovelUnitCoins,
+    binGross,
+    binCost,
+    binIngCost: coinsToFlower(ingCoins),
+    binShovelCost: coinsToFlower(shovelCoins),
+    binRestockCost,
+    stockQty,
+    gemPerRestock,
+    shareCount,
+    restockFlowerEach,
+    beetleBin: beetleTotal,
+    feedXpBin: feedXp,
+    mushroomBoosts: mush.list,
+    muddy,
+    fungal
+  };
+  out.gross = binGross * scale;
+  out.fee = out.gross * feeRate;
+  out.shovelCost = out.binShovelCost * scale;
+  out.feedXp = feedXp * scale;
+  out.beetles = beetleTotal * scale;
+  out.shovelsTotal = Math.ceil(shovels * scale - 1e-9);
+  const dayView = state10.view === "day";
+  out.restockQty = stockQty > 0 ? dayView ? Math.ceil(out.shovelsTotal / stockQty - 1e-9) : shovels * scale / stockQty : 0;
+  out.restockGems = out.restockQty * gemPerRestock / Math.max(1, shareCount);
+  out.restockCost = dayView ? gemsToFlower(out.restockGems) : binRestockCost * scale;
+  out.cost = (binCost - binRestockCost) * scale + out.restockCost;
+  out.ingCost = out.cost > 0 ? out.binIngCost * scale : 0;
+  out.costPerBeetle = out.beetles > 0 ? out.cost / out.beetles : 0;
+  out.net = out.gross - out.fee - out.cost;
+  out.netBin = binGross * (1 - feeRate) - binCost;
+  out.unitCostBatch = beetleTotal > 0 ? binCost / beetleTotal : 0;
+  out.unpriced = items.filter((it) => it.qty > 0 && !(it.price > 0)).map((it) => it.name);
+  return out;
+}
+var unitCostMemo = 0;
+var unitCostMemoAt = 0;
+var unitCostBusy = false;
+function beetleCollectUnitCost() {
+  if (unitCostBusy) return unitCostMemo;
+  const now = Date.now();
+  if (now - unitCostMemoAt < 400) return unitCostMemo;
+  unitCostBusy = true;
+  const loaded = !!state10;
+  try {
+    if (!loaded) {
+      loadBaseCropsIfNeeded();
+      state10 = loadState10();
+    }
+    unitCostMemo = compute9().unitCostBatch || 0;
+    unitCostMemoAt = Date.now();
+    if (!host10) {
+      setAutoMaterialModes({});
+      invalidateCostCache();
+    }
+  } catch (e) {
+    unitCostMemo = 0;
+  }
+  unitCostBusy = false;
+  return unitCostMemo;
+}
+setBeetleCollectCostProvider(beetleCollectUnitCost);
+function costLineHtml(coins) {
+  return `<span class="rc-bc-cost">${flowerHtml10(coinsToFlower(coins * skillValue(SKILLS.lean, 1)))}</span>`;
+}
+function checkHtml(on) {
+  return `<input type="checkbox" tabindex="-1" aria-hidden="true" disabled${on ? " checked" : ""}>`;
+}
+function recipeCellsHtml() {
+  const current = activeRecipe();
+  return RECIPE_ORDER.map((id) => {
+    const on = current === id;
+    const r = RECIPES[id];
+    return `<div class="rc-crop rc-bc guro-frame${on ? " is-on" : ""}" data-rc-recipe="${id}" role="button" tabindex="0" aria-pressed="${on ? "true" : "false"}"><span class="rc-crop-icon">${getIcon(r.icon)}</span><span class="rc-crop-name">${esc11(r.label)}${costLineHtml(recipeBaseCost(id))}</span>${checkHtml(on)}</div>`;
+  }).join("");
+}
+function cropCellsHtml6() {
+  const current = activeCrop();
+  return Object.keys(MUD_CROPS).map((name) => {
+    const on = current === name;
+    return `<div class="rc-crop rc-bc guro-frame${on ? " is-on" : ""}" data-rc-crop="${esc11(name)}" role="button" tabindex="0" aria-pressed="${on ? "true" : "false"}"><span class="rc-crop-icon">${getIcon(name)}</span><span class="rc-crop-name">${esc11(name)} \xD7${MUD_CROPS[name]}${costLineHtml(MUD_CROPS[name] * matUnit(resKey("Mud"), name))}</span>${checkHtml(on)}</div>`;
+  }).join("");
+}
+function pickerHtml10() {
+  refreshAutoModes3();
+  const mud = activeRecipe() === "Mud";
+  const cropBlock = mud ? `<div class="rc-comp-sub">Mud Mix Crop (one per batch)</div><div class="rc-crops" id="rcMudCrops">${cropCellsHtml6()}</div><div class="rc-note">${state10.cropManual ? "Crop picked by you. Tap it again to go back to the cheapest." : "The cheapest crop is selected automatically. Tap a crop to choose it yourself."}</div>` : "";
+  const note = state10.recipeManual ? "Mix picked by you. Tap it again to go back to the cheapest." : "The cheapest mix is selected automatically. Tap a mix to choose it yourself.";
+  return `<section class="rc-block guro-frame" aria-label="Beetle Calculator">
+    <div class="rc-block-title">Beetle Calculator</div>
+    <div class="rc-crops" id="rcRecipes">${recipeCellsHtml()}</div>
+    <div class="rc-note">${note}</div>
+    ${cropBlock}
+  </section>`;
+}
+function tilesHtml9(r) {
+  const good = r.net >= 0;
+  const shown = r.items.filter((it) => it.qty > 0);
+  const cells = shown.map((it) => `<div class="rc-tile rc-bc-tile guro-frame ${good ? "is-profit" : "is-loss"}"><span class="rc-tile-icon">${getIcon(it.name)}</span><span class="rc-tile-yield">${signed10(it.qty * r.scale, n211)}</span><span class="rc-tile-net">${fl10(it.gross * r.scale)}${FLOWER_ICON}</span>${it.kind === "beetle" ? `<span class="rc-tile-xp">${n211(it.xp * r.scale)} XP</span>` : ""}</div>`).join("");
+  return `<div class="rc-tiles-wrap guro-frame"><div class="rc-tiles">${cells}</div></div>`;
+}
+function valueBoxHtml10(label, html, extra) {
+  return `<div class="rc-val guro-frame${extra ? " " + extra : ""}"><span class="rc-val-label">${label}</span><span class="rc-val-num">${html}</span></div>`;
+}
+function netBoxHtml2(label, net, extra) {
+  return valueBoxHtml10(label, `<span class="${net >= 0 ? "is-profit" : "is-loss"}">${signed10(net, fl10)}${FLOWER_ICON}</span>`, extra);
+}
+function valuesHtml10(r) {
+  const feeBox = r.feeRate > 0 ? valueBoxHtml10("Market Fee", flowerHtml10(r.fee)) : "";
+  return `<div class="rc-values">
+    ${valueBoxHtml10("Beetles (average)", `${signed10(r.beetles, n211)}${getIcon("Green Beetle")}`, "rc-val-wide")}
+    ${valueBoxHtml10("Gross", flowerHtml10(r.gross))}
+    ${valueBoxHtml10("Cost", flowerHtml10(r.cost))}
+    ${valueBoxHtml10("Ingredient Cost", flowerHtml10(r.ingCost))}
+    ${valueBoxHtml10("Shovel Cost", flowerHtml10(r.shovelCost))}
+    ${valueBoxHtml10("Restock Cost", flowerHtml10(r.restockCost))}
+    ${valueBoxHtml10("Sand Shovels", `${n211(r.shovelsTotal)}${getIcon("Sand Shovel")}`)}
+    ${feeBox}
+  </div>
+  <div class="rc-net-row">
+    ${netBoxHtml2("Net", r.net, "rc-val-net")}
+    <button type="button" class="rc-linktext" data-rc-open="computation">Computation</button>
+  </div>`;
+}
+function modeNoteHtml9(r) {
+  const digText = r.full ? "Every one of the 25 tiles is dug, so you also collect every Mushroom and Mud tile." : r.manualShovels ? `You use ${n211(r.manualShovels)} shovel${r.manualShovels === 1 ? "" : "s"} per batch (the number you typed, so Sturdy Shovel is already counted) until the last Beetle is found.` : "You stop digging once the last Beetle is found (the game then lets you start a new batch). The estimate assumes tiles are dug in random order; type your own shovel count in the box to override it.";
+  const viewText = r.view === "day" ? `Per Day: ${n211(r.bins)} Myco Bin${r.bins === 1 ? "" : "s"} \xD7 ${n211(r.perDay)} batches per day (${formatDuration(r.batchSec)} each).` : `Per Batch: one batch in each of your ${n211(r.bins)} Myco Bin${r.bins === 1 ? "" : "s"}.`;
+  return `<div class="rc-details-row"><button type="button" class="rc-linktext" data-rc-details aria-expanded="${detailsOpen10 ? "true" : "false"}">Details</button></div>${detailsOpen10 ? `<div class="rc-note">${viewText} ${digText} Each batch grows for 12h (shortened only by Rapid Mycelium). Wild Mushroom has a 90% chance per Mushroom tile, Magic Mushroom 10%.</div>` : ""}`;
+}
+function resultsHtml10() {
+  const r = compute9();
+  const viewBtn = (m) => `<button type="button" class="rc-mode guro-frame${state10.view === m.id ? " is-on" : ""}" data-rc-view="${m.id}" aria-pressed="${state10.view === m.id ? "true" : "false"}">${m.label}</button>`;
+  const digBtn = (m) => {
+    const on = state10.dig === m.id;
+    if (m.id !== "find") return `<button type="button" class="rc-mode guro-frame${on ? " is-on" : ""}" data-rc-dig="${m.id}" aria-pressed="${on ? "true" : "false"}">${m.label}</button>`;
+    return `<div class="rc-mode rc-dig-cell guro-frame${on ? " is-on" : ""}" data-rc-dig="${m.id}" role="button" tabindex="0" aria-pressed="${on ? "true" : "false"}"><span>${m.label}</span><input type="number" min="0" max="${PATCH_TILES}" step="1" inputmode="numeric" class="rc-dig-input guro-frame" value="${state10.digs > 0 ? state10.digs : ""}" placeholder="~${n211(r.estShovels)}" aria-label="Shovels used until all Beetles are found"></div>`;
+  };
+  return `<section class="rc-block guro-frame" aria-label="Beetle results">
+    <div class="rc-modes" role="group" aria-label="Calculation mode">${VIEW_MODES.map(viewBtn).join("")}</div>
+    <div class="rc-modes" role="group" aria-label="Digging mode">${DIG_MODES.map(digBtn).join("")}</div>
+    <div class="rc-tools rc-tools-two">
+      <button type="button" class="rc-tool guro-frame" data-rc-open="skills">Skills</button>
+      <button type="button" class="rc-tool guro-frame" data-rc-open="bins">Myco Bins</button>
+    </div>
+    ${modeNoteHtml9(r)}
+    <div id="rcResults">${tilesHtml9(r)}${valuesHtml10(r)}</div>
+  </section>`;
+}
+function render10() {
+  if (!host10) return;
+  const scroller = document.scrollingElement;
+  const y = scroller ? scroller.scrollTop : 0;
+  host10.innerHTML = pickerHtml10() + resultsHtml10();
+  if (scroller) scroller.scrollTop = y;
+}
+function refreshResults10() {
+  if (!host10) return;
+  const blocks = host10.querySelectorAll(".rc-block");
+  if (!blocks[1]) {
+    render10();
+    return;
+  }
+  const tmp = document.createElement("div");
+  tmp.innerHTML = resultsHtml10();
+  blocks[1].replaceWith(tmp.firstElementChild);
+  if (popup10 === "computation") renderOverlayBody10();
+}
+function kv10(label, html, cls) {
+  return `<div class="rc-kv${cls ? " " + cls : ""}"><span class="rc-kv-label">${label}</span><span class="rc-kv-val">${html}</span></div>`;
+}
+function matRowsHtml(list) {
+  const btn = (m, mode, label) => `<button type="button" class="es-mode-btn es-toolcfg-tbtn${m.mode === mode ? " active" : ""}" data-rc-res="${esc11(m.res)}" data-rc-mat="${esc11(m.name)}" data-rc-matmode="${mode}">${label}</button>`;
+  return list.map((m) => {
+    const unit = m.mode === "buy" ? flowerHtml10(coinsToFlower(m.unitCost)) : `${fl10(m.unitCost)}${COIN_ICON}`;
+    return `<div class="rc-tool-mat"><span class="rc-tool-mat-item"><span class="rc-tool-mat-qty">${n211(m.qty)}</span>${getIcon(m.name)}<span class="rc-kv-sub">${m.mode === "buy" ? "market" : "collect"} @ ${unit}/u</span></span><span class="es-toolcfg-tog rc-bc-tog">${btn(m, "collect", "Collect")}${btn(m, "buy", "Buy")}</span></div>`;
+  }).join("");
+}
+function appliedSkillsHtml(r) {
+  const rows = [];
+  const add = (def, text) => {
+    if (level(def)) rows.push(`<div class="rc-boost-row">${getBoostIconAnyFallback(def.name)}<span class="rc-boost-name">${esc11(def.name)} ${level(def)}</span><span class="rc-boost-eff">${esc11(text)}</span></div>`);
+  };
+  add(SKILLS.lean, `\xD7${r.lean} ingredients`);
+  add(SKILLS.rapid, `\xD7${r.rapid} grow time`);
+  add(SKILLS.bloom, `+${skillValue(SKILLS.bloom, 0)} Mushroom tiles`);
+  if (r.recipeId === "Beetle") add(SKILLS.nest, `+${skillValue(SKILLS.nest, 0)} Beetle tiles`);
+  add(SKILLS.muddy, `+${pct(r.muddy * 100)} Mud`);
+  add(SKILLS.fungal, `+${r.fungal} Mushrooms per tile`);
+  add(SKILLS.shovel, `${pct(r.keep * 100)} keep shovel`);
+  add(SKILLS.rare, `Odds ${r.weights.join("/")}`);
+  add(SKILLS.twin, `${pct(r.twin * 100)} extra Beetle`);
+  r.mushroomBoosts.forEach((b) => rows.push(`<div class="rc-boost-row">${getBoostIconAnyFallback(b.name)}<span class="rc-boost-name">${esc11(b.name)}</span><span class="rc-boost-eff">${esc11(b.value)}</span></div>`));
+  return `<div class="rc-group"><div class="rc-comp-sub">Applied Skills & Boosts</div>${rows.length ? rows.join("") : `<div class="rc-boost-none">No skill applied</div>`}</div>`;
+}
+function itemRowsHtml(r) {
+  return r.items.filter((it) => it.qty > 0).map((it) => {
+    const each = it.kind === "beetle" ? BEETLE_FEED_XP[BEETLE_XP_KEY[it.name]] || 0 : 0;
+    const unitNet = it.price * (1 - r.feeRate) - r.costPerBeetle;
+    const xpEach = it.kind === "beetle" ? `<span class="rc-kv-sub rc-yield-xp">${n211(each)} XP each</span>` : "";
+    const costNet = it.kind === "beetle" ? `<span class="rc-kv-sub rc-yield-line">Cost ${flowerHtml10(r.costPerBeetle)}/u \xB7 Net <span class="${unitNet >= 0 ? "is-profit" : "is-loss"}">${signed10(unitNet, fl10)}${FLOWER_ICON}</span>/u</span>` : "";
+    return `<div class="rc-tool-mat rc-yield-row"><span class="rc-tool-mat-item"><strong class="rc-tool-mat-qty">${signed10(it.qty * r.scale, n211)}</strong>${getIcon(it.name)}${xpEach}</span><strong class="rc-kv-sub rc-yield-gross">${flowerHtml10(it.gross * r.scale)}</strong><span class="rc-kv-sub rc-yield-line">Market Price ${flowerHtml10(it.price > 0 ? it.price : 0)}/u</span>${costNet}</div>`;
+  }).join("");
+}
+function computationCardHtml9(r) {
+  const modeLabel = r.view === "day" ? "Per Day" : "Per Batch";
+  return `<article class="rc-comp-card guro-frame">
+    <header class="rc-comp-head"><span class="rc-comp-icon">${getIcon(r.rec.icon)}</span><span class="rc-comp-name">${esc11(r.rec.label)}${r.recipeId === "Mud" ? " \xB7 " + esc11(r.crop) : ""}</span><span class="rc-comp-nodes">${n211(r.bins)} Bin${r.bins === 1 ? "" : "s"}</span></header>
+    <div class="rc-group"><div class="rc-comp-sub">Patch (per Myco Bin)</div><div class="rc-kv-grid">
+      ${kv10("Grow Time", esc11(formatDuration(r.batchSec)), "rc-kv-wide")}
+      ${kv10("Batches / Day / Bin", n211(r.perDay))}
+      ${kv10("Mushroom Tiles", n211(r.tiles.mushroom))}
+      ${kv10("Beetle Tiles", n211(r.tiles.beetle))}
+      ${kv10("Mud Tiles", n211(r.tiles.mud))}
+      ${kv10("Tiles Dug (avg)", String(Math.round(r.dugTiles)))}
+      ${kv10("Shovels / Batch", n211(r.shovels))}
+      ${kv10("Shovel Stock / Restock", n211(r.stockQty))}
+      ${kv10("Beetles / Batch", n211(r.beetleBin))}
+      ${kv10("Beetle Odds", esc11(r.weights.map((w) => w + "%").join(" / ")), "rc-kv-wide")}
+    </div></div>
+    <div class="rc-group"><div class="rc-comp-sub">Yield (${modeLabel})</div>${itemRowsHtml(r)}
+      <div class="rc-kv-grid">
+        ${kv10("Gross", flowerSigned9(r.gross))}
+        ${kv10("Cost", flowerHtml10(r.cost))}
+        ${kv10("Ingredient Cost", flowerHtml10(r.ingCost))}
+        ${kv10("Shovel Cost", flowerHtml10(r.shovelCost))}
+        ${kv10("Restock Cost", flowerHtml10(r.restockCost))}
+        ${kv10("Cost / Beetle", flowerHtml10(r.costPerBeetle))}
+        ${r.feeRate > 0 ? kv10("Market Fee", flowerHtml10(r.fee)) : ""}
+        ${kv10("Net", `<span class="${r.net >= 0 ? "is-profit" : "is-loss"}">${signed10(r.net, fl10)}${FLOWER_ICON}</span>`, "rc-kv-wide rc-kv-net")}
+        ${kv10("Net / Batch / Bin", `<span class="${r.netBin >= 0 ? "is-profit" : "is-loss"}">${signed10(r.netBin, fl10)}${FLOWER_ICON}</span>`)}
+        ${kv10("Shovel Cost / Batch", flowerHtml10(r.binShovelCost))}
+        ${kv10("Restock Cost / Batch", flowerHtml10(r.binRestockCost))}
+        ${kv10("Ingredients / Batch", flowerHtml10(r.binIngCost))}
+      </div>
+    </div>
+    ${appliedSkillsHtml(r)}
+    <div class="rc-group"><div class="rc-comp-sub">${esc11(r.rec.label)} Ingredients (per batch)</div>
+      <div class="rc-tool-cfg">${matRowsHtml(r.ingredients)}</div></div>
+    <div class="rc-group"><div class="rc-comp-sub">Tools</div>
+      <div class="rc-tool-cfg">
+        <div class="rc-tool-mat"><span class="rc-tool-mat-item">${getIcon("Sand Shovel")}<strong class="rc-tool-mat-name">Sand Shovel</strong></span></div>
+        <div class="rc-tool-mat"><span class="rc-tool-mat-item"><strong class="rc-tool-mat-qty">${n211(SHOVEL_COINS)}</strong>${COIN_ICON}</span></div>
+        ${matRowsHtml(r.toolMats)}
+      </div>
+      <div class="rc-comp-sub">Shovel Used</div>
+      <div class="rc-tool-cfg"><div class="rc-tool-mat"><span class="rc-tool-mat-item"><strong class="rc-tool-mat-qty">${signed10(-r.shovelsTotal, n211)}</strong>${getIcon("Sand Shovel")}<strong class="rc-tool-mat-name">Sand Shovel</strong></span></div></div></div>
+  </article>`;
+}
+function computationBodyHtml10() {
+  return computationCardHtml9(compute9());
+}
+function binsBodyHtml() {
+  const synced = syncedBins();
+  const value = binsDraft == null ? effectiveBins() : binsDraft;
+  return `<div class="rc-pop-hint">Enter how many Myco Bins you have (1 to ${MAX_BINS}), then press Save.${synced ? ` Your synced farm has ${synced}.` : ""}</div>
+  <label class="rc-node-row guro-frame"><span class="rc-node-icon">${getIcon("Mud")}</span><span class="rc-node-text"><span class="rc-node-name">Myco Bins</span><span class="rc-node-used">Each bin grows one patch of 25 tiles</span></span><input type="number" min="1" max="${MAX_BINS}" step="1" inputmode="numeric" id="rcBinsInput" value="${value ? value : ""}" placeholder="1"></label>`;
+}
+function popupTitle10() {
+  if (popup10 === "skills") return "Cave Skills";
+  if (popup10 === "bins") return "Myco Bins";
+  return "Computation";
+}
+function popupBodyHtml10() {
+  if (popup10 === "bins") return binsBodyHtml();
+  if (popup10 === "computation") return computationBodyHtml10();
+  return `<div class="rc-pop-hint">Cave skills from the Skill Tree. Changes here also change the Skill Tree. Press Save to apply them.</div><div id="rcSkillSlot"></div>`;
+}
+function borrow10(id, slotId) {
+  const el = document.getElementById(id);
+  const slot = document.getElementById(slotId);
+  if (!el || !slot) return;
+  const parent = el.parentNode;
+  const next = el.nextSibling;
+  slot.appendChild(el);
+  restoreFns10.push(() => {
+    if (!parent) return;
+    if (next && next.parentNode === parent) parent.insertBefore(el, next);
+    else parent.appendChild(el);
+  });
+}
+function releaseBorrowed10() {
+  while (restoreFns10.length) restoreFns10.pop()();
+}
+function setupBorrowed10() {
+  if (popup10 === "skills") {
+    savedSkillCategory10 = skillCategory;
+    setSkillCategory("cave");
+    borrow10("ascensionBar", "rcAscSlot");
+    borrow10("skillListWrap", "rcSkillSlot");
+    borrow10("skillSaveBar", "rcSaveSlot");
+    renderSkillPanel();
+    renderAscensionBar();
+    updateSkillSaveBarState();
+  }
+}
+function teardownBorrowed10() {
+  releaseBorrowed10();
+  if (savedSkillCategory10 != null) {
+    setSkillCategory(savedSkillCategory10);
+    savedSkillCategory10 = null;
+    renderSkillPanel();
+  }
+}
+function footerHtml10() {
+  if (popup10 === "bins") return `<button type="button" class="rc-save guro-frame" id="rcBinsSave">Save Changes</button>`;
+  if (popup10 === "skills") return `<div id="rcSaveSlot"></div>`;
+  return "";
+}
+function overlayHtml10() {
+  return `<div class="rc-pop guro-frame${popup10 === "computation" ? " rc-pop-comp" : ""}" role="dialog" aria-modal="true" aria-label="${popupTitle10()}">
+    <div class="rc-pop-head"><span class="rc-pop-title">${popupTitle10()}</span><button type="button" class="rc-pop-close" data-rc-close aria-label="Close">\u2715</button></div>
+    <div class="rc-pop-body" id="rcPopBody">${popupBodyHtml10()}</div>
+    <div class="rc-pop-foot">${footerHtml10()}</div>
+  </div>`;
+}
+function renderOverlayBody10() {
+  if (!overlayEl10) return;
+  const body = overlayEl10.querySelector("#rcPopBody");
+  if (!body) return;
+  if (popup10 === "skills") return;
+  const top = body.scrollTop;
+  body.innerHTML = popupBodyHtml10();
+  body.scrollTop = top;
+}
+function isPopupDirty10() {
+  if (popup10 === "skills") return isSkillDraftDirty() || isBoostDraftDirty();
+  if (popup10 === "bins") return binsDraft != null && Number(binsDraft) !== effectiveBins();
+  return false;
+}
+function openPopup10(kind) {
+  if (popup10) return;
+  popup10 = kind;
+  binsDraft = null;
+  overlayEl10 = document.createElement("div");
+  overlayEl10.className = "rc-overlay";
+  overlayEl10.innerHTML = overlayHtml10();
+  document.body.appendChild(overlayEl10);
+  document.body.classList.add("rc-no-scroll");
+  const slot = overlayEl10.querySelector("#rcSkillSlot");
+  if (kind === "skills" && slot) {
+    const asc = document.createElement("div");
+    asc.id = "rcAscSlot";
+    slot.parentNode.insertBefore(asc, slot);
+  }
+  setupBorrowed10();
+}
+function destroyPopup10() {
+  teardownBorrowed10();
+  if (overlayEl10) overlayEl10.remove();
+  overlayEl10 = null;
+  popup10 = null;
+  binsDraft = null;
+  document.body.classList.remove("rc-no-scroll");
+}
+function showPrompt10(message, buttons) {
+  if (promptEl10) promptEl10.remove();
+  promptEl10 = document.createElement("div");
+  promptEl10.className = "rc-overlay rc-overlay-top";
+  promptEl10.innerHTML = `<div class="rc-prompt guro-frame" role="alertdialog" aria-modal="true"><p class="rc-prompt-text">${esc11(message)}</p><div class="rc-prompt-actions">${buttons.map((b, i) => `<button type="button" class="rc-prompt-btn guro-frame" data-rc-prompt="${i}">${esc11(b.label)}</button>`).join("")}</div></div>`;
+  promptEl10.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-rc-prompt]");
+    if (!btn) return;
+    const b = buttons[Number(btn.getAttribute("data-rc-prompt"))];
+    promptEl10.remove();
+    promptEl10 = null;
+    if (b && b.run) b.run();
+  });
+  document.body.appendChild(promptEl10);
+  const first = promptEl10.querySelector("button");
+  if (first) first.focus();
+}
+function closePopup10(force) {
+  if (!popup10) return;
+  if (!force && isPopupDirty10()) {
+    showPrompt10("You have unsaved changes. Save them first, or discard them to close.", [{
+      label: "Keep Editing"
+    }, {
+      label: "Discard",
+      run: () => {
+        discardSkillBoostDrafts();
+        destroyPopup10();
+        refreshResults10();
+      }
+    }]);
+    return;
+  }
+  const wasComputation = popup10 === "computation";
+  destroyPopup10();
+  if (!wasComputation) refreshResults10();
+}
+function saveBins() {
+  const raw = binsDraft == null ? effectiveBins() : binsDraft;
+  const v = Math.min(MAX_BINS, Math.max(1, Math.floor(Number(raw) || 1)));
+  state10.bins = v;
+  saveState10();
+  binsDraft = null;
+  toast("\u2705 Myco Bins saved");
+  renderOverlayBody10();
+  refreshResults10();
+}
+function activate(el) {
+  const recipe = el.getAttribute("data-rc-recipe");
+  if (recipe) {
+    if (state10.recipeManual && state10.recipe === recipe) {
+      state10.recipeManual = false;
+    } else {
+      state10.recipe = recipe;
+      state10.recipeManual = true;
+    }
+    saveState10();
+    render10();
+    return true;
+  }
+  const crop = el.getAttribute("data-rc-crop");
+  if (crop) {
+    if (state10.cropManual && state10.crop === crop) {
+      state10.cropManual = false;
+    } else {
+      state10.crop = crop;
+      state10.cropManual = true;
+    }
+    saveState10();
+    render10();
+    return true;
+  }
+  return false;
+}
+function refreshValues() {
+  if (!host10) return;
+  const el = host10.querySelector("#rcResults");
+  if (!el) return;
+  const r = compute9();
+  el.innerHTML = tilesHtml9(r) + valuesHtml10(r);
+}
+function onClick10(e) {
+  const details = e.target.closest("[data-rc-details]");
+  if (details) {
+    detailsOpen10 = !detailsOpen10;
+    refreshResults10();
+    return;
+  }
+  if (e.target.closest(".rc-dig-input")) {
+    if (state10.dig !== "find") {
+      state10.dig = "find";
+      saveState10();
+      refreshResults10();
+      const input = host10.querySelector(".rc-dig-input");
+      if (input) input.focus();
+    }
+    return;
+  }
+  const cell = e.target.closest("[data-rc-recipe], [data-rc-crop]");
+  if (cell && activate(cell)) return;
+  const view = e.target.closest("[data-rc-view]");
+  if (view) {
+    state10.view = view.getAttribute("data-rc-view");
+    saveState10();
+    refreshResults10();
+    return;
+  }
+  const dig = e.target.closest("[data-rc-dig]");
+  if (dig) {
+    state10.dig = dig.getAttribute("data-rc-dig");
+    saveState10();
+    refreshResults10();
+    return;
+  }
+  const open = e.target.closest("[data-rc-open]");
+  if (open && !open.disabled) openPopup10(open.getAttribute("data-rc-open"));
+}
+function onHostKey(e) {
+  if (e.key !== "Enter" && e.key !== " ") return;
+  const cell = e.target.closest && e.target.closest("[data-rc-recipe], [data-rc-crop]");
+  if (!cell) return;
+  e.preventDefault();
+  activate(cell);
+}
+function onDocClick10(e) {
+  if (!overlayEl10) return;
+  if (promptEl10 && promptEl10.contains(e.target)) return;
+  if (e.target === overlayEl10 || e.target.closest("[data-rc-close]")) {
+    closePopup10(false);
+    return;
+  }
+  if (!overlayEl10.contains(e.target)) return;
+  if (e.target.closest("#rcBinsSave")) {
+    saveBins();
+    return;
+  }
+  const matBtn = e.target.closest("[data-rc-mat]");
+  if (matBtn && popup10 === "computation") {
+    setMaterialMode(matBtn.getAttribute("data-rc-res"), matBtn.getAttribute("data-rc-mat"), matBtn.getAttribute("data-rc-matmode"));
+    invalidateCostCache();
+    renderOverlayBody10();
+    refreshResults10();
+  }
+}
+function onDocInput8(e) {
+  if (e.target && e.target.classList && e.target.classList.contains("rc-dig-input")) {
+    const v = Math.floor(Number(e.target.value));
+    state10.digs = isFinite(v) && v > 0 ? Math.min(v, PATCH_TILES) : 0;
+    state10.dig = "find";
+    saveState10();
+    refreshValues();
+    return;
+  }
+  if (e.target && e.target.id === "rcBinsInput") binsDraft = e.target.value === "" ? 0 : Number(e.target.value);
+}
+function onKey10(e) {
+  if (e.key !== "Escape") return;
+  if (promptEl10) {
+    promptEl10.remove();
+    promptEl10 = null;
+    return;
+  }
+  if (popup10) closePopup10(false);
+}
+function onExternalChange10() {
+  unitCostMemoAt = 0;
+  if (!host10) return;
+  invalidateCostCache();
+  refreshResults10();
+}
+function mountBeetlesCalculator(root) {
+  host10 = root;
+  loadBaseCropsIfNeeded();
+  invalidateCostCache();
+  state10 = loadState10();
+  detailsOpen10 = false;
+  host10.addEventListener("click", onClick10);
+  host10.addEventListener("keydown", onHostKey);
+  document.addEventListener("click", onDocClick10);
+  document.addEventListener("input", onDocInput8);
+  document.addEventListener("keydown", onKey10);
+  window.addEventListener("guroBoostsChanged", onExternalChange10);
+  window.addEventListener("guroGemPackChanged", onExternalChange10);
+  window.addEventListener("guroPricesUpdated", onExternalChange10);
+  listening10 = true;
+  render10();
+}
+function unmountBeetlesCalculator() {
+  invalidateCostCache();
+  setAutoMaterialModes({});
+  invalidateCostCache();
+  if (popup10) destroyPopup10();
+  if (promptEl10) {
+    promptEl10.remove();
+    promptEl10 = null;
+  }
+  if (host10) {
+    host10.removeEventListener("click", onClick10);
+    host10.removeEventListener("keydown", onHostKey);
+    host10.innerHTML = "";
+  }
+  if (listening10) {
+    document.removeEventListener("click", onDocClick10);
+    document.removeEventListener("input", onDocInput8);
+    document.removeEventListener("keydown", onKey10);
+    window.removeEventListener("guroBoostsChanged", onExternalChange10);
+    window.removeEventListener("guroGemPackChanged", onExternalChange10);
+    window.removeEventListener("guroPricesUpdated", onExternalChange10);
+    listening10 = false;
+  }
+  host10 = null;
+}
+function beetlesCalculatorCanLeave() {
+  if (!popup10) return true;
+  if (isPopupDirty10()) {
+    toast("\u26A0\uFE0F Save your changes first");
+    return false;
+  }
+  destroyPopup10();
+  return true;
+}
+
+// src/rescalc_honey.js
+var MAX_ROWS = 40;
+var host11 = null;
+var popup11 = null;
+var overlayEl11 = null;
+var promptEl11 = null;
+var restoreFns11 = [];
+var hivesDraft = null;
+var listening11 = false;
+var detailsOpen11 = false;
+var openMenu = null;
+var savedSkillCategory11 = null;
+function esc12(s) {
+  return escapeHtml(String(s));
+}
+function n212(n) {
+  if (!isFinite(n)) return "\u2014";
+  return n.toLocaleString(void 0, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2
+  });
+}
+function fl11(n) {
+  if (!isFinite(n)) return "\u2014";
+  const a = Math.abs(n);
+  const max = a >= 1e3 ? 0 : a >= 1 ? 2 : 4;
+  return n.toLocaleString(void 0, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: max
+  });
+}
+function signed11(n, f) {
+  const r = f(Math.abs(n));
+  if (n > 0 && r !== "0") return "+" + r;
+  if (n < 0 && r !== "0") return "-" + r;
+  return r;
+}
+function flowerHtml11(n) {
+  return `${fl11(n)}${FLOWER_ICON}`;
 }
 function flowerNameIcon(name) {
   const v = FLOWER_VARIETIES[name];
@@ -8127,20 +9272,20 @@ function totalsOf7(e) {
   };
 }
 function ddButtonHtml(kind, icon, label) {
-  return `<button type="button" class="rc-dd-btn guro-frame" data-rc-dd-toggle="${kind}" aria-haspopup="listbox" aria-expanded="${openMenu === kind ? "true" : "false"}"><span class="rc-dd-icon">${icon}</span><span class="rc-dd-label">${esc11(label)}</span><span class="rc-dd-chev">\u25BE</span></button>`;
+  return `<button type="button" class="rc-dd-btn guro-frame" data-rc-dd-toggle="${kind}" aria-haspopup="listbox" aria-expanded="${openMenu === kind ? "true" : "false"}"><span class="rc-dd-icon">${icon}</span><span class="rc-dd-label">${esc12(label)}</span><span class="rc-dd-chev">\u25BE</span></button>`;
 }
 function flowerMenuHtml(kind) {
   const options = Object.keys(FLOWER_VARIETIES).map((n) => {
     const locked = isFlowerVarietySeasonLocked(n);
     const on = n === selectedHoneyFlower;
-    return `<div class="rc-dd-opt${on ? " is-on" : ""}${locked ? " is-locked" : ""}" role="option" tabindex="0" aria-selected="${on ? "true" : "false"}" data-rc-dd-pick="${kind}" data-rc-value="${esc11(n)}"><span class="rc-dd-icon">${flowerNameIcon(n)}</span><span class="rc-dd-label">${esc11(n)}</span>${locked ? `<span class="rc-dd-lock">\u{1F512}</span>` : ""}</div>`;
+    return `<div class="rc-dd-opt${on ? " is-on" : ""}${locked ? " is-locked" : ""}" role="option" tabindex="0" aria-selected="${on ? "true" : "false"}" data-rc-dd-pick="${kind}" data-rc-value="${esc12(n)}"><span class="rc-dd-icon">${flowerNameIcon(n)}</span><span class="rc-dd-label">${esc12(n)}</span>${locked ? `<span class="rc-dd-lock">\u{1F512}</span>` : ""}</div>`;
   }).join("");
   return `<div class="rc-dd-menu guro-frame" role="listbox">${options}</div>`;
 }
 function cropMenuHtml() {
   const options = Object.keys(BASE_CROPS).map((n) => {
     const on = n === selectedSwarmCrop;
-    return `<div class="rc-dd-opt${on ? " is-on" : ""}" role="option" tabindex="0" aria-selected="${on ? "true" : "false"}" data-rc-dd-pick="crop" data-rc-value="${esc11(n)}"><span class="rc-dd-icon">${getIcon(n)}</span><span class="rc-dd-label">${esc11(n)}</span></div>`;
+    return `<div class="rc-dd-opt${on ? " is-on" : ""}" role="option" tabindex="0" aria-selected="${on ? "true" : "false"}" data-rc-dd-pick="crop" data-rc-value="${esc12(n)}"><span class="rc-dd-icon">${getIcon(n)}</span><span class="rc-dd-label">${esc12(n)}</span></div>`;
   }).join("");
   return `<div class="rc-dd-menu guro-frame" role="listbox">${options}</div>`;
 }
@@ -8152,7 +9297,7 @@ function cropPickerHtml() {
   const name = selectedSwarmCrop;
   return `<div class="rc-dd rc-dd-inline" data-rc-dd="crop">${ddButtonHtml("crop", getIcon(name), name)}${openMenu === "crop" ? cropMenuHtml() : ""}</div>`;
 }
-function pickerHtml10() {
+function pickerHtml11() {
   return `<section class="rc-block guro-frame" aria-label="Honey Calculator">
     <div class="rc-block-title">Honey Calculator</div>
     <div class="rc-field">
@@ -8165,35 +9310,35 @@ function pickerHtml10() {
 function tileHtml(icon, yieldText, netHtml, good, key) {
   return `<div class="rc-tile guro-frame ${good ? "is-profit" : "is-loss"}" data-rc-tile="${key}"><span class="rc-tile-icon">${icon}</span><span class="rc-tile-yield">${yieldText}</span><span class="rc-tile-net">${netHtml}</span></div>`;
 }
-function tilesHtml9(e, t) {
+function tilesHtml10(e, t) {
   if (!(e.hives > 0)) return `<div class="rc-empty">You have 0 hives. Open Hives above and enter your hive count.</div>`;
-  const honeyTile = tileHtml(getIcon("Honey"), signed10(t.honey, n211), `${fl10(t.honeyGross)}${FLOWER_ICON}`, true, "honey");
-  const flowerTile = tileHtml(flowerNameIcon(selectedHoneyFlower), signed10(t.flowers, n211), `-${fl10(t.cost + t.restock)}${FLOWER_ICON}`, false, "flower");
+  const honeyTile = tileHtml(getIcon("Honey"), signed11(t.honey, n212), `${fl11(t.honeyGross)}${FLOWER_ICON}`, true, "honey");
+  const flowerTile = tileHtml(flowerNameIcon(selectedHoneyFlower), signed11(t.flowers, n212), `-${fl11(t.cost + t.restock)}${FLOWER_ICON}`, false, "flower");
   return `<div class="rc-tiles-wrap guro-frame"><div class="rc-tiles">${honeyTile}${flowerTile}</div></div>`;
 }
-function valueBoxHtml10(label, html, extra) {
+function valueBoxHtml11(label, html, extra) {
   return `<div class="rc-val guro-frame${extra ? " " + extra : ""}"><span class="rc-val-label">${label}</span><span class="rc-val-num">${html}</span></div>`;
 }
-function valuesHtml10(t) {
-  const feeBox = (feePercent || 0) > 0 ? valueBoxHtml10("Market Fee", flowerHtml10(t.fee)) : "";
+function valuesHtml11(t) {
+  const feeBox = (feePercent || 0) > 0 ? valueBoxHtml11("Market Fee", flowerHtml11(t.fee)) : "";
   return `<div class="rc-values">
-    ${valueBoxHtml10("Gross", flowerHtml10(t.gross))}
-    ${valueBoxHtml10("Flower Cost", flowerHtml10(t.cost))}
-    ${valueBoxHtml10("Shrine Cost", flowerHtml10(t.shrine))}
-    ${valueBoxHtml10("Restock Cost", flowerHtml10(t.restock))}
+    ${valueBoxHtml11("Gross", flowerHtml11(t.gross))}
+    ${valueBoxHtml11("Flower Cost", flowerHtml11(t.cost))}
+    ${valueBoxHtml11("Shrine Cost", flowerHtml11(t.shrine))}
+    ${valueBoxHtml11("Restock Cost", flowerHtml11(t.restock))}
     ${feeBox}
   </div>
   <div class="rc-net-row">
-    ${valueBoxHtml10("Net", `<span class="${t.net >= 0 ? "is-profit" : "is-loss"}">${signed10(t.net, fl10)}${FLOWER_ICON}</span>`, "rc-val-net")}
+    ${valueBoxHtml11("Net", `<span class="${t.net >= 0 ? "is-profit" : "is-loss"}">${signed11(t.net, fl11)}${FLOWER_ICON}</span>`, "rc-val-net")}
     <button type="button" class="rc-linktext" data-rc-open="computation">Computation</button>
   </div>`;
 }
-function modeNoteHtml9(e) {
+function modeNoteHtml10(e) {
   const warn = !(e.hives > 0) ? `<div class="rc-note is-warn">You have 0 hives, so every result is 0. Open Hives above and enter your hive count.</div>` : "";
   const text = "24Hrs: every hive is full of honey once a day (more often with speed boosts), the flower is replanted all day and every restock needed is paid for.";
-  return `<div class="rc-details-row"><button type="button" class="rc-linktext" data-rc-details aria-expanded="${detailsOpen10 ? "true" : "false"}">Details</button></div>${detailsOpen10 ? `<div class="rc-note">${text}</div>` : ""}${warn}`;
+  return `<div class="rc-details-row"><button type="button" class="rc-linktext" data-rc-details aria-expanded="${detailsOpen11 ? "true" : "false"}">Details</button></div>${detailsOpen11 ? `<div class="rc-note">${text}</div>` : ""}${warn}`;
 }
-function resultsHtml10() {
+function resultsHtml11() {
   const e = getEcon();
   const t = totalsOf7(e);
   return `<section class="rc-block guro-frame" aria-label="Honey results">
@@ -8202,49 +9347,49 @@ function resultsHtml10() {
       <button type="button" class="rc-tool guro-frame" data-rc-open="boost">Boost</button>
       <button type="button" class="rc-tool guro-frame" data-rc-open="hives">Hives</button>
     </div>
-    ${modeNoteHtml9(e)}
-    <div id="rcResults">${tilesHtml9(e, t)}${valuesHtml10(t)}</div>
+    ${modeNoteHtml10(e)}
+    <div id="rcResults">${tilesHtml10(e, t)}${valuesHtml11(t)}</div>
   </section>`;
 }
-function render10() {
-  if (!host10) return;
+function render11() {
+  if (!host11) return;
   const scroller = document.scrollingElement;
   const y = scroller ? scroller.scrollTop : 0;
-  host10.innerHTML = pickerHtml10() + resultsHtml10();
+  host11.innerHTML = pickerHtml11() + resultsHtml11();
   if (scroller) scroller.scrollTop = y;
 }
-function refreshResults10() {
-  if (!host10) return;
-  const blocks = host10.querySelectorAll(".rc-block");
+function refreshResults11() {
+  if (!host11) return;
+  const blocks = host11.querySelectorAll(".rc-block");
   if (blocks.length < 2) {
-    render10();
+    render11();
     return;
   }
   const tmp = document.createElement("div");
-  tmp.innerHTML = resultsHtml10();
+  tmp.innerHTML = resultsHtml11();
   blocks[1].replaceWith(tmp.firstElementChild);
-  if (popup10 === "computation") renderOverlayBody10();
+  if (popup11 === "computation") renderOverlayBody11();
 }
 function refreshAll() {
-  render10();
-  if (popup10 === "computation") renderOverlayBody10();
+  render11();
+  if (popup11 === "computation") renderOverlayBody11();
 }
-function kv10(label, html, cls) {
+function kv11(label, html, cls) {
   return `<div class="rc-kv${cls ? " " + cls : ""}"><span class="rc-kv-label">${label}</span><span class="rc-kv-val">${html}</span></div>`;
 }
 function effectText(b) {
   const parts = [];
-  if (b.speedAdd) parts.push(`${b.speedAdd > 0 ? "+" : ""}${n211(b.speedAdd)} speed`);
-  if (b.honeyYieldAdd) parts.push(`${b.honeyYieldAdd > 0 ? "+" : ""}${n211(b.honeyYieldAdd)} honey`);
-  if (b.swarmChanceAdd) parts.push(`+${n211(b.swarmChanceAdd * 100)}% swarm chance`);
+  if (b.speedAdd) parts.push(`${b.speedAdd > 0 ? "+" : ""}${n212(b.speedAdd)} speed`);
+  if (b.honeyYieldAdd) parts.push(`${b.honeyYieldAdd > 0 ? "+" : ""}${n212(b.honeyYieldAdd)} honey`);
+  if (b.swarmChanceAdd) parts.push(`+${n212(b.swarmChanceAdd * 100)}% swarm chance`);
   if (b.swarmChanceMult) parts.push(`\xD7${b.swarmChanceMult} swarm chance`);
   if (b.flowerTimeMult) parts.push(`\xD7${b.flowerTimeMult} flower time`);
-  if (b.flowerExtraChance) parts.push(`+${n211(b.flowerExtraChance)} flowers`);
-  if (b.flowerExtraFlat) parts.push(`+${n211(b.flowerExtraFlat)} flowers`);
+  if (b.flowerExtraChance) parts.push(`+${n212(b.flowerExtraChance)} flowers`);
+  if (b.flowerExtraFlat) parts.push(`+${n212(b.flowerExtraFlat)} flowers`);
   return parts.join(", ");
 }
 function boostRowsHtml(list) {
-  return list.map((b) => `<div class="rc-boost-row">${getBoostIconAnyFallback(b.name)}<span class="rc-boost-name">${esc11(b.name)}</span><span class="rc-boost-eff">${esc11(effectText(b))}</span></div>`).join("");
+  return list.map((b) => `<div class="rc-boost-row">${getBoostIconAnyFallback(b.name)}<span class="rc-boost-name">${esc12(b.name)}</span><span class="rc-boost-eff">${esc12(effectText(b))}</span></div>`).join("");
 }
 function appliedBoostHtml9(e) {
   const hive = e.hiveStats.activeBoosts.filter((b) => effectText(b));
@@ -8274,7 +9419,7 @@ function swarmTableHtml(e) {
     <div class="rc-sw-wrap"><table class="rc-sw-grid"><thead><tr><th>Swarms</th><th>Chance</th><th>Crop Yield</th><th>Value</th></tr></thead><tbody>${body}</tbody></table></div>${note}`;
 }
 function swarmBonusHtml(e) {
-  const crop = esc11(selectedSwarmCrop);
+  const crop = esc12(selectedSwarmCrop);
   const pollen = isSkillActive("skill_pollen_power_up") ? " (0.2 base + Pollen Power Up)" : "";
   return `<div class="rc-group rc-swarm">
     <div class="rc-swarm-head"><span class="rc-swarm-icon">${swarmIcon()}</span><span class="rc-swarm-title">Bee Swarm bonus</span></div>
@@ -8289,27 +9434,27 @@ function calculatorCardHtml(e) {
   const feeNote = feePercent > 0 ? `<span class="rc-kv-sub">(${fmt(e.netHoneySell)}${FLOWER_ICON} after ${feePercent}% fee)</span>` : "";
   const formula = e.flowerStats.expectedYield > 1 ? `<span class="rc-kv-sub">(${fmt(e.flowerCostFlower)}${FLOWER_ICON} \xF7 ${fmt(e.flowerStats.expectedYield)} expected flowers/cycle = ${fmt(e.costPerFlower)}${FLOWER_ICON}/flower)</span>` : "";
   return `<article class="rc-comp-card guro-frame">
-    <header class="rc-comp-head"><span class="rc-comp-icon">${getIcon("Honey")}</span><span class="rc-comp-name">Honey Calculator</span><span class="rc-comp-nodes">${getIcon("Beehive")} ${n211(e.hives)}</span></header>
+    <header class="rc-comp-head"><span class="rc-comp-icon">${getIcon("Honey")}</span><span class="rc-comp-name">Honey Calculator</span><span class="rc-comp-nodes">${getIcon("Beehive")} ${n212(e.hives)}</span></header>
     <div class="rc-group"><div class="rc-kv-grid">
-      ${kv10("Honey Speed", fmt(e.hiveStats.speed))}
-      ${kv10("Time To Full Hive", esc11(formatDuration(e.hiveStats.timeToFullSec)))}
-      ${kv10("Honey / Hive / Day", fmt(e.hiveStats.honeyPerHiveDay))}
-      ${kv10("Swarm Chance / Fill", `${(e.hiveStats.swarmChance * 100).toFixed(2)}%`)}
+      ${kv11("Honey Speed", fmt(e.hiveStats.speed))}
+      ${kv11("Time To Full Hive", esc12(formatDuration(e.hiveStats.timeToFullSec)))}
+      ${kv11("Honey / Hive / Day", fmt(e.hiveStats.honeyPerHiveDay))}
+      ${kv11("Swarm Chance / Fill", `${(e.hiveStats.swarmChance * 100).toFixed(2)}%`)}
     </div></div>
     ${appliedBoostHtml9(e)}
     <div class="rc-group"><div class="rc-comp-sub">Active Flower</div>
       ${flowerPickerHtml("popflower")}
       <div class="rc-kv-grid">
-        ${kv10("Replants / Day", fmt(e.replantsPerDay))}
-        ${kv10("Average Yield", `${fmt(e.flowerStats.expectedYield)} <span class="rc-kv-sub">flowers/cycle</span>`)}
-        ${kv10("Cost / Hive / Day", `${fmt(e.costPerHiveDay)}${FLOWER_ICON}${formula}`, "rc-kv-wide")}
-        ${kv10("Seed Restock Cost / Hive / Day", `${e.flowerRestockCost > 0 ? "+" + fmt(e.flowerRestockCost) : "0"}${FLOWER_ICON}`, "rc-kv-wide")}
+        ${kv11("Replants / Day", fmt(e.replantsPerDay))}
+        ${kv11("Average Yield", `${fmt(e.flowerStats.expectedYield)} <span class="rc-kv-sub">flowers/cycle</span>`)}
+        ${kv11("Cost / Hive / Day", `${fmt(e.costPerHiveDay)}${FLOWER_ICON}${formula}`, "rc-kv-wide")}
+        ${kv11("Seed Restock Cost / Hive / Day", `${e.flowerRestockCost > 0 ? "+" + fmt(e.flowerRestockCost) : "0"}${FLOWER_ICON}`, "rc-kv-wide")}
       </div>
     </div>
     <div class="rc-group"><div class="rc-comp-sub">Honey Sell Price</div>
       <div class="rc-kv-grid">
-        ${kv10("Honey Sell Price", `${fmt(e.honeySellFlower)}${FLOWER_ICON}${feeNote}`, "rc-kv-wide")}
-        ${kv10("Revenue / Hive / Day", `${fmt(e.hiveStats.honeyPerHiveDay * e.netHoneySell)}${FLOWER_ICON}`, "rc-kv-wide")}
+        ${kv11("Honey Sell Price", `${fmt(e.honeySellFlower)}${FLOWER_ICON}${feeNote}`, "rc-kv-wide")}
+        ${kv11("Revenue / Hive / Day", `${fmt(e.hiveStats.honeyPerHiveDay * e.netHoneySell)}${FLOWER_ICON}`, "rc-kv-wide")}
       </div>
     </div>
     ${swarmBonusHtml(e)}
@@ -8317,23 +9462,23 @@ function calculatorCardHtml(e) {
 }
 function profitCardHtml(e, t) {
   const perHive = e.hives > 0 ? t.net / e.hives : 0;
-  const shrineNames = t.shrines.length ? `<span class="rc-kv-sub">${esc11(t.shrines.map((s) => s.name).join(", "))}</span>` : "";
+  const shrineNames = t.shrines.length ? `<span class="rc-kv-sub">${esc12(t.shrines.map((s) => s.name).join(", "))}</span>` : "";
   return `<article class="rc-comp-card guro-frame">
-    <header class="rc-comp-head"><span class="rc-comp-icon">${getIcon("Honey")}</span><span class="rc-comp-name">Honey 24hr Profitability</span><span class="rc-comp-nodes">${getIcon("Beehive")} ${n211(e.hives)}</span></header>
+    <header class="rc-comp-head"><span class="rc-comp-icon">${getIcon("Honey")}</span><span class="rc-comp-name">Honey 24hr Profitability</span><span class="rc-comp-nodes">${getIcon("Beehive")} ${n212(e.hives)}</span></header>
     <div class="rc-group"><div class="rc-comp-sub">24Hrs Profit / Loss \u2014 ${fmt(e.hives)} hives</div>
     <div class="rc-kv-grid">
-      ${kv10("Total Honey", `${signed10(t.honey, n211)}${getIcon("Honey")}`)}
-      ${kv10("Total Gross", `${signed10(t.gross, fl10)}${FLOWER_ICON}`)}
-      ${kv10("Flower Cost", flowerHtml10(t.cost))}
-      ${kv10("Seed Restock Cost", flowerHtml10(t.restock))}
-      ${kv10("Shrine Cost", `${flowerHtml10(t.shrine)}${shrineNames}`)}
-      ${feePercent > 0 ? kv10("Market Fee", flowerHtml10(t.fee)) : ""}
-      ${kv10("Profit / Hive / Day", `<span class="${perHive >= 0 ? "is-profit" : "is-loss"}">${signed10(perHive, fl10)}${FLOWER_ICON}</span>`, "rc-kv-wide")}
-      ${kv10(`Total / ${fmt(e.hives)} Hives / Day`, `<span class="${t.net >= 0 ? "is-profit" : "is-loss"}">${signed10(t.net, fl10)}${FLOWER_ICON}</span>`, "rc-kv-wide rc-kv-net")}
+      ${kv11("Total Honey", `${signed11(t.honey, n212)}${getIcon("Honey")}`)}
+      ${kv11("Total Gross", `${signed11(t.gross, fl11)}${FLOWER_ICON}`)}
+      ${kv11("Flower Cost", flowerHtml11(t.cost))}
+      ${kv11("Seed Restock Cost", flowerHtml11(t.restock))}
+      ${kv11("Shrine Cost", `${flowerHtml11(t.shrine)}${shrineNames}`)}
+      ${feePercent > 0 ? kv11("Market Fee", flowerHtml11(t.fee)) : ""}
+      ${kv11("Profit / Hive / Day", `<span class="${perHive >= 0 ? "is-profit" : "is-loss"}">${signed11(perHive, fl11)}${FLOWER_ICON}</span>`, "rc-kv-wide")}
+      ${kv11(`Total / ${fmt(e.hives)} Hives / Day`, `<span class="${t.net >= 0 ? "is-profit" : "is-loss"}">${signed11(t.net, fl11)}${FLOWER_ICON}</span>`, "rc-kv-wide rc-kv-net")}
     </div></div>
   </article>`;
 }
-function computationBodyHtml10() {
+function computationBodyHtml11() {
   const e = getEcon();
   const t = totalsOf7(e);
   return calculatorCardHtml(e) + profitCardHtml(e, t);
@@ -8361,151 +9506,151 @@ function boostBodyHtml10() {
     noteSkip: /./,
     allLabel: "Boost for All"
   });
-  return `<div class="rc-pop-hint">Boosts that affect your hives and ${esc11(flower)}. Tap a boost to switch it on or off, then press Save.</div>${html || `<div class="rc-empty">No boosts found.</div>`}`;
+  return `<div class="rc-pop-hint">Boosts that affect your hives and ${esc12(flower)}. Tap a boost to switch it on or off, then press Save.</div>${html || `<div class="rc-empty">No boosts found.</div>`}`;
 }
 function hivesBodyHtml() {
   const value = hivesDraft == null ? getHiveCount() : hivesDraft;
   return `<div class="rc-pop-hint">Every hive uses the same flower and the same boosts. Change your hive count here, then press Save.</div>
   <label class="rc-node-row guro-frame"><span class="rc-node-icon">${getIcon("Beehive")}</span><span class="rc-node-text"><span class="rc-node-name">Beehive</span><span class="rc-node-used">Used by: Honey, Bee Swarm</span></span><input type="number" min="0" step="1" inputmode="numeric" data-rc-hives value="${value ? value : ""}" placeholder="0"></label>`;
 }
-function popupTitle10() {
-  if (popup10 === "skills") return "Honey Skills";
-  if (popup10 === "boost") return "Honey Boosts";
-  if (popup10 === "hives") return "Hives";
+function popupTitle11() {
+  if (popup11 === "skills") return "Honey Skills";
+  if (popup11 === "boost") return "Honey Boosts";
+  if (popup11 === "hives") return "Hives";
   return "Computation";
 }
-function popupBodyHtml10() {
-  if (popup10 === "boost") return boostBodyHtml10();
-  if (popup10 === "hives") return hivesBodyHtml();
-  if (popup10 === "computation") return computationBodyHtml10();
+function popupBodyHtml11() {
+  if (popup11 === "boost") return boostBodyHtml10();
+  if (popup11 === "hives") return hivesBodyHtml();
+  if (popup11 === "computation") return computationBodyHtml11();
   return `<div class="rc-pop-hint">Bees and Flowers skills from the Skill Tree. Changes here also change the Skill Tree. Press Save to apply them.</div><div id="rcSkillSlot"></div>`;
 }
-function borrow10(id, slotId) {
+function borrow11(id, slotId) {
   const el = document.getElementById(id);
   const slot = document.getElementById(slotId);
   if (!el || !slot) return;
   const parent = el.parentNode;
   const next = el.nextSibling;
   slot.appendChild(el);
-  restoreFns10.push(() => {
+  restoreFns11.push(() => {
     if (!parent) return;
     if (next && next.parentNode === parent) parent.insertBefore(el, next);
     else parent.appendChild(el);
   });
 }
-function releaseBorrowed10() {
-  while (restoreFns10.length) restoreFns10.pop()();
+function releaseBorrowed11() {
+  while (restoreFns11.length) restoreFns11.pop()();
 }
-function setupBorrowed10() {
-  if (popup10 === "skills") {
-    savedSkillCategory10 = skillCategory;
+function setupBorrowed11() {
+  if (popup11 === "skills") {
+    savedSkillCategory11 = skillCategory;
     setSkillCategory("bees");
-    borrow10("ascensionBar", "rcAscSlot");
-    borrow10("skillListWrap", "rcSkillSlot");
-    borrow10("skillSaveBar", "rcSaveSlot");
+    borrow11("ascensionBar", "rcAscSlot");
+    borrow11("skillListWrap", "rcSkillSlot");
+    borrow11("skillSaveBar", "rcSaveSlot");
     renderSkillPanel();
     renderAscensionBar();
     updateSkillSaveBarState();
-  } else if (popup10 === "boost") {
-    borrow10("skillSaveBar", "rcSaveSlot");
+  } else if (popup11 === "boost") {
+    borrow11("skillSaveBar", "rcSaveSlot");
     updateSkillSaveBarState();
   }
 }
-function teardownBorrowed10() {
-  releaseBorrowed10();
-  if (savedSkillCategory10 != null) {
-    setSkillCategory(savedSkillCategory10);
-    savedSkillCategory10 = null;
+function teardownBorrowed11() {
+  releaseBorrowed11();
+  if (savedSkillCategory11 != null) {
+    setSkillCategory(savedSkillCategory11);
+    savedSkillCategory11 = null;
     renderSkillPanel();
   }
 }
-function footerHtml10() {
-  if (popup10 === "hives") return `<button type="button" class="rc-save guro-frame" id="rcNodesSave">Save Changes</button>`;
-  if (popup10 === "skills" || popup10 === "boost") return `<div id="rcSaveSlot"></div>`;
+function footerHtml11() {
+  if (popup11 === "hives") return `<button type="button" class="rc-save guro-frame" id="rcNodesSave">Save Changes</button>`;
+  if (popup11 === "skills" || popup11 === "boost") return `<div id="rcSaveSlot"></div>`;
   return "";
 }
-function overlayHtml10() {
-  return `<div class="rc-pop guro-frame${popup10 === "computation" ? " rc-pop-comp" : ""}" role="dialog" aria-modal="true" aria-label="${popupTitle10()}">
-    <div class="rc-pop-head"><span class="rc-pop-title">${popupTitle10()}</span><button type="button" class="rc-pop-close" data-rc-close aria-label="Close">\u2715</button></div>
-    <div class="rc-pop-body" id="rcPopBody">${popupBodyHtml10()}</div>
-    <div class="rc-pop-foot">${footerHtml10()}</div>
+function overlayHtml11() {
+  return `<div class="rc-pop guro-frame${popup11 === "computation" ? " rc-pop-comp" : ""}" role="dialog" aria-modal="true" aria-label="${popupTitle11()}">
+    <div class="rc-pop-head"><span class="rc-pop-title">${popupTitle11()}</span><button type="button" class="rc-pop-close" data-rc-close aria-label="Close">\u2715</button></div>
+    <div class="rc-pop-body" id="rcPopBody">${popupBodyHtml11()}</div>
+    <div class="rc-pop-foot">${footerHtml11()}</div>
   </div>`;
 }
-function renderOverlayBody10() {
-  if (!overlayEl10) return;
-  const body = overlayEl10.querySelector("#rcPopBody");
+function renderOverlayBody11() {
+  if (!overlayEl11) return;
+  const body = overlayEl11.querySelector("#rcPopBody");
   if (!body) return;
-  if (popup10 === "skills") return;
+  if (popup11 === "skills") return;
   const top = body.scrollTop;
-  body.innerHTML = popupBodyHtml10();
+  body.innerHTML = popupBodyHtml11();
   body.scrollTop = top;
   updateSkillSaveBarState();
 }
-function isPopupDirty10() {
-  if (popup10 === "skills" || popup10 === "boost") return isSkillDraftDirty() || isBoostDraftDirty();
-  if (popup10 === "hives") return hivesDraft != null && Number(hivesDraft) !== (getHiveCount() || 0);
+function isPopupDirty11() {
+  if (popup11 === "skills" || popup11 === "boost") return isSkillDraftDirty() || isBoostDraftDirty();
+  if (popup11 === "hives") return hivesDraft != null && Number(hivesDraft) !== (getHiveCount() || 0);
   return false;
 }
-function openPopup10(kind) {
-  if (popup10) return;
-  popup10 = kind;
+function openPopup11(kind) {
+  if (popup11) return;
+  popup11 = kind;
   hivesDraft = null;
   openMenu = null;
-  overlayEl10 = document.createElement("div");
-  overlayEl10.className = "rc-overlay";
-  overlayEl10.innerHTML = overlayHtml10();
-  document.body.appendChild(overlayEl10);
+  overlayEl11 = document.createElement("div");
+  overlayEl11.className = "rc-overlay";
+  overlayEl11.innerHTML = overlayHtml11();
+  document.body.appendChild(overlayEl11);
   document.body.classList.add("rc-no-scroll");
-  const slot = overlayEl10.querySelector("#rcSkillSlot");
+  const slot = overlayEl11.querySelector("#rcSkillSlot");
   if (kind === "skills" && slot) {
     const asc = document.createElement("div");
     asc.id = "rcAscSlot";
     slot.parentNode.insertBefore(asc, slot);
   }
-  setupBorrowed10();
+  setupBorrowed11();
 }
-function destroyPopup10() {
-  teardownBorrowed10();
-  if (overlayEl10) overlayEl10.remove();
-  overlayEl10 = null;
-  popup10 = null;
+function destroyPopup11() {
+  teardownBorrowed11();
+  if (overlayEl11) overlayEl11.remove();
+  overlayEl11 = null;
+  popup11 = null;
   hivesDraft = null;
   openMenu = null;
   document.body.classList.remove("rc-no-scroll");
 }
-function closePopup10(force) {
-  if (!popup10) return;
-  if (!force && isPopupDirty10()) {
-    showPrompt10("You have unsaved changes. Save them first, or discard them to close.", [{
+function closePopup11(force) {
+  if (!popup11) return;
+  if (!force && isPopupDirty11()) {
+    showPrompt11("You have unsaved changes. Save them first, or discard them to close.", [{
       label: "Keep Editing"
     }, {
       label: "Discard",
       run: () => {
         discardSkillBoostDrafts();
-        destroyPopup10();
+        destroyPopup11();
         refreshAll();
       }
     }]);
     return;
   }
-  destroyPopup10();
+  destroyPopup11();
   refreshAll();
 }
-function showPrompt10(message, buttons) {
-  if (promptEl10) promptEl10.remove();
-  promptEl10 = document.createElement("div");
-  promptEl10.className = "rc-overlay rc-overlay-top";
-  promptEl10.innerHTML = `<div class="rc-prompt guro-frame" role="alertdialog" aria-modal="true"><p class="rc-prompt-text">${esc11(message)}</p><div class="rc-prompt-actions">${buttons.map((b, i) => `<button type="button" class="rc-prompt-btn guro-frame" data-rc-prompt="${i}">${esc11(b.label)}</button>`).join("")}</div></div>`;
-  promptEl10.addEventListener("click", (e) => {
+function showPrompt11(message, buttons) {
+  if (promptEl11) promptEl11.remove();
+  promptEl11 = document.createElement("div");
+  promptEl11.className = "rc-overlay rc-overlay-top";
+  promptEl11.innerHTML = `<div class="rc-prompt guro-frame" role="alertdialog" aria-modal="true"><p class="rc-prompt-text">${esc12(message)}</p><div class="rc-prompt-actions">${buttons.map((b, i) => `<button type="button" class="rc-prompt-btn guro-frame" data-rc-prompt="${i}">${esc12(b.label)}</button>`).join("")}</div></div>`;
+  promptEl11.addEventListener("click", (e) => {
     const btn = e.target.closest("[data-rc-prompt]");
     if (!btn) return;
     const b = buttons[Number(btn.getAttribute("data-rc-prompt"))];
-    promptEl10.remove();
-    promptEl10 = null;
+    promptEl11.remove();
+    promptEl11 = null;
     if (b && b.run) b.run();
   });
-  document.body.appendChild(promptEl10);
-  const first = promptEl10.querySelector("button");
+  document.body.appendChild(promptEl11);
+  const first = promptEl11.querySelector("button");
   if (first) first.focus();
 }
 function saveHives() {
@@ -8517,8 +9662,8 @@ function saveHives() {
   updateCalcSummary();
   hivesDraft = null;
   toast("\u2705 Hive count saved");
-  renderOverlayBody10();
-  refreshResults10();
+  renderOverlayBody11();
+  refreshResults11();
 }
 function pickFlower(name) {
   if (!FLOWER_VARIETIES[name]) return;
@@ -8557,50 +9702,50 @@ function handleDropdown(e) {
   }
   return false;
 }
-function onClick10(e) {
+function onClick11(e) {
   const details = e.target.closest("[data-rc-details]");
   if (details) {
-    detailsOpen10 = !detailsOpen10;
-    refreshResults10();
+    detailsOpen11 = !detailsOpen11;
+    refreshResults11();
     return;
   }
   const open = e.target.closest("[data-rc-open]");
-  if (open && !open.disabled) openPopup10(open.getAttribute("data-rc-open"));
+  if (open && !open.disabled) openPopup11(open.getAttribute("data-rc-open"));
 }
-function onDocClick10(e) {
-  if (!host10) return;
-  if (promptEl10 && promptEl10.contains(e.target)) return;
+function onDocClick11(e) {
+  if (!host11) return;
+  if (promptEl11 && promptEl11.contains(e.target)) return;
   if (handleDropdown(e)) return;
-  if (!overlayEl10) return;
-  if (e.target === overlayEl10 || e.target.closest("[data-rc-close]")) {
-    closePopup10(false);
+  if (!overlayEl11) return;
+  if (e.target === overlayEl11 || e.target.closest("[data-rc-close]")) {
+    closePopup11(false);
     return;
   }
-  if (!overlayEl10.contains(e.target)) return;
+  if (!overlayEl11.contains(e.target)) return;
   if (e.target.closest("#rcNodesSave")) {
     saveHives();
     return;
   }
   const row = e.target.closest("[data-boost-id]");
-  if (row && popup10 === "boost" && overlayEl10.contains(row)) {
+  if (row && popup11 === "boost" && overlayEl11.contains(row)) {
     draftToggleBoost(row.getAttribute("data-boost-id"));
-    renderOverlayBody10();
+    renderOverlayBody11();
   }
 }
-function onDocInput8(e) {
+function onDocInput9(e) {
   const t = e.target;
   if (t && t.dataset && t.dataset.rcHives != null) hivesDraft = t.value === "" ? 0 : Number(t.value);
 }
-function onKey10(e) {
+function onKey11(e) {
   if ((e.key === "Enter" || e.key === " ") && e.target && e.target.closest && e.target.closest("[data-rc-dd-pick]")) {
     e.preventDefault();
     e.target.closest("[data-rc-dd-pick]").click();
     return;
   }
   if (e.key !== "Escape") return;
-  if (promptEl10) {
-    promptEl10.remove();
-    promptEl10 = null;
+  if (promptEl11) {
+    promptEl11.remove();
+    promptEl11 = null;
     return;
   }
   if (openMenu) {
@@ -8608,64 +9753,64 @@ function onKey10(e) {
     refreshAll();
     return;
   }
-  if (popup10) closePopup10(false);
+  if (popup11) closePopup11(false);
 }
 function onBoostsChanged10() {
-  if (!host10) return;
+  if (!host11) return;
   invalidateCostCache();
-  if (popup10 === "boost") renderOverlayBody10();
-  refreshResults10();
+  if (popup11 === "boost") renderOverlayBody11();
+  refreshResults11();
 }
-function onExternalChange10() {
-  if (!host10) return;
-  refreshResults10();
+function onExternalChange11() {
+  if (!host11) return;
+  refreshResults11();
 }
 function mountHoneyCalculator(root) {
-  host10 = root;
+  host11 = root;
   invalidateCostCache();
-  detailsOpen10 = false;
+  detailsOpen11 = false;
   openMenu = null;
   syncGemRatio7();
-  host10.addEventListener("click", onClick10);
-  document.addEventListener("click", onDocClick10);
-  document.addEventListener("input", onDocInput8);
-  document.addEventListener("keydown", onKey10);
+  host11.addEventListener("click", onClick11);
+  document.addEventListener("click", onDocClick11);
+  document.addEventListener("input", onDocInput9);
+  document.addEventListener("keydown", onKey11);
   window.addEventListener("guroBoostsChanged", onBoostsChanged10);
-  window.addEventListener("guroGemPackChanged", onExternalChange10);
-  window.addEventListener("guroPricesUpdated", onExternalChange10);
-  listening10 = true;
-  render10();
+  window.addEventListener("guroGemPackChanged", onExternalChange11);
+  window.addEventListener("guroPricesUpdated", onExternalChange11);
+  listening11 = true;
+  render11();
 }
 function unmountHoneyCalculator() {
   invalidateCostCache();
-  if (popup10) destroyPopup10();
-  if (promptEl10) {
-    promptEl10.remove();
-    promptEl10 = null;
+  if (popup11) destroyPopup11();
+  if (promptEl11) {
+    promptEl11.remove();
+    promptEl11 = null;
   }
-  if (host10) {
-    host10.removeEventListener("click", onClick10);
-    host10.innerHTML = "";
+  if (host11) {
+    host11.removeEventListener("click", onClick11);
+    host11.innerHTML = "";
   }
-  if (listening10) {
-    document.removeEventListener("click", onDocClick10);
-    document.removeEventListener("input", onDocInput8);
-    document.removeEventListener("keydown", onKey10);
+  if (listening11) {
+    document.removeEventListener("click", onDocClick11);
+    document.removeEventListener("input", onDocInput9);
+    document.removeEventListener("keydown", onKey11);
     window.removeEventListener("guroBoostsChanged", onBoostsChanged10);
-    window.removeEventListener("guroGemPackChanged", onExternalChange10);
-    window.removeEventListener("guroPricesUpdated", onExternalChange10);
-    listening10 = false;
+    window.removeEventListener("guroGemPackChanged", onExternalChange11);
+    window.removeEventListener("guroPricesUpdated", onExternalChange11);
+    listening11 = false;
   }
-  host10 = null;
+  host11 = null;
   openMenu = null;
 }
 function honeyCalculatorCanLeave() {
-  if (!popup10) return true;
-  if (isPopupDirty10()) {
+  if (!popup11) return true;
+  if (isPopupDirty11()) {
     toast("\u26A0\uFE0F Save your changes first");
     return false;
   }
-  destroyPopup10();
+  destroyPopup11();
   return true;
 }
 
@@ -8719,6 +9864,12 @@ var CALCULATORS = [{
   unmount: unmountHoneyCalculator,
   canLeave: honeyCalculatorCanLeave
 }, {
+  id: "beetles",
+  label: "Beetle Calculator",
+  mount: mountBeetlesCalculator,
+  unmount: unmountBeetlesCalculator,
+  canLeave: beetlesCalculatorCanLeave
+}, {
   id: "animals",
   label: "Animals Calculator",
   mount: mountAnimalsCalculator,
@@ -8759,16 +9910,16 @@ function showCalculator(id) {
   if (activeCalc && activeCalc.unmount) activeCalc.unmount();
   activeId = next.id;
   activeCalc = next;
-  const host11 = rootEl.querySelector("#rcDisplayHost");
-  host11.innerHTML = "";
-  next.mount(host11);
+  const host12 = rootEl.querySelector("#rcDisplayHost");
+  host12.innerHTML = "";
+  next.mount(host12);
   rootEl.querySelectorAll(".rc-link").forEach((b) => {
     const on = b.getAttribute("data-rc-calc") === activeId;
     b.classList.toggle("is-active", on);
     b.setAttribute("aria-pressed", on ? "true" : "false");
   });
 }
-function onClick11(e) {
+function onClick12(e) {
   const link = e.target.closest("[data-rc-calc]");
   if (!link) return;
   const id = link.getAttribute("data-rc-calc");
@@ -8779,7 +9930,7 @@ function onClick11(e) {
 function mount(root) {
   rootEl = root;
   root.innerHTML = shellHtml();
-  root.addEventListener("click", onClick11);
+  root.addEventListener("click", onClick12);
   activeCalc = null;
   showCalculator(activeId);
 }
@@ -8787,7 +9938,7 @@ function unmount() {
   if (activeCalc && activeCalc.unmount) activeCalc.unmount();
   activeCalc = null;
   if (rootEl) {
-    rootEl.removeEventListener("click", onClick11);
+    rootEl.removeEventListener("click", onClick12);
     rootEl.innerHTML = "";
   }
   rootEl = null;
