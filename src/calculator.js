@@ -1555,7 +1555,7 @@ export const ANIMAL_DATA = {
   }
 };
 
-const ANIMAL_XP_THRESHOLDS = {
+export const ANIMAL_XP_THRESHOLDS = {
   chicken: {
     0: 0,
     1: 60,
@@ -1629,6 +1629,11 @@ const ANIMAL_XP_THRESHOLDS = {
     15: 8160
   }
 };
+
+export function clampAnimalStartLevel(v) {
+  const n = parseInt(v);
+  return isNaN(n) ? 1 : Math.min(15, Math.max(0, n));
+}
 
 export function getAnimalLevelFromXp(type, xp, allowZero) {
   const thresholds = ANIMAL_XP_THRESHOLDS[type];
@@ -1957,7 +1962,7 @@ function getConfiguredAnimalHeads() {
     heads.push({
       type: type,
       qty: qty,
-      level: Math.min(15, Math.max(1, parseInt(counts.level) || 1))
+      level: clampAnimalStartLevel(counts.level)
     });
   });
   return heads;
@@ -2157,7 +2162,7 @@ export function getAnimalCycleRecord(type, level, scales) {
 }
 
 function getAnimalStartCycle(type, level, scales) {
-  const target = Math.min(15, Math.max(1, parseInt(level) || 1));
+  const target = clampAnimalStartLevel(level);
   if (target >= 15) return getAnimalCycleRecord(type, 15, scales);
   const sc = scales === undefined ? getAffectionScales(type) : scales;
   const chain = runAnimalCycleSim(type, sc);
@@ -2173,7 +2178,7 @@ function maxCarry(record, thresholds) {
 }
 
 export function computeAnimalFeedFigures(type, level, cycleOverride) {
-  const displayLevel = Math.min(15, Math.max(1, parseInt(level) || 1));
+  const displayLevel = clampAnimalStartLevel(level);
   const thresholds = ANIMAL_XP_THRESHOLDS[type];
   const mods = getAnimalXpModifiers(type);
   const scales = getAffectionScales(type);
@@ -2400,7 +2405,7 @@ function computePigBristlesPlanCore(basis, target) {
     if (c.isMax) break;
     cycles++;
     const lvl = Math.min(15, Math.max(1, c.claimLevel));
-    if (!figCache[lvl]) figCache[lvl] = computeAnimalTypeFigures(type, undefined, Math.max(1, c.startLevel), c);
+    if (!figCache[lvl]) figCache[lvl] = computeAnimalTypeFigures(type, undefined, c.startLevel, c);
     const fig = figCache[lvl];
     grossFlower += coinsToFlower(fig.totalCostCoinsPerAnimal);
     seconds += fig.cycleTimeSec;
@@ -2910,6 +2915,23 @@ export const BASE_STOCK_TOOLS = {
   "Mariner Pot": 10
 };
 
+export const BASE_STOCK_TREASURE_TOOLS = {
+  "Sand Shovel": 125,
+  "Sand Drill": 25
+};
+
+const TOOL_HOARDER_STOCK = {
+  "Sand Shovel": [ 25, 50, 100 ],
+  "Sand Drill": [ 5, 10, 20 ]
+};
+
+function toolHoarderStockAdd(itemName) {
+  const ranks = TOOL_HOARDER_STOCK[itemName];
+  if (!ranks || !isSkillActive("skill_tool_hoarder")) return 0;
+  const level = Math.min(Math.max(getAscensionRank("skill_tool_hoarder"), 1), ranks.length);
+  return ranks[level - 1];
+}
+
 const ISLAND_RESOURCE_TAXES = {
   basic: 1,
   spring: .55,
@@ -3192,6 +3214,7 @@ export function isBuildingBoostActive(id) {
 }
 
 export function computeBoostedStock(baseStock, kind, itemName) {
+  if (kind === "tool" && itemName && BASE_STOCK_TREASURE_TOOLS[itemName] !== undefined) return baseStock + toolHoarderStockAdd(itemName);
   let stock = baseStock;
   if (kind === "seed" && isBuildingBoostActive("warehouse_stock")) stock = Math.ceil(stock * 1.2);
   if (kind === "tool" && isBuildingBoostActive("toolshed_stock")) stock = Math.ceil(stock * 1.5);
@@ -4532,6 +4555,29 @@ export function getBeetleFeed() {
 export function setBeetleFeed(key) {
   beetleFeed = BEETLE_FEED_XP[key] ? key : "";
   localStorage.setItem("hl_beetle_feed", beetleFeed);
+}
+
+let beetleFeedMode = localStorage.getItem("hl_beetle_feed_mode") === "collect" ? "collect" : "buy";
+
+let beetleCollectCostProvider = null;
+
+export function getBeetleFeedMode() {
+  return beetleFeedMode;
+}
+
+export function setBeetleFeedMode(mode) {
+  beetleFeedMode = mode === "collect" ? "collect" : "buy";
+  localStorage.setItem("hl_beetle_feed_mode", beetleFeedMode);
+}
+
+export function setBeetleCollectCostProvider(fn) {
+  beetleCollectCostProvider = typeof fn === "function" ? fn : null;
+}
+
+export function getBeetleCollectUnitFlower() {
+  if (!beetleCollectCostProvider) return 0;
+  const v = beetleCollectCostProvider();
+  return isFinite(v) && v > 0 ? v : 0;
 }
 
 function isBeetleFeedKey(key) {
@@ -14358,6 +14404,23 @@ function getOmnifeedInfo() {
 
 function getBeetleFeedInfo(feedKey) {
   const name = FEED_LABELS[feedKey];
+  if (beetleFeedMode === "collect") {
+    const collectFlower = getBeetleCollectUnitFlower();
+    if (collectFlower > 0) {
+      const collectCost = collectFlower * coinPerFlower;
+      return {
+        cost: collectCost,
+        missing: false,
+        missingCrops: [],
+        breakdown: [ {
+          name: name,
+          qty: 1,
+          unitCost: collectCost,
+          mode: "collect"
+        } ]
+      };
+    }
+  }
   const live = findLivePriceForName(name);
   const flower = live != null && live > 0 ? live : tradeMarketPrice(name);
   const unitCost = flower * coinPerFlower;
@@ -14406,9 +14469,9 @@ export const ANIMAL_BASE_CYCLE_SEC = 86400;
 export function computeAnimalTypeFigures(type, visited, levelOverride, cycleOverride) {
   const cfg = ANIMAL_DATA[type];
   const counts = getAnimalCount(type);
-  const level = levelOverride != null ? Math.min(15, Math.max(1, parseInt(levelOverride) || 1)) : Math.min(15, Math.max(1, parseInt(counts.level) || 1));
+  const level = levelOverride != null ? clampAnimalStartLevel(levelOverride) : clampAnimalStartLevel(counts.level);
   const qty = Math.max(0, parseFloat(counts.qty) || 0);
-  let lvlData = cfg.levels[level - 1];
+  let lvlData = cfg.levels[Math.max(1, level) - 1];
   const active = getActiveAnimalBoosts(type);
   let feedMultTotal = 1, yieldMultAllTotal = 1, timeMultTotal = 1, freeFeed = false, cureFree = false, cureCostMult = 1;
   const productCount = cfg.products.length;
@@ -14720,7 +14783,7 @@ function computeAnimalProfit(fig) {
 
 export function computeAnimalWeeklyFigures(type, manualCyclesPerWeek) {
   const counts = getAnimalCount(type);
-  const startLevel = Math.min(15, Math.max(1, parseInt(counts.level) || 1));
+  const startLevel = clampAnimalStartLevel(counts.level);
   const figWithStart = computeAnimalTypeFigures(type, undefined, startLevel);
   const usingSpice = !!figWithStart.spiceActiveKey;
   const autoCyclesPerDay = ANIMAL_BASE_CYCLE_SEC / figWithStart.cycleTimeSec;
@@ -14743,7 +14806,7 @@ export function computeAnimalWeeklyFigures(type, manualCyclesPerWeek) {
   function figAtLevel(level, withSpice, cyc) {
     const cache = withSpice ? figCacheWith : figCacheBase;
     const useCycle = !!cyc && !cyc.isMax;
-    const lv = useCycle ? Math.max(1, cyc.startLevel) : level;
+    const lv = useCycle ? cyc.startLevel : level;
     const key = useCycle ? cyc.startLevel + "|" + cyc.feeds + "|" + cyc.loveXp + "|" + cyc.xpStart : "lvl" + lv;
     if (cache[key]) return cache[key];
     if (!withSpice) {
@@ -15419,7 +15482,7 @@ function farmSyncGetInteriorCollectiblesMerged(g) {
 
 const INVENTORY_OWNED_BOOST_NAMES = [ "Green Amulet", "Coder", "Gold Rush", "Prospector", "Wrangler", "Barn Manager", "Seed Specialist", "Lumberjack", "Logger", "Discord Mod", "Artist" ];
 
-function farmSyncCollectEquippedAndPlacedNames(g) {
+export function farmSyncCollectEquippedAndPlacedNames(g) {
   const names = new Set;
   const asObj = v => v && typeof v === "object" && !Array.isArray(v) ? v : null;
   const addEquippedFrom = bumpkin => {
@@ -16048,7 +16111,7 @@ function applyFarmPlotsNodesOnly(json, hasFullData) {
       if (isSick) sickCount++;
       const xpRaw = animal.experience ?? animal.exp ?? animal.xp;
       const xp = typeof xpRaw === "number" ? xpRaw : typeof xpRaw === "string" && xpRaw.trim() && !isNaN(Number(xpRaw)) ? Number(xpRaw) : null;
-      const lvl = getAnimalLevelFromXp(type, xp);
+      const lvl = getAnimalLevelFromXp(type, xp, true);
       if (lvl != null) {
         levelSum += lvl;
         levelSampleCount++;
@@ -16058,7 +16121,7 @@ function applyFarmPlotsNodesOnly(json, hasFullData) {
       sickHeads: sickCount
     };
     if (levelSampleCount > 0) {
-      animalCounts[type].level = Math.min(15, Math.max(1, Math.round(levelSum / levelSampleCount)));
+      animalCounts[type].level = clampAnimalStartLevel(Math.round(levelSum / levelSampleCount));
     }
   });
   saveAnimalCounts();
@@ -18857,11 +18920,11 @@ $("globalMiniSyncBtn").onclick = () => {
 export function computeAnimalBaseCoinFigures(type) {
   const cfg = ANIMAL_DATA[type];
   const counts = getAnimalCount(type);
-  const level = Math.min(15, Math.max(1, parseInt(counts.level) || 1));
-  const lvlData = cfg.levels[level - 1];
+  const level = clampAnimalStartLevel(counts.level);
+  const lvlData = cfg.levels[Math.max(1, level) - 1];
   const feedInfo = getFeedUnitCost(lvlData.feed);
   const feedCostCoins = lvlData.qty * feedInfo.cost;
-  const claimData = cfg.levels[Math.min(15, level + 1) - 1];
+  const claimData = cfg.levels[Math.max(1, Math.min(15, level + 1)) - 1];
   const yields = cfg.products.map((_, pi) => claimData.y[pi]);
   const totalYieldUnits = yields.reduce((a, v) => a + v, 0);
   const costPerUnit = totalYieldUnits > 0 ? feedCostCoins / totalYieldUnits : 0;
@@ -28071,9 +28134,9 @@ export function renderCalcAnimalInfoBox() {
   const cfg = ANIMAL_DATA[animalType];
   const c = getAnimalCount(animalType);
   wrap.classList.remove("hidden");
-  wrap.innerHTML = `\n    <span class="calc-animal-icon">${getIcon(cfg.label)}</span>\n    <span class="calc-animal-name">${escapeHtml(cfg.label)}</span>\n    <div class="calc-animal-fields">\n      <div class="calc-animal-field">\n        <label>Level</label>\n        <input type="number" id="calcAnimalLevelInput" min="1" max="15" step="1" inputmode="numeric" value="${c.level || 1}">\n      </div>\n      <div class="calc-animal-field">\n        <label>Heads</label>\n        <input type="number" id="calcAnimalHeadsInput" min="0" step="1" inputmode="numeric" value="${c.qty || 0}">\n      </div>\n    </div>`;
+  wrap.innerHTML = `\n    <span class="calc-animal-icon">${getIcon(cfg.label)}</span>\n    <span class="calc-animal-name">${escapeHtml(cfg.label)}</span>\n    <div class="calc-animal-fields">\n      <div class="calc-animal-field">\n        <label>Level</label>\n        <input type="number" id="calcAnimalLevelInput" min="0" max="15" step="1" inputmode="numeric" value="${c.level == null ? 1 : c.level}">\n      </div>\n      <div class="calc-animal-field">\n        <label>Heads</label>\n        <input type="number" id="calcAnimalHeadsInput" min="0" step="1" inputmode="numeric" value="${c.qty || 0}">\n      </div>\n    </div>`;
   $("calcAnimalLevelInput").addEventListener("input", () => {
-    const v = Math.min(15, Math.max(1, parseInt($("calcAnimalLevelInput").value) || 1));
+    const v = clampAnimalStartLevel($("calcAnimalLevelInput").value);
     setAnimalCount(animalType, "level", v);
     renderCalcIngredients();
     updateCalcSummary();
@@ -39221,9 +39284,9 @@ function simAnimalRow(type, qty, level) {
   const cfg = ANIMAL_DATA[type];
   if (!cfg) return null;
   const q = Math.max(0, Number(qty) || 0);
-  const lv = Math.min(15, Math.max(1, parseInt(level) || 1));
+  const lv = clampAnimalStartLevel(level);
   const real = getAnimalCount(type);
-  const sameAsReal = (Number(real.qty) || 0) === q && Math.min(15, Math.max(1, parseInt(real.level) || 1)) === lv;
+  const sameAsReal = (Number(real.qty) || 0) === q && clampAnimalStartLevel(real.level) === lv;
   const build = () => simWithTemporary(animalCounts, type, {
     level: lv,
     qty: q
@@ -39325,7 +39388,7 @@ export function computeGuideAveragePanelItems() {
       kind: "animal",
       names: [ type ],
       qty: qty,
-      level: Math.min(15, Math.max(1, Math.floor(Number(c.level) || 1)))
+      level: clampAnimalStartLevel(Math.floor(Number(c.level)))
     });
     if (rows[0]) items.set("animal:" + type, {
       net24h: rows[0].net,

@@ -1067,6 +1067,11 @@ function factionMarksModeHtml() {
   return `<span class="fdm-mode"><span class="fd-item-cost">Calc Mode</span><span class="fd-badge">${label}</span></span>`;
 }
 
+function factionMarksUnitCostHtml(marks, cost) {
+  const unit = marks > 0 ? (cost / marks).toFixed(3) : "—";
+  return `<div class="fd-stat"><span class="fd-stat-label">${factionMarksMarkIconHtml()} Marks Cost/Unit:</span><span class="fd-stat-value">${unit} ${factionMarksCostIconHtml()}</span></div>`;
+}
+
 function factionMarksSectionHtml(title, kind, reqs, result) {
   const rowsHtml = reqs.length ? reqs.map((r, i) => factionMarksRequestRowHtml(kind, i, r, result.rows[i])).join("") : `<div class="fd-empty-note">No ${title.toLowerCase()} requests known yet.</div>`;
   return `<div class="fd-container">
@@ -1074,6 +1079,7 @@ function factionMarksSectionHtml(title, kind, reqs, result) {
     ${rowsHtml}
     <div class="fd-stat"><span class="fd-stat-label">Total:</span><span class="fd-stat-value">${fmtXp(result.marks)} ${factionMarksMarkIconHtml()} Marks</span></div>
     <div class="fd-stat"><span class="fd-stat-label">Total Cost:</span><span class="fd-stat-value">${result.cost.toFixed(2)} ${factionMarksCostIconHtml()}</span></div>
+    ${factionMarksUnitCostHtml(result.marks, result.cost)}
   </div>`;
 }
 
@@ -1170,6 +1176,7 @@ function factionMarksBodyHtml() {
     <div class="fd-container-head"><span class="fd-container-title">${calc.week ? "Week Total" : "1 Day Total"}</span></div>
     <div class="fd-stat"><span class="fd-stat-label">Total:</span><span class="fd-stat-value">${fmtXp(allMarks)} ${factionMarksMarkIconHtml()} Marks</span></div>
     <div class="fd-stat"><span class="fd-stat-label">Total Cost:</span><span class="fd-stat-value">${allCost.toFixed(2)} ${factionMarksCostIconHtml()}</span></div>
+    ${factionMarksUnitCostHtml(allMarks, allCost)}
   </div>`;
   return `<div class="fdm-layout">
     <div class="fdm-row-top">

@@ -29,6 +29,7 @@ __export(calculator_exports, {
   ANIMAL_DATA: () => ANIMAL_DATA,
   ANIMAL_LOVE_ITEM_XP: () => ANIMAL_LOVE_ITEM_XP,
   ANIMAL_PRODUCT_LOOKUP: () => ANIMAL_PRODUCT_LOOKUP,
+  ANIMAL_XP_THRESHOLDS: () => ANIMAL_XP_THRESHOLDS,
   ASCENSION_LEVELS_PER_BAND: () => ASCENSION_LEVELS_PER_BAND,
   ASCENSION_LEVEL_UPS: () => ASCENSION_LEVEL_UPS,
   ASCENSION_RANK_DATA: () => ASCENSION_RANK_DATA,
@@ -44,6 +45,7 @@ __export(calculator_exports, {
   BASE_STOCK_FRUITS: () => BASE_STOCK_FRUITS,
   BASE_STOCK_GREENHOUSE: () => BASE_STOCK_GREENHOUSE,
   BASE_STOCK_TOOLS: () => BASE_STOCK_TOOLS,
+  BASE_STOCK_TREASURE_TOOLS: () => BASE_STOCK_TREASURE_TOOLS,
   BEETLE_FEED_XP: () => BEETLE_FEED_XP,
   BEE_SWARM_ICON: () => BEE_SWARM_ICON,
   BOOSTS: () => BOOSTS,
@@ -359,6 +361,7 @@ __export(calculator_exports, {
   calendarDebuffProtection: () => calendarDebuffProtection,
   cfmActiveView: () => cfmActiveView,
   choresWeekly: () => choresWeekly,
+  clampAnimalStartLevel: () => clampAnimalStartLevel,
   clearFlowerAutoPickMemo: () => clearFlowerAutoPickMemo,
   closePotionLogs: () => closePotionLogs,
   cmCalcMode: () => cmCalcMode,
@@ -500,6 +503,7 @@ __export(calculator_exports, {
   farmIdPromptStartSync: () => farmIdPromptStartSync,
   farmLevelMaxNodes: () => farmLevelMaxNodes,
   farmSyncAsObj: () => farmSyncAsObj,
+  farmSyncCollectEquippedAndPlacedNames: () => farmSyncCollectEquippedAndPlacedNames,
   farmSyncExtractBudTraits: () => farmSyncExtractBudTraits,
   farmSyncExtractGameState: () => farmSyncExtractGameState,
   farmSyncExtractPetTraits: () => farmSyncExtractPetTraits,
@@ -577,7 +581,9 @@ __export(calculator_exports, {
   getAscensionRank: () => getAscensionRank,
   getBeeSwarmPerSwarmYield: () => getBeeSwarmPerSwarmYield,
   getBeeSwarmStatsForCrop: () => getBeeSwarmStatsForCrop,
+  getBeetleCollectUnitFlower: () => getBeetleCollectUnitFlower,
   getBeetleFeed: () => getBeetleFeed,
+  getBeetleFeedMode: () => getBeetleFeedMode,
   getBoostAoeInfo: () => getBoostAoeInfo,
   getBoostCoverageFraction: () => getBoostCoverageFraction,
   getBoostedMedicineRecipe: () => getBoostedMedicineRecipe,
@@ -817,7 +823,9 @@ __export(calculator_exports, {
   setAnimalCount: () => setAnimalCount,
   setAppDarkMode: () => setAppDarkMode,
   setAutoMaterialModes: () => setAutoMaterialModes,
+  setBeetleCollectCostProvider: () => setBeetleCollectCostProvider,
   setBeetleFeed: () => setBeetleFeed,
+  setBeetleFeedMode: () => setBeetleFeedMode,
   setCookingActiveBuilding: () => setCookingActiveBuilding,
   setCookingCategoryEnabled: () => setCookingCategoryEnabled,
   setCookingCount: () => setCookingCount,
@@ -6218,6 +6226,10 @@ function factionMarksModeHtml() {
   const label = factionMarksScope === "week" ? `Week (\xD7${FACTION_MARKS_WEEK_DAYS})` : "1 Day";
   return `<span class="fdm-mode"><span class="fd-item-cost">Calc Mode</span><span class="fd-badge">${label}</span></span>`;
 }
+function factionMarksUnitCostHtml(marks, cost) {
+  const unit = marks > 0 ? (cost / marks).toFixed(3) : "\u2014";
+  return `<div class="fd-stat"><span class="fd-stat-label">${factionMarksMarkIconHtml()} Marks Cost/Unit:</span><span class="fd-stat-value">${unit} ${factionMarksCostIconHtml()}</span></div>`;
+}
 function factionMarksSectionHtml(title, kind, reqs, result) {
   const rowsHtml = reqs.length ? reqs.map((r, i) => factionMarksRequestRowHtml(kind, i, r, result.rows[i])).join("") : `<div class="fd-empty-note">No ${title.toLowerCase()} requests known yet.</div>`;
   return `<div class="fd-container">
@@ -6225,6 +6237,7 @@ function factionMarksSectionHtml(title, kind, reqs, result) {
     ${rowsHtml}
     <div class="fd-stat"><span class="fd-stat-label">Total:</span><span class="fd-stat-value">${fmtXp(result.marks)} ${factionMarksMarkIconHtml()} Marks</span></div>
     <div class="fd-stat"><span class="fd-stat-label">Total Cost:</span><span class="fd-stat-value">${result.cost.toFixed(2)} ${factionMarksCostIconHtml()}</span></div>
+    ${factionMarksUnitCostHtml(result.marks, result.cost)}
   </div>`;
 }
 function factionMarksBoostsHtml(calc) {
@@ -6319,6 +6332,7 @@ function factionMarksBodyHtml() {
     <div class="fd-container-head"><span class="fd-container-title">${calc.week ? "Week Total" : "1 Day Total"}</span></div>
     <div class="fd-stat"><span class="fd-stat-label">Total:</span><span class="fd-stat-value">${fmtXp(allMarks)} ${factionMarksMarkIconHtml()} Marks</span></div>
     <div class="fd-stat"><span class="fd-stat-label">Total Cost:</span><span class="fd-stat-value">${allCost.toFixed(2)} ${factionMarksCostIconHtml()}</span></div>
+    ${factionMarksUnitCostHtml(allMarks, allCost)}
   </div>`;
   return `<div class="fdm-layout">
     <div class="fdm-row-top">
@@ -13833,7 +13847,7 @@ function renderBaseStockTables() {
       ${table("\u{1F34E} Fruits", BASE_STOCK_FRUITS, "seed", "\u{1F34E}")}
       ${table("\u{1F347} Greenhouse", BASE_STOCK_GREENHOUSE, "seed", "\u{1F347}")}
       ${flowerTable("\u{1F337} Flowers")}
-      ${table("\u{1F528} Tools", BASE_STOCK_TOOLS, "tool", "\u{1F528}")}
+      ${table("\u{1F528} Tools", Object.assign({}, BASE_STOCK_TOOLS, BASE_STOCK_TREASURE_TOOLS), "tool", "\u{1F528}")}
       <div class="setting-hint" style="margin-top:6px;">Restock costs: Seeds (Crops/Fruits/Greenhouse/Flowers) = 15 Gems \xB7 Tools = 10 Gems \xB7 All = 20 Gems. This feeds directly into each item's 24h profit calc as a restock cost.</div>
     </div>`;
 }
@@ -15045,29 +15059,65 @@ function renderAnimalCardProductDetailRow(icon, name, yieldVal, grossVal, feeVal
         </div>`;
 }
 function renderAnimalYieldGroupsList(card2) {
-  const groups = card2.animalYieldGroups;
-  if (!groups || !groups.length) return "";
+  const animals = card2.animalYieldGroups;
+  if (!animals || !animals.length) return "";
   const animalIcon = getIcon(card2.typeLabel);
-  const rows = groups.map((g) => {
-    const feedIcon = g.feedToNextName ? getIcon(g.feedToNextName) : "";
-    const xpTag = g.isMaxCycle ? `<span class="tier-tag">MAX</span>` : `<span class="tier-tag">XP ${fmtAnimal(g.xpMin)}${g.xpMax !== g.xpMin ? "\u2013" + fmtAnimal(g.xpMax) : ""}/${fmtAnimal(g.nextThreshold)}</span>`;
-    const feedToNextLine = g.feedsToNextCount > 0 ? `<div class="animal-yield-feed-note">\u{1F37D} Group needs <b>${fmtAnimal(g.feedsToNextCount)}</b> more feed${g.feedsToNextCount === 1 ? "" : "s"} total (${feedIcon} ${fmtAnimal(g.feedQtyToNext)} ${escapeHtml(g.feedToNextName || "")}) to bring all ${g.count} to ${escapeHtml(g.nextLevelLabel)}</div>` : `<div class="animal-yield-feed-note">\u2705 Fully fed for this cycle</div>`;
+  const num = (n) => String(Math.round(n * 100) / 100);
+  const feedsOf = (a) => a.isReadyState || !(a.xpGap > 0) || !(a.xpPerFeed > 0) ? 0 : Math.ceil(a.xpGap / a.xpPerFeed - 1e-9);
+  const needsFeed = (a) => feedsOf(a) > 0;
+  const feedMap = /* @__PURE__ */ new Map();
+  animals.filter(needsFeed).forEach((a) => {
+    if (!feedMap.has(a.feedToNextName)) feedMap.set(a.feedToNextName, {
+      name: a.feedToNextName,
+      ids: [],
+      qty: 0,
+      feeds: 0,
+      xpTotal: 0,
+      xpMin: Infinity,
+      xpMax: 0
+    });
+    const f = feedMap.get(a.feedToNextName);
+    f.ids.push("#" + a.number);
+    f.qty += feedsOf(a);
+    f.feeds += feedsOf(a);
+    f.xpTotal += feedsOf(a) * a.xpPerFeed;
+    f.xpMin = Math.min(f.xpMin, a.xpPerFeed);
+    f.xpMax = Math.max(f.xpMax, a.xpPerFeed);
+  });
+  const feedRows = Array.from(feedMap.values());
+  const totalFeeds = feedRows.reduce((sum, f) => sum + f.feeds, 0);
+  let summaryHtml = "";
+  if (feedRows.length) {
+    const rowsHtml = feedRows.map((f) => {
+      const perFeed = f.xpMin === f.xpMax ? `+${num(f.xpMin)}` : `+${num(f.xpMin)}\u2013${num(f.xpMax)}`;
+      return `<div class="ay-sum-row"><span class="ay-sum-name">${getIcon(f.name)} <b>${escapeHtml(f.name)}</b></span><span class="ay-sum-for">${f.ids.join(" ")}</span><span class="ay-sum-qty">\xD7 ${num(f.qty)}</span></div><div class="ay-sum-xp">${perFeed} XP per feed</div>`;
+    }).join("");
+    summaryHtml = `<div class="lib-section-title" style="margin-top:10px;">Feeds Needed \xB7 All Animals</div><div class="ay-summary guro-frame">${rowsHtml}<div class="ay-sum-total"><span>Total feeds</span><b>${num(totalFeeds)}</b></div></div>`;
+  } else {
+    summaryHtml = `<div class="lib-section-title" style="margin-top:10px;">Feeds Needed \xB7 All Animals</div><div class="ay-summary guro-frame"><div class="ay-sum-row"><span class="ay-sum-name">No feed needed right now</span></div></div>`;
+  }
+  const rows = animals.map((a) => {
+    const pct = a.nextThreshold > 0 ? Math.max(0, Math.min(100, a.xpNow / a.nextThreshold * 100)) : 0;
+    const xpTag = a.isMaxCycle ? `<span class="tier-tag">MAX</span>` : `<span class="tier-tag">XP ${num(a.xpNow)}/${num(a.nextThreshold)}</span>`;
+    const lvlTag = needsFeed(a) && !a.isMaxCycle ? `LVL ${a.level} \u2192 ${Math.max(a.level + 1, a.claimLevel)}` : `LVL ${a.level}`;
+    const feedIcon = a.feedToNextName ? getIcon(a.feedToNextName) : "";
+    let needHtml;
+    if (feedsOf(a) > 0) {
+      needHtml = `<div class="ay-need"><span class="ay-k">XP needed</span><b class="ay-v">${num(a.xpGap)}</b><span class="ay-sep"></span><span class="ay-k">Feed</span><span class="ay-feed"><b>\xD7${num(feedsOf(a))}</b>${feedIcon} ${escapeHtml(a.feedToNextName || "")}</span><span class="ay-xpe">+${num(a.xpPerFeed)} XP each</span></div>${a.loveXp > 0 ? `<div class="ay-why">Love XP from ${escapeHtml(a.loveItem || "petting")} (about ${num(a.loveXp)} XP) may cover this instead of a feed.</div>` : ""}`;
+    } else if (a.isReadyState) {
+      needHtml = `<div class="ay-need is-done"><span class="ay-k">Ready to collect</span></div>`;
+    } else if (a.fedThisCycle) {
+      needHtml = `<div class="ay-need is-done"><span class="ay-k">Fully fed for this cycle</span></div>`;
+    } else {
+      needHtml = `<div class="ay-need is-done"><span class="ay-k">No feed needed this cycle</span></div>`;
+    }
     const productLines = card2.productNames.map((pname, idx) => {
-      const val = g.yields[idx] || 0;
+      const val = a.yields[idx] || 0;
       return `<div class="animal-yield-subline"><span class="sublabel">${getIcon(pname)} ${escapeHtml(pname)}</span><span class="value">${fmtAnimal(val)}</span></div>`;
     }).join("");
-    return `
-      <div class="boost-applied-row is-yield animal-yield-group-row">
-        <div class="animal-yield-group-head">
-          ${animalIcon} <b>${escapeHtml(card2.typeLabel)}</b> <span class="boost-total-value">x${g.count}</span>
-          ${xpTag}
-          <span class="tier-tag">LVL ${g.level}</span>
-        </div>
-        ${feedToNextLine}
-        <div class="animal-yield-sublines">${productLines}</div>
-      </div>`;
+    return `<div class="boost-applied-row is-yield animal-yield-group-row ay-animal"><div class="animal-yield-group-head">${animalIcon} <b>${escapeHtml(card2.typeLabel)} #${a.number}</b><span class="ay-id">${escapeHtml(a.shortId)}</span>${xpTag}<span class="tier-tag">${lvlTag}</span></div><div class="ay-bar"><div class="ay-fill" style="width:${pct.toFixed(1)}%;height:6px;background:#7bc65a;flex:none"></div></div>${needHtml}<div class="animal-yield-sublines">${productLines}</div></div>`;
   }).join("");
-  return `<div class="lib-section-title" style="margin-top:10px;">Animal Yield</div>${rows}`;
+  return `${summaryHtml}<div class="lib-section-title" style="margin-top:10px;">Animal Yield \xB7 Each Animal</div>${rows}`;
 }
 function renderFruitHarvestsLeftHtml(harvestsLeftCounts, fruitName, woodPerTree) {
   if (!harvestsLeftCounts) return "";
@@ -30443,7 +30493,16 @@ function farmPanelComputeInProgressRaw(json, opts) {
           isMaxCycle: progress.isMaxCycle,
           feedsToNextCount: progress.noOfFeeds,
           feedQtyToNext,
-          feedToNextName: remainingFeedLabel
+          feedToNextName: remainingFeedLabel,
+          shortId: String(animalId).slice(0, 8),
+          xpNow: progress.xp,
+          xpGap: progress.xpGap,
+          xpPerFeed: progress.boostedFoodXp,
+          claimLevel: progress.claimLevel,
+          loveXp: progress.expectedLoveXp,
+          loveItem: animal.item || "",
+          isReady: ready,
+          fedThisCycle: !sick && !ready && !progress.isReadyState && (stateStr === "happy" || stateStr === "sad" || stateStr === "" && (awakeAt != null || asleepAt != null))
         });
       });
     });
@@ -30498,41 +30557,19 @@ function farmPanelBuildAnimalProductStats(rows) {
 function farmPanelComputeAnimalYieldGroups(type, meta) {
   const list = farmPanelAnimalYieldGroupsByType[type] || [];
   if (!list.length) return [];
-  const byKey = /* @__PURE__ */ new Map();
-  list.forEach((a) => {
-    const key = String(a.level) + (a.isReadyState ? "r" : "");
-    if (!byKey.has(key)) {
-      byKey.set(key, {
-        level: a.level,
-        xpMin: a.xp,
-        xpMax: a.xp,
-        count: 0,
-        feedQty: 0,
-        feedName: a.feedName,
-        nextThreshold: a.nextThreshold,
-        nextLevelLabel: a.nextLevelLabel,
-        isMaxCycle: a.isMaxCycle,
-        feedsToNextCount: 0,
-        feedQtyToNext: 0,
-        feedToNextName: a.feedToNextName,
-        yields: (meta.products || []).map(() => 0)
-      });
-    }
-    const g = byKey.get(key);
-    g.count += 1;
-    g.feedQty += a.feedQty || 0;
-    g.feedQtyToNext += a.feedQtyToNext || 0;
-    g.feedsToNextCount += a.feedsToNextCount || 0;
-    if (a.xp < g.xpMin) g.xpMin = a.xp;
-    if (a.xp > g.xpMax) g.xpMax = a.xp;
+  const sorted = list.slice().sort((a, b) => b.level - a.level || b.xp - a.xp);
+  return sorted.map((a, i) => {
+    const yields = (meta.products || []).map(() => 0);
     a.products.forEach((pname, idx) => {
       const productIdx = meta.products.indexOf(pname);
-      if (productIdx >= 0) g.yields[productIdx] += a.yields[idx] || 0;
+      if (productIdx >= 0) yields[productIdx] += a.yields[idx] || 0;
     });
+    return {
+      ...a,
+      number: i + 1,
+      yields
+    };
   });
-  const groups = Array.from(byKey.values());
-  groups.sort((a, b) => a.level - b.level);
-  return groups;
 }
 function farmPanelFormatSpiceDuration(sec) {
   if (sec == null) return "\u2014";
@@ -35659,6 +35696,10 @@ var ANIMAL_XP_THRESHOLDS = {
     15: 8160
   }
 };
+function clampAnimalStartLevel(v) {
+  const n = parseInt(v);
+  return isNaN(n) ? 1 : Math.min(15, Math.max(0, n));
+}
 function getAnimalLevelFromXp(type, xp, allowZero) {
   const thresholds = ANIMAL_XP_THRESHOLDS[type];
   if (!thresholds || typeof xp !== "number" || isNaN(xp)) return null;
@@ -35971,7 +36012,7 @@ function getConfiguredAnimalHeads() {
     heads.push({
       type,
       qty,
-      level: Math.min(15, Math.max(1, parseInt(counts.level) || 1))
+      level: clampAnimalStartLevel(counts.level)
     });
   });
   return heads;
@@ -36166,7 +36207,7 @@ function getAnimalCycleRecord(type, level, scales) {
   return cycles.find((c) => c.claimLevel >= target) || cycles[cycles.length - 1];
 }
 function getAnimalStartCycle(type, level, scales) {
-  const target = Math.min(15, Math.max(1, parseInt(level) || 1));
+  const target = clampAnimalStartLevel(level);
   if (target >= 15) return getAnimalCycleRecord(type, 15, scales);
   const sc = scales === void 0 ? getAffectionScales(type) : scales;
   const chain = runAnimalCycleSim(type, sc);
@@ -36180,7 +36221,7 @@ function maxCarry(record, thresholds) {
   return ((record.xpStart - thresholds[15]) % cycleXp + cycleXp) % cycleXp;
 }
 function computeAnimalFeedFigures(type, level, cycleOverride) {
-  const displayLevel = Math.min(15, Math.max(1, parseInt(level) || 1));
+  const displayLevel = clampAnimalStartLevel(level);
   const thresholds = ANIMAL_XP_THRESHOLDS[type];
   const mods = getAnimalXpModifiers(type);
   const scales = getAffectionScales(type);
@@ -36400,7 +36441,7 @@ function computePigBristlesPlanCore(basis, target) {
     if (c.isMax) break;
     cycles++;
     const lvl = Math.min(15, Math.max(1, c.claimLevel));
-    if (!figCache[lvl]) figCache[lvl] = computeAnimalTypeFigures(type, void 0, Math.max(1, c.startLevel), c);
+    if (!figCache[lvl]) figCache[lvl] = computeAnimalTypeFigures(type, void 0, c.startLevel, c);
     const fig = figCache[lvl];
     grossFlower += coinsToFlower(fig.totalCostCoinsPerAnimal);
     seconds += fig.cycleTimeSec;
@@ -36900,6 +36941,20 @@ var BASE_STOCK_TOOLS = {
   "Crab Pot": 15,
   "Mariner Pot": 10
 };
+var BASE_STOCK_TREASURE_TOOLS = {
+  "Sand Shovel": 125,
+  "Sand Drill": 25
+};
+var TOOL_HOARDER_STOCK = {
+  "Sand Shovel": [25, 50, 100],
+  "Sand Drill": [5, 10, 20]
+};
+function toolHoarderStockAdd(itemName) {
+  const ranks = TOOL_HOARDER_STOCK[itemName];
+  if (!ranks || !isSkillActive("skill_tool_hoarder")) return 0;
+  const level = Math.min(Math.max(getAscensionRank("skill_tool_hoarder"), 1), ranks.length);
+  return ranks[level - 1];
+}
 var ISLAND_RESOURCE_TAXES = {
   basic: 1,
   spring: 0.55,
@@ -37167,6 +37222,7 @@ function isBuildingBoostActive(id) {
   return typeof isBoostActive === "function" ? isBoostActive(id) : false;
 }
 function computeBoostedStock(baseStock, kind, itemName) {
+  if (kind === "tool" && itemName && BASE_STOCK_TREASURE_TOOLS[itemName] !== void 0) return baseStock + toolHoarderStockAdd(itemName);
   let stock = baseStock;
   if (kind === "seed" && isBuildingBoostActive("warehouse_stock")) stock = Math.ceil(stock * 1.2);
   if (kind === "tool" && isBuildingBoostActive("toolshed_stock")) stock = Math.ceil(stock * 1.5);
@@ -38382,6 +38438,23 @@ function getBeetleFeed() {
 function setBeetleFeed(key) {
   beetleFeed = BEETLE_FEED_XP[key] ? key : "";
   localStorage.setItem("hl_beetle_feed", beetleFeed);
+}
+var beetleFeedMode = localStorage.getItem("hl_beetle_feed_mode") === "collect" ? "collect" : "buy";
+var beetleCollectCostProvider = null;
+function getBeetleFeedMode() {
+  return beetleFeedMode;
+}
+function setBeetleFeedMode(mode) {
+  beetleFeedMode = mode === "collect" ? "collect" : "buy";
+  localStorage.setItem("hl_beetle_feed_mode", beetleFeedMode);
+}
+function setBeetleCollectCostProvider(fn) {
+  beetleCollectCostProvider = typeof fn === "function" ? fn : null;
+}
+function getBeetleCollectUnitFlower() {
+  if (!beetleCollectCostProvider) return 0;
+  const v = beetleCollectCostProvider();
+  return isFinite(v) && v > 0 ? v : 0;
 }
 function isBeetleFeedKey(key) {
   return !!BEETLE_FEED_XP[key];
@@ -47778,6 +47851,23 @@ function getOmnifeedInfo() {
 }
 function getBeetleFeedInfo(feedKey) {
   const name = FEED_LABELS[feedKey];
+  if (beetleFeedMode === "collect") {
+    const collectFlower = getBeetleCollectUnitFlower();
+    if (collectFlower > 0) {
+      const collectCost = collectFlower * coinPerFlower;
+      return {
+        cost: collectCost,
+        missing: false,
+        missingCrops: [],
+        breakdown: [{
+          name,
+          qty: 1,
+          unitCost: collectCost,
+          mode: "collect"
+        }]
+      };
+    }
+  }
   const live = findLivePriceForName(name);
   const flower2 = live != null && live > 0 ? live : tradeMarketPrice(name);
   const unitCost = flower2 * coinPerFlower;
@@ -47821,9 +47911,9 @@ var ANIMAL_BASE_CYCLE_SEC = 86400;
 function computeAnimalTypeFigures(type, visited, levelOverride, cycleOverride) {
   const cfg = ANIMAL_DATA[type];
   const counts = getAnimalCount(type);
-  const level = levelOverride != null ? Math.min(15, Math.max(1, parseInt(levelOverride) || 1)) : Math.min(15, Math.max(1, parseInt(counts.level) || 1));
+  const level = levelOverride != null ? clampAnimalStartLevel(levelOverride) : clampAnimalStartLevel(counts.level);
   const qty = Math.max(0, parseFloat(counts.qty) || 0);
-  let lvlData = cfg.levels[level - 1];
+  let lvlData = cfg.levels[Math.max(1, level) - 1];
   const active = getActiveAnimalBoosts(type);
   let feedMultTotal = 1, yieldMultAllTotal = 1, timeMultTotal = 1, freeFeed = false, cureFree = false, cureCostMult = 1;
   const productCount = cfg.products.length;
@@ -48121,7 +48211,7 @@ function computeAnimalProfit(fig) {
 }
 function computeAnimalWeeklyFigures(type, manualCyclesPerWeek) {
   const counts = getAnimalCount(type);
-  const startLevel = Math.min(15, Math.max(1, parseInt(counts.level) || 1));
+  const startLevel = clampAnimalStartLevel(counts.level);
   const figWithStart = computeAnimalTypeFigures(type, void 0, startLevel);
   const usingSpice = !!figWithStart.spiceActiveKey;
   const autoCyclesPerDay = ANIMAL_BASE_CYCLE_SEC / figWithStart.cycleTimeSec;
@@ -48144,7 +48234,7 @@ function computeAnimalWeeklyFigures(type, manualCyclesPerWeek) {
   function figAtLevel(level, withSpice, cyc) {
     const cache = withSpice ? figCacheWith : figCacheBase;
     const useCycle = !!cyc && !cyc.isMax;
-    const lv = useCycle ? Math.max(1, cyc.startLevel) : level;
+    const lv = useCycle ? cyc.startLevel : level;
     const key = useCycle ? cyc.startLevel + "|" + cyc.feeds + "|" + cyc.loveXp + "|" + cyc.xpStart : "lvl" + lv;
     if (cache[key]) return cache[key];
     if (!withSpice) {
@@ -49323,7 +49413,7 @@ function applyFarmPlotsNodesOnly(json, hasFullData) {
       if (isSick) sickCount++;
       const xpRaw = animal.experience ?? animal.exp ?? animal.xp;
       const xp = typeof xpRaw === "number" ? xpRaw : typeof xpRaw === "string" && xpRaw.trim() && !isNaN(Number(xpRaw)) ? Number(xpRaw) : null;
-      const lvl = getAnimalLevelFromXp(type, xp);
+      const lvl = getAnimalLevelFromXp(type, xp, true);
       if (lvl != null) {
         levelSum += lvl;
         levelSampleCount++;
@@ -49333,7 +49423,7 @@ function applyFarmPlotsNodesOnly(json, hasFullData) {
       sickHeads: sickCount
     };
     if (levelSampleCount > 0) {
-      animalCounts[type].level = Math.min(15, Math.max(1, Math.round(levelSum / levelSampleCount)));
+      animalCounts[type].level = clampAnimalStartLevel(Math.round(levelSum / levelSampleCount));
     }
   });
   saveAnimalCounts();
@@ -52021,11 +52111,11 @@ $("globalMiniSyncBtn").onclick = () => {
 function computeAnimalBaseCoinFigures(type) {
   const cfg = ANIMAL_DATA[type];
   const counts = getAnimalCount(type);
-  const level = Math.min(15, Math.max(1, parseInt(counts.level) || 1));
-  const lvlData = cfg.levels[level - 1];
+  const level = clampAnimalStartLevel(counts.level);
+  const lvlData = cfg.levels[Math.max(1, level) - 1];
   const feedInfo = getFeedUnitCost(lvlData.feed);
   const feedCostCoins = lvlData.qty * feedInfo.cost;
-  const claimData = cfg.levels[Math.min(15, level + 1) - 1];
+  const claimData = cfg.levels[Math.max(1, Math.min(15, level + 1)) - 1];
   const yields = cfg.products.map((_, pi) => claimData.y[pi]);
   const totalYieldUnits = yields.reduce((a, v) => a + v, 0);
   const costPerUnit = totalYieldUnits > 0 ? feedCostCoins / totalYieldUnits : 0;
@@ -61014,7 +61104,7 @@ function renderCalcAnimalInfoBox() {
     <div class="calc-animal-fields">
       <div class="calc-animal-field">
         <label>Level</label>
-        <input type="number" id="calcAnimalLevelInput" min="1" max="15" step="1" inputmode="numeric" value="${c.level || 1}">
+        <input type="number" id="calcAnimalLevelInput" min="0" max="15" step="1" inputmode="numeric" value="${c.level == null ? 1 : c.level}">
       </div>
       <div class="calc-animal-field">
         <label>Heads</label>
@@ -61022,7 +61112,7 @@ function renderCalcAnimalInfoBox() {
       </div>
     </div>`;
   $("calcAnimalLevelInput").addEventListener("input", () => {
-    const v = Math.min(15, Math.max(1, parseInt($("calcAnimalLevelInput").value) || 1));
+    const v = clampAnimalStartLevel($("calcAnimalLevelInput").value);
     setAnimalCount(animalType, "level", v);
     renderCalcIngredients();
     updateCalcSummary();
@@ -71552,9 +71642,9 @@ function simAnimalRow(type, qty, level) {
   const cfg = ANIMAL_DATA[type];
   if (!cfg) return null;
   const q = Math.max(0, Number(qty) || 0);
-  const lv = Math.min(15, Math.max(1, parseInt(level) || 1));
+  const lv = clampAnimalStartLevel(level);
   const real = getAnimalCount(type);
-  const sameAsReal = (Number(real.qty) || 0) === q && Math.min(15, Math.max(1, parseInt(real.level) || 1)) === lv;
+  const sameAsReal = (Number(real.qty) || 0) === q && clampAnimalStartLevel(real.level) === lv;
   const build = () => simWithTemporary(animalCounts, type, {
     level: lv,
     qty: q
@@ -71655,7 +71745,7 @@ function computeGuideAveragePanelItems() {
       kind: "animal",
       names: [type],
       qty,
-      level: Math.min(15, Math.max(1, Math.floor(Number(c.level) || 1)))
+      level: clampAnimalStartLevel(Math.floor(Number(c.level)))
     });
     if (rows[0]) items.set("animal:" + type, {
       net24h: rows[0].net,
@@ -74048,6 +74138,7 @@ export {
   getGreenhouseSeedCoins,
   getPigSlopOptions,
   resolvePigSlopIngredient,
+  findLivePriceForName,
   prices_exports,
   harvestLogSetFarm,
   harvestLogRequest,
@@ -74081,6 +74172,8 @@ export {
   PIG_MUD_PER_APPLICATION,
   FEED_RECIPE,
   ANIMAL_DATA,
+  ANIMAL_XP_THRESHOLDS,
+  getAnimalFoodXpTable,
   ANIMAL_LOVE_ITEM_XP,
   animalAffectionTools,
   setAnimalAffectionCount,
@@ -74095,6 +74188,7 @@ export {
   BASE_STOCK_FLOWERS,
   BASE_GREENHOUSE,
   BASE_STOCK_TOOLS,
+  BASE_STOCK_TREASURE_TOOLS,
   BASE_COMPOSTERS,
   SEASON_COMPOST_REQUIREMENTS,
   BASE_CROP_MACHINE,
@@ -74147,6 +74241,10 @@ export {
   BEETLE_FEED_XP,
   getBeetleFeed,
   setBeetleFeed,
+  getBeetleFeedMode,
+  setBeetleFeedMode,
+  setBeetleCollectCostProvider,
+  getBeetleCollectUnitFlower,
   isOmnifeedEnabled,
   setOmnifeedEnabled,
   getBoostedMedicineRecipe,
@@ -74171,6 +74269,7 @@ export {
   OBSIDIAN_WEEKLY_PURCHASE_CAP,
   computeObsidianWeeklyProfit,
   SKILL_CATEGORY_META,
+  getAscensionRank,
   BOOSTS,
   spiceUsage,
   SPICE_ANIMAL_TYPES,
@@ -74201,6 +74300,8 @@ export {
   getKaleMixKaleQty,
   computeAnimalTypeFigures,
   computeAnimalWeeklyFigures,
+  farmSyncExtractGameState,
+  farmSyncCollectEquippedAndPlacedNames,
   FARM_LEVEL_NODES,
   MUTANT_TYPE_EMOJI,
   setSkillCategory,
