@@ -1,10 +1,8 @@
 import {
   CAVE_WIDTH,
-  generateCaveBoard,
-  isCaveSeed,
-  revealedCaveTiles,
+  collectCaveDugToday,
   solveCaveBatch
-} from "./chunk.HVRY6OMF.js";
+} from "./chunk.SZS6OV2R.js";
 import "./chunk.AS3VMXOQ.js";
 
 // src/goblin_merchant_icon.js
@@ -252,74 +250,6 @@ function merchantHtml(cave, game, now) {
   const rows = offers.map((o) => offerHtml(o, cave, visit, inv)).join("");
   return `<div class="cave-board guro-frame cave-merchant">${head}${timer2}<div class="cave-offers">${rows}</div></div>`;
 }
-var DUG_STORE_PREFIX = "guro_cave_dug_v1_";
-function utcDayStart(now) {
-  return Math.floor(now / 864e5) * 864e5;
-}
-function utcDayKey(now) {
-  return new Date(now).toISOString().substring(0, 10);
-}
-function loadDugStore(farmKey, day) {
-  try {
-    const raw = JSON.parse(localStorage.getItem(DUG_STORE_PREFIX + farmKey) || "null");
-    if (raw && raw.day === day && raw.items && typeof raw.items === "object") return raw;
-  } catch (e) {
-  }
-  return { day, items: {} };
-}
-function saveDugStore(farmKey, store) {
-  try {
-    localStorage.setItem(DUG_STORE_PREFIX + farmKey, JSON.stringify(store));
-  } catch (e) {
-  }
-}
-function tileName(tile) {
-  if (!tile) return null;
-  if (tile.type === "Beetle") return tile.beetle || "Beetle";
-  if (tile.type === "Mushroom") return tile.mushroom || "Mushroom";
-  return "Mud";
-}
-function collectDugToday(cave, farmKey, now) {
-  const day = utcDayKey(now);
-  const start = utcDayStart(now);
-  const store = loadDugStore(farmKey, day);
-  let changed = false;
-  Object.keys(cave.machines || {}).forEach((machineId) => {
-    const batch = cave.machines[machineId] && cave.machines[machineId].batch;
-    if (!batch || !batch.dug) return;
-    let initial = null;
-    if (isCaveSeed(batch.seed)) {
-      try {
-        initial = generateCaveBoard(batch.recipe, batch.seed, batch.skills || {});
-      } catch (e) {
-        initial = null;
-      }
-    }
-    const revealed = revealedCaveTiles(batch, initial);
-    Object.keys(batch.dug).forEach((key) => {
-      const rec = batch.dug[key];
-      if (!rec || !(Number(rec.dugAt) >= start)) return;
-      const entry = revealed[key];
-      const name = entry && tileName(entry.tile);
-      if (!name) return;
-      const amount = name === "Mud" ? Math.max(1, Number(entry.tile.amount) || 1) : 1;
-      const id = machineId + ":" + batch.startedAt + ":" + key;
-      const prev = store.items[id];
-      if (!prev || prev.n !== name || prev.a !== amount) {
-        store.items[id] = { n: name, a: amount };
-        changed = true;
-      }
-    });
-  });
-  if (changed || !localStorage.getItem(DUG_STORE_PREFIX + farmKey)) saveDugStore(farmKey, store);
-  const counts = {};
-  Object.keys(store.items).forEach((id) => {
-    const item = store.items[id];
-    if (!item || !item.n) return;
-    counts[item.n] = (counts[item.n] || 0) + (Number(item.a) || 1);
-  });
-  return counts;
-}
 function dugTodayHtml(counts) {
   const names = Object.keys(counts);
   const head = `<div class="cave-board-title"><span class="cave-myco-icon">${apiRef.ui.getIcon("Myco Bin")}</span> Dug from all Myco Bins</div>`;
@@ -356,7 +286,7 @@ function render() {
   const tabs = ids.length > 1 ? tabsHtml(ids) : "";
   const boards = boardHtml(selectedBin, cave.machines[selectedBin] && cave.machines[selectedBin].batch, game, now);
   const merchant = merchantHtml(cave, game, now);
-  const dugToday = dugTodayHtml(collectDugToday(cave, String(info && info.id ? info.id : "0"), now));
+  const dugToday = dugTodayHtml(collectCaveDugToday(cave, String(info && info.id ? info.id : "0"), now));
   const legend = `<div class="dig-panel-legend"><span class="dig-legend-item"><span class="dig-swatch dig-swatch-red"></span>Only Mud</span><span class="dig-legend-item"><span class="dig-swatch dig-swatch-yellow"></span>Chance</span><span class="dig-legend-item"><span class="dig-swatch dig-swatch-blue"></span>Sure thing</span></div>`;
   card.innerHTML = `<div class="dig-panel-divider-solid"></div><div class="cave-top-row">${guideHtml()}${statusHtml(cave, ids, now)}</div>${legend}${tabs}<div class="cave-main"><div class="cave-boards">${dugToday}${boards}</div><div class="cave-merchant-wrap">${merchant}</div></div>`;
   const growing = ids.some((id) => {

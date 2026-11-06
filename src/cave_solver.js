@@ -459,3 +459,87 @@ export function caveBuriedCounts(batch) {
     beetleWeights: skills.beetleRarity || BEETLE_WEIGHTS
   };
 }
+
+const DUG_STORE_PREFIX = "guro_cave_dug_v1_";
+
+function utcDayStart(now) {
+  return Math.floor(now / 86400000) * 86400000;
+}
+
+function utcDayKey(now) {
+  return new Date(now).toISOString().substring(0, 10);
+}
+
+function loadDugStore(farmKey, day) {
+  try {
+    const raw = JSON.parse(localStorage.getItem(DUG_STORE_PREFIX + farmKey) || "null");
+    if (raw && raw.day === day && raw.items && typeof raw.items === "object") return raw;
+  } catch (e) {}
+  return { day: day, items: {} };
+}
+
+function saveDugStore(farmKey, store) {
+  try {
+    localStorage.setItem(DUG_STORE_PREFIX + farmKey, JSON.stringify(store));
+  } catch (e) {}
+}
+
+function tileName(tile) {
+  if (!tile) return null;
+  if (tile.type === "Beetle") return tile.beetle || "Beetle";
+  if (tile.type === "Mushroom") return tile.mushroom || "Mushroom";
+  return "Mud";
+}
+
+export function collectCaveDugToday(cave, farmKey, now) {
+  const day = utcDayKey(now);
+  const start = utcDayStart(now);
+  const store = loadDugStore(farmKey, day);
+  let changed = false;
+  Object.keys(cave.machines || {}).forEach(machineId => {
+    const batch = cave.machines[machineId] && cave.machines[machineId].batch;
+    if (!batch || !batch.dug) return;
+    let initial = null;
+    if (isCaveSeed(batch.seed)) {
+      try {
+        initial = generateCaveBoard(batch.recipe, batch.seed, batch.skills || {});
+      } catch (e) {
+        initial = null;
+      }
+    }
+    const revealed = revealedCaveTiles(batch, initial);
+    Object.keys(batch.dug).forEach(key => {
+      const rec = batch.dug[key];
+      if (!rec || !(Number(rec.dugAt) >= start)) return;
+      const entry = revealed[key];
+      const name = entry && tileName(entry.tile);
+      if (!name) return;
+      const amount = name === "Mud" ? Math.max(1, Number(entry.tile.amount) || 1) : 1;
+      const id = machineId + ":" + batch.startedAt + ":" + key;
+      const prev = store.items[id];
+      if (!prev || prev.n !== name || prev.a !== amount) {
+        store.items[id] = { n: name, a: amount };
+        changed = true;
+      }
+    });
+  });
+  if (changed || !localStorage.getItem(DUG_STORE_PREFIX + farmKey)) saveDugStore(farmKey, store);
+  const counts = {};
+  Object.keys(store.items).forEach(id => {
+    const item = store.items[id];
+    if (!item || !item.n) return;
+    counts[item.n] = (counts[item.n] || 0) + (Number(item.a) || 1);
+  });
+  return counts;
+}
+
+export function readCaveDugToday(farmKey, now) {
+  const store = loadDugStore(farmKey, utcDayKey(now));
+  const counts = {};
+  Object.keys(store.items).forEach(id => {
+    const item = store.items[id];
+    if (!item || !item.n) return;
+    counts[item.n] = (counts[item.n] || 0) + (Number(item.a) || 1);
+  });
+  return counts;
+}

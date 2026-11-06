@@ -1,3 +1,5 @@
+import { ICON_DATA } from "./icon_data.js";
+
 let deps = null;
 
 export function craftedToolsInit(d) {
@@ -376,6 +378,20 @@ function drain(lots, amount, sink) {
   }
 }
 
+function drainNewest(lots, amount, sink) {
+  let need = r2(amount);
+  const order = [ ...lots.filter(l => !isBought(l.key)) ].reverse();
+  for (const lot of order) {
+    if (need <= 0) break;
+    const free = r2(lot.acc - lot.used);
+    if (free <= 0) continue;
+    const take = Math.min(free, need);
+    lot.used = r2(lot.used + take);
+    need = r2(need - take);
+    sink(lot.key, take);
+  }
+}
+
 function sinkTo(store, day, res) {
   return (key, take) => {
     const dayRec = store[day] || (store[day] = {});
@@ -489,7 +505,21 @@ function computeLedger(list, facts) {
           used: 0
         });
       }
-      drain(lots, need, sinkTo(consumed, day, res));
+      const consumeSink = sinkTo(consumed, day, res);
+      let needLeft = need;
+      const boughtLots = lots.filter(l => isBought(l.key));
+      if (boughtLots.length && needLeft > 0) {
+        const before = needLeft;
+        drain(boughtLots, before, (key, take) => {
+          consumeSink(key, take);
+          needLeft = r2(needLeft - take);
+        });
+      }
+      if (hasSnap) {
+        const early = r2(remainOf(lots) - needLeft - snap);
+        if (early > BALANCE_EPS) drain(lots, early, sinkTo(spent, day, res));
+      }
+      drainNewest(lots, needLeft, consumeSink);
       if (hasSnap) {
         const extra = r2(remainOf(lots) - snap);
         if (extra > BALANCE_EPS) drain(lots, extra, sinkTo(spent, day, res));
@@ -821,7 +851,7 @@ function lotLabel(key) {
 function lotsHtml(lots) {
   if (!lots.length) return `<div class="ct-empty">No balance recorded yet.</div>`;
   const rows = lots.map(l => `<div class="ct-lot-row"><span>${esc(lotLabel(l.key))}</span><span>${fmtRes(l.acc)}</span><span>${l.used > 0 ? "-" : ""}${fmtRes(l.used)}</span><span>${fmtRes(l.remain)}</span></div>`).join("");
-  return `<div class="ct-lots"><div class="ct-lot-row ct-lot-head"><span>Date</span><span>Gained</span><span>Used</span><span>Remain</span></div>${rows}<div class="ct-note">Bought balance is used first, then the oldest. Used includes crafting, sales and any other spending.</div></div>`;
+  return `<div class="ct-lots"><div class="ct-lot-row ct-lot-head"><span>Date</span><span>Gained</span><span>Used</span><span>Remain</span></div>${rows}<div class="ct-note">Crafting uses bought balance first, then the newest. Sales and other spending use the oldest.</div></div>`;
 }
 
 function resourceHtml(name, snap) {
@@ -830,7 +860,7 @@ function resourceHtml(name, snap) {
   const lots = balance === null ? base : fitLots(base, balance);
   const shown = balance === null ? lots.reduce((s, l) => s + l.remain, 0) : balance;
   const open = !!ui.open[name];
-  return `<div class="ct-res-item"><button type="button" class="ct-res-head${open ? " open" : ""}" data-ct-res="${esc(name)}" aria-expanded="${open ? "true" : "false"}"><span class="ct-ico">${getIcon(name)}</span><span class="ct-name">${esc(name)}</span><span class="ct-res-bal">${fmtRes(shown)}</span><span class="ct-caret"></span></button>${open ? lotsHtml(lots) : ""}</div>`;
+  return `<div class="ct-res-item guro-frame${open ? " is-open" : ""}"><div class="ct-res-head${open ? " open" : ""}" role="button" tabindex="0" data-ct-res="${esc(name)}" aria-expanded="${open ? "true" : "false"}"><span class="ct-ico">${getIcon(name)}</span><span class="ct-name">${esc(name)}</span><span class="ct-res-bal">${fmtRes(shown)}</span><img class="ct-chev" src="${ICON_DATA["chevron_down.png"]}" alt=""></div>${open ? lotsHtml(lots) : ""}</div>`;
 }
 
 function dateHtml(day, rec) {
@@ -861,7 +891,9 @@ function render() {
   const cards = days.slice(0, ui.showCount).map(day => dateHtml(day, view.final[day])).join("");
   const more = days.length > ui.showCount ? `<div class="dh-hlog-more"><button type="button" class="dh-pop-log-btn" data-ct-more="1">Show more (${days.length - ui.showCount} older)</button></div>` : "";
   const dates = days.length ? `<div class="ct-dates">${cards}</div>${more}` : `<div class="ct-empty">No crafted tools recorded yet. Sync your farm after crafting to start recording.</div>`;
-  host.innerHTML = `<div class="ct-head"><div class="pf-title">Daily Record of Crafted Tools</div><div class="ct-desc">Tools you craft are saved for each UTC day. Spending uses bought resources first, then your oldest harvest balance, and mining uses your oldest tools first.</div></div><div class="pf-box ct-box guro-frame"><div class="pf-title">Inventory</div>${toolsInv}<div class="ct-sub">Resources</div><div class="ct-res">${resRows}</div></div><div class="pf-box ct-box guro-frame"><div class="pf-title">Crafted Today</div>${todayHtml}</div>${dates}`;
+  const inventoryBox = `<div class="pf-box ct-box guro-frame"><div class="pf-title">Inventory</div>${toolsInv}<div class="ct-sub">Resources</div><div class="ct-res">${resRows}</div></div>`;
+  const todayBox = `<div class="pf-box ct-box guro-frame"><div class="pf-title">Crafted Today</div>${todayHtml}</div>`;
+  host.innerHTML = `<div class="ct-head"><div class="pf-title">Daily Record of Crafted Tools</div><div class="ct-desc">Tools you craft are saved for each UTC day. Crafting uses bought resources first, then your newest harvest balance. Other spending uses your oldest balance, and mining uses your oldest tools first.</div></div><div class="ct-grid"><div class="ct-col">${inventoryBox}</div><div class="ct-col">${todayBox}${dates}</div></div>`;
 }
 
 function message(html) {
@@ -883,11 +915,22 @@ function onHostClick(ev) {
   }
 }
 
+function onHostKey(ev) {
+  if (ev.key !== "Enter" && ev.key !== " ") return;
+  const res = ev.target.closest("[data-ct-res]");
+  if (!res) return;
+  ev.preventDefault();
+  const name = res.getAttribute("data-ct-res");
+  ui.open[name] = !ui.open[name];
+  render();
+}
+
 export async function craftedToolsOpen(host) {
   ui.host = host;
   ui.showCount = PAGE_SIZE;
   const token = ++ui.token;
   host.onclick = onHostClick;
+  host.onkeydown = onHostKey;
   const farmId = harvestLogFarmId();
   ui.farmId = farmId;
   if (!farmId) {

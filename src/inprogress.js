@@ -7,7 +7,7 @@ import { caveBuriedCounts } from "./cave_solver.js";
 
 import { $, hiveClockText, cookFoodIcon, getBoostIcon, getIcon, renderAnimalCardProductDetailRow, renderAnimalYieldGroupsList, renderBeehiveListHtml, renderCardProductDetailRow, renderCostNetInfoTrigger, renderCrimstoneInstantMineBoostHtml, renderCrimstoneNodeYieldList, renderFarmPanelTabContent, renderFruitHarvestsLeftHtml, renderGoldInstantMineBoostHtml, renderNodeTierYieldList, renderOilNodeYieldList, renderPlantYieldNodeList, renderSaltNodeYieldList, renderSeaBlessedBoostHtml, renderTotalsBreakdown, renderTurnaroundBoostHtml } from "./ui.js";
 import { potionTrackFromState, digStreakTrackFromState } from "./calculator.js";
-import { dailyHarvestTrack, dailyHarvestBadgeHtml, dailyHarvestSetYield, dailyHarvestSetResolver, dailyHarvestSetCookingProvider, dailyHarvestSetIconProvider, dailyHarvestSetToolProvider, dailyHarvestNodeToolMult } from "./daily_harvest.js";
+import { dailyHarvestTrack, dailyHarvestBadgeHtml, dailyHarvestSetYield, dailyHarvestSetResolver, dailyHarvestSetCookingProvider, dailyHarvestSetPriceProvider, dailyHarvestSetIconProvider, dailyHarvestSetToolProvider, dailyHarvestNodeToolMult } from "./daily_harvest.js";
 
 import { harvestLogArm } from "./harvest_log.js";
 
@@ -5573,6 +5573,18 @@ dailyHarvestSetToolProvider(farmPanelToolInfoForGroup);
 dailyHarvestSetResolver(farmPanelResolveHarvestPending);
 
 dailyHarvestSetCookingProvider(farmPanelCookingLogSlots);
+
+dailyHarvestSetPriceProvider(name => {
+  let price = farmPanelGetMarketPriceFlower(name) || 0;
+  if (!(price > 0)) {
+    const live = findLivePriceForName(name);
+    if (live != null && isFinite(live) && live > 0) price = live;
+  }
+  return {
+    price: price,
+    fee: (feePercent || 0) / 100
+  };
+});
 
 dailyHarvestSetIconProvider(cookingFoodOrFishIcon);
 
