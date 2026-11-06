@@ -3,19 +3,21 @@ import {
   NAV_ICON_DATA
 } from "./chunk.LPEVZJ4B.js";
 import {
-  ICON_DATA
-} from "./chunk.VR6FV3KR.js";
-import {
   craftedToolsInit,
   craftedToolsPrepare,
   craftedToolsPush,
   craftedToolsSync,
   craftedToolsTrack,
   craftedToolsViewFor
-} from "./chunk.KKGBFBSS.js";
+} from "./chunk.IAMPLIR4.js";
 import {
-  caveBuriedCounts
-} from "./chunk.HVRY6OMF.js";
+  ICON_DATA
+} from "./chunk.VR6FV3KR.js";
+import {
+  caveBuriedCounts,
+  collectCaveDugToday,
+  readCaveDugToday
+} from "./chunk.SZS6OV2R.js";
 import {
   __export
 } from "./chunk.AS3VMXOQ.js";
@@ -33218,6 +33220,17 @@ function farmPanelToolInfoForGroup(groupKey) {
 dailyHarvestSetToolProvider(farmPanelToolInfoForGroup);
 dailyHarvestSetResolver(farmPanelResolveHarvestPending);
 dailyHarvestSetCookingProvider(farmPanelCookingLogSlots);
+dailyHarvestSetPriceProvider((name) => {
+  let price = farmPanelGetMarketPriceFlower(name) || 0;
+  if (!(price > 0)) {
+    const live = findLivePriceForName(name);
+    if (live != null && isFinite(live) && live > 0) price = live;
+  }
+  return {
+    price,
+    fee: (feePercent || 0) / 100
+  };
+});
 dailyHarvestSetIconProvider(cookingFoodOrFishIcon);
 function farmPanelDailyFarmId() {
   const stateId = farmPanelGameState && farmPanelGameState.id;
@@ -71801,7 +71814,7 @@ function pruneStore(store) {
     }
     if (rec.day === today) return;
     if (k === active) {
-      if (Object.keys(rec.stats || {}).length || Object.keys(rec.prev || {}).length || rec.cook && rec.cook.prev && Object.keys(rec.cook.prev).length) {
+      if (Object.keys(rec.stats || {}).length || Object.keys(rec.prev || {}).length || rec.cook && rec.cook.prev && Object.keys(rec.cook.prev).length || rec.bris && rec.bris.known) {
         store[k] = {
           day: rec.day,
           prev: rec.prev || {},
@@ -71814,7 +71827,8 @@ function pruneStore(store) {
           ym: rec.ym || {},
           cc: rec.cc || {},
           syncAt: rec.syncAt || 0,
-          cook: carryCook(rec.cook)
+          cook: carryCook(rec.cook),
+          bris: carryBris(rec.bris)
         };
         changed = true;
       }
@@ -71880,6 +71894,123 @@ function carryCook(c) {
     known: !!(c && c.known)
   };
 }
+var priceProvider;
+function dailyHarvestSetPriceProvider(fn) {
+  priceProvider = typeof fn === "function" ? fn : null;
+}
+function lookupPrice(name) {
+  if (!priceProvider) return {
+    price: 0,
+    fee: 0
+  };
+  try {
+    const r = priceProvider(name);
+    return {
+      price: r && r.price > 0 ? r.price : 0,
+      fee: r && r.fee > 0 ? r.fee : 0
+    };
+  } catch (e) {
+    return {
+      price: 0,
+      fee: 0
+    };
+  }
+}
+var BRISTLE_KEY = "Pig Bristles Collected";
+function carryBris(b) {
+  return {
+    ctr: b && typeof b.ctr === "number" ? b.ctr : 0,
+    inv: b && typeof b.inv === "number" ? b.inv : 0,
+    pigs: b && b.pigs && typeof b.pigs === "object" ? b.pigs : {},
+    known: !!(b && b.known),
+    a: 0,
+    c: 0,
+    log: []
+  };
+}
+function pigSnapshot(g) {
+  const animals = g.pigpen && g.pigpen.animals && typeof g.pigpen.animals === "object" ? g.pigpen.animals : null;
+  if (!animals) return null;
+  const out = {};
+  Object.keys(animals).forEach((id) => {
+    const pig = animals[id];
+    if (!pig || typeof pig !== "object") return;
+    const xp = Number(pig.experience ?? pig.exp ?? pig.xp);
+    out[id] = {
+      x: Number.isFinite(xp) ? xp : 0,
+      s: typeof pig.state === "string" ? pig.state : "",
+      m: Number(pig.multiplier) > 0 ? Number(pig.multiplier) : 0
+    };
+  });
+  return out;
+}
+function pigBristlesFor(pig) {
+  let level = getAnimalLevelFromXp("pig", pig.x, true);
+  if (pig.s === "ready" && level < 15) level -= 1;
+  const base = computePigTradeIn(level);
+  if (!base.tradeable) return {
+    level,
+    amount: 0
+  };
+  let amount = pig.m > 0 ? base.amount * pig.m : base.amount;
+  if (pig.s === "sick") amount *= 0.75;
+  return {
+    level,
+    amount: Math.round(amount * 100) / 100
+  };
+}
+function trackBristles(g, rec, fresh, now, prevSyncAt, start) {
+  const bris = rec.bris || (rec.bris = carryBris(null));
+  if (!Array.isArray(bris.log)) bris.log = [];
+  const activity = g.farmActivity && typeof g.farmActivity === "object" ? g.farmActivity : null;
+  const inventory = g.inventory && typeof g.inventory === "object" ? g.inventory : null;
+  if (!activity || !inventory) return;
+  const ctrNow = cookCounterNow(activity, BRISTLE_KEY);
+  const invNow = Number(inventory["Pig Bristles"]) || 0;
+  const pigsNow = pigSnapshot(g);
+  if (bris.known) {
+    const traded = Math.floor(ctrNow - bris.ctr);
+    if (traded > 0) {
+      const gone = pigsNow ? Object.keys(bris.pigs || {}).filter((id) => !pigsNow[id]).slice(0, traded) : [];
+      const picks = [];
+      gone.forEach((id) => {
+        let r = null;
+        try {
+          r = pigBristlesFor(bris.pigs[id]);
+        } catch (e) {
+          r = null;
+        }
+        if (r && r.amount > 0) picks.push(r);
+      });
+      const est = picks.reduce((sum, r) => sum + r.amount, 0);
+      const gained = invNow - bris.inv;
+      const unseen = traded - picks.length;
+      const total = unseen > 0 && gained > est + 0.01 ? gained : est;
+      if (total > 1e-9) {
+        const gapScale = fresh && prevSyncAt && prevSyncAt < start ? Math.min(1, Math.max(0, (now - start) / (now - prevSyncAt))) : 1;
+        bris.a += total * gapScale;
+        bris.c += Math.round(traded * gapScale);
+        picks.forEach((r) => bris.log.push({
+          t: now,
+          a: r.amount,
+          l: r.level
+        }));
+        const extra = Math.round((total - est) * 100) / 100;
+        if (extra > 9e-3) bris.log.push({
+          t: now,
+          a: extra,
+          e: 1
+        });
+        if (bris.log.length > COOK_LOG_CAP) bris.log.splice(0, bris.log.length - COOK_LOG_CAP);
+      }
+    }
+  }
+  bris.ctr = ctrNow;
+  bris.inv = invNow;
+  if (pigsNow) bris.pigs = pigsNow;
+  bris.known = true;
+}
+var CAVE_BEETLE_RE = /^(?:(?:Green|Blue|Pink|Amber) )?Beetle$/;
 function cookCounterNow(activity, key) {
   const v = activity ? Number(activity[key]) : NaN;
   return Number.isFinite(v) && v > 0 ? v : 0;
@@ -72478,7 +72609,8 @@ function dailyHarvestTrack(g, farmId) {
       est: false
     },
     syncAt: old && old.syncAt ? old.syncAt : 0,
-    cook: carryCook(old && old.cook)
+    cook: carryCook(old && old.cook),
+    bris: carryBris(old && old.bris)
   };
   const prevSyncAt = rec.syncAt || 0;
   woodShiftMs = treePermanentShiftMs(g);
@@ -72757,6 +72889,11 @@ function dailyHarvestTrack(g, farmId) {
     }
   });
   trackCooking(g, rec, fresh, now);
+  trackBristles(g, rec, fresh, now, prevSyncAt, start);
+  try {
+    if (g.cave && typeof g.cave === "object") collectCaveDugToday(g.cave, fid, now);
+  } catch (e) {
+  }
   rec.prev = groups;
   const amtsNow = {};
   Object.keys(g.oilReserves || {}).forEach((id) => {
@@ -73037,6 +73174,18 @@ function dailyHarvestTotals(farmId) {
     const gm = yieldMeta[groupKey];
     const toolsUsed = logKind === "node" ? (typeof st.droppedTl === "number" ? st.droppedTl : 0) + st.log.reduce((sum, e) => sum + (typeof e.tl === "number" ? e.tl : 0), 0) : 0;
     addLogTotal(totals, groupKey, logKind, amount, roundsFromStats(st).rounds, gm && gm.price, gm && gm.feeRate, logKind === "beehive" ? 0 : LOG_VERSION, toolsUsed);
+  });
+  const bris = rec.bris;
+  if (bris && bris.a > 0) {
+    const bp = lookupPrice("Pig Bristles");
+    addLogTotal(totals, "Pig Bristles", "animal", bris.a, bris.c, bp.price, bp.fee);
+  }
+  const caveKey = farmId ? String(farmId) : store.__last;
+  const dug = caveKey ? readCaveDugToday(caveKey, Date.now()) : {};
+  Object.keys(dug).forEach((name) => {
+    if (!CAVE_BEETLE_RE.test(name)) return;
+    const bp = lookupPrice(name);
+    addLogTotal(totals, name, "cave", dug[name], 0, bp.price, bp.fee);
   });
   const cookTotals = rec.cook && rec.cook.totals ? rec.cook.totals : {};
   Object.keys(cookTotals).forEach((name) => {
@@ -73431,7 +73580,8 @@ var KIND_ORDER = {
   animal: 4,
   beehive: 5,
   cooking: 6,
-  composter: 7
+  composter: 7,
+  cave: 8
 };
 var pendingFarm = "";
 var settleTimer = null;
@@ -73606,7 +73756,7 @@ async function pushTotals(trackKey) {
     if (res.status === 400) {
       const legacy = {};
       Object.keys(plain).forEach((name) => {
-        if (plain[name].k !== "composter") legacy[name] = plain[name];
+        if (plain[name].k !== "composter" && plain[name].k !== "cave") legacy[name] = plain[name];
       });
       if (Object.keys(legacy).length && Object.keys(legacy).length < Object.keys(plain).length) {
         res = await post(legacy);
@@ -73692,6 +73842,7 @@ function netOf(e) {
   return round4(round4(e.a * e.p) * (1 - fee));
 }
 function itemIcon2(name, kind) {
+  if (kind === "cave" && name === "Beetle") return getIcon("Green Beetle");
   if (kind === "cooking" && COOKING_FOOD_IMAGES[name]) return cookFoodIcon(name);
   return getIcon(name);
 }

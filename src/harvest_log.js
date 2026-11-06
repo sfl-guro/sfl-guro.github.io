@@ -28,7 +28,8 @@ const KIND_ORDER = {
   animal: 4,
   beehive: 5,
   cooking: 6,
-  composter: 7
+  composter: 7,
+  cave: 8
 };
 
 let pendingFarm = "";
@@ -216,7 +217,7 @@ async function pushTotals(trackKey) {
     if (res.status === 400) {
       const legacy = {};
       Object.keys(plain).forEach(name => {
-        if (plain[name].k !== "composter") legacy[name] = plain[name];
+        if (plain[name].k !== "composter" && plain[name].k !== "cave") legacy[name] = plain[name];
       });
       if (Object.keys(legacy).length && Object.keys(legacy).length < Object.keys(plain).length) {
         res = await post(legacy);
@@ -312,6 +313,7 @@ function netOf(e) {
 }
 
 function itemIcon(name, kind) {
+  if (kind === "cave" && name === "Beetle") return getIcon("Green Beetle");
   if (kind === "cooking" && COOKING_FOOD_IMAGES[name]) return cookFoodIcon(name);
   return getIcon(name);
 }
