@@ -196,11 +196,10 @@ import {
   toast,
   updateCalcSummary,
   updateSkillSaveBarState
-} from "./chunk.BY73XMMQ.js";
+} from "./chunk.LI3JHMSB.js";
 import "./chunk.LPEVZJ4B.js";
-import "./chunk.IAMPLIR4.js";
+import "./chunk.CTXFJ7GM.js";
 import "./chunk.VR6FV3KR.js";
-import "./chunk.SZS6OV2R.js";
 import "./chunk.AS3VMXOQ.js";
 
 // src/rescalc_boosts.js
@@ -6197,6 +6196,12 @@ function pigKvHtml(r) {
 function spiceLabelFor(rows) {
   return rows.some((r) => r.type === "pig") ? "Spice & Mud" : "Spice";
 }
+function priceKvHtml(r) {
+  return r.products.map((p) => {
+    const price = priceOf(p);
+    return kv7("Market Price / Unit", `${getIcon(p)} ${price > 0 ? flowerSigned7(price) : "\u2014"}`);
+  }).join("\n      ");
+}
 function computationCardHtml7(r) {
   const fig = r.fig;
   const yieldHead = r.products.map((p, i) => `+${n28(fig.yields[i])}${getIcon(p)}`).join(" ");
@@ -6207,6 +6212,7 @@ function computationCardHtml7(r) {
     <div class="rc-group"><div class="rc-kv-grid">
       ${kv7("Cycle Time", esc8(formatDuration(fig.cycleTimeSec)), "rc-kv-wide")}
       ${kv7("Yield / Head", yieldHead, "rc-kv-wide")}
+      ${priceKvHtml(r)}
       ${kv7("Feed Used", `${getIcon(fig.feedNameUsed)} ${esc8(fig.feedNameUsed)}`)}
       ${pigKvHtml(r)}
       ${kv7("Feeds / Cycle", n28(fig.feedCount))}

@@ -15939,3 +15939,58 @@ body.sfl-theme .rc-yield-row{ background:var(--sfl-inner); }
 .an-fd-row .ct-tcell > span{ overflow:visible; text-overflow:clip; }
 body.sfl-theme .an-lv-block{ background:var(--sfl-inner); color:var(--sfl-text); }
 body.app-dark:not(.sfl-theme) .an-lv-block{ background:#2e2c3a; color:#e8e5dc; }
+
+.cave-data-card{ display:none; }
+.cave-data-card .cave-ico{ display:inline-flex; align-items:center; flex:0 0 auto; }
+.cave-data-card .cave-ico img{ width:16px; height:16px; image-rendering:pixelated; }
+.cave-data-card .dig-boost-icon img{ width:auto; height:auto; max-width:24px; max-height:24px; }
+.dig-data-tools #caveToolCfgBtn{ display:inline-flex; align-items:center; gap:6px; }
+#caveToolCfgBtn.active .es-toolcfg-chev::before{ content:"\25B4"; }
+body.sfl-theme #caveToolCfgBtn.active .es-toolcfg-chev{ transform:rotate(-90deg); }
+html body .dig-data-tools #caveToolCfgPanel,
+html body .cave-data-card .dig-data-tools .es-toolcfg{
+  border:0 !important; border-image:none !important; box-shadow:none !important;
+  background:transparent !important; background-image:none !important; padding:0 !important; border-radius:0 !important;
+}
+.cave-data-card .dig-data-tools .es-toolcfg{ margin-top:8px; margin-bottom:0; }
+.cave-data-card .dig-data-pair{ grid-template-columns:minmax(0, 1fr); }
+.cave-data-card .dig-inv-grid{ display:block; }
+.cave-data-card .cave-skill-lv{ font-weight:800; color:var(--ink-soft); }
+.cave-data-card .cave-na{ flex:0 0 auto; font-size:9px; font-weight:800; color:var(--ink-soft); }
+.cave-data-card .cave-proc{ margin-left:4px; font-size:9px; font-weight:800; color:var(--profit); }
+.cave-price-row{ display:flex; flex-direction:column; gap:2px; padding:3px 0; font-size:10.5px; color:var(--ink); min-width:0; }
+.cave-price-head{ display:flex; align-items:center; gap:5px; min-width:0; }
+.cave-price-lines{ display:flex; flex-wrap:wrap; gap:2px 12px; padding-left:21px; }
+.cave-price-line{ display:inline-flex; align-items:center; gap:4px; }
+.cave-price-line i{ font-style:normal; font-weight:600; color:var(--ink-soft); }
+.cave-price-line b{ display:inline-flex; align-items:center; font-weight:800; }
+.cave-price-line b img{ width:13px; height:13px; margin-left:3px; image-rendering:pixelated; }
+.cave-price-line.is-profit b{ color:var(--profit); }
+.cave-price-line.is-loss b{ color:var(--loss); }
+.cave-data-card .dig-price-vals img{ width:13px; height:13px; margin-left:3px; image-rendering:pixelated; }
+.cave-data-card .dig-dug-val img{ width:13px; height:13px; margin-left:3px; image-rendering:pixelated; }
+@media (min-width:900px){
+  .cave-data-toggle{ display:none !important; }
+  html body #pageContainer #caveSidePanel .cave-data-card{
+    display:block; padding:12px !important; box-sizing:border-box; margin-bottom:12px;
+    background:repeating-linear-gradient(135deg, rgba(0,0,0,.05) 0 6px, transparent 6px 12px), var(--parchment);
+    border-style:solid !important; border-width:var(--px-panel-corner-width, 4px) !important; border-color:var(--sfl-outer-border, #181425) !important;
+    border-image:var(--px-border-image) 20% stretch !important; border-radius:0 !important; image-rendering:pixelated !important;
+  }
+  html body.sfl-theme #pageContainer #caveSidePanel .cave-data-card{
+    background:var(--sfl-outer) !important; background-image:none !important;
+    border-width:var(--sfl-panel-corner-width) !important;
+    border-image:var(--sfl-panel-corner-image) 20% stretch !important;
+    box-shadow:3px 3px 0 rgba(0,0,0,.25) !important;
+  }
+  .cave-data-card .dig-boost-grid{ grid-template-columns:repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width:899px){
+  html body #pageContainer #caveSidePanel .cave-data-card{
+    border:0 !important; border-image:none !important; box-shadow:none !important;
+    background:transparent !important; background-image:none !important; padding:0 !important; border-radius:0 !important;
+  }
+  #pageCaveSolver.dig-show-data .cave-data-card{ display:block; }
+  #pageCaveSolver.dig-show-data .cave-hide-on-data{ display:none !important; }
+  #pageCaveSolver.dig-show-data .cave-main{ margin-top:0; }
+}

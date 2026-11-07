@@ -7,7 +7,9 @@ import { caveBuriedCounts } from "./cave_solver.js";
 
 import { $, hiveClockText, cookFoodIcon, getBoostIcon, getIcon, renderAnimalCardProductDetailRow, renderAnimalYieldGroupsList, renderBeehiveListHtml, renderCardProductDetailRow, renderCostNetInfoTrigger, renderCrimstoneInstantMineBoostHtml, renderCrimstoneNodeYieldList, renderFarmPanelTabContent, renderFruitHarvestsLeftHtml, renderGoldInstantMineBoostHtml, renderNodeTierYieldList, renderOilNodeYieldList, renderPlantYieldNodeList, renderSaltNodeYieldList, renderSeaBlessedBoostHtml, renderTotalsBreakdown, renderTurnaroundBoostHtml } from "./ui.js";
 import { potionTrackFromState, digStreakTrackFromState } from "./calculator.js";
-import { dailyHarvestTrack, dailyHarvestBadgeHtml, dailyHarvestSetYield, dailyHarvestSetResolver, dailyHarvestSetCookingProvider, dailyHarvestSetPriceProvider, dailyHarvestSetIconProvider, dailyHarvestSetToolProvider, dailyHarvestNodeToolMult } from "./daily_harvest.js";
+
+import { caveTrackFromState } from "./cave_track.js";
+import { dailyHarvestTrack, dailyHarvestBadgeHtml, dailyHarvestSetYield, dailyHarvestSetResolver, dailyHarvestSetCookingProvider, dailyHarvestSetIconProvider, dailyHarvestSetToolProvider, dailyHarvestNodeToolMult } from "./daily_harvest.js";
 
 import { harvestLogArm } from "./harvest_log.js";
 
@@ -5574,18 +5576,6 @@ dailyHarvestSetResolver(farmPanelResolveHarvestPending);
 
 dailyHarvestSetCookingProvider(farmPanelCookingLogSlots);
 
-dailyHarvestSetPriceProvider(name => {
-  let price = farmPanelGetMarketPriceFlower(name) || 0;
-  if (!(price > 0)) {
-    const live = findLivePriceForName(name);
-    if (live != null && isFinite(live) && live > 0) price = live;
-  }
-  return {
-    price: price,
-    fee: (feePercent || 0) / 100
-  };
-});
-
 dailyHarvestSetIconProvider(cookingFoodOrFishIcon);
 
 function farmPanelDailyFarmId() {
@@ -6211,6 +6201,10 @@ export function farmPanelSaveGameState(json, isFullSync, syncedFarmId) {
     } catch (e) {}
     try {
       digStreakTrackFromState(farmSyncExtractGameState(json));
+    } catch (e) {}
+    try {
+      const caveFarmId = String(syncedFarmId || json.id || farmPanelGetLastInfo().id || "");
+      if (caveFarmId) caveTrackFromState(farmSyncExtractGameState(json), caveFarmId);
     } catch (e) {}
     window.guroFarmSavedDone = true;
     window.dispatchEvent(new Event("guroFarmSaved"));

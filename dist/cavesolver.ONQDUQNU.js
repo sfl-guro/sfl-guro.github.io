@@ -1,12 +1,307 @@
 import {
+  CAVE_SKILL_RANKS,
   CAVE_WIDTH,
-  collectCaveDugToday,
+  FLOWER_ICON,
+  caveDayTotals,
+  caveSetMatMode,
+  caveSkillLevel,
+  caveToggleToolCosts,
+  caveToolCostsOpen,
+  caveToolSectionHtml,
+  caveToolUnitCoins,
+  caveTrackFromState,
+  coinsToFlower,
+  farmSyncCollectEquippedAndPlacedNames,
+  feePercent,
   solveCaveBatch
-} from "./chunk.SZS6OV2R.js";
+} from "./chunk.LI3JHMSB.js";
+import "./chunk.LPEVZJ4B.js";
+import "./chunk.CTXFJ7GM.js";
+import "./chunk.VR6FV3KR.js";
 import "./chunk.AS3VMXOQ.js";
 
 // src/goblin_merchant_icon.js
 var GOBLIN_MERCHANT_ICON = "data:image/webp;base64,UklGRnABAABXRUJQVlA4TGQBAAAvE8AGEBfBJgDAJHPfvWERtA1VyeKfw+dJ2Ea2rQR3d3eogHZ+jWg5GmpkIQzbyLaVfHfDCiAkJ6NI6qAXanDIXgPozH+EaVMJGhEQgRrYuBiPSb4ahz3JUgz2niHTLJPpnJTQL7UEWXrOqwgrMVrwF8L4LG4aXCszk6fxAjMeyFhKemx7W9XfKSvGquA0BgT0ajAyOGwjSZFmbn4Pnpl5849y7zGCroj+T0Aua1rIH9a0QPdeTduj/9Eb7Vfq9hvUX4H6K9Q9+e2wtgbPUtEVAeu2xtw8E00ROGzXmCtA1mSG4chOK2bW75lLOGiemMnkkkUmXDYpYOa9gbnMtUzLYqTb1QLcfPjiIj3lgSpzaVEtZmBnkzxOqTIPXXabwWmFH45S5I5i/9gP0sA1OhQNxYjHnvHJLyowDzQa89gp+X3qFhkP0NgYjUeVS30KTuZjRpg8S4C5kkkaM8pvNuTemrfyRw==";
+
+// src/cave_data.js
+var STATE_KEY = "guro_cave_data_state";
+var BEETLES = ["Green Beetle", "Blue Beetle", "Pink Beetle", "Amber Beetle"];
+var NOT_TRADABLE = ["Wild Mushroom", "Magic Mushroom", "Mud"];
+var TOOLS = ["Sand Shovel", "Sand Drill"];
+var BOOST_DEFS = [{
+  id: "mushroom_house",
+  name: "Mushroom House",
+  icon: "Mushroom House",
+  desc: "+0.2 Wild Mushroom",
+  wild: 0.2
+}, {
+  id: "fairy_circle",
+  name: "Fairy Circle",
+  icon: "Fairy Circle",
+  desc: "+0.2 Wild Mushroom",
+  wild: 0.2
+}, {
+  id: "mushroom_hat",
+  name: "Mushroom Hat",
+  icon: "Mushroom Hat",
+  desc: "+0.1 Wild Mushroom",
+  wild: 0.1
+}];
+var SKILL_DEFS = [{
+  name: "Fungal Harvest",
+  icon: "Fungal Harvest",
+  desc: (v) => "+" + v + " Mushroom",
+  ranks: CAVE_SKILL_RANKS["Fungal Harvest"]
+}, {
+  name: "Muddy Bounty",
+  icon: "Muddy Bounty",
+  desc: (v) => "+" + Math.round(v * 100) + "% Mud",
+  ranks: CAVE_SKILL_RANKS["Muddy Bounty"]
+}, {
+  name: "Twin Beetles",
+  icon: "Twin Beetles",
+  desc: (v) => v + "% extra Beetle",
+  ranks: CAVE_SKILL_RANKS["Twin Beetles"]
+}, {
+  name: "Sturdy Shovel",
+  icon: "Sturdy Shovel",
+  desc: (v) => v + "% keep Shovel",
+  ranks: CAVE_SKILL_RANKS["Sturdy Shovel"]
+}, {
+  name: "Sturdy Drill",
+  icon: "Sturdy Drill",
+  desc: (v) => v + "% keep Drill",
+  ranks: CAVE_SKILL_RANKS["Sturdy Drill"]
+}, {
+  name: "Mushroom Bloom",
+  icon: "Mushroom Bloom",
+  desc: (v) => "+" + v + " Mushroom tiles",
+  ranks: [1, 2, 3]
+}, {
+  name: "Beetle Nest",
+  icon: "Beetle Nest",
+  desc: (v) => "+" + v + " Beetle tiles",
+  ranks: [1, 2, 3]
+}, {
+  name: "Rare Breeds",
+  icon: "Rare Breeds",
+  desc: () => "Rarer Beetles",
+  ranks: [1, 2, 3]
+}];
+var state = null;
+function esc(s) {
+  return String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+function loadState() {
+  if (state) return state;
+  let raw = null;
+  try {
+    raw = JSON.parse(localStorage.getItem(STATE_KEY) || "null");
+  } catch (e) {
+    raw = null;
+  }
+  const s = raw && typeof raw === "object" ? raw : {};
+  const obj = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : {};
+  state = {
+    boosts: obj(s.boosts),
+    detected: obj(s.detected)
+  };
+  return state;
+}
+function saveState() {
+  try {
+    localStorage.setItem(STATE_KEY, JSON.stringify(loadState()));
+  } catch (e) {
+  }
+}
+function boostOn(id) {
+  return loadState().boosts[id] === true;
+}
+function applyDetected(g) {
+  if (!g || typeof g !== "object" || !(g.bumpkin || g.collectibles || g.inventory)) return;
+  const st = loadState();
+  const placed = farmSyncCollectEquippedAndPlacedNames(g);
+  let changed = false;
+  BOOST_DEFS.forEach((b) => {
+    const now = placed.has(b.name);
+    if (st.detected[b.id] !== now) {
+      st.detected[b.id] = now;
+      st.boosts[b.id] = now;
+      changed = true;
+    }
+  });
+  if (changed) saveState();
+}
+function fmt(n) {
+  if (!isFinite(n)) return "\u2014";
+  return (Math.round(n * 100) / 100).toLocaleString(void 0, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2
+  });
+}
+function fl(n) {
+  if (!isFinite(n)) return "\u2014";
+  const a = Math.abs(n);
+  const max = a >= 1e3 ? 0 : a >= 1 ? 2 : 4;
+  return n.toLocaleString(void 0, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: max
+  });
+}
+function signedFlower(n) {
+  const r = fl(Math.abs(n));
+  const sign = n > 0 && r !== "0" ? "+" : n < 0 && r !== "0" ? "-" : "";
+  return sign + r + FLOWER_ICON;
+}
+function icon(api, name) {
+  return `<span class="cave-ico">${api.ui.getIcon(name)}</span>`;
+}
+function buyPrice(api, name) {
+  const ip = api.inprogress;
+  const m = ip.farmPanelGetMarketPriceFlower ? Number(ip.farmPanelGetMarketPriceFlower(name)) : 0;
+  if (m > 0) return m;
+  const live = api.prices.findLivePriceForName ? Number(api.prices.findLivePriceForName(name)) : 0;
+  return live > 0 ? live : 0;
+}
+function boostGridHtml(api, g) {
+  const cards = BOOST_DEFS.map((b) => `<div class="betty-boost-row dig-boost-card${boostOn(b.id) ? " is-on" : ""}">
+      <span class="dig-boost-icon">${api.ui.getIcon(b.icon)}</span>
+      <div class="betty-boost-row-main dig-boost-main">
+        <div class="betty-boost-row-name dig-boost-name">${esc(b.name)}</div>
+        <div class="betty-boost-row-desc dig-boost-desc">${esc(b.desc)}</div>
+      </div>
+      <label class="bg-sim-check"><input type="checkbox" data-cave-boost="${b.id}" aria-label="${esc(b.name)}"${boostOn(b.id) ? " checked" : ""}></label>
+    </div>`);
+  SKILL_DEFS.forEach((s) => {
+    const lv = caveSkillLevel(g && g.bumpkin && g.bumpkin.skills, s.name);
+    if (!lv) return;
+    cards.push(`<div class="betty-boost-row dig-boost-card is-on cave-skill-card">
+      <span class="dig-boost-icon">${api.ui.getIcon(s.icon)}</span>
+      <div class="betty-boost-row-main dig-boost-main">
+        <div class="betty-boost-row-name dig-boost-name">${esc(s.name)} <span class="cave-skill-lv">Lv ${lv}</span></div>
+        <div class="betty-boost-row-desc dig-boost-desc">${esc(s.desc(s.ranks[lv - 1]))}</div>
+      </div>
+    </div>`);
+  });
+  return cards.join("");
+}
+function toolCostsHtml() {
+  const open = caveToolCostsOpen();
+  const btn = `<button type="button" class="es-mode-btn dig-toolcfg-btn${open ? " active" : ""}" id="caveToolCfgBtn" data-cave-toolcfg aria-expanded="${open}">Tool Costs<span class="es-toolcfg-chev"></span></button>`;
+  const panel = open ? `<div class="es-toolcfg">${TOOLS.map(caveToolSectionHtml).join("")}</div>` : "";
+  return `<div class="dig-data-tools">${btn}<div id="caveToolCfgPanel">${panel}</div></div>`;
+}
+function inventoryHtml(api, g) {
+  const inv = g && g.inventory && typeof g.inventory === "object" ? g.inventory : {};
+  const names = BEETLES.concat(["Magic Mushroom", "Wild Mushroom", "Mud"]);
+  let buyTotal = 0;
+  let beetleQty = 0;
+  const rows = names.map((name) => {
+    const qty = Number(inv[name]);
+    if (!isFinite(qty) || qty <= 0) return "";
+    let val;
+    if (NOT_TRADABLE.indexOf(name) !== -1) {
+      val = `<span class="cave-na">Not tradable</span>`;
+    } else {
+      const price = buyPrice(api, name);
+      buyTotal += qty * price;
+      beetleQty += qty;
+      val = price > 0 ? `<span class="dig-dug-val">${fl(qty * price)}${FLOWER_ICON}</span>` : `<span class="cave-na">No price</span>`;
+    }
+    return `<div class="dig-dug-row"><span class="dig-dug-qty">\xD7${fmt(qty)}</span>${icon(api, name)}<span class="dig-dug-name">${esc(name)}</span>${val}</div>`;
+  }).join("");
+  if (!rows) return `<div class="dig-empty">No cave items in inventory \u2014 sync your farm.</div>`;
+  const totals = beetleQty > 0 ? `<div class="dig-totals"><div class="dig-total-row"><span class="dig-total-label">Beetles (Market Price)</span><span class="dig-total-val">${fmt(beetleQty)} <small>beetles</small>${buyTotal > 0 ? " \xB7 " + fl(buyTotal) + FLOWER_ICON : ""}</span></div></div>` : "";
+  return `<div class="dig-inv-grid">${rows}</div>${totals}`;
+}
+function priceHtml(api, g) {
+  const rows = [];
+  BEETLES.forEach((name) => {
+    const buy = buyPrice(api, name);
+    const val = buy > 0 ? `<span class="dig-price-vals">${fl(buy)}${FLOWER_ICON}</span>` : `<span class="cave-na">No price</span>`;
+    rows.push(`<div class="dig-price-row">${icon(api, name)}<span class="dig-price-name">${esc(name)}</span>${val}</div>`);
+  });
+  NOT_TRADABLE.forEach((name) => {
+    rows.push(`<div class="dig-price-row">${icon(api, name)}<span class="dig-price-name">${esc(name)}</span><span class="cave-na">Not tradable</span></div>`);
+  });
+  return rows.join("");
+}
+function dugHtml(api, g, ctx) {
+  const day = caveDayTotals(ctx.farmId, ctx.now);
+  const order = BEETLES.concat(["Magic Mushroom", "Wild Mushroom", "Mud"]);
+  let buyTotal = 0;
+  const rows = order.filter((n) => day.items[n]).map((name) => {
+    const it = day.items[name];
+    const total = Math.round((it.b + it.x) * 1e6) / 1e6;
+    const bonus = it.x > 0 ? `<span class="cave-proc">+${fmt(it.x)}</span>` : "";
+    let val;
+    if (NOT_TRADABLE.indexOf(name) !== -1) {
+      val = `<span class="cave-na">Not tradable</span>`;
+    } else {
+      const price = buyPrice(api, name);
+      buyTotal += total * price;
+      val = price > 0 ? `<span class="dig-dug-val">${fl(total * price)}${FLOWER_ICON}</span>` : `<span class="cave-na">No price</span>`;
+    }
+    return `<div class="dig-dug-row"><span class="dig-dug-qty">\xD7${fmt(total)}</span>${icon(api, name)}<span class="dig-dug-name">${esc(name)}${bonus}</span>${val}</div>`;
+  });
+  if (!rows.length) return `<div class="dig-empty">Nothing tracked yet today \u2014 sync your farm after digging.</div>`;
+  const stats = [];
+  stats.push(`<div class="dig-total-row"><span class="dig-total-label">Tiles dug</span><span class="dig-total-val">${fmt(day.tiles)}</span></div>`);
+  stats.push(`<div class="dig-total-row"><span class="dig-total-label">Twin Beetles procs</span><span class="dig-total-val">${fmt(day.twin)}</span></div>`);
+  const shovels = day.used["Sand Shovel"];
+  const drills = day.used["Sand Drill"];
+  if (shovels) stats.push(`<div class="dig-total-row"><span class="dig-total-label">Sand Shovel uses</span><span class="dig-total-val">${fmt(shovels)} <small>${fmt(day.kept["Sand Shovel"])} kept</small></span></div>`);
+  if (drills) stats.push(`<div class="dig-total-row"><span class="dig-total-label">Sand Drill uses</span><span class="dig-total-val">${fmt(drills)} <small>${fmt(day.kept["Sand Drill"])} kept</small></span></div>`);
+  const spentShovels = Math.max(0, shovels - day.kept["Sand Shovel"]);
+  const spentDrills = Math.max(0, drills - day.kept["Sand Drill"]);
+  const toolCoins = spentShovels * caveToolUnitCoins("Sand Shovel") + spentDrills * caveToolUnitCoins("Sand Drill");
+  const cost = toolCoins > 0 ? coinsToFlower(toolCoins) : 0;
+  const feePct = Number(feePercent) || 0;
+  const tax = buyTotal * feePct / 100;
+  const net = buyTotal - cost - tax;
+  const dash = '<div class="dig-totals-sep"></div>';
+  const money = (label, val, cls, title) => `<div class="dig-total-row${cls ? " " + cls : ""}"${title ? ` title="${esc(title)}"` : ""}><span class="dig-total-label">${label}</span><span class="dig-total-val">${val}</span></div>`;
+  const toolParts = [];
+  if (spentShovels) toolParts.push("Sand Shovel \xD7" + fmt(spentShovels));
+  if (spentDrills) toolParts.push("Sand Drill \xD7" + fmt(spentDrills));
+  const sums = money("Total Gross (before tax)", fl(buyTotal) + FLOWER_ICON, "") + money("Total Cost", "-" + fl(cost) + FLOWER_ICON, "", toolParts.join(", ")) + money("Tax" + (feePct > 0 ? " (" + fmt(feePct) + "%)" : ""), "-" + fl(tax) + FLOWER_ICON, "") + money("Net", signedFlower(net), "dig-total-net " + (net > 0 ? "is-profit" : net < 0 ? "is-loss" : ""));
+  let note = "";
+  if (day.missed > 0) note += `<div class="dig-empty">${fmt(day.missed)} tile(s) were dug and cleared between syncs, so they are not counted. Sync before starting a new batch.</div>`;
+  if (day.approx) note += `<div class="dig-empty">Some digs were first read from a single sync, so their procs are a best match. Later syncs are exact.</div>`;
+  return `${rows.join("")}<div class="dig-totals">${stats.join("")}${dash}${sums}</div>${note}`;
+}
+function caveDataHtml(ctx) {
+  const api = ctx.api;
+  const g = ctx.game;
+  applyDetected(g);
+  return `<div class="dig-data-card cave-data-card">
+    <div class="dig-panel-title dig-data-title">${icon(api, "Sand Shovel")} CAVE DATA</div>
+    ${toolCostsHtml()}
+    <div class="dig-data-box guro-frame"><div class="dig-data-label">Boost</div><div class="dig-boost-grid">${boostGridHtml(api, g)}</div></div>
+    <div class="dig-data-box guro-frame"><div class="dig-data-label">Inventory</div><div class="dig-inv-list">${inventoryHtml(api, g)}</div></div>
+    <div class="dig-data-pair">
+      <div class="dig-data-box guro-frame"><div class="dig-data-label">Item Price</div><div class="dig-price-list">${priceHtml(api, g)}</div></div>
+      <div class="dig-data-box guro-frame"><div class="dig-data-label">Dug Today \xB7 resets 00:00 UTC</div><div class="dig-dug-list">${dugHtml(api, g, ctx)}</div></div>
+    </div>
+  </div>`;
+}
+function caveDataClick(e) {
+  const t = e.target && e.target.closest ? e.target.closest("[data-cave-toolcfg], [data-dig-mat-mode]") : null;
+  if (!t) return false;
+  if (t.hasAttribute("data-cave-toolcfg")) {
+    caveToggleToolCosts();
+  } else {
+    caveSetMatMode(t.getAttribute("data-dig-mat-owner"), t.getAttribute("data-dig-mat-name"), t.getAttribute("data-dig-mat-mode"));
+  }
+  return true;
+}
+function caveDataChange(e) {
+  const el = e.target;
+  if (!el || !el.matches || !el.matches("input[data-cave-boost]")) return false;
+  loadState().boosts[el.getAttribute("data-cave-boost")] = el.checked;
+  saveState();
+  return true;
+}
 
 // src/pages/cavesolver.js
 var COLS = ["A", "B", "C", "D", "E"];
@@ -23,13 +318,13 @@ var listening = false;
 var guideOpen = false;
 var syncing = false;
 var selectedBin = null;
-function esc(s) {
+function esc2(s) {
   return String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 function getGame() {
-  const state = apiRef.inprogress.farmPanelGameState;
-  if (!state) return null;
-  return apiRef.calc.farmSyncExtractGameState(state);
+  const state2 = apiRef.inprogress.farmPanelGameState;
+  if (!state2) return null;
+  return apiRef.calc.farmSyncExtractGameState(state2);
 }
 function itemIcon(name) {
   if (name === "Beetle") return `<span class="cave-beetle-unknown" title="Beetle">${apiRef.ui.getIcon("Green Beetle")}</span>`;
@@ -95,20 +390,20 @@ function infoHtml(res, machineId) {
     const t = c.tile;
     const name = t.type === "Beetle" ? t.beetle : t.type === "Mushroom" ? t.mushroom : "Mud";
     const clue = c.clue !== void 0 ? ` \xB7 clue ${c.clue}` : " \xB7 no clue";
-    return `<div class="dig-panel-status cave-info"><b>${cellLabel(c)}</b> dug: ${itemIcon(name)} ${esc(name)}${clue}</div>`;
+    return `<div class="dig-panel-status cave-info"><b>${cellLabel(c)}</b> dug: ${itemIcon(name)} ${esc2(name)}${clue}</div>`;
   }
   const parts = [];
   parts.push(`<b>${cellLabel(c)}</b> holds something: <b>${pctText(c.p)}</b>`);
   const kinds = Object.keys(c.kinds).filter((k) => k !== "Mud" && c.kinds[k] > 0);
-  const lines = kinds.map((k) => `<span class="cave-kind">${itemIcon(k)} ${esc(k)} ${pctText(c.kinds[k])}</span>`);
+  const lines = kinds.map((k) => `<span class="cave-kind">${itemIcon(k)} ${esc2(k)} ${pctText(c.kinds[k])}</span>`);
   lines.push(`<span class="cave-kind">${itemIcon("Mud")} Mud ${pctText(c.kinds.Mud)}</span>`);
   return `<div class="dig-panel-status cave-info">${parts.join("")}<div class="cave-kinds">${lines.join("")}</div></div>`;
 }
 function boardHtml(machineId, batch, game, now) {
-  const head = `<div class="cave-board-title"><span class="cave-myco-icon">${apiRef.ui.getIcon("Myco Bin")}</span> Myco Bin ${esc(machineId)}</div>`;
+  const head = `<div class="cave-board-title"><span class="cave-myco-icon">${apiRef.ui.getIcon("Myco Bin")}</span> Myco Bin ${esc2(machineId)}</div>`;
   if (!batch) return `<div class="cave-board guro-frame">${head}<div class="dig-panel-status">Empty. Start a batch in this Myco Bin.</div></div>`;
   const recipe = RECIPE_LABELS[batch.recipe] || batch.recipe;
-  const sub = `<div class="cave-board-sub">${esc(recipe)}</div>`;
+  const sub = `<div class="cave-board-sub">${esc2(recipe)}</div>`;
   if (batch.readyAt > now) {
     return `<div class="cave-board guro-frame">${head}${sub}<div class="dig-panel-status">Growing. Ready in ${formatWait(batch.readyAt - now)}.</div></div>`;
   }
@@ -154,12 +449,12 @@ function guideHtml() {
     "Feed the bin again once the patch is fully dug or every Beetle is found. There is no limit and the cost stays the same.",
     "Every Cave upgrade adds one more Myco Bin, so more patches can grow at the same time."
   ];
-  const list = steps.map((t, i) => `<div class="cave-guide-step"><span class="cave-guide-num">${i + 1}</span><span>${esc(t)}</span></div>`).join("");
+  const list = steps.map((t, i) => `<div class="cave-guide-step"><span class="cave-guide-num">${i + 1}</span><span>${esc2(t)}</span></div>`).join("");
   const open = guideOpen ? " is-open" : "";
   return `<div class="cave-info-box guro-frame cave-guide${open}"><button type="button" class="cave-guide-toggle" data-cave-guide aria-expanded="${guideOpen}">Info</button><div class="cave-board-title cave-guide-title">How Myco Bins work</div><div class="cave-guide-body">${list}</div></div>`;
 }
 function statusHtml(cave, ids, now) {
-  const tier = esc(cave.tier || ids.length);
+  const tier = esc2(cave.tier || ids.length);
   const rows = [];
   const counts = { growing: 0, ready: 0, idle: 0 };
   let soon = null;
@@ -174,7 +469,7 @@ function statusHtml(cave, ids, now) {
     } else if (batch && st === "ready") {
       detail = (RECIPE_LABELS[batch.recipe] || batch.recipe) + " \xB7 dig it now";
     }
-    rows.push(`<div class="cave-bin-row"><span class="cave-bin-name">Bin ${esc(id)}</span><span class="cave-bin-state is-${st}">${STATE_LABELS[st]}</span><span class="cave-bin-detail">${esc(detail)}</span></div>`);
+    rows.push(`<div class="cave-bin-row"><span class="cave-bin-name">Bin ${esc2(id)}</span><span class="cave-bin-state is-${st}">${STATE_LABELS[st]}</span><span class="cave-bin-detail">${esc2(detail)}</span></div>`);
   });
   const total = ids.length;
   const next = soon !== null ? `<div class="cave-bin-next">Next bin ready in ${formatWait(soon - now)}</div>` : "";
@@ -182,7 +477,7 @@ function statusHtml(cave, ids, now) {
   return `<div class="cave-info-box guro-frame"><div class="cave-board-title cave-running-title"><span><span class="cave-myco-icon">${apiRef.ui.getIcon("Myco Bin")}</span> Myco Bins running</span><span class="cave-tier-tag">Cave Tier ${tier}</span></div>${summary}<div class="cave-bin-list">${rows.join("")}</div></div>`;
 }
 function tabsHtml(ids) {
-  const buttons = ids.map((id) => `<button type="button" class="cave-tab${id === selectedBin ? " active" : ""}" data-cave-tab="${esc(id)}">Bin ${esc(id)}</button>`).join("");
+  const buttons = ids.map((id) => `<button type="button" class="cave-tab${id === selectedBin ? " active" : ""}" data-cave-tab="${esc2(id)}">Bin ${esc2(id)}</button>`).join("");
   return `<div class="cave-tabs">${buttons}</div>`;
 }
 function merchantTimerText(visit, now) {
@@ -237,18 +532,27 @@ function offerHtml(offer, cave, visit, inv) {
   const total = trades * (Number(reward.amount) || 0);
   const edge = unlocked ? `<span class="cave-offer-total${total ? "" : " is-zero"}">\xD7${total} ${merchantItemIcon(reward.item)}${merchantProfitHtml(cost, reward, trades)}</span>` : `<span class="cave-offer-total is-zero">Tier ${offer.slot}</span>`;
   const meta = unlocked ? `${left}/${limit} left` : `Unlocks at Cave tier ${offer.slot}`;
-  return `<div class="cave-offer guro-frame${unlocked ? "" : " is-locked"}"><div class="cave-offer-main"><span class="cave-offer-have ${enough ? "is-enough" : "is-short"}">${have}</span><span class="cave-offer-need">/${need}</span><span class="cave-offer-item">${merchantItemIcon(cost.item)} ${esc(cost.item)}</span><span class="cave-offer-arrow">\u2192</span><span class="cave-offer-item">${merchantItemIcon(reward.item)} ${esc(reward.item)} \xD7${Number(reward.amount) || 0}</span>${edge}</div><div class="cave-offer-meta">${esc(meta)}</div></div>`;
+  return `<div class="cave-offer guro-frame${unlocked ? "" : " is-locked"}"><div class="cave-offer-main"><span class="cave-offer-have ${enough ? "is-enough" : "is-short"}">${have}</span><span class="cave-offer-need">/${need}</span><span class="cave-offer-item">${merchantItemIcon(cost.item)} ${esc2(cost.item)}</span><span class="cave-offer-arrow">\u2192</span><span class="cave-offer-item">${merchantItemIcon(reward.item)} ${esc2(reward.item)} \xD7${Number(reward.amount) || 0}</span>${edge}</div><div class="cave-offer-meta">${esc2(meta)}</div></div>`;
 }
 function merchantHtml(cave, game, now) {
   const head = `<div class="cave-board-title"><span class="cave-myco-icon"><img src="${GOBLIN_MERCHANT_ICON}" alt="Goblin Merchant"></span> Goblin Merchant</div>`;
   const visit = cave.merchantVisit;
   if (!visit) return `<div class="cave-board guro-frame cave-merchant">${head}<div class="dig-panel-status">No merchant data yet. Sync your farm.</div></div>`;
-  const timer2 = `<div class="cave-board-sub">${esc(merchantTimerText(visit, now))}</div>`;
+  const timer2 = `<div class="cave-board-sub">${esc2(merchantTimerText(visit, now))}</div>`;
   const offers = Array.isArray(visit.offers) ? visit.offers.slice().sort((a, b) => a.slot - b.slot) : [];
   if (!offers.length) return `<div class="cave-board guro-frame cave-merchant">${head}${timer2}<div class="dig-panel-status">No offers right now.</div></div>`;
   const inv = game.inventory || {};
   const rows = offers.map((o) => offerHtml(o, cave, visit, inv)).join("");
   return `<div class="cave-board guro-frame cave-merchant">${head}${timer2}<div class="cave-offers">${rows}</div></div>`;
+}
+function dugTodayCounts(farmKey, now) {
+  const day = caveDayTotals(farmKey, now);
+  const counts = {};
+  Object.keys(day.items).forEach((name) => {
+    const it = day.items[name];
+    counts[name] = Math.round((it.b + it.x) * 1e6) / 1e6;
+  });
+  return counts;
 }
 function dugTodayHtml(counts) {
   const names = Object.keys(counts);
@@ -260,7 +564,7 @@ function dugTodayHtml(counts) {
     if (b === "Mud") return 1;
     return counts[b] - counts[a] || a.localeCompare(b);
   });
-  const items = names.map((n) => `<span class="cave-dug-item">+${counts[n]}${itemIcon(n)}</span>`).join("");
+  const items = names.map((n) => `<span class="cave-dug-item">+${Math.round(counts[n] * 100) / 100}${itemIcon(n)}</span>`).join("");
   return `<div class="cave-board guro-frame cave-dug-today">${head}${sub}<div class="cave-dug-row">${items}</div></div>`;
 }
 function render() {
@@ -272,11 +576,11 @@ function render() {
   const farmLabel = info && info.id ? `Farm #${info.id}` : "No farm synced";
   const cave = game && game.cave;
   if (!game) {
-    card.innerHTML = `<div class="dig-panel-chapter">${esc(farmLabel)} \xB7 Sync your farm to load your Cave</div>`;
+    card.innerHTML = `<div class="dig-panel-chapter">${esc2(farmLabel)} \xB7 Sync your farm to load your Cave</div>`;
     return;
   }
   if (!cave || !cave.machines || !Object.keys(cave.machines).length) {
-    card.innerHTML = `<div class="dig-panel-chapter">${esc(farmLabel)} \xB7 No Cave found. Build the Cave in game, then sync.</div>`;
+    card.innerHTML = `<div class="dig-panel-chapter">${esc2(farmLabel)} \xB7 No Cave found. Build the Cave in game, then sync.</div>`;
     return;
   }
   const inv = game.inventory || {};
@@ -286,9 +590,20 @@ function render() {
   const tabs = ids.length > 1 ? tabsHtml(ids) : "";
   const boards = boardHtml(selectedBin, cave.machines[selectedBin] && cave.machines[selectedBin].batch, game, now);
   const merchant = merchantHtml(cave, game, now);
-  const dugToday = dugTodayHtml(collectCaveDugToday(cave, String(info && info.id ? info.id : "0"), now));
+  const farmKey = String(info && info.id ? info.id : "0");
+  try {
+    caveTrackFromState(game, farmKey);
+  } catch (e) {
+  }
+  const dugToday = dugTodayHtml(dugTodayCounts(farmKey, now));
+  const dataCard = caveDataHtml({
+    api: apiRef,
+    game,
+    farmId: farmKey,
+    now
+  });
   const legend = `<div class="dig-panel-legend"><span class="dig-legend-item"><span class="dig-swatch dig-swatch-red"></span>Only Mud</span><span class="dig-legend-item"><span class="dig-swatch dig-swatch-yellow"></span>Chance</span><span class="dig-legend-item"><span class="dig-swatch dig-swatch-blue"></span>Sure thing</span></div>`;
-  card.innerHTML = `<div class="dig-panel-divider-solid"></div><div class="cave-top-row">${guideHtml()}${statusHtml(cave, ids, now)}</div>${legend}${tabs}<div class="cave-main"><div class="cave-boards">${dugToday}${boards}</div><div class="cave-merchant-wrap">${merchant}</div></div>`;
+  card.innerHTML = `<div class="dig-panel-divider-solid cave-hide-on-data"></div><div class="cave-top-row cave-hide-on-data">${guideHtml()}${statusHtml(cave, ids, now)}</div><div class="cave-hide-on-data">${legend}${tabs}</div><div class="cave-main"><div class="cave-boards cave-hide-on-data">${dugToday}${boards}</div><div class="cave-merchant-wrap">${dataCard}<div class="cave-hide-on-data">${merchant}</div></div></div>`;
   const growing = ids.some((id) => {
     const b = cave.machines[id] && cave.machines[id].batch;
     return b && b.readyAt > now;
@@ -298,7 +613,14 @@ function render() {
   clearTimeout(timer);
   timer = growing || merchantTicking ? setTimeout(render, 3e4) : null;
 }
+function onChange(e) {
+  if (caveDataChange(e)) render();
+}
 function onClick(e) {
+  if (caveDataClick(e)) {
+    render();
+    return;
+  }
   if (e.target.closest("[data-cave-guide]")) {
     guideOpen = !guideOpen;
     render();
@@ -337,6 +659,11 @@ function applyCavePatch(target, g) {
     });
     target.inventory = inv;
   }
+  if (g.farmActivity && g.farmActivity["Cave Tile Dug"] != null) {
+    target.farmActivity = Object.assign({}, target.farmActivity || {}, {
+      "Cave Tile Dug": g.farmActivity["Cave Tile Dug"]
+    });
+  }
   if (g.bumpkin && g.bumpkin.skills) {
     target.bumpkin = Object.assign({}, target.bumpkin || {}, {
       skills: g.bumpkin.skills
@@ -372,6 +699,10 @@ async function performCaveOnlySync() {
       applyCavePatch(merged, g);
       ip.farmPanelSaveGameState(merged);
     }
+    try {
+      caveTrackFromState(g, String(farmId));
+    } catch (e) {
+    }
     render();
     calc.toast("\u{1F344} Cave data synced!");
   } catch (e) {
@@ -385,14 +716,32 @@ async function performCaveOnlySync() {
 function onSaved() {
   if (rootEl) render();
 }
+function setDataMode(root, on) {
+  root.classList.toggle("dig-show-data", on);
+  const btn = document.getElementById("digDataToggleBtn");
+  if (btn) btn.textContent = on ? "Cave" : "Data";
+}
+var onTitleClick = null;
 function mount(root, api) {
   rootEl = root;
   apiRef = api;
   selected = {};
   guideOpen = false;
   selectedBin = null;
+  setDataMode(root, false);
+  const bar = document.getElementById("guroPageTitle");
+  if (bar) {
+    onTitleClick = (ev) => {
+      if (!ev.target.closest("#digDataToggleBtn")) return;
+      setDataMode(root, !root.classList.contains("dig-show-data"));
+    };
+    bar.addEventListener("click", onTitleClick);
+  }
   const card = root.querySelector("#caveCard");
-  if (card) card.addEventListener("click", onClick);
+  if (card) {
+    card.addEventListener("click", onClick);
+    card.addEventListener("change", onChange);
+  }
   const syncBtn = root.querySelector("#cavePanelSyncBtn");
   if (syncBtn) syncBtn.onclick = performCaveOnlySync;
   if (!listening) {
@@ -404,9 +753,16 @@ function mount(root, api) {
 function unmount() {
   clearTimeout(timer);
   timer = null;
+  const bar = document.getElementById("guroPageTitle");
+  if (bar && onTitleClick) bar.removeEventListener("click", onTitleClick);
+  onTitleClick = null;
   if (rootEl) {
+    rootEl.classList.remove("dig-show-data");
     const card = rootEl.querySelector("#caveCard");
-    if (card) card.removeEventListener("click", onClick);
+    if (card) {
+      card.removeEventListener("click", onClick);
+      card.removeEventListener("change", onChange);
+    }
   }
   rootEl = null;
 }

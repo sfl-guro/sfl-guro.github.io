@@ -322,25 +322,15 @@ function remainOf(lots) {
 function isBought(key) {
   return String(key).startsWith("b:");
 }
-function sortLots(lots) {
-  return [...lots.filter((l) => isBought(l.key)), ...lots.filter((l) => !isBought(l.key))];
+function spendOrder(lots, day) {
+  const old = lots.filter((l) => !isBought(l.key) && l.key !== day);
+  const other = lots.filter((l) => isBought(l.key));
+  const current = lots.filter((l) => !isBought(l.key) && l.key === day);
+  return [...old, ...other, ...current];
 }
-function drain(lots, amount, sink) {
+function drain(lots, amount, sink, day) {
   let need = r2(amount);
-  for (const lot of sortLots(lots)) {
-    if (need <= 0) break;
-    const free = r2(lot.acc - lot.used);
-    if (free <= 0) continue;
-    const take = Math.min(free, need);
-    lot.used = r2(lot.used + take);
-    need = r2(need - take);
-    sink(lot.key, take);
-  }
-}
-function drainNewest(lots, amount, sink) {
-  let need = r2(amount);
-  const order = [...lots.filter((l) => !isBought(l.key))].reverse();
-  for (const lot of order) {
+  for (const lot of spendOrder(lots, day)) {
     if (need <= 0) break;
     const free = r2(lot.acc - lot.used);
     if (free <= 0) continue;
@@ -463,23 +453,14 @@ function computeLedger(list, facts) {
         });
       }
       const consumeSink = sinkTo(consumed, day, res);
-      let needLeft = need;
-      const boughtLots = lots.filter((l) => isBought(l.key));
-      if (boughtLots.length && needLeft > 0) {
-        const before = needLeft;
-        drain(boughtLots, before, (key, take) => {
-          consumeSink(key, take);
-          needLeft = r2(needLeft - take);
-        });
-      }
+      drain(lots, need, consumeSink, day);
       if (hasSnap) {
-        const early = r2(remainOf(lots) - needLeft - snap);
-        if (early > BALANCE_EPS) drain(lots, early, sinkTo(spent, day, res));
+        const early = r2(remainOf(lots) - snap);
+        if (early > BALANCE_EPS) drain(lots, early, sinkTo(spent, day, res), day);
       }
-      drainNewest(lots, needLeft, consumeSink);
       if (hasSnap) {
         const extra = r2(remainOf(lots) - snap);
-        if (extra > BALANCE_EPS) drain(lots, extra, sinkTo(spent, day, res));
+        if (extra > BALANCE_EPS) drain(lots, extra, sinkTo(spent, day, res), day);
       }
     });
     resLots[res] = lots;
@@ -545,29 +526,54 @@ function computeLedger(list, facts) {
     sig: canon(final)
   };
 }
-function fitLots(lots, balance) {
-  const out = lots.map((l) => Object.assign({}, l));
-  if (!(balance >= 0)) return out;
-  let sum = out.reduce((s, l) => s + l.remain, 0);
-  if (sum > balance) {
-    let over = r2(sum - balance);
-    for (const lot of out) {
-      if (over <= 0) break;
-      const cut = Math.min(lot.remain, over);
-      lot.remain = r2(lot.remain - cut);
-      lot.used = r2(lot.used + cut);
-      over = r2(over - cut);
+function displayLots(lots, today) {
+  const old = [];
+  const current = [];
+  const other = {
+    key: "x",
+    acc: 0,
+    used: 0,
+    remain: 0
+  };
+  lots.forEach((lot) => {
+    if (isBought(lot.key) || lot.key === "x") {
+      other.acc = r2(other.acc + lot.acc);
+      other.used = r2(other.used + lot.used);
+      other.remain = r2(other.remain + lot.remain);
+    } else if (lot.key === today) {
+      current.push(Object.assign({}, lot));
+    } else {
+      old.push(Object.assign({}, lot));
     }
-  } else if (balance - sum > 4e-3) {
-    const extra = r2(balance - sum);
-    out.push({
-      key: "x",
-      acc: extra,
-      used: 0,
-      remain: extra
-    });
+  });
+  return {
+    old,
+    other,
+    current
+  };
+}
+function fitLots(lots, balance, today) {
+  const parts = displayLots(lots, today);
+  if (balance >= 0) {
+    const sum = parts.old.concat(parts.current).reduce((s, l) => s + l.remain, 0) + parts.other.remain;
+    if (sum > balance) {
+      let over = r2(sum - balance);
+      for (const lot of [...parts.old, parts.other, ...parts.current]) {
+        if (over <= 0) break;
+        const cut = Math.min(lot.remain, over);
+        lot.remain = r2(lot.remain - cut);
+        lot.used = r2(lot.used + cut);
+        over = r2(over - cut);
+      }
+    } else if (balance - sum > 4e-3) {
+      const extra = r2(balance - sum);
+      parts.other.acc = r2(parts.other.acc + extra);
+      parts.other.remain = r2(parts.other.remain + extra);
+    }
   }
-  return out;
+  const out = [...parts.old];
+  if (parts.other.acc > 0 || parts.other.used > 0 || parts.other.remain > 0) out.push(parts.other);
+  return out.concat(parts.current);
 }
 async function refreshCache(farmId, cache) {
   const res = await harvestLogRequest("/crafted?farm=" + encodeURIComponent(farmId), {
@@ -785,34 +791,30 @@ function toolItemHtml(name, qty) {
 function lotLabel(key) {
   if (key === "o") return "Before tracking";
   if (key === "x") return "Other";
-  if (isBought(key)) return "Bought " + (/* @__PURE__ */ new Date(key.slice(2) + "T00:00:00Z")).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    timeZone: "UTC"
-  });
   return dateLabel(key);
 }
 function lotsHtml(lots) {
   if (!lots.length) return `<div class="ct-empty">No balance recorded yet.</div>`;
   const rows = lots.map((l) => `<div class="ct-lot-row"><span>${esc(lotLabel(l.key))}</span><span>${fmtRes(l.acc)}</span><span>${l.used > 0 ? "-" : ""}${fmtRes(l.used)}</span><span>${fmtRes(l.remain)}</span></div>`).join("");
-  return `<div class="ct-lots"><div class="ct-lot-row ct-lot-head"><span>Date</span><span>Gained</span><span>Used</span><span>Remain</span></div>${rows}<div class="ct-note">Crafting uses bought balance first, then the newest. Sales and other spending use the oldest.</div></div>`;
+  return `<div class="ct-lots"><div class="ct-lot-row ct-lot-head"><span>Date</span><span>Gained</span><span>Used</span><span>Remain</span></div>${rows}<div class="ct-note">Crafting, sales and other spending use your oldest balance first, then Other, and the harvest of the same day last.</div></div>`;
 }
 function resourceHtml(name, snap) {
   const balance = snap && typeof snap.res[name] === "number" ? snap.res[name] : null;
-  const base = sortLots(view.resView[name] || []);
-  const lots = balance === null ? base : fitLots(base, balance);
+  const base = view.resView[name] || [];
+  const today = utcDay(Date.now());
+  const lots = balance === null ? fitLots(base, -1, today) : fitLots(base, balance, today);
   const shown = balance === null ? lots.reduce((s, l) => s + l.remain, 0) : balance;
   const open = !!ui.open[name];
-  return `<div class="ct-res-item guro-frame${open ? " is-open" : ""}"><div class="ct-res-head${open ? " open" : ""}" role="button" tabindex="0" data-ct-res="${esc(name)}" aria-expanded="${open ? "true" : "false"}"><span class="ct-ico">${getIcon(name)}</span><span class="ct-name">${esc(name)}</span><span class="ct-res-bal">${fmtRes(shown)}</span><img class="ct-chev" src="${ICON_DATA["chevron_down.png"]}" alt=""></div>${open ? lotsHtml(lots) : ""}</div>`;
+  return `<div class="ct-res-item guro-frame${open ? " is-open" : ""}"><div class="ct-res-head px-no-frame${open ? " open" : ""}" role="button" tabindex="0" data-ct-res="${esc(name)}" aria-expanded="${open ? "true" : "false"}"><span class="ct-ico">${getIcon(name)}</span><span class="ct-name">${esc(name)}</span><span class="ct-res-bal">${fmtRes(shown)}</span><img class="ct-chev" src="${ICON_DATA["chevron_down.png"]}" alt=""></div>${open ? lotsHtml(lots) : ""}</div>`;
 }
 function dateHtml(day, rec) {
   const rows = TOOLS.filter((name) => rec.t[name] && rec.t[name].c > 0).map((name) => {
     const c = rec.t[name].c;
     const u = Math.min(rec.t[name].u || 0, c);
     const remain = r2(c - u);
-    return `<div class="ct-trow"><span class="ct-tcell">${getIcon(name)}<span class="ct-name">${esc(name)}</span></span><span>${esc(dateLabel(day))}</span><span>${fmtQty(c)}</span><span>${u > 0 ? "-" : ""}${fmtQty(u)}</span><span>${fmtQty(remain)}</span></div>`;
+    return `<div class="ct-trow ct-dr"><span class="ct-tcell">${getIcon(name)}<span class="ct-name">${esc(name)}</span></span><span>${fmtQty(c)}</span><span>${u > 0 ? "-" : ""}${fmtQty(u)}</span><span>${fmtQty(remain)}</span></div>`;
   }).join("");
-  return `<div class="ct-date guro-frame"><div class="ct-trow ct-thead"><span>Tools</span><span>Date</span><span>Quantity</span><span>Used</span><span>Remain</span></div>${rows}</div>`;
+  return `<div class="ct-date guro-frame"><div class="dh-hlog-dayhead"><span class="dh-hlog-date">${esc(dateLabel(day))}</span></div><div class="ct-trow ct-dr ct-thead"><span>Tools</span><span>Quantity</span><span>Used</span><span>Remain</span></div>${rows}</div>`;
 }
 function render() {
   const host = ui.host;
@@ -834,7 +836,7 @@ function render() {
   const dates = days.length ? `<div class="ct-dates">${cards}</div>${more}` : `<div class="ct-empty">No crafted tools recorded yet. Sync your farm after crafting to start recording.</div>`;
   const inventoryBox = `<div class="pf-box ct-box guro-frame"><div class="pf-title">Inventory</div>${toolsInv}<div class="ct-sub">Resources</div><div class="ct-res">${resRows}</div></div>`;
   const todayBox = `<div class="pf-box ct-box guro-frame"><div class="pf-title">Crafted Today</div>${todayHtml}</div>`;
-  host.innerHTML = `<div class="ct-head"><div class="pf-title">Daily Record of Crafted Tools</div><div class="ct-desc">Tools you craft are saved for each UTC day. Crafting uses bought resources first, then your newest harvest balance. Other spending uses your oldest balance, and mining uses your oldest tools first.</div></div><div class="ct-grid"><div class="ct-col">${inventoryBox}</div><div class="ct-col">${todayBox}${dates}</div></div>`;
+  host.innerHTML = `<div class="ct-head"><div class="pf-title">Daily Record of Crafted Tools</div><div class="ct-desc">Tools you craft are saved for each UTC day. Crafting, sales and other spending use your oldest balance first, then Other, and the harvest of the same day last. Mining uses your oldest tools first.</div></div><div class="ct-grid"><div class="ct-col">${inventoryBox}</div><div class="ct-col">${todayBox}${dates}</div></div>`;
 }
 function message(html) {
   const host = ui.host;

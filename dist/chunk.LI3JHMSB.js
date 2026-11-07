@@ -9,15 +9,10 @@ import {
   craftedToolsSync,
   craftedToolsTrack,
   craftedToolsViewFor
-} from "./chunk.IAMPLIR4.js";
+} from "./chunk.CTXFJ7GM.js";
 import {
   ICON_DATA
 } from "./chunk.VR6FV3KR.js";
-import {
-  caveBuriedCounts,
-  collectCaveDugToday,
-  readCaveDugToday
-} from "./chunk.SZS6OV2R.js";
 import {
   __export
 } from "./chunk.AS3VMXOQ.js";
@@ -361,6 +356,11 @@ __export(calculator_exports, {
   buildSkillTreeCopyText: () => buildSkillTreeCopyText,
   calcMode: () => calcMode,
   calendarDebuffProtection: () => calendarDebuffProtection,
+  caveSetMatMode: () => caveSetMatMode,
+  caveToggleToolCosts: () => caveToggleToolCosts,
+  caveToolCostsOpen: () => caveToolCostsOpen,
+  caveToolSectionHtml: () => caveToolSectionHtml,
+  caveToolUnitCoins: () => caveToolUnitCoins,
   cfmActiveView: () => cfmActiveView,
   choresWeekly: () => choresWeekly,
   clampAnimalStartLevel: () => clampAnimalStartLevel,
@@ -27759,6 +27759,767 @@ function getPumpkinPeteQuest(rawName) {
   return null;
 }
 
+// src/cave_solver.js
+var CAVE_WIDTH = 5;
+var TILE_COUNT = CAVE_WIDTH * CAVE_WIDTH;
+var BEETLES = ["Green Beetle", "Blue Beetle", "Pink Beetle", "Amber Beetle"];
+var BEETLE_WEIGHTS = {
+  "Green Beetle": 40,
+  "Blue Beetle": 30,
+  "Pink Beetle": 20,
+  "Amber Beetle": 10
+};
+var MAGIC_CHANCE = 0.1;
+var CAVE_RECIPES = {
+  Mushroom: {
+    Mushroom: 6,
+    Beetle: 2,
+    Mud: 17,
+    mud: 1
+  },
+  Beetle: {
+    Mushroom: 3,
+    Beetle: 5,
+    Mud: 17,
+    mud: 1
+  },
+  Mud: {
+    Mushroom: 3,
+    Beetle: 2,
+    Mud: 20,
+    mud: 2
+  }
+};
+function caveKey(x, y) {
+  return x + "," + y;
+}
+function parseKey(key) {
+  const parts = String(key).split(",").map(Number);
+  const x = parts[0];
+  const y = parts[1];
+  if (!Number.isInteger(x) || !Number.isInteger(y)) return null;
+  if (x < 0 || y < 0 || x >= CAVE_WIDTH || y >= CAVE_WIDTH) return null;
+  return {
+    x,
+    y
+  };
+}
+function isCaveSeed(seed) {
+  return typeof seed === "string" && /^[0-9a-f]{32}$/.test(seed);
+}
+function sfc32(a, b, c, d) {
+  const next = () => {
+    const t = (a + b | 0) + d | 0;
+    d = d + 1 | 0;
+    a = b ^ b >>> 9;
+    b = c + (c << 3) | 0;
+    c = c << 21 | c >>> 11;
+    c = c + t | 0;
+    return (t >>> 0) / 4294967296;
+  };
+  for (let i = 0; i < 15; i += 1) next();
+  return next;
+}
+function seedWords(seed) {
+  const word = (i) => parseInt(seed.slice(i * 8, i * 8 + 8), 16) | 0;
+  return [word(0), word(1), word(2), word(3)];
+}
+function rollBeetle(random, weights) {
+  const roll = random() * 100;
+  let cumulative = 0;
+  for (const beetle of BEETLES) {
+    cumulative += weights[beetle];
+    if (roll < cumulative) return beetle;
+  }
+  return BEETLES[BEETLES.length - 1];
+}
+function caveComposition(recipe, skills) {
+  const base = CAVE_RECIPES[recipe] || CAVE_RECIPES.Mushroom;
+  const extraMushroom = skills && skills.extraMushroomTiles || 0;
+  const extraBeetle = skills && skills.extraBeetleTiles || 0;
+  return {
+    Mushroom: base.Mushroom + extraMushroom,
+    Beetle: base.Beetle + extraBeetle,
+    Mud: base.Mud - extraMushroom - extraBeetle
+  };
+}
+function generateCaveBoard(recipe, seed, skills) {
+  const [a, b, c, d] = seedWords(seed);
+  const random = sfc32(a, b, c, d);
+  const counts = caveComposition(recipe, skills);
+  const weights = skills && skills.beetleRarity || BEETLE_WEIGHTS;
+  const mudAmount = (CAVE_RECIPES[recipe] || CAVE_RECIPES.Mushroom).mud;
+  const bag = [];
+  const push = (kind, count) => {
+    for (let i = 0; i < count; i += 1) bag.push(kind);
+  };
+  push("Mushroom", counts.Mushroom);
+  push("Beetle", counts.Beetle);
+  push("Mud", counts.Mud);
+  for (let i = bag.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(random() * (i + 1));
+    const tmp = bag[i];
+    bag[i] = bag[j];
+    bag[j] = tmp;
+  }
+  const board = {};
+  bag.forEach((kind, index) => {
+    const x = index % CAVE_WIDTH;
+    const y = Math.floor(index / CAVE_WIDTH);
+    let tile;
+    if (kind === "Beetle") {
+      tile = {
+        type: "Beetle",
+        beetle: rollBeetle(random, weights)
+      };
+    } else if (kind === "Mud") {
+      tile = {
+        type: "Mud",
+        amount: mudAmount
+      };
+    } else {
+      tile = {
+        type: "Mushroom",
+        mushroom: random() < MAGIC_CHANCE ? "Magic Mushroom" : "Wild Mushroom"
+      };
+    }
+    board[caveKey(x, y)] = tile;
+  });
+  return board;
+}
+var NEIGHBOURS = [[0, -1], [0, 1], [-1, 0], [1, 0]];
+function boardClue(board, x, y) {
+  let count = 0;
+  for (const [dx, dy] of NEIGHBOURS) {
+    const nx = x + dx;
+    const ny = y + dy;
+    if (nx < 0 || ny < 0 || nx >= CAVE_WIDTH || ny >= CAVE_WIDTH) continue;
+    const type = board[caveKey(nx, ny)] && board[caveKey(nx, ny)].type;
+    if (type === "Beetle" || type === "Mushroom") count += 1;
+  }
+  return count;
+}
+function kindOf(tile) {
+  if (tile.type === "Beetle") return "Beetle:" + tile.beetle;
+  if (tile.type === "Mushroom") return "Mushroom:" + tile.mushroom;
+  return "Mud";
+}
+function revealedCaveTiles(batch, initial) {
+  const revealed = {};
+  const dug = batch.dug || {};
+  for (const key of Object.keys(dug)) {
+    const at = parseKey(key);
+    if (!at) continue;
+    const record = dug[key] || {};
+    if (record.tile) {
+      revealed[key] = record.tile.type === "Beetle" || record.clue === void 0 ? {
+        tile: record.tile
+      } : {
+        tile: record.tile,
+        clue: record.clue
+      };
+      continue;
+    }
+    if (!initial) continue;
+    const tile = initial[key];
+    if (!tile) continue;
+    revealed[key] = tile.type === "Beetle" ? {
+      tile
+    } : {
+      tile,
+      clue: boardClue(initial, at.x, at.y)
+    };
+  }
+  return revealed;
+}
+var PATTERNS = Array.from({
+  length: 1 << CAVE_WIDTH
+}, (_, p) => p);
+var bit = (pattern, x) => pattern >> x & 1;
+function solveCaveBatch(batch) {
+  const hasSeed = isCaveSeed(batch.seed);
+  const skills = batch.skills || {};
+  const composition = caveComposition(batch.recipe, skills);
+  const initial = hasSeed ? generateCaveBoard(batch.recipe, batch.seed, skills) : null;
+  const revealed = revealedCaveTiles(batch, initial);
+  const width = CAVE_WIDTH;
+  const result = {
+    hasSeed,
+    composition,
+    revealed,
+    ok: true,
+    total: 0,
+    remaining: 0,
+    buried: [],
+    cells: []
+  };
+  let buried = [];
+  if (hasSeed) {
+    for (let i = 0; i < TILE_COUNT; i += 1) {
+      const tile = initial[caveKey(i % width, Math.floor(i / width))];
+      if (tile.type !== "Mud") buried.push(tile);
+    }
+  } else {
+    for (let i = 0; i < composition.Mushroom; i += 1) buried.push({
+      type: "Mushroom",
+      mushroom: "Mushroom"
+    });
+    for (let i = 0; i < composition.Beetle; i += 1) buried.push({
+      type: "Beetle",
+      beetle: "Beetle"
+    });
+  }
+  const fixed = Array(TILE_COUNT).fill(void 0);
+  const clues = Array(TILE_COUNT).fill(void 0);
+  let dugCount = 0;
+  for (const key of Object.keys(revealed)) {
+    const at = parseKey(key);
+    const tile = revealed[key].tile;
+    const clue = revealed[key].clue;
+    const i = at.y * width + at.x;
+    dugCount += 1;
+    if (tile.type === "Mud") {
+      fixed[i] = 0;
+    } else {
+      fixed[i] = 1;
+      let idx = buried.findIndex((c) => kindOf(c) === kindOf(tile));
+      if (idx < 0 && !hasSeed) idx = buried.findIndex((c) => c.type === tile.type);
+      if (idx < 0) {
+        result.ok = false;
+        return result;
+      }
+      buried.splice(idx, 1);
+    }
+    if (tile.type !== "Beetle" && clue !== void 0) clues[i] = clue;
+  }
+  const remaining = buried.length;
+  result.buried = buried;
+  result.remaining = remaining;
+  result.dugCount = dugCount;
+  if (remaining > TILE_COUNT - dugCount) {
+    result.ok = false;
+    return result;
+  }
+  const candidates = Array.from({
+    length: width
+  }, (_, r) => PATTERNS.filter((p) => {
+    for (let x = 0; x < width; x += 1) {
+      const known = fixed[r * width + x];
+      if (known !== void 0 && bit(p, x) !== known) return false;
+    }
+    return true;
+  }));
+  const undugCount = (r, p) => {
+    let count = 0;
+    for (let x = 0; x < width; x += 1) {
+      if (fixed[r * width + x] === void 0 && bit(p, x)) count += 1;
+    }
+    return count;
+  };
+  const rowHasClue = Array.from({
+    length: width
+  }, (_, r) => clues.slice(r * width, (r + 1) * width).some((c) => c !== void 0));
+  const rowCluesOk = (r, above, row3, below) => {
+    if (!rowHasClue[r]) return true;
+    for (let x = 0; x < width; x += 1) {
+      const clue = clues[r * width + x];
+      if (clue === void 0) continue;
+      const count = bit(above, x) + bit(below, x) + (x > 0 ? bit(row3, x - 1) : 0) + (x < width - 1 ? bit(row3, x + 1) : 0);
+      if (count !== clue) return false;
+    }
+    return true;
+  };
+  const C = remaining + 1;
+  const idxOf = (a, p, c) => (a * 32 + p) * C + c;
+  const forward = [];
+  const backward = [];
+  for (let r = 0; r < width; r += 1) {
+    forward.push(new Float64Array(32 * 32 * C));
+    backward.push(new Float64Array(32 * 32 * C));
+  }
+  for (const p of candidates[0]) {
+    const c = undugCount(0, p);
+    if (c <= remaining) forward[0][idxOf(0, p, c)] += 1;
+  }
+  for (let r = 0; r < width - 1; r += 1) {
+    for (const a of r === 0 ? [0] : candidates[r - 1]) {
+      for (const p of candidates[r]) {
+        for (let c = 0; c <= remaining; c += 1) {
+          const ways = forward[r][idxOf(a, p, c)];
+          if (!ways) continue;
+          for (const q of candidates[r + 1]) {
+            if (!rowCluesOk(r, a, p, q)) continue;
+            const nc = c + undugCount(r + 1, q);
+            if (nc > remaining) continue;
+            forward[r + 1][idxOf(p, q, nc)] += ways;
+          }
+        }
+      }
+    }
+  }
+  const last = width - 1;
+  for (const a of candidates[last - 1]) {
+    for (const p of candidates[last]) {
+      if (rowCluesOk(last, a, p, 0)) backward[last][idxOf(a, p, 0)] = 1;
+    }
+  }
+  for (let r = last - 1; r >= 0; r -= 1) {
+    for (const a of r === 0 ? [0] : candidates[r - 1]) {
+      for (const p of candidates[r]) {
+        for (const q of candidates[r + 1]) {
+          if (!rowCluesOk(r, a, p, q)) continue;
+          const add = undugCount(r + 1, q);
+          for (let k = add; k <= remaining; k += 1) {
+            const ways = backward[r + 1][idxOf(p, q, k - add)];
+            if (ways) backward[r][idxOf(a, p, k)] += ways;
+          }
+        }
+      }
+    }
+  }
+  let total = 0;
+  for (const a of candidates[last - 1]) {
+    for (const p of candidates[last]) {
+      for (let c = 0; c <= remaining; c += 1) {
+        total += forward[last][idxOf(a, p, c)] * backward[last][idxOf(a, p, remaining - c)];
+      }
+    }
+  }
+  result.total = total;
+  if (total === 0) {
+    result.ok = false;
+    return result;
+  }
+  const hold = new Array(TILE_COUNT).fill(0);
+  for (let r = 0; r < width; r += 1) {
+    for (const a of r === 0 ? [0] : candidates[r - 1]) {
+      for (const p of candidates[r]) {
+        let through = 0;
+        for (let c = 0; c <= remaining; c += 1) {
+          const f = forward[r][idxOf(a, p, c)];
+          if (!f) continue;
+          through += f * backward[r][idxOf(a, p, remaining - c)];
+        }
+        if (!through) continue;
+        for (let x = 0; x < width; x += 1) {
+          if (bit(p, x)) hold[r * width + x] += through;
+        }
+      }
+    }
+  }
+  const mushroomLeft = buried.filter((t) => t.type === "Mushroom").length;
+  const beetleLeft = buried.filter((t) => t.type === "Beetle").length;
+  const names = {};
+  buried.forEach((t) => {
+    const name = t.type === "Beetle" ? t.beetle : t.mushroom;
+    names[name] = (names[name] || 0) + 1;
+  });
+  result.names = names;
+  result.mushroomLeft = mushroomLeft;
+  result.beetleLeft = beetleLeft;
+  for (let i = 0; i < TILE_COUNT; i += 1) {
+    const x = i % width;
+    const y = Math.floor(i / width);
+    const key = caveKey(x, y);
+    if (revealed[key]) {
+      result.cells.push({
+        x,
+        y,
+        dug: true,
+        tile: revealed[key].tile,
+        clue: revealed[key].clue
+      });
+      continue;
+    }
+    const p = remaining === 0 ? 0 : hold[i] / total;
+    const certain = hold[i] === total;
+    const none = hold[i] === 0;
+    const kinds = {};
+    if (remaining > 0) {
+      for (const name of Object.keys(names)) kinds[name] = p * names[name] / remaining;
+    }
+    kinds.Mud = 1 - p;
+    result.cells.push({
+      x,
+      y,
+      dug: false,
+      p,
+      certain,
+      none,
+      kinds,
+      single: certain && Object.keys(names).length === 1 ? Object.keys(names)[0] : null
+    });
+  }
+  const undug = result.cells.filter((c) => !c.dug);
+  let best = null;
+  undug.forEach((c) => {
+    if (!best || c.p > best.p) best = c;
+  });
+  result.best = best;
+  let drill = null;
+  for (let top = 0; top < width - 1; top += 1) {
+    for (let left = 0; left < width - 1; left += 1) {
+      let expected = 0;
+      let fresh = 0;
+      [[0, 0], [1, 0], [0, 1], [1, 1]].forEach(([dx, dy]) => {
+        const cell = result.cells[(top + dy) * width + left + dx];
+        if (!cell.dug) {
+          expected += cell.p;
+          fresh += 1;
+        }
+      });
+      if (fresh && (!drill || expected > drill.expected)) drill = {
+        x: left,
+        y: top,
+        expected,
+        fresh
+      };
+    }
+  }
+  result.drill = drill;
+  return result;
+}
+function caveBuriedCounts(batch) {
+  const hasSeed = isCaveSeed(batch.seed);
+  const skills = batch.skills || {};
+  const counts = Object.assign({}, caveComposition(batch.recipe, skills));
+  const initial = hasSeed ? generateCaveBoard(batch.recipe, batch.seed, skills) : null;
+  const revealed = revealedCaveTiles(batch, initial);
+  Object.keys(revealed).forEach((key) => {
+    const type = revealed[key].tile && revealed[key].tile.type;
+    if (type && counts[type] > 0) counts[type] -= 1;
+  });
+  const base = CAVE_RECIPES[batch.recipe] || CAVE_RECIPES.Mushroom;
+  return {
+    Mushroom: counts.Mushroom,
+    Beetle: counts.Beetle,
+    Mud: counts.Mud,
+    mudPerTile: base.mud,
+    beetleWeights: skills.beetleRarity || BEETLE_WEIGHTS
+  };
+}
+var DUG_STORE_PREFIX = "guro_cave_dug_v1_";
+function utcDayStart(now) {
+  return Math.floor(now / 864e5) * 864e5;
+}
+function utcDayKey(now) {
+  return new Date(now).toISOString().substring(0, 10);
+}
+function loadDugStore(farmKey, day) {
+  try {
+    const raw = JSON.parse(localStorage.getItem(DUG_STORE_PREFIX + farmKey) || "null");
+    if (raw && raw.day === day && raw.items && typeof raw.items === "object") return raw;
+  } catch (e) {
+  }
+  return { day, items: {} };
+}
+function saveDugStore(farmKey, store) {
+  try {
+    localStorage.setItem(DUG_STORE_PREFIX + farmKey, JSON.stringify(store));
+  } catch (e) {
+  }
+}
+function tileName(tile) {
+  if (!tile) return null;
+  if (tile.type === "Beetle") return tile.beetle || "Beetle";
+  if (tile.type === "Mushroom") return tile.mushroom || "Mushroom";
+  return "Mud";
+}
+function collectCaveDugToday(cave, farmKey, now) {
+  const day = utcDayKey(now);
+  const start = utcDayStart(now);
+  const store = loadDugStore(farmKey, day);
+  let changed = false;
+  Object.keys(cave.machines || {}).forEach((machineId) => {
+    const batch = cave.machines[machineId] && cave.machines[machineId].batch;
+    if (!batch || !batch.dug) return;
+    let initial = null;
+    if (isCaveSeed(batch.seed)) {
+      try {
+        initial = generateCaveBoard(batch.recipe, batch.seed, batch.skills || {});
+      } catch (e) {
+        initial = null;
+      }
+    }
+    const revealed = revealedCaveTiles(batch, initial);
+    Object.keys(batch.dug).forEach((key) => {
+      const rec = batch.dug[key];
+      if (!rec || !(Number(rec.dugAt) >= start)) return;
+      const entry = revealed[key];
+      const name = entry && tileName(entry.tile);
+      if (!name) return;
+      const amount = name === "Mud" ? Math.max(1, Number(entry.tile.amount) || 1) : 1;
+      const id = machineId + ":" + batch.startedAt + ":" + key;
+      const prev = store.items[id];
+      if (!prev || prev.n !== name || prev.a !== amount) {
+        store.items[id] = { n: name, a: amount };
+        changed = true;
+      }
+    });
+  });
+  if (changed || !localStorage.getItem(DUG_STORE_PREFIX + farmKey)) saveDugStore(farmKey, store);
+  const counts = {};
+  Object.keys(store.items).forEach((id) => {
+    const item = store.items[id];
+    if (!item || !item.n) return;
+    counts[item.n] = (counts[item.n] || 0) + (Number(item.a) || 1);
+  });
+  return counts;
+}
+function readCaveDugToday(farmKey, now) {
+  const store = loadDugStore(farmKey, utcDayKey(now));
+  const counts = {};
+  Object.keys(store.items).forEach((id) => {
+    const item = store.items[id];
+    if (!item || !item.n) return;
+    counts[item.n] = (counts[item.n] || 0) + (Number(item.a) || 1);
+  });
+  return counts;
+}
+
+// src/cave_track.js
+var STORE_PREFIX = "guro_cave_track_v2_";
+var KEEP_DAYS = 14;
+var COUNTER_KEY = "Cave Tile Dug";
+var ITEM_IDS = {
+  "Green Beetle": 3084,
+  "Blue Beetle": 3085,
+  "Pink Beetle": 3086,
+  "Amber Beetle": 3087,
+  "Sand Shovel": 310,
+  "Sand Drill": 311
+};
+var CAVE_SKILL_RANKS = {
+  "Twin Beetles": [5, 10, 15],
+  "Sturdy Shovel": [10, 20, 30],
+  "Sturdy Drill": [20, 30, 40],
+  "Muddy Bounty": [0.1, 0.2, 0.3],
+  "Fungal Harvest": [0.2, 0.3, 0.4]
+};
+var AURA = {
+  Basic: 1.05,
+  Green: 1.2,
+  Rare: 2,
+  Mythical: 5
+};
+function round6(n) {
+  return Math.round(n * 1e6) / 1e6;
+}
+function caveSkillLevel(skills, name) {
+  const lv = Math.floor(Number(skills && skills[name]) || 0);
+  const max = (CAVE_SKILL_RANKS[name] || [0, 0, 0]).length;
+  return Math.max(0, Math.min(lv, max));
+}
+function skillRank(skills, name) {
+  const lv = caveSkillLevel(skills, name);
+  return lv ? CAVE_SKILL_RANKS[name][lv - 1] : 0;
+}
+function budBoost(buds, name) {
+  let best = 0;
+  Object.keys(buds && typeof buds === "object" ? buds : {}).forEach((id) => {
+    const bud = buds[id];
+    if (!bud || !bud.coordinates) return;
+    let stem = 0;
+    if (name === "Wild Mushroom" && bud.stem === "Mushroom") stem = 0.3;
+    if (name === "Magic Mushroom" && bud.stem === "Magic Mushroom") stem = 0.2;
+    const v = Number(((AURA[bud.aura] || 1) * stem).toFixed(4));
+    if (v > best) best = v;
+  });
+  return Number(best.toFixed(4));
+}
+function caveMushroomAmount(name, g, placed) {
+  let amount = 1;
+  if (name === "Wild Mushroom") {
+    if (placed.has("Mushroom House")) amount = round6(amount + 0.2);
+    if (placed.has("Fairy Circle")) amount = round6(amount + 0.2);
+    if (placed.has("Mushroom Hat")) amount = round6(amount + 0.1);
+  }
+  amount = round6(amount + budBoost(g && g.buds, name));
+  const fungal = skillRank(g && g.bumpkin && g.bumpkin.skills, "Fungal Harvest");
+  return round6(amount + fungal);
+}
+function caveMudAmount(base, g) {
+  const muddy = skillRank(g && g.bumpkin && g.bumpkin.skills, "Muddy Bounty");
+  return muddy ? round6(base * (1 + muddy)) : base;
+}
+function tileName2(tile) {
+  if (!tile) return null;
+  if (tile.type === "Beetle") return tile.beetle || null;
+  if (tile.type === "Mushroom") return tile.mushroom || null;
+  if (tile.type === "Mud") return "Mud";
+  return null;
+}
+function utcDay(ms) {
+  return new Date(ms).toISOString().substring(0, 10);
+}
+function loadStore(farmKey) {
+  try {
+    const raw = JSON.parse(localStorage.getItem(STORE_PREFIX + farmKey) || "null");
+    if (raw && typeof raw === "object" && raw.days && typeof raw.days === "object") {
+      return {
+        counter: Number.isFinite(raw.counter) ? raw.counter : null,
+        seen: Array.isArray(raw.seen) ? raw.seen : [],
+        days: raw.days,
+        started: raw.started === true
+      };
+    }
+  } catch (e) {
+  }
+  return {
+    counter: null,
+    seen: [],
+    days: {},
+    started: false
+  };
+}
+function saveStore(farmKey, store) {
+  try {
+    localStorage.setItem(STORE_PREFIX + farmKey, JSON.stringify(store));
+  } catch (e) {
+  }
+}
+function emptyDay() {
+  return {
+    items: {},
+    tiles: 0,
+    twin: 0,
+    used: {
+      "Sand Shovel": 0,
+      "Sand Drill": 0
+    },
+    kept: {
+      "Sand Shovel": 0,
+      "Sand Drill": 0
+    },
+    approx: false,
+    missed: 0
+  };
+}
+function collectCurrentTiles(cave) {
+  const out = [];
+  Object.keys(cave.machines || {}).forEach((machineId) => {
+    const batch = cave.machines[machineId] && cave.machines[machineId].batch;
+    if (!batch || !batch.dug || typeof batch.dug !== "object") return;
+    Object.keys(batch.dug).forEach((key) => {
+      const rec = batch.dug[key];
+      if (!rec || !(Number(rec.dugAt) > 0)) return;
+      const parts = key.split(",").map(Number);
+      const idx = parts[1] * 5 + parts[0];
+      out.push({
+        id: machineId + ":" + batch.startedAt + ":" + key,
+        machineId,
+        dugAt: Number(rec.dugAt),
+        idx: isFinite(idx) ? idx : 0,
+        tile: rec.tile || null
+      });
+    });
+  });
+  out.sort((a, b) => a.dugAt - b.dugAt || Number(a.machineId) - Number(b.machineId) || a.idx - b.idx);
+  return out;
+}
+function caveTrackFromState(g, farmId) {
+  if (!g || typeof g !== "object" || !g.cave || !g.cave.machines) return;
+  const farmKey = String(farmId || "");
+  const farmNum = Number(farmId);
+  if (!farmKey || !isFinite(farmNum)) return;
+  const store = loadStore(farmKey);
+  const current = collectCurrentTiles(g.cave);
+  const seen = new Set(store.seen);
+  const fresh = current.filter((t) => !seen.has(t.id));
+  const rawCounter = g.farmActivity ? Number(g.farmActivity[COUNTER_KEY]) : NaN;
+  const counterNow = isFinite(rawCounter) && rawCounter >= 0 ? rawCounter : null;
+  const skills = g.bumpkin && g.bumpkin.skills || {};
+  const placed = farmSyncCollectEquippedAndPlacedNames(g);
+  if (fresh.length) {
+    let counters = null;
+    let exact = false;
+    let missed = 0;
+    if (counterNow !== null) {
+      if (store.started && store.counter !== null && counterNow - store.counter === fresh.length) {
+        counters = fresh.map((t, i) => store.counter + i);
+        exact = true;
+      } else {
+        counters = fresh.map((t, i) => Math.max(0, counterNow - fresh.length + i));
+        if (store.started && store.counter !== null) missed = Math.max(0, counterNow - store.counter - fresh.length);
+        exact = !store.started && counterNow === fresh.length;
+      }
+    }
+    const twinRank = skillRank(skills, "Twin Beetles");
+    const groups = {};
+    fresh.forEach((t, i) => {
+      const name = tileName2(t.tile);
+      if (!name) return;
+      const day = utcDay(t.dugAt);
+      const bucket = store.days[day] || (store.days[day] = emptyDay());
+      let base = 1;
+      let amount = 1;
+      if (t.tile.type === "Mushroom") {
+        amount = caveMushroomAmount(name, g, placed);
+      } else if (t.tile.type === "Mud") {
+        base = Number(t.tile.amount) || 1;
+        amount = caveMudAmount(base, g);
+      } else if (t.tile.type === "Beetle") {
+        if (twinRank && counters && sflPrngChance({
+          farmId: farmNum,
+          itemId: ITEM_IDS[name],
+          counter: counters[i],
+          chance: twinRank,
+          criticalHitName: "Twin Beetles"
+        })) {
+          amount = 2;
+          bucket.twin += 1;
+        }
+      }
+      const slot = bucket.items[name] || (bucket.items[name] = {
+        b: 0,
+        x: 0
+      });
+      slot.b = round6(slot.b + base);
+      slot.x = round6(slot.x + (amount - base));
+      bucket.tiles += 1;
+      if (!exact) bucket.approx = true;
+      const gk = t.machineId + ":" + t.dugAt;
+      (groups[gk] || (groups[gk] = {
+        day,
+        first: i,
+        size: 0
+      })).size += 1;
+    });
+    Object.keys(groups).forEach((k) => {
+      const grp = groups[k];
+      const bucket = store.days[grp.day];
+      const tool = grp.size > 1 ? "Sand Drill" : "Sand Shovel";
+      bucket.used[tool] += 1;
+      const rank = skillRank(skills, tool === "Sand Drill" ? "Sturdy Drill" : "Sturdy Shovel");
+      if (rank && counters && sflPrngChance({
+        farmId: farmNum,
+        itemId: ITEM_IDS[tool],
+        counter: counters[grp.first],
+        chance: rank,
+        criticalHitName: tool === "Sand Drill" ? "Sturdy Drill" : "Sturdy Shovel"
+      })) bucket.kept[tool] += 1;
+    });
+    if (missed > 0) {
+      const day = utcDay(Date.now());
+      const bucket = store.days[day] || (store.days[day] = emptyDay());
+      bucket.missed += missed;
+    }
+  }
+  store.seen = current.map((t) => t.id);
+  store.counter = counterNow !== null ? counterNow : store.counter;
+  store.started = true;
+  const cutoff = utcDay(Date.now() - KEEP_DAYS * 864e5);
+  Object.keys(store.days).forEach((day) => {
+    if (day < cutoff) delete store.days[day];
+  });
+  saveStore(farmKey, store);
+}
+function caveDayTotals(farmId, now) {
+  const store = loadStore(String(farmId || ""));
+  const day = store.days[utcDay(now || Date.now())] || emptyDay();
+  return day;
+}
+
 // src/inprogress.js
 function farmPanelDetectNodeTier(resourceName, node) {
   const tiers = RESOURCE_NODE_TIERS[resourceName];
@@ -33220,17 +33981,6 @@ function farmPanelToolInfoForGroup(groupKey) {
 dailyHarvestSetToolProvider(farmPanelToolInfoForGroup);
 dailyHarvestSetResolver(farmPanelResolveHarvestPending);
 dailyHarvestSetCookingProvider(farmPanelCookingLogSlots);
-dailyHarvestSetPriceProvider((name) => {
-  let price = farmPanelGetMarketPriceFlower(name) || 0;
-  if (!(price > 0)) {
-    const live = findLivePriceForName(name);
-    if (live != null && isFinite(live) && live > 0) price = live;
-  }
-  return {
-    price,
-    fee: (feePercent || 0) / 100
-  };
-});
 dailyHarvestSetIconProvider(cookingFoodOrFishIcon);
 function farmPanelDailyFarmId() {
   const stateId = farmPanelGameState && farmPanelGameState.id;
@@ -33917,6 +34667,11 @@ function farmPanelSaveGameState(json, isFullSync, syncedFarmId) {
     }
     try {
       digStreakTrackFromState(farmSyncExtractGameState(json));
+    } catch (e) {
+    }
+    try {
+      const caveFarmId = String(syncedFarmId || json.id || farmPanelGetLastInfo().id || "");
+      if (caveFarmId) caveTrackFromState(farmSyncExtractGameState(json), caveFarmId);
     } catch (e) {
     }
     window.guroFarmSavedDone = true;
@@ -48163,8 +48918,8 @@ function computeAnimalBountyTable() {
   const bounties = g && g.bounties && typeof g.bounties === "object" ? g.bounties : null;
   const requests = bounties && Array.isArray(bounties.requests) ? bounties.requests : [];
   const completed = new Set((bounties && Array.isArray(bounties.completed) ? bounties.completed : []).map((c) => c && c.id));
-  const skillRank = isSkillActive("skill_bountiful_bounties") ? Math.min(Math.max(getAscensionRank("skill_bountiful_bounties"), 1), BOUNTIFUL_BOUNTIES_RANKS.length) : 0;
-  const multiplier = 1 + (skillRank ? BOUNTIFUL_BOUNTIES_RANKS[skillRank - 1] : 0);
+  const skillRank2 = isSkillActive("skill_bountiful_bounties") ? Math.min(Math.max(getAscensionRank("skill_bountiful_bounties"), 1), BOUNTIFUL_BOUNTIES_RANKS.length) : 0;
+  const multiplier = 1 + (skillRank2 ? BOUNTIFUL_BOUNTIES_RANKS[skillRank2 - 1] : 0);
   const animals = Object.keys(ANIMAL_DATA).map((type) => {
     const cfg = ANIMAL_DATA[type];
     const buyCost = ANIMAL_BUY_COINS[type];
@@ -48198,7 +48953,7 @@ function computeAnimalBountyTable() {
   return {
     synced: !!bounties,
     multiplier,
-    skillLevel: skillRank,
+    skillLevel: skillRank2,
     animals
   };
 }
@@ -67743,7 +68498,8 @@ function digDataLoadState() {
     detected: obj(s.detected),
     mats: s.autoMatsV1 === true ? obj(s.mats) : {},
     autoMatsV1: true,
-    toolsOpen: s.toolsOpen === true
+    toolsOpen: s.toolsOpen === true,
+    caveToolsOpen: s.caveToolsOpen === true
   };
   return digDataState;
 }
@@ -68057,6 +68813,39 @@ function digRenderToolCfg() {
   btn.setAttribute("aria-expanded", open ? "true" : "false");
   panel.style.display = open ? "" : "none";
   panel.innerHTML = open ? '<div class="es-toolcfg">' + DIG_COST_CARD_ORDER.map(digToolSectionHtml).join("") + "</div>" : "";
+}
+function caveToolUnitCoinsRaw(tool) {
+  const r = digToolRecipe(tool);
+  let total = r.coins;
+  r.materials.forEach((m) => {
+    total += m.qty * digMatUnitCoins(tool, m.name);
+  });
+  return total;
+}
+function caveToolUnitCoins(tool) {
+  return caveToolUnitCoinsRaw(tool);
+}
+function caveToolSectionHtml(tool) {
+  const r = digToolRecipe(tool);
+  const coinRow = r.coins > 0 ? '<div class="es-toolcfg-mat"><div class="es-toolcfg-mat-name"><span class="es-toolcfg-qty">\xD7' + digFmt(r.coins) + "</span>" + COIN_ICON + "</div></div>" : "";
+  const matRows = r.materials.map((m) => digMatRowHtml(tool, m)).join("");
+  const unitRow = '<div class="es-toolcfg-mat dig-tool-unit"><span>Cost per tool</span><span class="es-toolcfg-qty dig-coin-val">' + digFmt(caveToolUnitCoinsRaw(tool)) + COIN_ICON + "</span></div>";
+  return '<div class="es-toolcfg-block"><div class="es-toolcfg-head"><div class="es-toolcfg-name">' + digIconHtml(tool) + "<span>" + escapeHtml(tool) + '</span></div></div><div class="es-toolcfg-mats-label">Materials:</div>' + coinRow + matRows + unitRow + "</div>";
+}
+function caveToolCostsOpen() {
+  return digDataLoadState().caveToolsOpen === true;
+}
+function caveToggleToolCosts() {
+  const st = digDataLoadState();
+  st.caveToolsOpen = !st.caveToolsOpen;
+  digDataSaveState();
+  return st.caveToolsOpen;
+}
+function caveSetMatMode(owner, name, mode) {
+  if (mode !== "collect" && mode !== "buy") return;
+  const st = digDataLoadState();
+  st.mats[owner + ":" + name] = mode;
+  digDataSaveState();
 }
 function digTreasurePriceHtml(solved, pct) {
   const artefact = solved && solved.artefactName;
@@ -71793,15 +72582,15 @@ function simulateGuideRows(setup, spec) {
 var STORE_KEY = "hl_daily_harvest_v1";
 var ROUND_THRESHOLD = 1;
 var memStore = null;
-function utcDay(ms) {
+function utcDay2(ms) {
   return new Date(ms).toISOString().slice(0, 10);
 }
-function utcDayStart(ms) {
+function utcDayStart2(ms) {
   const d = new Date(ms);
   return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
 }
 function pruneStore(store) {
-  const today = utcDay(Date.now());
+  const today = utcDay2(Date.now());
   const active = store.__last;
   let changed = false;
   Object.keys(store).forEach((k) => {
@@ -71839,7 +72628,7 @@ function pruneStore(store) {
   });
   return changed;
 }
-function loadStore() {
+function loadStore2() {
   if (memStore) return memStore;
   try {
     const raw = localStorage.getItem(STORE_KEY);
@@ -71848,15 +72637,15 @@ function loadStore() {
   } catch (e) {
     memStore = {};
   }
-  if (pruneStore(memStore)) saveStore();
+  if (pruneStore(memStore)) saveStore2();
   return memStore;
 }
 function freshStore() {
-  const store = loadStore();
-  if (pruneStore(store)) saveStore();
+  const store = loadStore2();
+  if (pruneStore(store)) saveStore2();
   return store;
 }
-function saveStore() {
+function saveStore2() {
   try {
     localStorage.setItem(STORE_KEY, JSON.stringify(memStore || {}));
   } catch (e) {
@@ -71895,9 +72684,6 @@ function carryCook(c) {
   };
 }
 var priceProvider;
-function dailyHarvestSetPriceProvider(fn) {
-  priceProvider = typeof fn === "function" ? fn : null;
-}
 function lookupPrice(name) {
   if (!priceProvider) return {
     price: 0,
@@ -72139,7 +72925,7 @@ function trackCooking(g, rec, fresh, now) {
   const cook = rec.cook || (rec.cook = carryCook(null));
   if (!cook.bld || typeof cook.bld !== "object") cook.bld = {};
   if (!cook.hint || typeof cook.hint !== "object") cook.hint = {};
-  const start = utcDayStart(now);
+  const start = utcDayStart2(now);
   const present = new Set(res.present);
   const cur = {};
   const seen = {};
@@ -72581,8 +73367,8 @@ function trackCoins(g, rec, fresh, prevSyncAt, start, now) {
 function dailyHarvestTrack(g, farmId) {
   if (!g || typeof g !== "object") return;
   const now = Date.now();
-  const today = utcDay(now);
-  const start = utcDayStart(now);
+  const today = utcDay2(now);
+  const start = utcDayStart2(now);
   const store = freshStore();
   const fid = String(farmId || store.__last || "");
   if (!fid) return;
@@ -72911,12 +73697,12 @@ function dailyHarvestTrack(g, farmId) {
   trackCoins(g, rec, fresh, prevSyncAt, start, now);
   rec.syncAt = now;
   store[fid] = rec;
-  saveStore();
+  saveStore2();
 }
 function dailyHarvestInfo(groupKey, farmId) {
   const store = freshStore();
   const rec = store[farmId ? String(farmId) : store.__last];
-  if (!rec || rec.day !== utcDay(Date.now())) return null;
+  if (!rec || rec.day !== utcDay2(Date.now())) return null;
   const st = rec.stats[groupKey];
   if (!st) return null;
   const r = roundsFromStats(st);
@@ -72936,7 +73722,7 @@ function dailyHarvestInfo(groupKey, farmId) {
 function dailyCookingInfo(building, farmId) {
   const store = freshStore();
   const rec = store[farmId ? String(farmId) : store.__last];
-  if (!rec || rec.day !== utcDay(Date.now())) return null;
+  if (!rec || rec.day !== utcDay2(Date.now())) return null;
   const bld = rec.cook && rec.cook.bld ? rec.cook.bld[building] : null;
   if (!bld || !bld.items) return null;
   const items = Object.keys(bld.items).filter((name) => bld.items[name] && bld.items[name].c > 0).map((name) => ({
@@ -73073,7 +73859,7 @@ function dailyHarvestSetYield(groupKey, perNode, iconHtml2, nodeQty, econ, farmI
   }
   const st = rec && rec.stats ? rec.stats[groupKey] : null;
   if (!st || !Array.isArray(st.log)) {
-    if (ymChanged) saveStore();
+    if (ymChanged) saveStore2();
     return;
   }
   let changed = resolvePending(st, groupKey) || ymChanged;
@@ -73094,7 +73880,7 @@ function dailyHarvestSetYield(groupKey, perNode, iconHtml2, nodeQty, econ, farmI
       changed = true;
     }
   });
-  if (changed) saveStore();
+  if (changed) saveStore2();
 }
 var LOG_NODE_GROUPS = ["Wood", "Stone", "Iron", "Gold", "Crimstone", "Oil"];
 var LOG_KIND_OF = {
@@ -73152,7 +73938,7 @@ function animalLogTotals(totals, groupKey, st) {
 function dailyHarvestTotals(farmId) {
   const store = freshStore();
   const rec = store[farmId ? String(farmId) : store.__last];
-  if (!rec || rec.day !== utcDay(Date.now()) || !rec.stats) return null;
+  if (!rec || rec.day !== utcDay2(Date.now()) || !rec.stats) return null;
   const totals = {};
   Object.keys(rec.stats).forEach((groupKey) => {
     const st = rec.stats[groupKey];
@@ -73180,8 +73966,8 @@ function dailyHarvestTotals(farmId) {
     const bp = lookupPrice("Pig Bristles");
     addLogTotal(totals, "Pig Bristles", "animal", bris.a, bris.c, bp.price, bp.fee);
   }
-  const caveKey = farmId ? String(farmId) : store.__last;
-  const dug = caveKey ? readCaveDugToday(caveKey, Date.now()) : {};
+  const caveKey2 = farmId ? String(farmId) : store.__last;
+  const dug = caveKey2 ? readCaveDugToday(caveKey2, Date.now()) : {};
   Object.keys(dug).forEach((name) => {
     if (!CAVE_BEETLE_RE.test(name)) return;
     const bp = lookupPrice(name);
@@ -73324,7 +74110,7 @@ function dailyHarvestBadgeHtml(groupKey, kind, iconHtml2, farmId) {
   return `<span class="daily-harvest-badge guro-frame dh-${kind}" role="button" tabindex="0" data-dh-key="${escapeAttr(groupKey)}" data-dh-kind="${kind}" data-dh-farm="${escapeAttr(farmId || "")}"><span class="dh-ord">${info.estimated ? "~" : ""}${info.rounds}x</span><span class="dh-icon">${iconHtml2 || ""}${effectSvg(kind)}</span></span>`;
 }
 function formatResetIn(now) {
-  const next = utcDayStart(now) + 864e5;
+  const next = utcDayStart2(now) + 864e5;
   const mins = Math.max(0, Math.floor((next - now) / 6e4));
   const h = Math.floor(mins / 60);
   const m = mins % 60;
@@ -74291,6 +75077,12 @@ export {
   resolvePigSlopIngredient,
   findLivePriceForName,
   prices_exports,
+  CAVE_WIDTH,
+  solveCaveBatch,
+  CAVE_SKILL_RANKS,
+  caveSkillLevel,
+  caveTrackFromState,
+  caveDayTotals,
   harvestLogSetFarm,
   harvestLogRequest,
   harvestLogFarmId,
@@ -74478,6 +75270,11 @@ export {
   __deferredInitialRenderCallbacks,
   digSolveBoard,
   setAppDarkMode,
+  caveToolUnitCoins,
+  caveToolSectionHtml,
+  caveToolCostsOpen,
+  caveToggleToolCosts,
+  caveSetMatMode,
   __set_currentSeason,
   __set_cmOilTank,
   __set___deferredInitialRenderDone,

@@ -13,7 +13,7 @@ import {
   prices_exports,
   setAppDarkMode,
   ui_exports
-} from "./chunk.BY73XMMQ.js";
+} from "./chunk.LI3JHMSB.js";
 import {
   KEY_ICON_DATA,
   NAV_ICON_DATA
@@ -43,13 +43,13 @@ var PAGES = [{
   path: "/digging",
   label: "Desert Digging",
   root: "pageDigging",
-  load: () => import("./digging.C7DLVX25.js")
+  load: () => import("./digging.LITJJQTB.js")
 }, {
   id: "cavesolver",
   path: "/cave-solver",
   label: "Cave Digging",
   root: "pageCaveSolver",
-  load: () => import("./cavesolver.XUGYNKGE.js")
+  load: () => import("./cavesolver.ONQDUQNU.js")
 }, {
   id: "potionroom",
   path: "/potionroom",
@@ -73,7 +73,7 @@ var PAGES = [{
   path: "/settings",
   label: "Settings",
   root: "pageSettings",
-  load: () => import("./settings.AXTIZEJF.js")
+  load: () => import("./settings.OHJWWHA2.js")
 }, {
   id: "nodes",
   path: "/nodes",
@@ -175,13 +175,13 @@ var PAGES = [{
   path: "/experience-calculator",
   label: "Experience Calculator",
   root: "cookingPanel",
-  load: () => import("./experiencecalc.2NQY6QIZ.js")
+  load: () => import("./experiencecalc.EIMWCZ62.js")
 }, {
   id: "beginnerguide",
   path: "/beginner-guide",
   label: "Beginner Guide",
   root: "beginnerPanel",
-  load: () => import("./beginnerguide.73RZSZCA.js")
+  load: () => import("./beginnerguide.3KLONONF.js")
 }, {
   id: "fishing",
   path: "/fishing",
@@ -199,7 +199,7 @@ var PAGES = [{
   path: "/resource-calculators",
   label: "Resource Calculators",
   root: "pageResourceCalc",
-  load: () => import("./resourcecalc.CNVBGLA5.js")
+  load: () => import("./resourcecalc.G3UO4GOZ.js")
 }, {
   id: "sflbubbles",
   path: "/sflbubbleschart",
@@ -217,13 +217,13 @@ var PAGES = [{
   path: "/userguide",
   label: "User Guide",
   root: "pageUserGuide",
-  load: () => import("./userguide.VPUDS3GI.js")
+  load: () => import("./userguide.MJAHTUXL.js")
 }, {
   id: "profile",
   path: "/profile",
   label: "Profile",
   root: "pageProfile",
-  load: () => import("./profile.ZUHYTYPE.js")
+  load: () => import("./profile.NK66Y6HJ.js")
 }];
 var DEFAULT_PAGE_ID = "growing";
 function pageById(id) {
@@ -419,7 +419,7 @@ function setPageTitle(id) {
     bar.innerHTML = "";
     return;
   }
-  bar.innerHTML = `<div class="expansion-sim-icon-wrap"><img data-page-icon="${id}" src="" alt=""></div><div><div class="expansion-sim-title-text">${t[0]}</div><div class="expansion-sim-title-sub">${t[1]}</div></div>${id === "digging" ? '<button type="button" class="es-mode-btn dig-god-toggle" id="digGodToggleBtn" aria-label="God Mode"><img src="' + DIG_SEARCH_ICON_SRC + '" alt=""></button><button type="button" class="es-mode-btn dig-pct-toggle" id="digPctToggleBtn" aria-label="Show percentages"><img src="' + DIG_PCT_ICON_SRC + '" alt=""></button><button type="button" class="es-mode-btn dig-pl-toggle" id="digPlToggleBtn" aria-label="Show price marks"><img src="' + DIG_CHECK_ICON_SRC + '" alt=""></button>' : ""}${id === "digging" || id === "potionroom" ? '<button type="button" class="es-mode-btn dig-data-toggle" id="digDataToggleBtn">' + (id === "potionroom" ? "Store" : "Data") + "</button>" : ""}${id === "potionroom" ? '<button type="button" class="es-mode-btn potion-logs-toggle" id="potionLogsBtn">Logs</button>' : ""}`;
+  bar.innerHTML = `<div class="expansion-sim-icon-wrap"><img data-page-icon="${id}" src="" alt=""></div><div><div class="expansion-sim-title-text">${t[0]}</div><div class="expansion-sim-title-sub">${t[1]}</div></div>${id === "digging" ? '<button type="button" class="es-mode-btn dig-god-toggle" id="digGodToggleBtn" aria-label="God Mode"><img src="' + DIG_SEARCH_ICON_SRC + '" alt=""></button><button type="button" class="es-mode-btn dig-pct-toggle" id="digPctToggleBtn" aria-label="Show percentages"><img src="' + DIG_PCT_ICON_SRC + '" alt=""></button><button type="button" class="es-mode-btn dig-pl-toggle" id="digPlToggleBtn" aria-label="Show price marks"><img src="' + DIG_CHECK_ICON_SRC + '" alt=""></button>' : ""}${id === "digging" || id === "potionroom" || id === "cavesolver" ? '<button type="button" class="es-mode-btn dig-data-toggle' + (id === "cavesolver" ? " cave-data-toggle" : "") + '" id="digDataToggleBtn">' + (id === "potionroom" ? "Store" : "Data") + "</button>" : ""}${id === "potionroom" ? '<button type="button" class="es-mode-btn potion-logs-toggle" id="potionLogsBtn">Logs</button>' : ""}`;
   bar.hidden = false;
 }
 function fillRateIcons() {

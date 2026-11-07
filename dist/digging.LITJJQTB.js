@@ -1,11 +1,10 @@
 import {
   digSolveBoard,
   getIcon
-} from "./chunk.BY73XMMQ.js";
+} from "./chunk.LI3JHMSB.js";
 import "./chunk.LPEVZJ4B.js";
-import "./chunk.IAMPLIR4.js";
+import "./chunk.CTXFJ7GM.js";
 import "./chunk.VR6FV3KR.js";
-import "./chunk.SZS6OV2R.js";
 import {
   setOpenClass
 } from "./chunk.X4KTTJ4Z.js";
