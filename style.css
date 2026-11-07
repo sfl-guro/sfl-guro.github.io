@@ -12962,8 +12962,9 @@ html body .guro-rate .guro-rate-grp, html body .guro-rate .guro-rate-label, html
 .guro-bumpkin{ flex:0 0 auto; width:120px; display:flex; flex-direction:column; align-items:center; gap:6px; }
 .guro-bumpkin-frame{ width:120px; height:120px; margin:0; }
 .guro-bumpkin-empty{ font-family:var(--pixel-font); font-size:28px; color:var(--ink-soft); }
-.guro-bumpkin-id{ text-align:center; font-size:12px; font-weight:700; color:var(--ink); width:100%; }
+.guro-bumpkin-id{ text-align:left; font-size:12px; font-weight:700; color:var(--ink); width:100%; min-width:0; }
 .guro-bumpkin-id > *{ margin:0 !important; width:100% !important; box-sizing:border-box; }
+.guro-bumpkin-id .profile-bumpkin-id-card{ width:fit-content !important; max-width:100%; padding:4px 6px; font-size:9px; line-height:1.3; text-align:left; letter-spacing:0; overflow-wrap:anywhere; word-break:break-all; }
 .guro-bumpkin-id:empty{ display:none; }
 .guro-profile-info{ flex:1; min-width:0; display:flex; flex-direction:column; gap:6px; }
 .guro-profile-info .farm-panel-name, .guro-profile-info .farm-panel-id{ margin:0; }
@@ -13172,8 +13173,8 @@ html body.sfl-theme .guro-menu .guro-menu-link.guro-menu-link.is-current{ backgr
   html body.sfl-theme .guro-links-panel .guro-desk-btn.is-current{ background-color:var(--sfl-outer) !important; background-image:none !important; border-image:var(--sfl-btn-pressed-image) 3 3 4 3 fill !important; color:var(--sfl-text) !important; }
 }
 
-.guro-profile-farmid, .guro-profile-line{ font-size:13px; line-height:1.4; margin:0; }
-.guro-profile-line{ display:flex; align-items:center; gap:4px; flex-wrap:wrap; }
+.guro-profile-farmid, .guro-profile-line{ font-size:13px; line-height:1.3; margin:0; white-space:nowrap; }
+.guro-profile-line{ display:flex; align-items:center; gap:4px; flex-wrap:nowrap; }
 .guro-profile-line .profile-inline-icon, .guro-profile-line img{ width:16px; height:16px; margin:0; image-rendering:pixelated; flex:0 0 auto; }
 
 html body .guro-rate .guro-rate-field.guro-rate-field{
@@ -13191,11 +13192,14 @@ html body .guro-rate .guro-rate-field input, html body.sfl-theme .guro-rate .gur
 html body .guro-rate .guro-rate-field input::-webkit-outer-spin-button, html body .guro-rate .guro-rate-field input::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
 html body .guro-rate .guro-rate-field input[type=number]{ -moz-appearance:textfield; appearance:textfield; }
 @media (max-width:1023px){
-  .guro-profile-top{ display:grid; grid-template-columns:120px minmax(0,1fr); grid-template-rows:repeat(6,auto) 1fr auto; column-gap:8px; row-gap:6px; align-items:start; }
-  .guro-bumpkin{ grid-column:1; grid-row:1 / 8; }
+  .guro-profile-top{ display:grid; grid-template-columns:120px minmax(0,1fr); grid-template-rows:auto 1fr; column-gap:8px; row-gap:3px; align-items:start; }
+  .guro-bumpkin{ grid-column:1; grid-row:1 / 3; }
   .guro-profile-info{ display:contents; }
-  .guro-profile-name, .guro-profile-farmid, .guro-profile-line{ grid-column:2; min-width:0; }
-  .guro-profile-info .farm-panel-sync-row.guro-profile-sync{ grid-column:1 / -1; grid-row:8; margin-top:4px; }
+  .guro-profile-name, .guro-bumpkin-id{ grid-column:2; min-width:0; }
+  .guro-bumpkin-id{ grid-row:2; align-self:start; }
+  .guro-profile-farmid, .guro-profile-line{ grid-column:1 / -1; min-width:0; }
+  .guro-profile-farmid{ margin-top:6px; }
+  .guro-profile-info .farm-panel-sync-row.guro-profile-sync{ grid-column:1 / -1; margin-top:6px; }
 }
 
 #marketTabs{ max-width:100%; min-width:0; }
@@ -15995,3 +15999,10 @@ html body .cave-data-card .dig-data-tools .es-toolcfg{
   #pageCaveSolver.dig-show-data .cave-hide-on-data{ display:none !important; }
   #pageCaveSolver.dig-show-data .cave-main{ margin-top:0; }
 }
+
+.dig-total-val.is-profit{ color:var(--profit); }
+.dig-total-val.is-loss{ color:var(--loss); }
+.dig-total-val .cave-ico{ margin-left:3px; }
+
+.guro-profile-label{ font-weight:800; margin-right:4px; }
+.guro-profile-farmid .guro-profile-val, .guro-profile-line .guro-profile-val{ display:inline-flex; align-items:center; gap:3px; }

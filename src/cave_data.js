@@ -254,8 +254,15 @@ function dugHtml(api, g, ctx) {
   stats.push(`<div class="dig-total-row"><span class="dig-total-label">Twin Beetles procs</span><span class="dig-total-val">${fmt(day.twin)}</span></div>`);
   const shovels = day.used["Sand Shovel"];
   const drills = day.used["Sand Drill"];
-  if (shovels) stats.push(`<div class="dig-total-row"><span class="dig-total-label">Sand Shovel uses</span><span class="dig-total-val">${fmt(shovels)} <small>${fmt(day.kept["Sand Shovel"])} kept</small></span></div>`);
-  if (drills) stats.push(`<div class="dig-total-row"><span class="dig-total-label">Sand Drill uses</span><span class="dig-total-val">${fmt(drills)} <small>${fmt(day.kept["Sand Drill"])} kept</small></span></div>`);
+  const toolRows = (tool, used) => {
+    if (!used) return;
+    const kept = day.kept[tool];
+    const spent = Math.max(0, used - kept);
+    if (kept > 0) stats.push(`<div class="dig-total-row"><span class="dig-total-label">Refunded ${tool}</span><span class="dig-total-val is-profit">+${fmt(kept)}${icon(api, tool)}</span></div>`);
+    stats.push(`<div class="dig-total-row"><span class="dig-total-label">Used ${tool}</span><span class="dig-total-val is-loss">-${fmt(spent)}${icon(api, tool)}</span></div>`);
+  };
+  toolRows("Sand Shovel", shovels);
+  toolRows("Sand Drill", drills);
   const spentShovels = Math.max(0, shovels - day.kept["Sand Shovel"]);
   const spentDrills = Math.max(0, drills - day.kept["Sand Drill"]);
   const toolCoins = spentShovels * calc.caveToolUnitCoins("Sand Shovel") + spentDrills * calc.caveToolUnitCoins("Sand Drill");
