@@ -108,6 +108,17 @@ function rememberTools(farmId, data) {
   } catch (e) {}
 }
 
+function rememberCoins(farmId, data) {
+  if (!farmId || !data || !data.day || !data.coins || typeof data.coins !== "object") return;
+  const cache = loadCache(farmId);
+  const cur = cache.coins[data.day];
+  const incoming = data.coins;
+  if (cur && cur.e + cur.s > incoming.e + incoming.s) return;
+  if (cur && JSON.stringify(cur) === JSON.stringify(incoming)) return;
+  cache.coins[data.day] = incoming;
+  saveCache(cache);
+}
+
 function withLocalTools(list) {
   const farmId = currentFarmId();
   if (!farmId) return list;
@@ -189,6 +200,7 @@ async function pushTotals(trackKey) {
   const data = dailyHarvestTotals(trackKey);
   if (!data || !Object.keys(data.totals).length) return;
   rememberTools(farmId, data);
+  rememberCoins(farmId, data);
   const coinSig = data.coins ? [ data.coins.e, data.coins.s ] : null;
   const sig = JSON.stringify([ farmId, data.day, data.totals, coinSig ]);
   const sent = loadSent();

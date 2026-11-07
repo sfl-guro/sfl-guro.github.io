@@ -47,7 +47,7 @@ async function renderHarvest() {
   rootEl.innerHTML = `${tabsHtml()}<div class="pf-hlog-host" id="pfHarvestHost"></div>`;
   const host = rootEl.querySelector("#pfHarvestHost");
   try {
-    if (!harvestMod) harvestMod = await import("./harvest_log.PBTZQ7EU.js");
+    if (!harvestMod) harvestMod = await import("./harvest_log.YQPELYJF.js");
   } catch (e) {
     if (host) host.innerHTML = `<div class="dh-hlog-msg">Couldn't load history. Check your connection.</div>`;
     return;
@@ -60,7 +60,7 @@ async function renderCrafted() {
   rootEl.innerHTML = `${tabsHtml()}<div class="pf-hlog-host ct-host" id="pfCraftedHost"></div>`;
   const host = rootEl.querySelector("#pfCraftedHost");
   try {
-    if (!craftedMod) craftedMod = await import("./crafted_tools.J7IISYWN.js");
+    if (!craftedMod) craftedMod = await import("./crafted_tools.F2U4IOAP.js");
   } catch (e) {
     if (host) host.innerHTML = `<div class="dh-hlog-msg">Couldn't load crafted tools. Check your connection.</div>`;
     return;
