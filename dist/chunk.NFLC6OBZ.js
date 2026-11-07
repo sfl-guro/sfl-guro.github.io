@@ -14849,7 +14849,7 @@ function renderFarmPanelInfo() {
   const { id, level, time, vipActive, vipExpiresAt, vipLifetime, factionName, factionIsMember, experience, ascensionLevel } = farmPanelGetLastInfo();
   const displayName = id ? farmSyncGetApiUsername(id) : null;
   $("farmPanelName").textContent = displayName ? displayName.toUpperCase() : id ? `Farm #${id}` : "No farm synced";
-  $("farmPanelId").textContent = `Farm Id: ${id || "\u2014"}`;
+  $("farmPanelId").innerHTML = guroProfileLineHtml("Farm ID", escapeHtml(id || "\u2014"));
   if (!id) {
     $("farmPanelLevel").textContent = "Bumpkin Level: \u2014";
   } else {
@@ -14894,31 +14894,44 @@ function renderFarmPanelInfo() {
   renderGuroBumpkin();
   renderGuroProfileStats(id, level, experience);
 }
+function guroProfileLineHtml(label, valueHtml) {
+  return `<span class="guro-profile-label">${label}:</span><span class="guro-profile-val">${valueHtml}</span>`;
+}
 function renderGuroProfileStats(id, level, experience) {
   const levelEl = document.getElementById("guroProfileLevel");
   const expEl = document.getElementById("guroProfileExpansion");
   const balEl = document.getElementById("guroProfileBalance");
   const vipLineEl = document.getElementById("guroProfileVip");
-  if (!levelEl || !expEl || !balEl || !vipLineEl) return;
+  const taxFreeEl = document.getElementById("guroProfileTaxFree");
+  const afterEl = document.getElementById("guroProfileAfter");
+  if (!levelEl || !expEl || !balEl || !vipLineEl || !taxFreeEl || !afterEl) return;
   const g = id ? profileGetG() : null;
+  const empty = (label) => guroProfileLineHtml(label, "\u2014");
   if (!id) {
-    levelEl.textContent = "Level: \u2014";
-    expEl.textContent = "Expansion: \u2014";
-    balEl.textContent = "Balance: \u2014";
-    vipLineEl.textContent = "VIP: \u2014";
+    levelEl.innerHTML = empty("Bumpkin Level");
+    expEl.innerHTML = empty("Land Type");
+    balEl.innerHTML = empty("FLOWER Balance");
+    vipLineEl.innerHTML = empty("VIP");
+    taxFreeEl.innerHTML = empty("TAX Free");
+    afterEl.innerHTML = empty("After Withdrawal");
     return;
   }
   const levelInfo = cookGetLevelInfo(experience);
-  levelEl.textContent = `Level: ${level || levelInfo.level}`;
-  vipLineEl.textContent = `VIP: ${profileVipHtml()}`;
+  levelEl.innerHTML = guroProfileLineHtml("Bumpkin Level", escapeHtml(String(level || levelInfo.level)));
+  vipLineEl.innerHTML = guroProfileLineHtml("VIP", escapeHtml(profileVipHtml()));
   if (g) {
     const exp = profileGetExpansionInfo(g);
     const iconHtml2 = g.island && g.island.type ? `<img src="${esIslandIcon(g.island.type)}" class="profile-inline-icon" alt="">` : "";
-    expEl.innerHTML = `${iconHtml2}${escapeHtml(exp.islandLabel)} Expansion ${fmtInt(exp.expansionLevel)}`;
-    balEl.innerHTML = `Balance: ${fmt(Number(g.balance) || 0)}${FLOWER_ICON}`;
+    const taxInfo = profileComputeWithdrawTax(g);
+    expEl.innerHTML = guroProfileLineHtml("Land Type", `${iconHtml2}${escapeHtml(exp.islandLabel)} Expansion ${fmtInt(exp.expansionLevel)}`);
+    balEl.innerHTML = guroProfileLineHtml("FLOWER Balance", `${fmt(Number(g.balance) || 0)}${FLOWER_ICON}`);
+    taxFreeEl.innerHTML = guroProfileLineHtml("TAX Free", `${fmt(taxInfo.taxFree)}${FLOWER_ICON}`);
+    afterEl.innerHTML = guroProfileLineHtml("After Withdrawal", `${fmt(taxInfo.afterWithdrawal)}${FLOWER_ICON}`);
   } else {
-    expEl.textContent = "Expansion: \u2014";
-    balEl.textContent = "Balance: \u2014";
+    expEl.innerHTML = empty("Land Type");
+    balEl.innerHTML = empty("FLOWER Balance");
+    taxFreeEl.innerHTML = empty("TAX Free");
+    afterEl.innerHTML = empty("After Withdrawal");
   }
 }
 function renderGuroBumpkin() {
