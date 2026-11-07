@@ -356,6 +356,8 @@ __export(calculator_exports, {
   buildSkillTreeCopyText: () => buildSkillTreeCopyText,
   calcMode: () => calcMode,
   calendarDebuffProtection: () => calendarDebuffProtection,
+  caveMycoToggleHtml: () => caveMycoToggleHtml,
+  caveMycoUnitCoins: () => caveMycoUnitCoins,
   caveSetMatMode: () => caveSetMatMode,
   caveToggleToolCosts: () => caveToggleToolCosts,
   caveToolCostsOpen: () => caveToolCostsOpen,
@@ -68845,6 +68847,12 @@ function caveToolSectionHtml(tool) {
   const unitRow = '<div class="es-toolcfg-mat dig-tool-unit"><span>Cost per tool</span><span class="es-toolcfg-qty dig-coin-val">' + digFmt(caveToolUnitCoinsRaw(tool)) + COIN_ICON + "</span></div>";
   return '<div class="es-toolcfg-block"><div class="es-toolcfg-head"><div class="es-toolcfg-name">' + digIconHtml(tool) + "<span>" + escapeHtml(tool) + '</span></div></div><div class="es-toolcfg-mats-label">Materials:</div>' + coinRow + matRows + unitRow + "</div>";
 }
+function caveMycoUnitCoins(owner, name) {
+  return digMatUnitCoins(owner, name);
+}
+function caveMycoToggleHtml(owner, name) {
+  return digMatToggleHtml(owner, name);
+}
 function caveToolCostsOpen() {
   return digDataLoadState().caveToolsOpen === true;
 }
@@ -75296,6 +75304,8 @@ export {
   setAppDarkMode,
   caveToolUnitCoins,
   caveToolSectionHtml,
+  caveMycoUnitCoins,
+  caveMycoToggleHtml,
   caveToolCostsOpen,
   caveToggleToolCosts,
   caveSetMatMode,

@@ -15952,6 +15952,36 @@ body.app-dark:not(.sfl-theme) .an-lv-block{ background:#2e2c3a; color:#e8e5dc; }
 .dig-data-tools #caveToolCfgBtn{ display:inline-flex; align-items:center; gap:6px; }
 #caveToolCfgBtn.active .es-toolcfg-chev::before{ content:"\25B4"; }
 body.sfl-theme #caveToolCfgBtn.active .es-toolcfg-chev{ transform:rotate(-90deg); }
+.cave-tools-row{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+.dig-data-tools #caveMycoBtn{ display:inline-flex; align-items:center; gap:6px; }
+#caveMycoBtn.active .es-toolcfg-chev::before{ content:"\25B4"; }
+body.sfl-theme #caveMycoBtn.active .es-toolcfg-chev{ transform:rotate(-90deg); }
+.cave-data-card #caveMycoPanel:not(:empty){ margin-top:8px; }
+html body .dig-data-tools #caveMycoPanel{
+  border:0 !important; border-image:none !important; box-shadow:none !important;
+  background:transparent !important; background-image:none !important; padding:0 !important; border-radius:0 !important;
+}
+.cave-myco-list{ display:flex; flex-direction:column; gap:8px; }
+.cave-myco-card{ padding:8px 10px; box-sizing:border-box; min-width:0; }
+.cave-myco-head{ display:flex; align-items:center; gap:6px; margin-bottom:6px; min-width:0; }
+.cave-myco-head .cave-ico img{ width:22px; height:22px; }
+.cave-myco-name{ font-size:12px; font-weight:800; color:var(--ink); }
+.cave-myco-recipe{ margin-left:auto; font-size:9.6px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); }
+.cave-myco-pick{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:4px; }
+.cave-myco-pick-label{ font-size:9.6px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); }
+.cave-myco-select{ display:flex; align-items:center; gap:6px; flex:1 1 auto; min-width:0; max-width:62%; padding:5px 8px; font:inherit; font-size:10.8px; font-weight:800; text-align:left; color:var(--sfl-text, var(--ink)); background-color:var(--sfl-inner, transparent); cursor:pointer; }
+.cave-myco-select-text{ flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+body.sfl-theme .cave-myco-select.active .es-toolcfg-chev{ transform:rotate(-90deg); }
+.cave-myco-options{ display:flex; flex-direction:column; gap:2px; max-height:230px; overflow-y:auto; padding:4px; margin-bottom:6px; box-sizing:border-box; background-color:var(--sfl-inner, transparent); -webkit-overflow-scrolling:touch; }
+.cave-myco-opt{ display:flex; align-items:center; gap:8px; width:100%; box-sizing:border-box; padding:8px; border:0; border-radius:0; background:transparent; font-size:11.5px; font-weight:700; text-align:left; color:var(--sfl-text, var(--ink)); cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.cave-myco-opt .cave-ico img{ width:18px; height:18px; image-rendering:pixelated; }
+.cave-myco-opt-name{ flex:1 1 auto; min-width:0; }
+.cave-myco-opt .guro-confirm-icon{ flex:0 0 auto; }
+.cave-myco-opt.is-on{ background:rgba(0,0,0,.1); font-weight:800; }
+.cave-myco-opt:active{ background:rgba(0,0,0,.16); }
+.cave-myco-line{ margin-bottom:4px; }
+.cave-myco-card .dig-totals{ margin-top:6px; }
+.cave-data-card .dig-dug-list .dig-total-label{ font-weight:800; }
 html body .dig-data-tools #caveToolCfgPanel,
 html body .cave-data-card .dig-data-tools .es-toolcfg{
   border:0 !important; border-image:none !important; box-shadow:none !important;

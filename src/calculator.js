@@ -35443,6 +35443,14 @@ export function caveToolSectionHtml(tool) {
   return '<div class="es-toolcfg-block"><div class="es-toolcfg-head"><div class="es-toolcfg-name">' + digIconHtml(tool) + "<span>" + escapeHtml(tool) + '</span></div></div><div class="es-toolcfg-mats-label">Materials:</div>' + coinRow + matRows + unitRow + "</div>";
 }
 
+export function caveMycoUnitCoins(owner, name) {
+  return digMatUnitCoins(owner, name);
+}
+
+export function caveMycoToggleHtml(owner, name) {
+  return digMatToggleHtml(owner, name);
+}
+
 export function caveToolCostsOpen() {
   return digDataLoadState().caveToolsOpen === true;
 }

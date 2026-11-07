@@ -1,8 +1,13 @@
 import {
+  CONFIRM_ICON
+} from "./chunk.XKJMJZUJ.js";
+import {
   CAVE_SKILL_RANKS,
   CAVE_WIDTH,
   FLOWER_ICON,
   caveDayTotals,
+  caveMycoToggleHtml,
+  caveMycoUnitCoins,
   caveSetMatMode,
   caveSkillLevel,
   caveToggleToolCosts,
@@ -14,7 +19,7 @@ import {
   farmSyncCollectEquippedAndPlacedNames,
   feePercent,
   solveCaveBatch
-} from "./chunk.NFLC6OBZ.js";
+} from "./chunk.GWA2MVPN.js";
 import "./chunk.LPEVZJ4B.js";
 import "./chunk.YM4PECIV.js";
 import "./chunk.VR6FV3KR.js";
@@ -28,6 +33,47 @@ var STATE_KEY = "guro_cave_data_state";
 var BEETLES = ["Green Beetle", "Blue Beetle", "Pink Beetle", "Amber Beetle"];
 var NOT_TRADABLE = ["Wild Mushroom", "Magic Mushroom", "Mud"];
 var TOOLS = ["Sand Shovel", "Sand Drill"];
+var MUD_CROPS = {
+  Sunflower: 500,
+  Potato: 80,
+  Rhubarb: 40,
+  Pumpkin: 20,
+  Zucchini: 20,
+  Carrot: 10,
+  Yam: 10,
+  Cabbage: 5,
+  Broccoli: 5,
+  Soybean: 3,
+  Beetroot: 3,
+  Pepper: 3,
+  Cauliflower: 2,
+  Parsnip: 2,
+  Eggplant: 2,
+  Corn: 2,
+  Onion: 2,
+  Wheat: 2,
+  Turnip: 2,
+  Radish: 2,
+  Kale: 2,
+  Artichoke: 2,
+  Barley: 2,
+  Rice: 1,
+  Olive: 1
+};
+var FIXED_INGREDIENTS = {
+  Mushroom: {
+    Wood: 10
+  },
+  Beetle: {
+    Egg: 30
+  }
+};
+var RECIPE_LABELS = {
+  Mushroom: "Mushroom Mix",
+  Beetle: "Beetle Mix",
+  Mud: "Mud Mix"
+};
+var LEAN_RANKS = [0.95, 0.9, 0.85];
 var BOOST_DEFS = [{
   id: "mushroom_house",
   name: "Mushroom House",
@@ -104,8 +150,11 @@ function loadState() {
   const obj = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : {};
   state = {
     boosts: obj(s.boosts),
-    detected: obj(s.detected)
+    detected: obj(s.detected),
+    mudCrops: obj(s.mudCrops),
+    mycoOpen: s.mycoOpen === true
   };
+  state.pickOpen = null;
   return state;
 }
 function saveState() {
@@ -185,11 +234,102 @@ function boostGridHtml(api, g) {
   });
   return cards.join("");
 }
-function toolCostsHtml() {
+function hasCrop(name) {
+  return typeof name === "string" && Object.prototype.hasOwnProperty.call(MUD_CROPS, name);
+}
+function cheapestCrop(owner) {
+  let best = null;
+  let bestCost = Infinity;
+  Object.keys(MUD_CROPS).forEach((name) => {
+    const cost = MUD_CROPS[name] * caveMycoUnitCoins(owner, name);
+    if (cost > 0 && cost < bestCost) {
+      bestCost = cost;
+      best = name;
+    }
+  });
+  return best || "Carrot";
+}
+function mycoBins(g) {
+  const cave = g && g.cave;
+  const machines = cave && cave.machines && typeof cave.machines === "object" ? cave.machines : {};
+  const level = caveSkillLevel(g && g.bumpkin && g.bumpkin.skills, "Lean Compost");
+  const lean = level ? LEAN_RANKS[level - 1] : 1;
+  const st = loadState();
+  return Object.keys(machines).sort((a, b) => Number(a) - Number(b)).map((id) => {
+    const batch = machines[id] && machines[id].batch;
+    const recipe = batch && RECIPE_LABELS[batch.recipe] ? batch.recipe : "";
+    const owner = "Myco Bin " + id;
+    let crop = "";
+    let auto = false;
+    let base = {};
+    if (recipe === "Mud") {
+      auto = !hasCrop(st.mudCrops[id]);
+      crop = auto ? cheapestCrop(owner) : st.mudCrops[id];
+      base[crop] = MUD_CROPS[crop];
+    } else if (recipe) {
+      base = FIXED_INGREDIENTS[recipe];
+    }
+    const lines = Object.keys(base).map((name) => {
+      const qty = base[name] * lean;
+      const unitCoins = caveMycoUnitCoins(owner, name);
+      return {
+        name,
+        qty,
+        unitCoins,
+        coins: qty * unitCoins
+      };
+    });
+    return {
+      id,
+      owner,
+      recipe,
+      crop,
+      auto,
+      lean,
+      lines,
+      coins: lines.reduce((a, l) => a + l.coins, 0)
+    };
+  });
+}
+function flowerOf(coins) {
+  return coins > 0 ? coinsToFlower(coins) : 0;
+}
+function mycoCardHtml(api, bin) {
+  const head = `<div class="cave-myco-head">${icon(api, "Myco Bin")}<span class="cave-myco-name">Myco Bin ${esc(bin.id)}</span><span class="cave-myco-recipe">${bin.recipe ? esc(RECIPE_LABELS[bin.recipe]) : "Empty"}</span></div>`;
+  if (!bin.recipe) {
+    return `<div class="cave-myco-card guro-frame">${head}<div class="dig-empty">No batch fed in this bin.</div></div>`;
+  }
+  let pick = "";
+  if (bin.recipe === "Mud") {
+    const open = loadState().pickOpen === bin.id;
+    const label = bin.auto ? "Cheapest (" + bin.crop + ")" : bin.crop + " \xD7" + MUD_CROPS[bin.crop];
+    const option = (value, text, iconName, on) => `<div class="cave-myco-opt${on ? " is-on" : ""}" role="option" tabindex="0" aria-selected="${on}" data-cave-croppick="${esc(bin.id)}|${esc(value)}">${icon(api, iconName)}<span class="cave-myco-opt-name">${esc(text)}</span>${on ? CONFIRM_ICON : ""}</div>`;
+    const list = open ? `<div class="cave-myco-options guro-frame" role="listbox">${option("", "Cheapest (" + bin.crop + ")", bin.crop, bin.auto)}${Object.keys(MUD_CROPS).map((name) => option(name, name + " \xD7" + MUD_CROPS[name], name, !bin.auto && bin.crop === name)).join("")}</div>` : "";
+    pick = `<div class="cave-myco-pick"><span class="cave-myco-pick-label">Mud crop</span><button type="button" class="cave-myco-select guro-frame${open ? " active" : ""}" data-cave-cropbtn="${esc(bin.id)}" aria-expanded="${open}">${icon(api, bin.crop)}<span class="cave-myco-select-text">${esc(label)}</span><span class="es-toolcfg-chev"></span></button></div>${list}<div class="dig-empty">The game does not save which crop fed a Mud batch.</div>`;
+  }
+  const lines = bin.lines.map((l) => `<div class="cave-myco-line">
+      <div class="es-toolcfg-mat"><div class="es-toolcfg-mat-name"><span class="es-toolcfg-qty">\xD7${fmt(l.qty)}</span>${icon(api, l.name)}<span>${esc(l.name)}</span></div>${caveMycoToggleHtml(bin.owner, l.name)}</div>
+      <div class="es-toolcfg-mat dig-tool-unit"><span>Price/Unit</span><span class="es-toolcfg-qty dig-coin-val">${fl(flowerOf(l.unitCoins))}${FLOWER_ICON}</span></div>
+      <div class="es-toolcfg-mat dig-tool-unit"><span>Cost</span><span class="es-toolcfg-qty dig-coin-val">${fl(flowerOf(l.coins))}${FLOWER_ICON}</span></div>
+    </div>`).join("");
+  const lean = bin.lean < 1 ? `<div class="dig-empty">Lean Compost \xD7${bin.lean} applied.</div>` : "";
+  const total = `<div class="dig-totals"><div class="dig-total-row"><span class="dig-total-label">Ingredients Cost</span><span class="dig-total-val">${fl(flowerOf(bin.coins))}${FLOWER_ICON}</span></div></div>`;
+  return `<div class="cave-myco-card guro-frame">${head}${pick}${lines}${lean}${total}</div>`;
+}
+function mycoPanelHtml(api, bins) {
+  if (!bins.length) return `<div class="dig-empty">No Myco Bins found \u2014 sync your farm.</div>`;
+  const sum = bins.reduce((a, b) => a + b.coins, 0);
+  const total = `<div class="dig-totals"><div class="dig-total-row"><span class="dig-total-label">All Myco Bins</span><span class="dig-total-val">${fl(flowerOf(sum))}${FLOWER_ICON}</span></div></div>`;
+  return `<div class="cave-myco-list">${bins.map((b) => mycoCardHtml(api, b)).join("")}</div>${total}`;
+}
+function toolCostsHtml(api, g) {
   const open = caveToolCostsOpen();
+  const mycoOpen = loadState().mycoOpen;
   const btn = `<button type="button" class="es-mode-btn dig-toolcfg-btn${open ? " active" : ""}" id="caveToolCfgBtn" data-cave-toolcfg aria-expanded="${open}">Tool Costs<span class="es-toolcfg-chev"></span></button>`;
+  const mycoBtn = `<button type="button" class="es-mode-btn dig-toolcfg-btn${mycoOpen ? " active" : ""}" id="caveMycoBtn" data-cave-myco aria-expanded="${mycoOpen}">Myco Bins<span class="es-toolcfg-chev"></span></button>`;
   const panel = open ? `<div class="es-toolcfg">${TOOLS.map(caveToolSectionHtml).join("")}</div>` : "";
-  return `<div class="dig-data-tools">${btn}<div id="caveToolCfgPanel">${panel}</div></div>`;
+  const mycoPanel = mycoOpen ? mycoPanelHtml(api, mycoBins(g)) : "";
+  return `<div class="dig-data-tools"><div class="cave-tools-row">${btn}${mycoBtn}</div><div id="caveToolCfgPanel">${panel}</div><div id="caveMycoPanel">${mycoPanel}</div></div>`;
 }
 function inventoryHtml(api, g) {
   const inv = g && g.inventory && typeof g.inventory === "object" ? g.inventory : {};
@@ -262,7 +402,8 @@ function dugHtml(api, g, ctx) {
   const spentShovels = Math.max(0, shovels - day.kept["Sand Shovel"]);
   const spentDrills = Math.max(0, drills - day.kept["Sand Drill"]);
   const toolCoins = spentShovels * caveToolUnitCoins("Sand Shovel") + spentDrills * caveToolUnitCoins("Sand Drill");
-  const cost = toolCoins > 0 ? coinsToFlower(toolCoins) : 0;
+  const mycoCoins = mycoBins(g).reduce((a, b) => a + b.coins, 0);
+  const cost = flowerOf(toolCoins) + flowerOf(mycoCoins);
   const feePct = Number(feePercent) || 0;
   const tax = buyTotal * feePct / 100;
   const net = buyTotal - cost - tax;
@@ -271,6 +412,7 @@ function dugHtml(api, g, ctx) {
   const toolParts = [];
   if (spentShovels) toolParts.push("Sand Shovel \xD7" + fmt(spentShovels));
   if (spentDrills) toolParts.push("Sand Drill \xD7" + fmt(spentDrills));
+  if (mycoCoins > 0) toolParts.push("Myco Bin ingredients " + fl(flowerOf(mycoCoins)));
   const sums = money("Total Gross (before tax)", fl(buyTotal) + FLOWER_ICON, "") + money("Total Cost", "-" + fl(cost) + FLOWER_ICON, "", toolParts.join(", ")) + money("Tax" + (feePct > 0 ? " (" + fmt(feePct) + "%)" : ""), "-" + fl(tax) + FLOWER_ICON, "") + money("Net", signedFlower(net), "dig-total-net " + (net > 0 ? "is-profit" : net < 0 ? "is-loss" : ""));
   let note = "";
   if (day.missed > 0) note += `<div class="dig-empty">${fmt(day.missed)} tile(s) were dug and cleared between syncs, so they are not counted. Sync before starting a new batch.</div>`;
@@ -283,7 +425,7 @@ function caveDataHtml(ctx) {
   applyDetected(g);
   return `<div class="dig-data-card cave-data-card">
     <div class="dig-panel-title dig-data-title">${icon(api, "Sand Shovel")} CAVE DATA</div>
-    ${toolCostsHtml()}
+    ${toolCostsHtml(api, g)}
     <div class="dig-data-box guro-frame"><div class="dig-data-label">Boost</div><div class="dig-boost-grid">${boostGridHtml(api, g)}</div></div>
     <div class="dig-data-box guro-frame"><div class="dig-data-label">Inventory</div><div class="dig-inv-list">${inventoryHtml(api, g)}</div></div>
     <div class="dig-data-pair">
@@ -293,10 +435,25 @@ function caveDataHtml(ctx) {
   </div>`;
 }
 function caveDataClick(e) {
-  const t = e.target && e.target.closest ? e.target.closest("[data-cave-toolcfg], [data-dig-mat-mode]") : null;
+  const t = e.target && e.target.closest ? e.target.closest("[data-cave-toolcfg], [data-cave-myco], [data-cave-cropbtn], [data-cave-croppick], [data-dig-mat-mode]") : null;
   if (!t) return false;
   if (t.hasAttribute("data-cave-toolcfg")) {
     caveToggleToolCosts();
+  } else if (t.hasAttribute("data-cave-cropbtn")) {
+    const st = loadState();
+    const id = t.getAttribute("data-cave-cropbtn");
+    st.pickOpen = st.pickOpen === id ? null : id;
+  } else if (t.hasAttribute("data-cave-croppick")) {
+    const st = loadState();
+    const parts = t.getAttribute("data-cave-croppick").split("|");
+    if (hasCrop(parts[1])) st.mudCrops[parts[0]] = parts[1];
+    else delete st.mudCrops[parts[0]];
+    st.pickOpen = null;
+    saveState();
+  } else if (t.hasAttribute("data-cave-myco")) {
+    const st = loadState();
+    st.mycoOpen = !st.mycoOpen;
+    saveState();
   } else {
     caveSetMatMode(t.getAttribute("data-dig-mat-owner"), t.getAttribute("data-dig-mat-name"), t.getAttribute("data-dig-mat-mode"));
   }
@@ -304,7 +461,8 @@ function caveDataClick(e) {
 }
 function caveDataChange(e) {
   const el = e.target;
-  if (!el || !el.matches || !el.matches("input[data-cave-boost]")) return false;
+  if (!el || !el.matches) return false;
+  if (!el.matches("input[data-cave-boost]")) return false;
   loadState().boosts[el.getAttribute("data-cave-boost")] = el.checked;
   saveState();
   return true;
@@ -312,7 +470,7 @@ function caveDataChange(e) {
 
 // src/pages/cavesolver.js
 var COLS = ["A", "B", "C", "D", "E"];
-var RECIPE_LABELS = {
+var RECIPE_LABELS2 = {
   Mushroom: "Mushroom mix",
   Beetle: "Beetle mix",
   Mud: "Mud mix"
@@ -409,7 +567,7 @@ function infoHtml(res, machineId) {
 function boardHtml(machineId, batch, game, now) {
   const head = `<div class="cave-board-title"><span class="cave-myco-icon">${apiRef.ui.getIcon("Myco Bin")}</span> Myco Bin ${esc2(machineId)}</div>`;
   if (!batch) return `<div class="cave-board guro-frame">${head}<div class="dig-panel-status">Empty. Start a batch in this Myco Bin.</div></div>`;
-  const recipe = RECIPE_LABELS[batch.recipe] || batch.recipe;
+  const recipe = RECIPE_LABELS2[batch.recipe] || batch.recipe;
   const sub = `<div class="cave-board-sub">${esc2(recipe)}</div>`;
   if (batch.readyAt > now) {
     return `<div class="cave-board guro-frame">${head}${sub}<div class="dig-panel-status">Growing. Ready in ${formatWait(batch.readyAt - now)}.</div></div>`;
@@ -471,10 +629,10 @@ function statusHtml(cave, ids, now) {
     counts[st] += 1;
     let detail = "Feed it to start a batch";
     if (batch && st === "growing") {
-      detail = (RECIPE_LABELS[batch.recipe] || batch.recipe) + " \xB7 ready in " + formatWait(batch.readyAt - now);
+      detail = (RECIPE_LABELS2[batch.recipe] || batch.recipe) + " \xB7 ready in " + formatWait(batch.readyAt - now);
       if (soon === null || batch.readyAt < soon) soon = batch.readyAt;
     } else if (batch && st === "ready") {
-      detail = (RECIPE_LABELS[batch.recipe] || batch.recipe) + " \xB7 dig it now";
+      detail = (RECIPE_LABELS2[batch.recipe] || batch.recipe) + " \xB7 dig it now";
     }
     rows.push(`<div class="cave-bin-row"><span class="cave-bin-name">Bin ${esc2(id)}</span><span class="cave-bin-state is-${st}">${STATE_LABELS[st]}</span><span class="cave-bin-detail">${esc2(detail)}</span></div>`);
   });
