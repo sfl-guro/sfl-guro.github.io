@@ -1,11 +1,10 @@
 import {
+  CONFIRM_ICON
+} from "./chunk.XKJMJZUJ.js";
+import {
   ICON_DATA
 } from "./chunk.VR6FV3KR.js";
 import "./chunk.AS3VMXOQ.js";
-
-// src/confirm_icon.js
-var CONFIRM_ICON_SRC = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAALBAMAAAC5XnFsAAAABGdBTUEAALGPC/xhBQAAAA9QTFRFAAAA////Y8dNJitEJlxCc7QKQgAAAAF0Uk5TAEDm2GYAAAA9SURBVAjXJYvBDQAgDAJJuoEjoAMY2wls95/JEnkc3AOg41u0MVWHCXPjyp6HlQhy1UZcCaIksJJI/9kbDyamCA9kAzYMAAAAAElFTkSuQmCC";
-var CONFIRM_ICON = `<img class="guro-confirm-icon" src="${CONFIRM_ICON_SRC}" alt="Confirmed">`;
 
 // src/pages/profile.js
 var FLOWER_ICON = "";
@@ -47,7 +46,7 @@ async function renderHarvest() {
   rootEl.innerHTML = `${tabsHtml()}<div class="pf-hlog-host" id="pfHarvestHost"></div>`;
   const host = rootEl.querySelector("#pfHarvestHost");
   try {
-    if (!harvestMod) harvestMod = await import("./harvest_log.E3EEYK4O.js");
+    if (!harvestMod) harvestMod = await import("./harvest_log.JVDMLHYW.js");
   } catch (e) {
     if (host) host.innerHTML = `<div class="dh-hlog-msg">Couldn't load history. Check your connection.</div>`;
     return;

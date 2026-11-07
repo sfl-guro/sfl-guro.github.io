@@ -1,0 +1,7 @@
+// src/confirm_icon.js
+var CONFIRM_ICON_SRC = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAALBAMAAAC5XnFsAAAABGdBTUEAALGPC/xhBQAAAA9QTFRFAAAA////Y8dNJitEJlxCc7QKQgAAAAF0Uk5TAEDm2GYAAAA9SURBVAjXJYvBDQAgDAJJuoEjoAMY2wls95/JEnkc3AOg41u0MVWHCXPjyp6HlQhy1UZcCaIksJJI/9kbDyamCA9kAzYMAAAAAElFTkSuQmCC";
+var CONFIRM_ICON = `<img class="guro-confirm-icon" src="${CONFIRM_ICON_SRC}" alt="Confirmed">`;
+
+export {
+  CONFIRM_ICON
+};
