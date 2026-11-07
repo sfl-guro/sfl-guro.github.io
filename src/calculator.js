@@ -35086,7 +35086,8 @@ function digDataLoadState() {
     detected: obj(s.detected),
     mats: s.autoMatsV1 === true ? obj(s.mats) : {},
     autoMatsV1: true,
-    toolsOpen: s.toolsOpen === true
+    toolsOpen: s.toolsOpen === true,
+    caveToolsOpen: s.caveToolsOpen === true
   };
   return digDataState;
 }
@@ -35419,6 +35420,45 @@ function digRenderToolCfg() {
   btn.setAttribute("aria-expanded", open ? "true" : "false");
   panel.style.display = open ? "" : "none";
   panel.innerHTML = open ? '<div class="es-toolcfg">' + DIG_COST_CARD_ORDER.map(digToolSectionHtml).join("") + "</div>" : "";
+}
+
+function caveToolUnitCoinsRaw(tool) {
+  const r = digToolRecipe(tool);
+  let total = r.coins;
+  r.materials.forEach(m => {
+    total += m.qty * digMatUnitCoins(tool, m.name);
+  });
+  return total;
+}
+
+export function caveToolUnitCoins(tool) {
+  return caveToolUnitCoinsRaw(tool);
+}
+
+export function caveToolSectionHtml(tool) {
+  const r = digToolRecipe(tool);
+  const coinRow = r.coins > 0 ? '<div class="es-toolcfg-mat"><div class="es-toolcfg-mat-name"><span class="es-toolcfg-qty">\u00d7' + digFmt(r.coins) + "</span>" + COIN_ICON + "</div></div>" : "";
+  const matRows = r.materials.map(m => digMatRowHtml(tool, m)).join("");
+  const unitRow = '<div class="es-toolcfg-mat dig-tool-unit"><span>Cost per tool</span><span class="es-toolcfg-qty dig-coin-val">' + digFmt(caveToolUnitCoinsRaw(tool)) + COIN_ICON + "</span></div>";
+  return '<div class="es-toolcfg-block"><div class="es-toolcfg-head"><div class="es-toolcfg-name">' + digIconHtml(tool) + "<span>" + escapeHtml(tool) + '</span></div></div><div class="es-toolcfg-mats-label">Materials:</div>' + coinRow + matRows + unitRow + "</div>";
+}
+
+export function caveToolCostsOpen() {
+  return digDataLoadState().caveToolsOpen === true;
+}
+
+export function caveToggleToolCosts() {
+  const st = digDataLoadState();
+  st.caveToolsOpen = !st.caveToolsOpen;
+  digDataSaveState();
+  return st.caveToolsOpen;
+}
+
+export function caveSetMatMode(owner, name, mode) {
+  if (mode !== "collect" && mode !== "buy") return;
+  const st = digDataLoadState();
+  st.mats[owner + ":" + name] = mode;
+  digDataSaveState();
 }
 
 function digTreasurePriceHtml(solved, pct) {

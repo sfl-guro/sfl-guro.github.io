@@ -837,6 +837,13 @@ function spiceLabelFor(rows) {
   return rows.some(r => r.type === "pig") ? "Spice & Mud" : "Spice";
 }
 
+function priceKvHtml(r) {
+  return r.products.map(p => {
+    const price = priceOf(p);
+    return kv("Market Price / Unit", `${ui.getIcon(p)} ${price > 0 ? flowerSigned(price) : "—"}`);
+  }).join("\n      ");
+}
+
 function computationCardHtml(r) {
   const fig = r.fig;
   const yieldHead = r.products.map((p, i) => `+${n2(fig.yields[i])}${ui.getIcon(p)}`).join(" ");
@@ -847,6 +854,7 @@ function computationCardHtml(r) {
     <div class="rc-group"><div class="rc-kv-grid">
       ${kv("Cycle Time", esc(calc.formatDuration(fig.cycleTimeSec)), "rc-kv-wide")}
       ${kv("Yield / Head", yieldHead, "rc-kv-wide")}
+      ${priceKvHtml(r)}
       ${kv("Feed Used", `${ui.getIcon(fig.feedNameUsed)} ${esc(fig.feedNameUsed)}`)}
       ${pigKvHtml(r)}
       ${kv("Feeds / Cycle", n2(fig.feedCount))}

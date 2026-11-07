@@ -1,6 +1,10 @@
-import { solveCaveBatch, collectCaveDugToday, CAVE_WIDTH } from "../cave_solver.js";
+import { solveCaveBatch, CAVE_WIDTH } from "../cave_solver.js";
 
 import { GOBLIN_MERCHANT_ICON } from "../goblin_merchant_icon.js";
+
+import { caveDataHtml, caveDataClick, caveDataChange } from "../cave_data.js";
+
+import { caveTrackFromState, caveDayTotals } from "../cave_track.js";
 
 const COLS = [ "A", "B", "C", "D", "E" ];
 
@@ -275,6 +279,16 @@ function merchantHtml(cave, game, now) {
   return `<div class="cave-board guro-frame cave-merchant">${head}${timer}<div class="cave-offers">${rows}</div></div>`;
 }
 
+function dugTodayCounts(farmKey, now) {
+  const day = caveDayTotals(farmKey, now);
+  const counts = {};
+  Object.keys(day.items).forEach(name => {
+    const it = day.items[name];
+    counts[name] = Math.round((it.b + it.x) * 1e6) / 1e6;
+  });
+  return counts;
+}
+
 function dugTodayHtml(counts) {
   const names = Object.keys(counts);
   const head = `<div class="cave-board-title"><span class="cave-myco-icon">${apiRef.ui.getIcon("Myco Bin")}</span> Dug from all Myco Bins</div>`;
@@ -285,7 +299,7 @@ function dugTodayHtml(counts) {
     if (b === "Mud") return 1;
     return counts[b] - counts[a] || a.localeCompare(b);
   });
-  const items = names.map(n => `<span class="cave-dug-item">+${counts[n]}${itemIcon(n)}</span>`).join("");
+  const items = names.map(n => `<span class="cave-dug-item">+${Math.round(counts[n] * 100) / 100}${itemIcon(n)}</span>`).join("");
   return `<div class="cave-board guro-frame cave-dug-today">${head}${sub}<div class="cave-dug-row">${items}</div></div>`;
 }
 
@@ -312,9 +326,19 @@ function render() {
   const tabs = ids.length > 1 ? tabsHtml(ids) : "";
   const boards = boardHtml(selectedBin, cave.machines[selectedBin] && cave.machines[selectedBin].batch, game, now);
   const merchant = merchantHtml(cave, game, now);
-  const dugToday = dugTodayHtml(collectCaveDugToday(cave, String(info && info.id ? info.id : "0"), now));
+  const farmKey = String(info && info.id ? info.id : "0");
+  try {
+    caveTrackFromState(game, farmKey);
+  } catch (e) {}
+  const dugToday = dugTodayHtml(dugTodayCounts(farmKey, now));
+  const dataCard = caveDataHtml({
+    api: apiRef,
+    game: game,
+    farmId: farmKey,
+    now: now
+  });
   const legend = `<div class="dig-panel-legend"><span class="dig-legend-item"><span class="dig-swatch dig-swatch-red"></span>Only Mud</span><span class="dig-legend-item"><span class="dig-swatch dig-swatch-yellow"></span>Chance</span><span class="dig-legend-item"><span class="dig-swatch dig-swatch-blue"></span>Sure thing</span></div>`;
-  card.innerHTML = `<div class="dig-panel-divider-solid"></div><div class="cave-top-row">${guideHtml()}${statusHtml(cave, ids, now)}</div>${legend}${tabs}<div class="cave-main"><div class="cave-boards">${dugToday}${boards}</div><div class="cave-merchant-wrap">${merchant}</div></div>`;
+  card.innerHTML = `<div class="dig-panel-divider-solid cave-hide-on-data"></div><div class="cave-top-row cave-hide-on-data">${guideHtml()}${statusHtml(cave, ids, now)}</div><div class="cave-hide-on-data">${legend}${tabs}</div><div class="cave-main"><div class="cave-boards cave-hide-on-data">${dugToday}${boards}</div><div class="cave-merchant-wrap">${dataCard}<div class="cave-hide-on-data">${merchant}</div></div></div>`;
   const growing = ids.some(id => {
     const b = cave.machines[id] && cave.machines[id].batch;
     return b && b.readyAt > now;
@@ -325,7 +349,15 @@ function render() {
   timer = growing || merchantTicking ? setTimeout(render, 30000) : null;
 }
 
+function onChange(e) {
+  if (caveDataChange(e)) render();
+}
+
 function onClick(e) {
+  if (caveDataClick(e)) {
+    render();
+    return;
+  }
   if (e.target.closest("[data-cave-guide]")) {
     guideOpen = !guideOpen;
     render();
@@ -365,6 +397,11 @@ function applyCavePatch(target, g) {
     });
     target.inventory = inv;
   }
+  if (g.farmActivity && g.farmActivity["Cave Tile Dug"] != null) {
+    target.farmActivity = Object.assign({}, target.farmActivity || {}, {
+      "Cave Tile Dug": g.farmActivity["Cave Tile Dug"]
+    });
+  }
   if (g.bumpkin && g.bumpkin.skills) {
     target.bumpkin = Object.assign({}, target.bumpkin || {}, {
       skills: g.bumpkin.skills
@@ -401,6 +438,9 @@ async function performCaveOnlySync() {
       applyCavePatch(merged, g);
       ip.farmPanelSaveGameState(merged);
     }
+    try {
+      caveTrackFromState(g, String(farmId));
+    } catch (e) {}
     render();
     calc.toast("🍄 Cave data synced!");
   } catch (e) {
@@ -416,14 +456,34 @@ function onSaved() {
   if (rootEl) render();
 }
 
+function setDataMode(root, on) {
+  root.classList.toggle("dig-show-data", on);
+  const btn = document.getElementById("digDataToggleBtn");
+  if (btn) btn.textContent = on ? "Cave" : "Data";
+}
+
+let onTitleClick = null;
+
 export function mount(root, api) {
   rootEl = root;
   apiRef = api;
   selected = {};
   guideOpen = false;
   selectedBin = null;
+  setDataMode(root, false);
+  const bar = document.getElementById("guroPageTitle");
+  if (bar) {
+    onTitleClick = ev => {
+      if (!ev.target.closest("#digDataToggleBtn")) return;
+      setDataMode(root, !root.classList.contains("dig-show-data"));
+    };
+    bar.addEventListener("click", onTitleClick);
+  }
   const card = root.querySelector("#caveCard");
-  if (card) card.addEventListener("click", onClick);
+  if (card) {
+    card.addEventListener("click", onClick);
+    card.addEventListener("change", onChange);
+  }
   const syncBtn = root.querySelector("#cavePanelSyncBtn");
   if (syncBtn) syncBtn.onclick = performCaveOnlySync;
   if (!listening) {
@@ -436,9 +496,16 @@ export function mount(root, api) {
 export function unmount() {
   clearTimeout(timer);
   timer = null;
+  const bar = document.getElementById("guroPageTitle");
+  if (bar && onTitleClick) bar.removeEventListener("click", onTitleClick);
+  onTitleClick = null;
   if (rootEl) {
+    rootEl.classList.remove("dig-show-data");
     const card = rootEl.querySelector("#caveCard");
-    if (card) card.removeEventListener("click", onClick);
+    if (card) {
+      card.removeEventListener("click", onClick);
+      card.removeEventListener("change", onChange);
+    }
   }
   rootEl = null;
 }
