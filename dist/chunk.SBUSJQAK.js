@@ -795,7 +795,7 @@ function lotLabel(key) {
 }
 function lotsHtml(lots) {
   if (!lots.length) return `<div class="ct-empty">No balance recorded yet.</div>`;
-  const rows = lots.map((l) => `<div class="ct-lot-row"><span>${esc(lotLabel(l.key))}</span><span>${fmtRes(l.acc)}</span><span>${l.used > 0 ? "-" : ""}${fmtRes(l.used)}</span><span>${fmtRes(l.remain)}</span></div>`).join("");
+  const rows = lots.slice().reverse().map((l) => `<div class="ct-lot-row"><span>${esc(lotLabel(l.key))}</span><span>${fmtRes(l.acc)}</span><span>${l.used > 0 ? "-" : ""}${fmtRes(l.used)}</span><span>${fmtRes(l.remain)}</span></div>`).join("");
   return `<div class="ct-lots"><div class="ct-lot-row ct-lot-head"><span>Date</span><span>Gained</span><span>Used</span><span>Remain</span></div>${rows}<div class="ct-note">Crafting, sales and other spending use your oldest balance first, then Other, and the harvest of the same day last.</div></div>`;
 }
 function resourceHtml(name, snap) {

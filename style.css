@@ -15861,6 +15861,7 @@ body.app-dark:not(.sfl-theme) .ct-chev{ filter:invert(1) brightness(.9); }
 .ct-trow{ grid-template-columns:minmax(0, 1.4fr) minmax(0, 1.3fr) repeat(3, minmax(0, .9fr)); }
 .ct-lot-row > span, .ct-trow > span{ padding:6px 6px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; background:linear-gradient(180deg, rgba(24,20,37,.3) 50%, transparent 50%) 100% 0/1px 6px repeat-y; }
 .ct-lot-row > span:last-child, .ct-trow > span:last-child{ background:none; }
+.ct-trow.ct-dr{ grid-template-columns:minmax(0, 1.6fr) minmax(0, 1.15fr) minmax(0, .85fr) minmax(0, 1fr); }
 .ct-lot-head, .ct-thead{ font-family:var(--pixel-font); font-size:8px; letter-spacing:.3px; text-transform:uppercase; }
 body.sfl-theme .ct-lots{ background:var(--sfl-outer) !important; color:var(--sfl-text); }
 body.app-dark:not(.sfl-theme) .ct-lots{ background:#24262d; color:#e8e5dc; }
