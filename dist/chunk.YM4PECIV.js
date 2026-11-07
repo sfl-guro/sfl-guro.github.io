@@ -102,6 +102,7 @@ function emptyView() {
     openDay: "",
     final: {},
     resView: {},
+    otherTools: {},
     sig: ""
   };
 }
@@ -238,10 +239,13 @@ function normalizeDay(raw) {
   }
   if (isObj(raw.r)) out.r = raw.r;
   if (isObj(raw.s) && sumR(raw.s) > 0) out.s = raw.s;
-  if (isObj(raw.i) && Number(raw.i.at) > 0 && isObj(raw.i.v)) out.i = {
-    at: Number(raw.i.at),
-    v: raw.i.v
-  };
+  if (isObj(raw.i) && Number(raw.i.at) > 0 && isObj(raw.i.v)) {
+    out.i = {
+      at: Number(raw.i.at),
+      v: raw.i.v
+    };
+    if (isObj(raw.i.t)) out.i.t = raw.i.t;
+  }
   if (isObj(raw.o)) out.o = raw.o;
   return out;
 }
@@ -328,6 +332,21 @@ function spendOrder(lots, day) {
   const current = lots.filter((l) => !isBought(l.key) && l.key === day);
   return [...old, ...other, ...current];
 }
+function remainTools(lots) {
+  return r2(lots.reduce((sum, lot) => sum + (lot.c - lot.u), 0));
+}
+function drainTools(lots, amount) {
+  let need = r2(amount);
+  const order = [...lots.filter((l) => l.key === "x"), ...lots.filter((l) => l.key !== "x")];
+  for (const lot of order) {
+    if (need <= 0) break;
+    const free = r2(lot.c - lot.u);
+    if (free <= 0) continue;
+    const take = Math.min(free, need);
+    lot.u = r2(lot.u + take);
+    need = r2(need - take);
+  }
+}
 function drain(lots, amount, sink, day) {
   let need = r2(amount);
   for (const lot of spendOrder(lots, day)) {
@@ -406,17 +425,36 @@ function computeLedger(list, facts) {
         c,
         u: 0
       });
-      let need = use[tool][day] || 0;
-      for (const lot of lots) {
-        if (need <= 0) break;
-        const free = r2(lot.c - lot.u);
-        if (free <= 0) continue;
-        const take = Math.min(free, need);
-        lot.u = r2(lot.u + take);
-        need = r2(need - take);
+      const need = use[tool][day] || 0;
+      const snapVal = facts[day] && facts[day].i && isObj(facts[day].i.t) ? facts[day].i.t[tool] : void 0;
+      const hasSnap = typeof snapVal === "number" && snapVal >= 0;
+      if (hasSnap) {
+        const gain = r2(snapVal - r2(remainTools(lots) - need));
+        if (gain > BALANCE_EPS) {
+          const other = lots.find((l) => l.key === "x");
+          if (other) other.c = r2(other.c + gain);
+          else lots.push({
+            key: "x",
+            c: gain,
+            u: 0
+          });
+        }
+      }
+      drainTools(lots, need);
+      if (hasSnap) {
+        const extra = r2(remainTools(lots) - snapVal);
+        if (extra > BALANCE_EPS) drainTools(lots, extra);
       }
     });
     toolLots[tool] = lots;
+  });
+  const otherTools = {};
+  TOOLS.forEach((tool) => {
+    const lot = toolLots[tool].find((l) => l.key === "x");
+    if (lot && lot.c > 0) otherTools[tool] = {
+      c: lot.c,
+      u: Math.min(lot.u, lot.c)
+    };
   });
   const recipes = RECIPES;
   const consumed = {};
@@ -493,6 +531,23 @@ function computeLedger(list, facts) {
     const merged = mergeDay(facts[day] || null, computed[day] || null);
     if (merged) final[day] = merged;
   });
+  Object.keys(final).forEach((day) => {
+    const rec = final[day];
+    if (!isObj(rec.t)) return;
+    const t = {};
+    Object.keys(rec.t).forEach((name) => {
+      const entry = Object.assign({}, rec.t[name]);
+      if (entry.c > 0) {
+        const cu = computed[day] && computed[day].t[name] && computed[day].t[name].u || 0;
+        if (cu > 0) entry.u = cu;
+        else delete entry.u;
+      }
+      t[name] = entry;
+    });
+    final[day] = Object.assign({}, rec, {
+      t
+    });
+  });
   const usedBy = {};
   Object.keys(final).forEach((day) => {
     [final[day].r, final[day].s].forEach((source) => {
@@ -523,6 +578,7 @@ function computeLedger(list, facts) {
     openDay,
     final,
     resView,
+    otherTools,
     sig: canon(final)
   };
 }
@@ -672,7 +728,8 @@ function craftedToolsTrack(g, farmId) {
   });
   snapDay.i = {
     at: now,
-    v: res
+    v: res,
+    t: tools
   };
   saveLocal(fid, rec);
 }
@@ -816,6 +873,16 @@ function dateHtml(day, rec) {
   }).join("");
   return `<div class="ct-date guro-frame"><div class="dh-hlog-dayhead"><span class="dh-hlog-date">${esc(dateLabel(day))}</span></div><div class="ct-trow ct-dr ct-thead"><span>Tools</span><span>Quantity</span><span>Used</span><span>Remain</span></div>${rows}</div>`;
 }
+function otherHtml() {
+  const names = TOOLS.filter((name) => view.otherTools[name]);
+  if (!names.length) return "";
+  const rows = names.map((name) => {
+    const e = view.otherTools[name];
+    const u = Math.min(e.u, e.c);
+    return `<div class="ct-trow ct-dr"><span class="ct-tcell">${getIcon(name)}<span class="ct-name">${esc(name)}</span></span><span>${fmtQty(e.c)}</span><span>${u > 0 ? "-" : ""}${fmtQty(u)}</span><span>${fmtQty(r2(e.c - u))}</span></div>`;
+  }).join("");
+  return `<div class="ct-date guro-frame"><div class="dh-hlog-dayhead"><span class="dh-hlog-date">Other</span></div><div class="ct-trow ct-dr ct-thead"><span>Tools</span><span>Quantity</span><span>Used</span><span>Remain</span></div>${rows}</div>`;
+}
 function render() {
   const host = ui.host;
   if (!host || !host.isConnected) return;
@@ -836,7 +903,7 @@ function render() {
   const dates = days.length ? `<div class="ct-dates">${cards}</div>${more}` : `<div class="ct-empty">No crafted tools recorded yet. Sync your farm after crafting to start recording.</div>`;
   const inventoryBox = `<div class="pf-box ct-box guro-frame"><div class="pf-title">Inventory</div>${toolsInv}<div class="ct-sub">Resources</div><div class="ct-res">${resRows}</div></div>`;
   const todayBox = `<div class="pf-box ct-box guro-frame"><div class="pf-title">Crafted Today</div>${todayHtml}</div>`;
-  host.innerHTML = `<div class="ct-head"><div class="pf-title">Daily Record of Crafted Tools</div><div class="ct-desc">Tools you craft are saved for each UTC day. Crafting, sales and other spending use your oldest balance first, then Other, and the harvest of the same day last. Mining uses your oldest tools first.</div></div><div class="ct-grid"><div class="ct-col">${inventoryBox}</div><div class="ct-col">${todayBox}${dates}</div></div>`;
+  host.innerHTML = `<div class="ct-head"><div class="pf-title">Daily Record of Crafted Tools</div><div class="ct-desc">Tools you craft are saved for each UTC day. Crafting, sales and other spending use your oldest balance first, then Other, and the harvest of the same day last. Tools from rewards or gifts go to Other and are used first, then your oldest crafted tools.</div></div><div class="ct-grid"><div class="ct-col">${inventoryBox}</div><div class="ct-col">${todayBox}${otherHtml()}${dates}</div></div>`;
 }
 function message(html) {
   const host = ui.host;
