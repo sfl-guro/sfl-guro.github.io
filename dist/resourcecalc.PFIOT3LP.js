@@ -33,6 +33,7 @@ import {
   LAVA_PIT_RECIPES,
   OBSIDIAN_WEEKLY_PURCHASE_CAP,
   OBSIDIAN_WEEKLY_SELL_CAP,
+  PIG_BRISTLES_PER_LEVEL,
   PIG_FEEDS,
   PIG_FEED_KEYS,
   PIG_MUD_PER_APPLICATION,
@@ -196,7 +197,7 @@ import {
   toast,
   updateCalcSummary,
   updateSkillSaveBarState
-} from "./chunk.GWA2MVPN.js";
+} from "./chunk.VF5SYN7G.js";
 import "./chunk.LPEVZJ4B.js";
 import "./chunk.YM4PECIV.js";
 import "./chunk.VR6FV3KR.js";
@@ -5898,9 +5899,12 @@ function levelsInfoHtml() {
     const rows = data.levels.map((lv, i) => {
       const level2 = i + 1;
       const xp = th[level2] - th[level2 - 1];
-      return `<div class="ct-trow an-lv-row"><span>${level2}</span><span>${n28(xp)}</span><span class="ct-tcell">${getIcon(FEED_LABELS[lv.feed])}<span>\xD7${n28(lv.qty)}</span></span></div>`;
+      const yields = data.products.map((p, pi) => lv.y[pi] > 0 ? `<span class="an-yield">+${n28(lv.y[pi])}${getIcon(p)}</span>` : "");
+      const bristles = type === "pig" ? PIG_BRISTLES_PER_LEVEL[level2] || 0 : 0;
+      if (bristles > 0) yields.push(`<span class="an-yield">+${n28(bristles)}${getIcon("Pig Bristles")}</span>`);
+      return `<div class="ct-trow an-lv-row an-lv-yrow"><span>${level2}</span><span>${n28(xp)}</span><span class="ct-tcell">${getIcon(FEED_LABELS[lv.feed])}<span>\xD7${n28(lv.qty)}</span></span><span class="an-yields">${yields.join("") || "\u2014"}</span></div>`;
     }).join("");
-    return `<div class="an-lv-block"><div class="an-lv-head"><span class="an-lv-icon">${iconOf(type)}</span><span class="an-lv-name">${esc8(data.label)}</span></div><div class="ct-trow ct-thead an-lv-row"><span>Level</span><span>Exp</span><span>Feed / Qty</span></div>${rows}</div>`;
+    return `<div class="an-lv-block"><div class="an-lv-head"><span class="an-lv-icon">${iconOf(type)}</span><span class="an-lv-name">${esc8(data.label)}</span></div><div class="ct-trow ct-thead an-lv-row an-lv-yrow"><span>Level</span><span>Exp</span><span>Feed / Qty</span><span>Yield</span></div>${rows}</div>`;
   }).join("");
   return `<div class="an-lv-list">${feedsInfoHtml()}${blocks}</div>`;
 }
