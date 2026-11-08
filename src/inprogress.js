@@ -2971,7 +2971,9 @@ function farmPanelComputeInProgressRaw(json, opts) {
         }, now, readyAtMs);
         const level = progress.level;
         const realFeedBuffName = animal.feedBuff && typeof animal.feedBuff === "object" && animal.feedBuff.name && (typeof animal.feedBuff.harvestsRemaining !== "number" || animal.feedBuff.harvestsRemaining > 0) ? animal.feedBuff.name : null;
-        const fig = computeAnimalYieldsForLevel(type, progress.claimLevel, realFeedBuffName);
+        const feedProjection = farmPanelProjectAnimalXp(type, progress.xp, progress);
+        const yieldLevel = feedProjection && !progress.isReadyState ? Math.min(15, Math.max(progress.claimLevel, feedProjection.level)) : progress.claimLevel;
+        const fig = computeAnimalYieldsForLevel(type, yieldLevel, realFeedBuffName);
         const feedInfo = getActiveFeedInfo(progress.costFeedKey);
         let animalFeedMultTotal = baseFeedMultTotal;
         if (realFeedBuffName === "Honey Treat") animalFeedMultTotal *= .75;
@@ -3049,8 +3051,8 @@ function farmPanelComputeInProgressRaw(json, opts) {
           xpNow: progress.xp,
           xpGap: progress.xpGap,
           xpPerFeed: progress.boostedFoodXp,
-          projection: farmPanelProjectAnimalXp(type, progress.xp, progress),
-          claimLevel: progress.claimLevel,
+          projection: feedProjection,
+          claimLevel: yieldLevel,
           loveXp: progress.expectedLoveXp,
           loveItem: animal.item || "",
           isReady: ready,
