@@ -16059,3 +16059,5 @@ html body.app-dark:not(.sfl-theme) .fp-feed-btn{ background-color:#2c2e36 !impor
 html body.app-dark:not(.sfl-theme) .fp-feed-btn.is-on{ background-color:#1c1e24 !important; border-image:var(--dark-btn-pressed-image) 3 3 4 3 fill !important; }
 .animal-merged-card .card-name-row .card-name{ display:flex; align-items:center; flex-wrap:nowrap; gap:6px; white-space:nowrap; }
 .animal-merged-card .card-name-row .card-name img{ width:18px !important; height:18px !important; flex:0 0 auto; image-rendering:pixelated; }
+
+.myco-beetle-gray{ display:inline-flex; align-items:center; justify-content:center; filter:grayscale(1); }
