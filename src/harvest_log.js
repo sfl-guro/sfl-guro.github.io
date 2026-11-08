@@ -368,8 +368,13 @@ function totalsAfterTools(totals, used) {
   Object.keys(used).forEach(name => {
     const e = out[name];
     if (!e) return;
+    const left = Math.round((e.a - Math.min(used[name], e.a)) * 100) / 100;
+    if (!(left > 0)) {
+      delete out[name];
+      return;
+    }
     const adjusted = Object.assign({}, e, {
-      a: Math.round((e.a - used[name]) * 100) / 100
+      a: left
     });
     delete adjusted.n;
     delete adjusted.g;

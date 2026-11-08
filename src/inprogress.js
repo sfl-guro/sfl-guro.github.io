@@ -9,7 +9,7 @@ import { $, hiveClockText, cookFoodIcon, getBoostIcon, getIcon, renderAnimalCard
 import { potionTrackFromState, digStreakTrackFromState } from "./calculator.js";
 
 import { caveTrackFromState } from "./cave_track.js";
-import { dailyHarvestTrack, dailyHarvestBadgeHtml, dailyHarvestSetYield, dailyHarvestSetResolver, dailyHarvestSetAnimalYieldProvider, dailyHarvestSetCookingProvider, dailyHarvestSetIconProvider, dailyHarvestSetToolProvider, dailyHarvestNodeToolMult } from "./daily_harvest.js";
+import { dailyHarvestTrack, dailyHarvestBadgeHtml, dailyHarvestSetYield, dailyHarvestSetResolver, dailyHarvestSetAnimalYieldProvider, dailyHarvestSetCookingProvider, dailyHarvestSetIconProvider, dailyHarvestSetToolProvider, dailyHarvestSetPriceProvider, dailyHarvestNodeToolMult } from "./daily_harvest.js";
 
 import { harvestLogArm } from "./harvest_log.js";
 
@@ -5706,6 +5706,11 @@ dailyHarvestSetAnimalYieldProvider(farmPanelClaimedAnimalYield);
 dailyHarvestSetCookingProvider(farmPanelCookingLogSlots);
 
 dailyHarvestSetIconProvider(cookingFoodOrFishIcon);
+
+dailyHarvestSetPriceProvider(name => ({
+  price: farmPanelGetMarketPriceFlower(name) || 0,
+  fee: (feePercent || 0) / 100
+}));
 
 function farmPanelDailyFarmId() {
   const stateId = farmPanelGameState && farmPanelGameState.id;

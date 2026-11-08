@@ -1,6 +1,6 @@
 import { FLOWER_ICON, getAnimalLevelFromXp, computePigTradeIn } from "./calculator.js";
 
-import { collectCaveDugToday, readCaveDugToday } from "./cave_solver.js";
+import { caveDayTotals } from "./cave_track.js";
 
 const STORE_KEY = "hl_daily_harvest_v1";
 
@@ -1226,9 +1226,6 @@ export function dailyHarvestTrack(g, farmId) {
   });
   trackCooking(g, rec, fresh, now);
   trackBristles(g, rec, fresh, now, prevSyncAt, start);
-  try {
-    if (g.cave && typeof g.cave === "object") collectCaveDugToday(g.cave, fid, now);
-  } catch (e) {}
   rec.prev = groups;
   const amtsNow = {};
   Object.keys(g.oilReserves || {}).forEach(id => {
@@ -1524,11 +1521,13 @@ export function dailyHarvestTotals(farmId) {
     addLogTotal(totals, "Pig Bristles", "animal", bris.a, bris.c, bp.price, bp.fee);
   }
   const caveKey = farmId ? String(farmId) : store.__last;
-  const dug = caveKey ? readCaveDugToday(caveKey, Date.now()) : {};
+  const dug = caveKey ? caveDayTotals(caveKey, Date.now()).items || {} : {};
   Object.keys(dug).forEach(name => {
     if (!CAVE_BEETLE_RE.test(name)) return;
+    const slot = dug[name];
+    const amount = slot ? (Number(slot.b) || 0) + (Number(slot.x) || 0) : 0;
     const bp = lookupPrice(name);
-    addLogTotal(totals, name, "cave", dug[name], 0, bp.price, bp.fee);
+    addLogTotal(totals, name, "cave", amount, 0, bp.price, bp.fee);
   });
   const cookTotals = rec.cook && rec.cook.totals ? rec.cook.totals : {};
   Object.keys(cookTotals).forEach(name => {

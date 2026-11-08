@@ -9,7 +9,7 @@ import {
   craftedToolsSync,
   craftedToolsTrack,
   craftedToolsViewFor
-} from "./chunk.YM4PECIV.js";
+} from "./chunk.ZJUAGS4L.js";
 import {
   ICON_DATA
 } from "./chunk.VR6FV3KR.js";
@@ -28270,84 +28270,6 @@ function caveBuriedCounts(batch) {
     beetleWeights: skills.beetleRarity || BEETLE_WEIGHTS
   };
 }
-var DUG_STORE_PREFIX = "guro_cave_dug_v1_";
-function utcDayStart(now) {
-  return Math.floor(now / 864e5) * 864e5;
-}
-function utcDayKey(now) {
-  return new Date(now).toISOString().substring(0, 10);
-}
-function loadDugStore(farmKey, day) {
-  try {
-    const raw = JSON.parse(localStorage.getItem(DUG_STORE_PREFIX + farmKey) || "null");
-    if (raw && raw.day === day && raw.items && typeof raw.items === "object") return raw;
-  } catch (e) {
-  }
-  return { day, items: {} };
-}
-function saveDugStore(farmKey, store) {
-  try {
-    localStorage.setItem(DUG_STORE_PREFIX + farmKey, JSON.stringify(store));
-  } catch (e) {
-  }
-}
-function tileName(tile) {
-  if (!tile) return null;
-  if (tile.type === "Beetle") return tile.beetle || "Beetle";
-  if (tile.type === "Mushroom") return tile.mushroom || "Mushroom";
-  return "Mud";
-}
-function collectCaveDugToday(cave, farmKey, now) {
-  const day = utcDayKey(now);
-  const start = utcDayStart(now);
-  const store = loadDugStore(farmKey, day);
-  let changed = false;
-  Object.keys(cave.machines || {}).forEach((machineId) => {
-    const batch = cave.machines[machineId] && cave.machines[machineId].batch;
-    if (!batch || !batch.dug) return;
-    let initial = null;
-    if (isCaveSeed(batch.seed)) {
-      try {
-        initial = generateCaveBoard(batch.recipe, batch.seed, batch.skills || {});
-      } catch (e) {
-        initial = null;
-      }
-    }
-    const revealed = revealedCaveTiles(batch, initial);
-    Object.keys(batch.dug).forEach((key) => {
-      const rec = batch.dug[key];
-      if (!rec || !(Number(rec.dugAt) >= start)) return;
-      const entry = revealed[key];
-      const name = entry && tileName(entry.tile);
-      if (!name) return;
-      const amount = name === "Mud" ? Math.max(1, Number(entry.tile.amount) || 1) : 1;
-      const id = machineId + ":" + batch.startedAt + ":" + key;
-      const prev = store.items[id];
-      if (!prev || prev.n !== name || prev.a !== amount) {
-        store.items[id] = { n: name, a: amount };
-        changed = true;
-      }
-    });
-  });
-  if (changed || !localStorage.getItem(DUG_STORE_PREFIX + farmKey)) saveDugStore(farmKey, store);
-  const counts = {};
-  Object.keys(store.items).forEach((id) => {
-    const item = store.items[id];
-    if (!item || !item.n) return;
-    counts[item.n] = (counts[item.n] || 0) + (Number(item.a) || 1);
-  });
-  return counts;
-}
-function readCaveDugToday(farmKey, now) {
-  const store = loadDugStore(farmKey, utcDayKey(now));
-  const counts = {};
-  Object.keys(store.items).forEach((id) => {
-    const item = store.items[id];
-    if (!item || !item.n) return;
-    counts[item.n] = (counts[item.n] || 0) + (Number(item.a) || 1);
-  });
-  return counts;
-}
 
 // src/cave_track.js
 var STORE_PREFIX = "guro_cave_track_v2_";
@@ -28414,7 +28336,7 @@ function caveMudAmount(base, g) {
   const muddy = skillRank(g && g.bumpkin && g.bumpkin.skills, "Muddy Bounty");
   return muddy ? round6(base * (1 + muddy)) : base;
 }
-function tileName2(tile) {
+function tileName(tile) {
   if (!tile) return null;
   if (tile.type === "Beetle") return tile.beetle || null;
   if (tile.type === "Mushroom") return tile.mushroom || null;
@@ -28519,7 +28441,7 @@ function caveTrackFromState(g, farmId) {
     const twinRank = skillRank(skills, "Twin Beetles");
     const groups = {};
     fresh.forEach((t, i) => {
-      const name = tileName2(t.tile);
+      const name = tileName(t.tile);
       if (!name) return;
       const day = utcDay(t.dugAt);
       const bucket = store.days[day] || (store.days[day] = emptyDay());
@@ -34177,6 +34099,10 @@ function farmPanelClaimedAnimalYield(groupKey, xp, buffName) {
 dailyHarvestSetAnimalYieldProvider(farmPanelClaimedAnimalYield);
 dailyHarvestSetCookingProvider(farmPanelCookingLogSlots);
 dailyHarvestSetIconProvider(cookingFoodOrFishIcon);
+dailyHarvestSetPriceProvider((name) => ({
+  price: farmPanelGetMarketPriceFlower(name) || 0,
+  fee: (feePercent || 0) / 100
+}));
 function farmPanelDailyFarmId() {
   const stateId = farmPanelGameState && farmPanelGameState.id;
   return String(stateId || farmPanelGetLastInfo().id || "");
@@ -72859,7 +72785,7 @@ var memStore = null;
 function utcDay2(ms) {
   return new Date(ms).toISOString().slice(0, 10);
 }
-function utcDayStart2(ms) {
+function utcDayStart(ms) {
   const d = new Date(ms);
   return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
 }
@@ -72958,6 +72884,9 @@ function carryCook(c) {
   };
 }
 var priceProvider;
+function dailyHarvestSetPriceProvider(fn) {
+  priceProvider = typeof fn === "function" ? fn : null;
+}
 function lookupPrice(name) {
   if (!priceProvider) return {
     price: 0,
@@ -73199,7 +73128,7 @@ function trackCooking(g, rec, fresh, now) {
   const cook = rec.cook || (rec.cook = carryCook(null));
   if (!cook.bld || typeof cook.bld !== "object") cook.bld = {};
   if (!cook.hint || typeof cook.hint !== "object") cook.hint = {};
-  const start = utcDayStart2(now);
+  const start = utcDayStart(now);
   const present = new Set(res.present);
   const cur = {};
   const seen = {};
@@ -73666,7 +73595,7 @@ function dailyHarvestTrack(g, farmId) {
   if (!g || typeof g !== "object") return;
   const now = Date.now();
   const today = utcDay2(now);
-  const start = utcDayStart2(now);
+  const start = utcDayStart(now);
   const store = freshStore();
   const fid = String(farmId || store.__last || "");
   if (!fid) return;
@@ -73990,10 +73919,6 @@ function dailyHarvestTrack(g, farmId) {
   });
   trackCooking(g, rec, fresh, now);
   trackBristles(g, rec, fresh, now, prevSyncAt, start);
-  try {
-    if (g.cave && typeof g.cave === "object") collectCaveDugToday(g.cave, fid, now);
-  } catch (e) {
-  }
   rec.prev = groups;
   const amtsNow = {};
   Object.keys(g.oilReserves || {}).forEach((id) => {
@@ -74281,11 +74206,13 @@ function dailyHarvestTotals(farmId) {
     addLogTotal(totals, "Pig Bristles", "animal", bris.a, bris.c, bp.price, bp.fee);
   }
   const caveKey2 = farmId ? String(farmId) : store.__last;
-  const dug = caveKey2 ? readCaveDugToday(caveKey2, Date.now()) : {};
+  const dug = caveKey2 ? caveDayTotals(caveKey2, Date.now()).items || {} : {};
   Object.keys(dug).forEach((name) => {
     if (!CAVE_BEETLE_RE.test(name)) return;
+    const slot = dug[name];
+    const amount = slot ? (Number(slot.b) || 0) + (Number(slot.x) || 0) : 0;
     const bp = lookupPrice(name);
-    addLogTotal(totals, name, "cave", dug[name], 0, bp.price, bp.fee);
+    addLogTotal(totals, name, "cave", amount, 0, bp.price, bp.fee);
   });
   const cookTotals = rec.cook && rec.cook.totals ? rec.cook.totals : {};
   Object.keys(cookTotals).forEach((name) => {
@@ -74424,7 +74351,7 @@ function dailyHarvestBadgeHtml(groupKey, kind, iconHtml2, farmId) {
   return `<span class="daily-harvest-badge guro-frame dh-${kind}" role="button" tabindex="0" data-dh-key="${escapeAttr(groupKey)}" data-dh-kind="${kind}" data-dh-farm="${escapeAttr(farmId || "")}"><span class="dh-ord">${info.estimated ? "~" : ""}${info.rounds}x</span><span class="dh-icon">${iconHtml2 || ""}${effectSvg(kind)}</span></span>`;
 }
 function formatResetIn(now) {
-  const next = utcDayStart2(now) + 864e5;
+  const next = utcDayStart(now) + 864e5;
   const mins = Math.max(0, Math.floor((next - now) / 6e4));
   const h = Math.floor(mins / 60);
   const m = mins % 60;
@@ -74990,8 +74917,13 @@ function totalsAfterTools(totals, used) {
   Object.keys(used).forEach((name) => {
     const e = out[name];
     if (!e) return;
+    const left = Math.round((e.a - Math.min(used[name], e.a)) * 100) / 100;
+    if (!(left > 0)) {
+      delete out[name];
+      return;
+    }
     const adjusted = Object.assign({}, e, {
-      a: Math.round((e.a - used[name]) * 100) / 100
+      a: left
     });
     delete adjusted.n;
     delete adjusted.g;

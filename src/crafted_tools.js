@@ -885,10 +885,12 @@ export function craftedToolsViewFor(day) {
   }));
   if (!tools.length) return null;
   const own = {};
-  const r = rec.r || {};
-  Object.keys(r).forEach(res => {
-    const amount = r[res] && Number(r[res][day]);
-    if (amount > 0) own[res] = amount;
+  [ rec.r, rec.s ].forEach(source => {
+    if (!isObj(source)) return;
+    Object.keys(source).forEach(res => {
+      const amount = isObj(source[res]) ? Number(source[res][day]) : 0;
+      if (amount > 0) own[res] = r2((own[res] || 0) + amount);
+    });
   });
   return {
     tools: tools,
