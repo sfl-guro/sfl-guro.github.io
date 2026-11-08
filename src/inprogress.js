@@ -5364,7 +5364,7 @@ function farmPanelMycoBuriedFigures(row) {
   const muddy = row.muddyLevel ? MYCO_MUDDY_BONUS[row.muddyLevel - 1] : 0;
   const twin = row.twinLevel ? MYCO_TWIN_CHANCE[row.twinLevel - 1] : 0;
   const mushroomQty = buried.Mushroom * (1 + fungal);
-  const beetleQty = buried.Beetle * (1 + twin);
+  const beetleQty = buried.Beetle;
   const mudQty = buried.Mud * (buried.mudPerTile || 1) * (1 + muddy);
   const weights = buried.beetleWeights || {};
   const weightTotal = Object.values(weights).reduce((a, v) => a + v, 0) || 1;
