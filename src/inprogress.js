@@ -5429,10 +5429,11 @@ function farmPanelRenderMycoCard(row) {
   }
   const fig = farmPanelMycoBuriedFigures(row);
   const shown = fig ? fig.items.filter(i => i.qty > 0) : [];
-  const chipsHtml = shown.map(i => `\n      <span class="animal-produce-chip myco-produce-chip">\n        <span class="produce-yield">+${fmtCompost(i.qty)}</span>\n        <span class="produce-icon">${getIcon(i.icon)}</span>\n        <span class="produce-name">${i.key}</span>\n      </span>`).join("");
+  const mycoIcon = i => i.key === "Beetle" ? `<span class="myco-beetle-gray">${getIcon(i.icon)}</span>` : getIcon(i.icon);
+  const chipsHtml = shown.map(i => `\n      <span class="animal-produce-chip myco-produce-chip">\n        <span class="produce-yield">+${fmtCompost(i.qty)}</span>\n        <span class="produce-icon">${mycoIcon(i)}</span>\n        <span class="produce-name">${i.key}</span>\n      </span>`).join("");
   const foldRowHtml = chipsHtml ? `<div class="animal-fold-row">${chipsHtml}</div>` : "";
   const valueBlockHtml = fig && fig.gross > 0 ? guroValueBlockHtml(fig.gross, fig.fee, fmt) : "";
-  const itemRows = shown.map(i => renderAnimalCardProductDetailRow(getIcon(i.icon), i.key, i.qty, i.gross, i.fee)).join("");
+  const itemRows = shown.map(i => renderAnimalCardProductDetailRow(mycoIcon(i), i.key, i.qty, i.gross, i.fee)).join("");
   const priceRows = shown.map(i => `<div class="animal-detail-stat"><span class="label">${i.key} Price/Unit</span><span class="value">${fmt(i.unit)} ${FLOWER_ICON}</span></div>`).join("");
   const totalsHtml = fig && shown.length ? `
         <div class="animal-detail-stat"><span class="label">Market Value</span><span class="value">${fmt(fig.gross)} ${FLOWER_ICON}</span></div>
