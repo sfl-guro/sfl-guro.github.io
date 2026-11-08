@@ -581,6 +581,27 @@ export function dailyHarvestSetResolver(fn) {
   pendResolver = typeof fn === "function" ? fn : null;
 }
 
+var animalYieldProvider;
+
+export function dailyHarvestSetAnimalYieldProvider(fn) {
+  animalYieldProvider = typeof fn === "function" ? fn : null;
+}
+
+function claimedAnimalYield(groupKey, current, before) {
+  if (!animalYieldProvider || !current) return null;
+  const state = typeof current.s === "string" ? current.s : "";
+  let xp = null;
+  if (state === "idle" || state === "sick") xp = current.x;
+  else if (before && before.s === "ready") xp = before.x;
+  if (typeof xp !== "number" || !isFinite(xp)) return null;
+  const buff = before && typeof before.s === "string" ? before.b || "" : current.b || "";
+  try {
+    return animalYieldProvider(groupKey, xp, buff);
+  } catch (e) {
+    return null;
+  }
+}
+
 function pickActivity(fa) {
   const out = {};
   if (!fa || typeof fa !== "object") return out;
@@ -781,6 +802,12 @@ function collectGroups(g, now) {
       if (!animal || !animal.type) return;
       const ts = numTs(animal.asleepAt);
       add(animal.type, "ts", id, ts, String(ts), false, undefined, "animal");
+      const node = groups[animal.type].nodes[id];
+      const xp = Number(animal.experience);
+      if (isFinite(xp)) node.x = xp;
+      if (typeof animal.state === "string") node.s = animal.state;
+      const fb = animal.feedBuff;
+      if (fb && typeof fb === "object" && fb.name && !(fb.harvestsRemaining <= 0)) node.b = fb.name;
     });
   });
   return groups;
@@ -1080,12 +1107,27 @@ export function dailyHarvestTrack(g, farmId) {
         y: 0,
         miss: false,
         tl: 0,
-        ids: []
+        ids: [],
+        p: null
       });
       b.t = Math.max(b.t, t);
       b.n += 1;
       b.tl += nodeToolMult(id);
       b.ids.push(id);
+      if (grp.kind === "animal" && animalYieldProvider) {
+        const priorNode = prev && prev.nodes ? prev.nodes[id] : carried && carried.nodes ? carried.nodes[id] : null;
+        const real = claimedAnimalYield(groupKey, grp.nodes[id], priorNode);
+        if (real && typeof real.total === "number" && real.parts) {
+          b.y += real.total;
+          b.p = b.p || {};
+          Object.keys(real.parts).forEach(name => {
+            b.p[name] = (b.p[name] || 0) + real.parts[name];
+          });
+          return;
+        }
+        b.miss = true;
+        return;
+      }
       const known = rec.amts ? rec.amts[id] : null;
       const prevAmt = typeof known === "number" && known > 0 ? known : null;
       const oilAmt = groupKey === "Oil" ? prevAmt !== null ? prevAmt : oilAmountOf(g, id) : null;
@@ -1099,6 +1141,7 @@ export function dailyHarvestTrack(g, farmId) {
         n: b.n,
         y: b.miss ? null : b.y
       };
+      if (!b.miss && b.p) entry.p = b.p;
       if (toolInfo) entry.tl = roundTools(b.tl * toolInfo.factor);
       if (resolvable) entry.ids = b.ids;
       return entry;

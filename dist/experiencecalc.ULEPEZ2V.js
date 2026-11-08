@@ -16,7 +16,7 @@ import {
   skillCategory,
   toast,
   updateSkillSaveBarState
-} from "./chunk.GWA2MVPN.js";
+} from "./chunk.VF5SYN7G.js";
 import "./chunk.LPEVZJ4B.js";
 import "./chunk.YM4PECIV.js";
 import "./chunk.VR6FV3KR.js";
@@ -45,13 +45,13 @@ function pct(mult) {
   return `+${n2((mult - 1) * 100)}%`;
 }
 function expBoosts() {
-  return BOOSTS.filter((b) => b.category === "cooking" || b.agedFishXpMult);
+  return BOOSTS.filter((b) => b.category === "cooking" || b.agedFishXpMult || b.agingTimeMult);
 }
 function boostGroupLabel(b) {
   if (b.id === "vip_access") return "VIP";
   if (b.portBud) return "Buds";
   if (b.scope === "cookTimeGlobal") return "Cooking Time";
-  if (b.agedFishXpMult) return "Fish Aging";
+  if (b.agedFishXpMult || b.agingTimeMult) return "Fish Aging";
   return "Food and Fish EXP";
 }
 function boostEffectText(b) {
@@ -63,6 +63,7 @@ function boostEffectText(b) {
   if (b.expAdd) parts.push(`+${n2(b.expAdd)} flat EXP`);
   if (b.timeMult) parts.push(`${n2((b.timeMult - 1) * 100)}% cooking time`);
   if (b.agedFishXpMult) parts.push(`\xD7${n2(b.agedFishXpMult)} aged fish EXP`);
+  if (b.agingTimeMult) parts.push(`\xD7${n2(b.agingTimeMult)} fish aging time`);
   return parts.join(", ");
 }
 function boostRowHtml(b) {

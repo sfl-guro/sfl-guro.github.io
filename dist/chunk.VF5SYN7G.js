@@ -24,6 +24,7 @@ __export(calculator_exports, {
   ALWAYS_ON_BOOST_IDS: () => ALWAYS_ON_BOOST_IDS,
   ANIMAL_BASE_CYCLE_SEC: () => ANIMAL_BASE_CYCLE_SEC,
   ANIMAL_DATA: () => ANIMAL_DATA,
+  ANIMAL_FEED_CHOICES: () => ANIMAL_FEED_CHOICES,
   ANIMAL_LOVE_ITEM_XP: () => ANIMAL_LOVE_ITEM_XP,
   ANIMAL_PRODUCT_LOOKUP: () => ANIMAL_PRODUCT_LOOKUP,
   ANIMAL_XP_THRESHOLDS: () => ANIMAL_XP_THRESHOLDS,
@@ -527,6 +528,7 @@ __export(calculator_exports, {
   findVarietiesBySeedIngredient: () => findVarietiesBySeedIngredient,
   finderIngredient: () => finderIngredient,
   finderSeed: () => finderSeed,
+  fishAgingTimeInfo: () => fishAgingTimeInfo,
   fishBudSummaryText: () => fishBudSummaryText,
   fishBuds: () => fishBuds,
   fishCatchComputeXP: () => fishCatchComputeXP,
@@ -921,6 +923,7 @@ __export(calculator_exports, {
   weatherBoostAppliesToItem: () => weatherBoostAppliesToItem,
   weatherDestructionSync: () => weatherDestructionSync,
   wireEvents: () => wireEvents,
+  withAnimalFeedContext: () => withAnimalFeedContext,
   withPreservedCardScrolls: () => withPreservedCardScrolls,
   withPreservedManualCycleFocus: () => withPreservedManualCycleFocus,
   withPreservedResourceScroll: () => withPreservedResourceScroll,
@@ -1692,7 +1695,8 @@ __export(inprogress_exports, {
   farmPanelSetHiddenCards: () => farmPanelSetHiddenCards,
   farmPanelStateIsCached: () => farmPanelStateIsCached,
   farmPanelSyncInFlight: () => farmPanelSyncInFlight,
-  farmPanelTabContentDirty: () => farmPanelTabContentDirty
+  farmPanelTabContentDirty: () => farmPanelTabContentDirty,
+  setFarmPanelAnimalFeedChoice: () => setFarmPanelAnimalFeedChoice
 });
 
 // src/prices.js
@@ -9677,6 +9681,7 @@ function boostFx(ids) {
     cheese: 0,
     specific: {},
     time: 1,
+    agingTime: 1,
     fishYield: [],
     crust: [],
     crustTime: [],
@@ -9701,6 +9706,7 @@ function boostFx(ids) {
     const b = BOOSTS.find((x) => x.id === id);
     if (!b || isBoostActive(b.id)) return;
     if (b.agedFishXpMult) fx.aged *= b.agedFishXpMult;
+    if (b.agingTimeMult) fx.agingTime *= b.agingTimeMult;
     if (b.scope === "foodGlobal" && b.expMult) fx.food *= b.expMult;
     else if (b.scope === "foodFish" && b.expMult) fx.fish *= b.expMult;
     else if (b.scope === "foodCheese" && b.expAdd) fx.cheese += b.expAdd;
@@ -9856,7 +9862,7 @@ function scoreFish(r, st, ranks, fx) {
   const myYield = 1 + boostAdd + fishSkillAdd(r.tier, ranks) + pickedAdd;
   const casts = castsFor(ranks);
   let perDay = casts * myYield;
-  const agingMult = 1 - (BG_SPEEDY_AGING[(ranks.skill_speedy_aging || 0) - 1] || 0);
+  const agingMult = (1 - (BG_SPEEDY_AGING[(ranks.skill_speedy_aging || 0) - 1] || 0)) * (isBoostActive("fish_trap") ? 0.8 : 1) * (fx ? fx.agingTime : 1);
   if (stage === "aged") perDay = Math.min(perDay, st.agingSlots * BG_DAY / (r.agingSec * agingMult));
   let catchCost = r.yieldScaled ? r.catchCost * r.appYield / myYield : r.catchCost;
   if (fx && fx.rodFree && !r.guaranteed) catchCost = Math.max(0, catchCost - fishRodCostCoins() / (r.yieldScaled ? myYield : r.appYield));
@@ -10350,6 +10356,7 @@ function boostGain(b, plan) {
   const cook = plan.cook;
   const fish = plan.fish;
   if (b.agedFishXpMult) return fish && fish.stage === "aged" ? fish.xpDay * (b.agedFishXpMult - 1) : 0;
+  if (b.agingTimeMult) return fish && fish.stage === "aged" && fish.castsUsed < fish.casts - 1e-9 ? fish.xpDay * (Math.min(1 / b.agingTimeMult, fish.casts / fish.castsUsed) - 1) : 0;
   if (b.scope === "foodGlobal") return (plan.xpDay || 0) * (b.expMult - 1);
   if (b.scope === "foodFish") return fish ? fish.xpDay * (b.expMult - 1) : 0;
   if (b.scope === "foodCheese") return cook && cook.usesCheese ? b.expAdd * cook.per24 : 0;
@@ -10369,13 +10376,13 @@ function boostEntry(b, plan) {
     gain,
     price,
     payback: price > 0 && weighted > 0 ? price / weighted : 0,
-    group: b.category === "fishing" ? "Fish yield" : b.scope === "foodFish" ? "Fish EXP" : b.scope === "cookTimeGlobal" ? "Cooking speed" : "Food EXP"
+    group: b.agingTimeMult ? "Fish EXP" : b.category === "fishing" ? "Fish yield" : b.scope === "foodFish" ? "Fish EXP" : b.scope === "cookTimeGlobal" ? "Cooking speed" : "Food EXP"
   };
 }
 function boostSuggestions(plan) {
   const out = [];
   BOOSTS.forEach((b) => {
-    if (b.category !== "cooking" || isBoostActive(b.id)) return;
+    if (b.category !== "cooking" && !b.agingTimeMult || isBoostActive(b.id)) return;
     if (/\(|Shrine|Totem|Hourglass/.test(b.name)) return;
     const e = boostEntry(b, plan);
     if (e.gain <= 0) return;
@@ -10403,7 +10410,7 @@ function strategyBoosts(st, plan) {
     if (st.strategy === "fish") {
       if (b.scope === "fishYield") group = "Fish yield";
       else if (b.scope === "foodGlobal" && b.expMult) group = "Food and fish EXP (affects both)";
-      else if (b.agedFishXpMult) group = "Fish EXP";
+      else if (b.agedFishXpMult || b.agingTimeMult) group = "Fish EXP";
       else if (b.scope === "foodFish") group = "Fish EXP";
       else if (b.scope === "fishRod") group = "Fish rod (cheaper catches)";
       else if (b.scope === "fishMarket") group = "Fish Market output (yield and speed)";
@@ -12559,7 +12566,7 @@ function draftToggleBoost(id) {
     toast(`\u{1F512} ${boost.name} only works in ${seasonLabel} \u2014 switch the season toggle above to turn it on`);
     return;
   }
-  if (!isBoostDraftActive(id) && !hasPlotsNodesData() && !(boost && (boost.category === "cooking" || boost.agedFishXpMult))) {
+  if (!isBoostDraftActive(id) && !hasPlotsNodesData() && !(boost && (boost.category === "cooking" || boost.agedFishXpMult || boost.agingTimeMult))) {
     const missing = getMissingPlotNodeFields();
     let msg;
     if (missing.length === 1) {
@@ -13192,6 +13199,9 @@ function renderBoostPanel() {
     }, {
       label: "\u{1F3EA} Fish Market",
       items: inCategory.filter((b) => b.scope === "fishMarket")
+    }, {
+      label: "\u23F3 Fish Aging time (Aging Shed)",
+      items: inCategory.filter((b) => b.scope === "fishAging")
     }];
   } else {
     const calendarEventOrder = ["Bountiful Harvest", "Sunshower", "Insect Plague", "Tsunami", "Tornado", "Great Freeze"];
@@ -13274,6 +13284,7 @@ function renderBoostPanel() {
       if (b.primeChanceAdd) parts.push(`+${fmt(b.primeChanceAdd)}% Prime Aged chance`);
       if (b.doubleChancePct) parts.push(`${fmt(b.doubleChancePct)}% chance to double Fermentation &amp; Spice Rack output`);
       if (b.agedFishXpMult) parts.push(`\xD7${b.agedFishXpMult} XP from Aged Fish`);
+      if (b.agingTimeMult) parts.push(`\xD7${b.agingTimeMult} Fish Aging time`);
       if (b.spiceOutputAdd) parts.push(`+${fmt(b.spiceOutputAdd)} Spice Rack output`);
       if (b.oilQtyMult) parts.push(`\xD7${b.oilQtyMult} Oil cost`);
       if (b.feedBuffHarvests) parts.push(`Salt Lick / Honey Treat lasts ${b.feedBuffHarvests} harvests, Truffle Seasoning ${b.feedBuffHarvests / 3} sleeps`);
@@ -15118,6 +15129,8 @@ function renderAnimalYieldGroupsList(card2) {
     const xpTag = a.isMaxCycle ? `<span class="tier-tag">MAX</span>` : `<span class="tier-tag">XP ${num(a.xpNow)}/${num(a.nextThreshold)}</span>`;
     const lvlTag = needsFeed(a) && !a.isMaxCycle ? `LVL ${a.level} \u2192 ${Math.max(a.level + 1, a.claimLevel)}` : `LVL ${a.level}`;
     const feedIcon = a.feedToNextName ? getIcon(a.feedToNextName) : "";
+    const proj = needsFeed(a) && a.projection ? a.projection : null;
+    const projHtml = proj ? `<div class="ay-proj"><span class="tier-tag ay-proj-tag">Projected LVL ${proj.level} XP ${num(proj.xp)}/${num(proj.threshold)}</span></div>` : "";
     let needHtml;
     if (feedsOf(a) > 0) {
       needHtml = `<div class="ay-need"><span class="ay-k">XP needed</span><b class="ay-v">${num(a.xpGap)}</b><span class="ay-sep"></span><span class="ay-k">Feed</span><span class="ay-feed"><b>\xD7${num(feedsOf(a))}</b>${feedIcon} ${escapeHtml(a.feedToNextName || "")}</span><span class="ay-xpe">+${num(a.xpPerFeed)} XP each</span></div>${a.loveXp > 0 ? `<div class="ay-why">Love XP from ${escapeHtml(a.loveItem || "petting")} (about ${num(a.loveXp)} XP) may cover this instead of a feed.</div>` : ""}`;
@@ -15132,7 +15145,7 @@ function renderAnimalYieldGroupsList(card2) {
       const val = a.yields[idx] || 0;
       return `<div class="animal-yield-subline"><span class="sublabel">${getIcon(pname)} ${escapeHtml(pname)}</span><span class="value">${fmtAnimal(val)}</span></div>`;
     }).join("");
-    return `<div class="boost-applied-row is-yield animal-yield-group-row ay-animal"><div class="animal-yield-group-head">${animalIcon} <b>${escapeHtml(card2.typeLabel)} #${a.number}</b><span class="ay-id">${escapeHtml(a.shortId)}</span>${xpTag}<span class="tier-tag">${lvlTag}</span></div><div class="ay-bar"><div class="ay-fill" style="width:${pct.toFixed(1)}%;height:6px;background:#7bc65a;flex:none"></div></div>${needHtml}<div class="animal-yield-sublines">${productLines}</div></div>`;
+    return `<div class="boost-applied-row is-yield animal-yield-group-row ay-animal"><div class="animal-yield-group-head">${animalIcon} <b>${escapeHtml(card2.typeLabel)} #${a.number}</b><span class="ay-id">${escapeHtml(a.shortId)}</span>${xpTag}<span class="tier-tag">${lvlTag}</span></div>${projHtml}<div class="ay-bar"><div class="ay-fill" style="width:${pct.toFixed(1)}%;height:6px;background:#7bc65a;flex:none"></div></div>${needHtml}<div class="animal-yield-sublines">${productLines}</div></div>`;
   }).join("");
   return `${summaryHtml}<div class="lib-section-title" style="margin-top:10px;">Animal Yield \xB7 Each Animal</div>${rows}`;
 }
@@ -15233,7 +15246,49 @@ function renderBeehiveListHtml(honeyHiveDetails) {
   }).join("");
   return `<div class="lib-section-title" style="margin-top:10px;">\u{1F41D} Bee Hives</div><div class="hive-list">${rows}</div>`;
 }
+function farmPanelScrollParents(el) {
+  const out = [];
+  let p = el.parentElement;
+  while (p) {
+    const oy = getComputedStyle(p).overflowY;
+    if ((oy === "auto" || oy === "scroll" || oy === "overlay") && p.scrollHeight > p.clientHeight) out.push(p);
+    p = p.parentElement;
+  }
+  const se = document.scrollingElement;
+  if (se && out.indexOf(se) < 0) out.push(se);
+  return out;
+}
+function renderFarmPanelTabContentAnchored(btn) {
+  const wrap = $("farmPanelTabContent");
+  const card2 = btn.closest(".card[data-search]");
+  const key = card2 ? card2.getAttribute("data-search") : null;
+  const anchor = card2 ? card2.querySelector(".fp-feed-pick") : null;
+  const before = anchor ? anchor.getBoundingClientRect().top : 0;
+  const parents = wrap ? farmPanelScrollParents(wrap) : [];
+  const tops = parents.map((p) => p.scrollTop);
+  if (wrap) wrap.style.minHeight = wrap.offsetHeight + "px";
+  renderFarmPanelTabContent();
+  parents.forEach((p, i) => {
+    p.scrollTop = tops[i];
+  });
+  if (wrap && key != null && parents.length) {
+    const next = Array.from(wrap.querySelectorAll(".card[data-search]")).find((c) => c.getAttribute("data-search") === key);
+    const nextAnchor = next ? next.querySelector(".fp-feed-pick") : null;
+    if (nextAnchor) {
+      const delta = nextAnchor.getBoundingClientRect().top - before;
+      if (Math.abs(delta) > 0.5) parents[0].scrollTop += delta;
+    }
+  }
+  if (wrap) wrap.style.minHeight = "";
+}
 function attachFarmPanelCardToggles(wrap) {
+  wrap.querySelectorAll(".fp-feed-btn").forEach((btn) => {
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      setFarmPanelAnimalFeedChoice(btn.getAttribute("data-fp-feed-type"), btn.getAttribute("data-fp-feed"));
+      renderFarmPanelTabContentAnchored(btn);
+    };
+  });
   wrap.querySelectorAll(".card-toggle").forEach((el) => {
     el.onclick = () => {
       const card2 = el.closest(".card");
@@ -20957,7 +21012,9 @@ function renderFishCatchCard(fishName, cat) {
       <div class="cook-ingredient-row ing-row-boxed"><span>${getIcon("Salt")}</span><span class="ing-name">Salt \xD7${fmt(af.saltQty)}</span><span class="ing-cost">${fmt(coinsToFlower(af.saltCostCoins))}${FLOWER_ICON}/u</span></div>
     `;
     ingredientTotalRows = `${fishIngTotalRowHtml(fishName, 1, af.basicFishCost, effectiveCount)}${fishIngTotalRowHtml("Salt", af.saltQty, af.saltCostCoins, effectiveCount)}`;
-    extraNote = `${stage === "primeAged" ? `<div style="font-size:9px;color:var(--ink-soft);margin-top:2px;">Same recipe as Aged \u2014 Prime Aged is a bonus chance on the same batch, not an extra cost.</div>` : ``}${cookingGuaranteedCatchOn ? `<div style="font-size:9px;color:var(--ink-soft);margin-top:2px;">\u{1F3AF} Guaranteed Catch is on \u2014 the ${escapeHtml(fishName)} cost above already uses the Fish Market recipe cost instead of Rod + Bait + Chum.</div>` : ``}${cookingCostMode === "buy" ? `<div style="font-size:9px;color:var(--ink-soft);margin-top:2px;">\u{1F6D2} Buy \u2014 Salt priced at Marketplace rate.</div>` : ``}`;
+    const agingInfo = fishAgingTimeInfo(fishName);
+    const agingLine = agingInfo ? `<div style="font-size:9px;color:var(--ink-soft);margin-top:2px;">\u23F3 Aging time: ${escapeHtml(formatDuration(agingInfo.sec))}${agingInfo.parts.length ? ` (base ${escapeHtml(formatDuration(agingInfo.baseSec))} \xB7 ${agingInfo.parts.map((p) => `${escapeHtml(p.name)} \xD7${p.mult}`).join(" \xB7 ")})` : ``}</div>` : ``;
+    extraNote = `${agingLine}${stage === "primeAged" ? `<div style="font-size:9px;color:var(--ink-soft);margin-top:2px;">Same recipe as Aged \u2014 Prime Aged is a bonus chance on the same batch, not an extra cost.</div>` : ``}${cookingGuaranteedCatchOn ? `<div style="font-size:9px;color:var(--ink-soft);margin-top:2px;">\u{1F3AF} Guaranteed Catch is on \u2014 the ${escapeHtml(fishName)} cost above already uses the Fish Market recipe cost instead of Rod + Bait + Chum.</div>` : ``}${cookingCostMode === "buy" ? `<div style="font-size:9px;color:var(--ink-soft);margin-top:2px;">\u{1F6D2} Buy \u2014 Salt priced at Marketplace rate.</div>` : ``}`;
   }
   const fishYieldCount = d ? fishCatchYieldMult(d.tier) : 1;
   return `
@@ -28608,6 +28665,71 @@ var farmPanelHoneySnapshotMs = Date.now();
 var farmPanelTabContentDirty = false;
 var farmPanelActiveTab = "inprogress";
 var farmPanelExpandedNames = /* @__PURE__ */ new Set();
+var farmPanelAnimalFeedChoice = (() => {
+  try {
+    const raw = JSON.parse(localStorage.getItem("fp_animal_feed_choice") || "{}");
+    return raw && typeof raw === "object" ? raw : {};
+  } catch (e) {
+    return {};
+  }
+})();
+var FAVOURITE_FEED_KEY = "favourite";
+function setFarmPanelAnimalFeedChoice(type, key) {
+  if (!ANIMAL_FEED_CHOICES[type]) return;
+  if (key && (key === FAVOURITE_FEED_KEY || ANIMAL_FEED_CHOICES[type].indexOf(key) >= 0) && farmPanelAnimalFeedChoice[type] !== key) farmPanelAnimalFeedChoice[type] = key;
+  else delete farmPanelAnimalFeedChoice[type];
+  try {
+    localStorage.setItem("fp_animal_feed_choice", JSON.stringify(farmPanelAnimalFeedChoice));
+  } catch (e) {
+  }
+}
+function farmPanelProjectAnimalXp(type, xpNow, progress) {
+  const thresholds = ANIMAL_XP_THRESHOLDS[type];
+  if (!thresholds || progress.isReadyState || !(progress.xpGap > 0) || !(progress.boostedFoodXp > 0)) return null;
+  const feeds = Math.ceil(progress.xpGap / progress.boostedFoodXp - 1e-9);
+  if (!(feeds > 0)) return null;
+  const xp = Math.round((xpNow + feeds * progress.boostedFoodXp) * 1e6) / 1e6;
+  const level = getAnimalLevelFromXp(type, xp, true);
+  const maxXp = thresholds[15];
+  let threshold;
+  if (level >= 15) {
+    const cycle = maxXp - thresholds[14];
+    threshold = maxXp + cycle * (Math.floor((xp - maxXp) / cycle + 1e-9) + 1);
+  } else {
+    threshold = thresholds[level + 1];
+  }
+  return {
+    feeds,
+    xp,
+    level,
+    threshold
+  };
+}
+function farmPanelAnimalFreeFeed(type) {
+  return getActiveAnimalBoosts(type).some((b) => b.freeFeed);
+}
+function farmPanelAnimalFeedIconsHtml(card2) {
+  const choices = ANIMAL_FEED_CHOICES[card2.typeKey];
+  if (!choices || farmPanelAnimalFreeFeed(card2.typeKey)) return "";
+  const chosen = farmPanelAnimalFeedChoice[card2.typeKey] || "";
+  const used = new Set((card2.animalYieldGroups || []).map((a) => a.feedKeyUsed));
+  const keys = chosen && chosen !== FAVOURITE_FEED_KEY ? [chosen] : choices.filter((key) => used.has(key));
+  return keys.map((key) => getIcon(FEED_LABELS[key] || key)).join("");
+}
+function farmPanelAnimalFeedPickerHtml(card2) {
+  const choices = ANIMAL_FEED_CHOICES[card2.typeKey];
+  if (!choices || farmPanelAnimalFreeFeed(card2.typeKey)) return "";
+  const chosen = farmPanelAnimalFeedChoice[card2.typeKey] || "";
+  const used = new Set((card2.animalYieldGroups || []).map((a) => a.feedKeyUsed));
+  const favOn = chosen === FAVOURITE_FEED_KEY;
+  const buttons = choices.map((key) => {
+    const on = chosen ? chosen === key : used.has(key);
+    const label = FEED_LABELS[key] || key;
+    return `<button type="button" class="fp-feed-btn guro-frame${on ? " is-on" : ""}" data-fp-feed="${key}" data-fp-feed-type="${card2.typeKey}" aria-pressed="${on ? "true" : "false"}" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}">${getIcon(label)}</button>`;
+  }).join("");
+  const favButton = `<button type="button" class="fp-feed-btn fp-fav-btn guro-frame${favOn ? " is-on" : ""}" data-fp-feed="${FAVOURITE_FEED_KEY}" data-fp-feed-type="${card2.typeKey}" aria-pressed="${favOn ? "true" : "false"}" aria-label="Favourite feed of each level" title="Use the favourite feed of each level">Favourite</button>`;
+  return `<div class="fp-feed-pick"><span class="label">Select Feed to Use</span><div class="fp-feed-row">${buttons}${favButton}</div></div>`;
+}
 var farmPanelInProgressCategoryFilter = "all";
 var FARM_PANEL_HIDDEN_CARDS_KEY = "guro_growing_hidden_cards";
 var FARM_PANEL_RESOURCE_CARDS = ["Wood", "Stone", "Iron", "Gold", "Crimstone", "Oil", "Salt", "Sunstone"];
@@ -29600,6 +29722,13 @@ function farmPanelComputeExactCrimstoneYield(g, rock, minesLeftOverride, allowSt
         valueText: `+${fmt(v)} yield (5th mine)`
       });
     }
+    if (isBoostActive("mushroom_chicken")) {
+      amount += 0.5;
+      boosts.push({
+        name: "Mushroom Chicken",
+        valueText: "+0.5 yield (5th mine)"
+      });
+    }
     amount += 2;
     boosts.push({
       name: "5th Mine Streak",
@@ -29633,6 +29762,13 @@ function farmPanelComputeExactOilYield(hasBonus) {
     boosts.push({
       name: "Battle Fish",
       valueText: "+0.05 yield"
+    });
+  }
+  if (isBoostActive("ladybug_cow")) {
+    amount += 1;
+    boosts.push({
+      name: "Ladybug Cow",
+      valueText: "+1 yield"
     });
   }
   if (isBoostActive("knight_chicken")) {
@@ -30268,7 +30404,7 @@ function farmPanelComputeExactGreenhouseYield(json, g, plantName, counter, potFe
   const base = isFruit ? farmPanelComputeExactFruitYield(json, g, plantName, counter, true) : farmPanelComputeExactCropYield(json, g, plantName, null, counter, true, atTime);
   let amount = base.amount;
   const boosts = base.boosts.slice();
-  const generic = farmPanelSumCatalogBoosts((b) => b.scope === "greenhouse" && b.target === plantName || b.category === "greenhouse" && b.scope === "global", /* @__PURE__ */ new Set(["skill_greenhouse_gamble", "apply_greenhouse_goodie", "power_hour_greenhouse"]));
+  const generic = farmPanelSumCatalogBoosts((b) => b.scope === "greenhouse" && b.target === plantName || b.category === "greenhouse" && b.scope === "global", /* @__PURE__ */ new Set(["skill_greenhouse_gamble", "antique_dress", "apply_greenhouse_goodie", "power_hour_greenhouse"]));
   amount += generic.add;
   amount *= generic.mult;
   generic.boosts.forEach((b) => {
@@ -30298,6 +30434,26 @@ function farmPanelComputeExactGreenhouseYield(json, g, plantName, counter, potFe
         boosts.push({
           name: "Greenhouse Gamble",
           valueText: "+1 yield (crit)"
+        });
+      }
+    }
+  }
+  if (plantName === "Grape" && isBoostActive("antique_dress")) {
+    const lastInfo = farmPanelGetLastInfo();
+    const farmId = Number(lastInfo.id);
+    const itemId = FRUIT_KNOWN_IDS[plantName];
+    if (Number.isFinite(farmId) && farmId > 0 && itemId) {
+      if (sflPrngChance({
+        farmId,
+        itemId,
+        counter,
+        chance: 10,
+        criticalHitName: "Antique Dress"
+      })) {
+        amount += 10;
+        boosts.push({
+          name: "Antique Dress",
+          valueText: "+10 yield (crit)"
         });
       }
     }
@@ -31165,7 +31321,7 @@ function farmPanelComputeInProgressRaw(json, opts) {
     });
   }
   if (typeof computeAnimalTypeFigures === "function" && typeof computeAnimalYieldsForLevel === "function") {
-    ["chicken", "sheep", "cow", "pig"].forEach((type) => {
+    ["chicken", "sheep", "cow", "pig"].forEach((type) => withAnimalFeedContext(type, farmPanelAnimalFreeFeed(type) ? "" : farmPanelAnimalFeedChoice[type] || "", () => {
       const bag = farmSyncGetAnimalRecords(g, type);
       if (!bag || typeof bag !== "object") return;
       const cycleSec = computeAnimalTypeFigures(type).cycleTimeSec || ANIMAL_BASE_CYCLE_SEC;
@@ -31272,10 +31428,12 @@ function farmPanelComputeInProgressRaw(json, opts) {
           feedsToNextCount: progress.noOfFeeds,
           feedQtyToNext,
           feedToNextName: remainingFeedLabel,
+          feedKeyUsed: progress.feedKeyUsed,
           shortId: String(animalId).slice(0, 8),
           xpNow: progress.xp,
           xpGap: progress.xpGap,
           xpPerFeed: progress.boostedFoodXp,
+          projection: farmPanelProjectAnimalXp(type, progress.xp, progress),
           claimLevel: progress.claimLevel,
           loveXp: progress.expectedLoveXp,
           loveItem: animal.item || "",
@@ -31283,7 +31441,7 @@ function farmPanelComputeInProgressRaw(json, opts) {
           fedThisCycle: !sick && !ready && !progress.isReadyState && (stateStr === "happy" || stateStr === "sad" || stateStr === "" && (awakeAt != null || asleepAt != null))
         });
       });
-    });
+    }));
   }
   rows.sort((a, b) => (a.remainingSec ?? 0) - (b.remainingSec ?? 0));
   if (mapMode) {
@@ -33418,7 +33576,7 @@ function farmPanelRenderAnimalMergedCard(card2) {
       <div class="card-name-row">
         <span class="card-icon">${animalIcon}</span>
         <div>
-          <div class="card-name">${escapeHtml(card2.typeLabel)}</div>
+          <div class="card-name">${escapeHtml(card2.typeLabel)}${farmPanelAnimalFeedIconsHtml(card2)}</div>
           <div class="card-type-row">
             <span class="card-type">${card2.count} animal${card2.count === 1 ? "" : "s"}</span>
             ${badgeHtml}
@@ -33443,6 +33601,7 @@ function farmPanelRenderAnimalMergedCard(card2) {
         <span class="label">Net</span>
         <span class="value ${isProfit ? "is-profit" : "is-loss"}">${fmtAnimal(cardNet)} ${FLOWER_ICON}</span>
       </div>
+      ${farmPanelAnimalFeedPickerHtml(card2)}
       ${animalYieldGroupsHtml}
       ${yieldBoostListHtml}
     </div>
@@ -33995,6 +34154,24 @@ function farmPanelToolInfoForGroup(groupKey) {
 }
 dailyHarvestSetToolProvider(farmPanelToolInfoForGroup);
 dailyHarvestSetResolver(farmPanelResolveHarvestPending);
+function farmPanelClaimedAnimalYield(groupKey, xp, buffName) {
+  const type = String(groupKey).toLowerCase();
+  if (!ANIMAL_DATA[type]) return null;
+  const level = getAnimalLevelFromXp(type, xp, true);
+  if (level === null) return null;
+  const fig = computeAnimalYieldsForLevel(type, level, buffName || null);
+  const parts = {};
+  let total = 0;
+  fig.products.forEach((name, i) => {
+    parts[name] = fig.yields[i];
+    total += fig.yields[i];
+  });
+  return {
+    total,
+    parts
+  };
+}
+dailyHarvestSetAnimalYieldProvider(farmPanelClaimedAnimalYield);
 dailyHarvestSetCookingProvider(farmPanelCookingLogSlots);
 dailyHarvestSetIconProvider(cookingFoodOrFishIcon);
 function farmPanelDailyFarmId() {
@@ -35063,6 +35240,7 @@ var IMAGE_ICONS = {
   "Bubble Aura": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACcklEQVR42u2XQUiTYRjHf98cmwsznI0WJkXOonlwt7RYwiQQmWwUHfJQtqBDxwTpIGyyigrs4MGiwIOIHnZoRwstRoeUEs3DCFwiweqzZFCjpqO1Dq/79EvNZUXb8Ll87/vwvO/7PP/nef7v+0nRwStp/oIUGS1bWqfhP8u2A9sOaLeyyN+TXEcbxuezFjgCmcjv2EsV3dOZlbHPF17+Wgu8BlZH/acibYWKK4IGdLZGlS45NYrsqVDmcoMHgNpivaKbf3Q3j1Pw0X2NWoNBTIKdJMsrN7SVGzy4/CEA9IeKAHCm7tHtCaxBQrvZLZaB0uUPKZsBWNMLP7EAyCfaFNtztjgAi+ZdANy2B2jvOwNAtyfAu6H2HE/B6sgB2o7p6OofEdE7nISl3Sp7na2RrykxdkUnwSaQLZY/AdDxbASHbWceFqErOglAV38cq8MJwFhrDaVD8+o2LK9E0ogaaWKJrrli9UZzS9xqMgLwKpHAlK0DPYm4AvtYaw3AmsMzUj/wFoDnvVfxXr4JwEn7Y/Fkq9rDtGUAAFOwM3dSIMnDvb9kwtnjorXqSwzE4wKNkddvSJeqIdbExjlo1inzLyY3ADtWOlcVedZdcHa5C05XPVCIJD2zgFQtuiDjyHfjUWblcQCay9LoL14HIOpO5OFt+N5xCbdvFIAjdfsEe7WomezhiymRw8+LyrrmMpFNvTeyaeS5jYCU+sZw/CUAFyKiikw3Ynxo2Q/ARCKJZUYGoPpARERiLEHvjWSV96y6IFOE+o5uAA6fmmC6bhAA23n/upv9zsH5wwMZJNJFWvY+ub+hXSoW+Td3gTnUV9h/Rj8AzbjKxZe4THoAAAAASUVORK5CYII=",
   "Crab House": "data:image/webp;base64,UklGRkACAABXRUJQVlA4TDMCAAAvNYAIEG+gJJIk59ihHPG9fwNv59k7UhtJakMHnpwhRC5S//24HtREkhRd9t8BDn5N2EMkEUUgEEgC236xAADtM694Nvr1nXj8ZoEFxiVn2WT0q7e2K4dBrvv/jaTMHtDvoH0BcpXT7JLDWDe6iuC/cE+m5HK9a+mvbclQZqa96rQl7VX09zL+ewNv8PtF9F9h27YN02LvM4oZIXkUC8R9+d2CY0IOzc/Remgd4dCcGZYJkmNamjUhKniR36ZQg4bp0yK1P8G1zNWLVMYgeZ82I307wddhS+oOMLSLZF2RTex/BjBIa/q7Eww0jPIurz72tzeBgZJvPwMYBqcuI0T/1D5PV2YT+DgUh0xNL5erPVw3q//2+eaRuJpmpM1Mf/ew+khG2iS3lfRzOSUPFvBRgxfzWMl1Iy5qcDbT2TBw+aLFI0F+EeO8shFgZ2JxTYCR0nnDqGN6ubyb+fpInI4ZXHJHfqsVb+23gY8DK0n0iq4XZXA13m7mMRD6+FvFdZKo8r31q5vHjgIXNivXroiGpPRB4H63K6vV0YskVqvv7dgLoivpNdGWa9WFJ8+vHFtdbqmJmhgStivVhefksdXvrSYxGFH6qExeZ5TBKSW5g9hEcfXqlKr2EkYBvZL0kRLg1qYay16iOGt3yzuJLbiUuZdfIvTKTrdk7QVR6Q6X5BGvDAJXl+wUtDkWvZJz7lAgFfQCuJLkjDtYiazISubFjBIAFwvk8T8Z6M7VKWZGd5EaAAA=",
   "Crystal Altar": "data:image/webp;base64,UklGRoACAABXRUJQVlA4THMCAAAvL4AKEJ+gJpKt5msIQElHFw0gAl8owgEKaHOLBGwojWSr+QGbVA5d4OlfUgcOZGITAEAaLofb3YMTYbE0wUaQbVOx0R/sAQD8/1/ZnhFmT0IRPtZD9QRoGDISWUanLLSldaHX09iHPF93PZJaytgMEmzbDZsoUwRCVSmT8f5XGyWFWcF7Ef2fgO2nF9v/vf6w/qv19w+u/2jpP3T9XMG1pf8AXdcKTvKhecW1T/vKKz40B+uh5JmPtXvQ9cgz66HkBrYFmme9dv+qu/SZbYHmhtWi/Fa1KLlFqZ1K/EaU2qkEha3JhUee5eMCtiYEFCrEWXVO2XlGoUKAUBB4gc6x84JQEIgooDhowaPVRz76kYOhgKI7eWSfoqJOoyCmPfLInvY+9wWGUDnrfe60eubMFQeI8qx6JpXZiXDtMUqyTdasmw66jVGuXf+6G5XEgA66gTNnUWsfo+KMnAFinipKYh2ISqKmmAddOlUbSbt2aSNpa0qXXsONaqOSaBcalURbGxkv1E5GEdWHqKgxKg5WQlg7Q50g2klJfI9REnaKnNRWfVJEEYXE9xN45ztKiCKKk64LICoVT955vn/IMypSEa7cT+5REAXxfPvwXd+eREEUxP3kPq0DARXwhLf3D96eQMA94H5YJwz38VP8esLbu0/g6/OujMOdou+zwqdtffk81Wo/vdMyW/g6X3pQq18neQEUvkZo4QVSGVVp8MjoESRVRs9sJWkFL4JK0pont0FaTWlQQUEFSVolh9s8kEqroAqqJDDcxm3QtrJJ6RfJA+1t3s41Wyt5WQVubq8fKn/kpm4/6jF9RW9uv+mP8rs/wasA",
+  "Fish Trap": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAABU0lEQVR42u1VMWrDMBR9Eg09gpfQOUuoCe7gyRQM7Whyg57ASwi0F+jSxRcxHd0QCJo81JiAF89dio/QRerQylVk2STYph2qRXr+8N+X/P77wG+vJAxE194rcRIGwpstjtrb8hD9A48dAXcOpAVO3ekyI50EPHZE3yc1kRyslecKb7ao31k9q8+mx1eeayyO6slfqw+wMjdWcRs9EwBgZU5kYnl+YilpI2lUrldnUo96CxXrJJS/34kx5C3zUqQFkjAQvm1ht7uESqjjrpjEvm193SotflQ0hHra1FT/5HU0wfUDrwMbNm1guszIhk0BoI7peB1NmirStTskpmN72T/BHyDgsSN6Dw/DLJFNSI5qMnd+Osv3fBi9k89kl273FaRVJ2EgJAaA+5sLbPcVpCX7toXHlzcAwJV1DolZmddxIDu0apPltlmwKa5ae+dcGHp9AhvXCTonhXYxAAAAAElFTkSuQmCC",
   "Pistol Shrimp": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABP0lEQVR42u2WP0jDQBSHv7aiggX/FIemjk6CUtRBkOKWEEFXoZs6uoiTgkRwcuxSt+Lm6iCIdMji0KkZQnHqpk2EctHgYsC2DgX3JjZSuDfdDe/u473f/d4lWrcnPSJEam4xSjpJ/jkkgASQABJgtAF6ZZtUpRYJYCxM0vhdu79QsgSOG+6QKAAAm88uAOYM8VagV7a5Fz5mZhqAqvDZqdQIHJfJnML3wcZwNTChZLHo9jdHKwAEjktV+Hy1nMErMOg8Dxybi+Ul6son8y8eAFfiHWthDbG3S9Ezh9uCqvBB+ChKjrbzgWYU4PIJXusUp9LD14BFl9PMLA0gr6t0vCaaUUCLywfOS4c01tPkdfVPjCjUM8zrKg/HN79iPDO24nfC7dI+qyQjXQ6QeHu8jvQr7nhNOQ0lgASQAKMN8AMtHlwnfssKWQAAAABJRU5ErkJggg==",
   "Royal Crab Pot": "data:image/webp;base64,UklGRvQBAABXRUJQVlA4TOcBAAAvIgAIEI+gpLa25ndEwOPxG0kfIpJj2z0SUINpAIBJ5u5KdP2/8xCZitrYtqH/beFOSiRUg1h5CtOCQnaCbJuKjf5gDwDg//+45WyMo4NgNs7RBJmh3QcZl7cHMk+MWxwU6218q+rXhUcyQIxsq25DxBMSvo9Y6r9c8K+DeyL6PwHlU83+LTn+nPoF5ODPpPgaYwJSQ18IFzMxICfs8FuxOxjKoWeClWgodseLcKmxRxcwngIPAT32qCVc7NgdhdBAOZSzRmog1xK7o5jwDtHThqF5JDaOyh6m2AS7UbfTDMFIY1t1N0FZedd4qoPTNhbmObTHKwINEB0MGAwDVIMpdqPxRAd0O590+wCNJ6q7o5iY0LHMAXksNVLVQbEJJTqgXbC4oB2gRK7lrXbdkDzhhqt90pU62nUDStANXO1Qyi80tWs1L2gTC40u3rD9Bnio2FtPvOAGJ/iGa3Em3oqhp612X4AtsC/gbjqv0xsFoLd0u7lwWsbpi3t6wLZs93/Lxg195Dx8Q+PkwXWurrspGzc9NadvGud1PuwVDVWSxuSpkZwPG7aXvcY/GrwxUI2TBxtQJuoeKFFPQVqJ6h6rsqKiiZ5gTVTOx7bwgm4lCNuQIHtblnkB/VPW5eXiu377S/78I78JAA==",
   "Speed Trap": "data:image/webp;base64,UklGRlABAABXRUJQVlA4TEQBAAAvEgAGEKfAJgCANGRw/fyEHLQlBUX45y412AQAkIYQ1kE/mtCRCiTR29+5j4ls203SZVfN9kRlYrFsgO2ypiZREGTbVGz0B3sAAPz/f4ZjkPLpe1kkk6egWyjk1w03bpsiosaxa+elGiOSQ3FDUoV5rC19Bn1SQGzbSJLUM7fVPftO797mn+ybgi1H9H8C2scB/pXTw3wHpzN48AXncfpzzHl84HTUI46OMm84C/SQjiDGmxM+X8Y/OXv4jeF0S0hkaG8PnK63C9HVHN7oPsc1QMK8y7aWpA+YA3piNWXxlLpjpGlHSpCKxaYk8sE7WcJeX3g3SbDrpSmUd9IzXSZqtkKZvjDLRM12OaAsFqTc7NqfFSV9sVL7s5pr22sK+j2a3vZqXsueXZO7+rS9NoMmHU11JlrfoD47gtm1vphf/fYr2wY=",
@@ -39242,7 +39420,32 @@ function getBeetleCollectUnitFlower() {
 function isBeetleFeedKey(key) {
   return !!BEETLE_FEED_XP[key];
 }
+var forcedFeedKey = "";
+var ANIMAL_FEED_CHOICES = {
+  chicken: ["kernelBlend", "hay", "nutriBarley", "mixedGrain", "omnifeed", "beetleGreen", "beetleBlue", "beetlePink", "beetleAmber"],
+  sheep: ["kernelBlend", "hay", "nutriBarley", "mixedGrain", "omnifeed", "beetleGreen", "beetleBlue", "beetlePink", "beetleAmber"],
+  cow: ["kernelBlend", "hay", "nutriBarley", "mixedGrain", "omnifeed", "beetleGreen", "beetleBlue", "beetlePink", "beetleAmber"],
+  pig: ["slopBasic", "slopHearty", "slopRich", "slopGourmet", "beetleGreen", "beetleBlue", "beetlePink", "beetleAmber"]
+};
+function withAnimalFeedContext(type, feedKey, fn) {
+  const savedBeetle = beetleFeed;
+  const savedOmni = omnifeedEnabled;
+  const savedForced = forcedFeedKey;
+  const favourite = feedKey === "favourite" && !!ANIMAL_FEED_CHOICES[type];
+  const valid = !favourite && feedKey && ANIMAL_FEED_CHOICES[type] && ANIMAL_FEED_CHOICES[type].indexOf(feedKey) >= 0 ? feedKey : "";
+  beetleFeed = valid && isBeetleFeedKey(valid) ? valid : "";
+  omnifeedEnabled = valid === "omnifeed";
+  forcedFeedKey = valid && !isBeetleFeedKey(valid) && valid !== "omnifeed" ? valid : "";
+  try {
+    return fn();
+  } finally {
+    beetleFeed = savedBeetle;
+    omnifeedEnabled = savedOmni;
+    forcedFeedKey = savedForced;
+  }
+}
 function resolveFeedKeyUsed(type, favouriteFoodKey) {
+  if (forcedFeedKey) return forcedFeedKey;
   if (beetleFeed) return beetleFeed;
   return omnifeedEnabled && type !== "pig" ? "omnifeed" : favouriteFoodKey;
 }
@@ -44316,6 +44519,14 @@ var GREENHOUSE_BOOSTS = [{
   scope: "greenhouse",
   target: "Grape",
   yieldAdd: 0.2
+}, {
+  id: "antique_dress",
+  name: "Antique Dress",
+  scope: "greenhouse",
+  target: "Grape",
+  yieldAdd: 1,
+  timeMult: 0.7,
+  note: "-30% Grape growth time, 10% chance of +10 Grapes (shown as its +1 expected-value equivalent)"
 }, {
   id: "non_la_hat",
   name: "Non La Hat",
@@ -65721,6 +65932,38 @@ function computeAgedFishFigures(fishName, mode) {
   __fishAgedFiguresMemo.set(memoKey, result);
   return result;
 }
+function fishAgingTimeInfo(fishName) {
+  const xpEntry = FISH_XP_DATA[fishName];
+  if (!xpEntry) return null;
+  const base = xpEntry.basic;
+  const max = base <= 200 ? base * 3 : base <= 330 ? base * 4 : base * 5;
+  const jump = base <= 200 ? 300 : base <= 330 ? 500 : 1e3;
+  const baseSec = (max - base) / jump * 3600;
+  let mult = 1;
+  const parts = [];
+  if (isSkillActive("skill_speedy_aging")) {
+    const data = ASCENSION_RANK_DATA.skill_speedy_aging;
+    const rank = Math.min(Math.max(getAscensionRank("skill_speedy_aging"), 1), 3);
+    const m = data.values[rank - 1];
+    mult *= m;
+    parts.push({
+      name: "Speedy Aging",
+      mult: m
+    });
+  }
+  if (isBoostActive("fish_trap")) {
+    mult *= 0.8;
+    parts.push({
+      name: "Fish Trap",
+      mult: 0.8
+    });
+  }
+  return {
+    baseSec,
+    sec: baseSec * mult,
+    parts
+  };
+}
 function fishCatchComputeXP(fishName, stage) {
   const memoKey = stage + "|" + fishName;
   if (__fishCatchXPMemo.has(memoKey)) return __fishCatchXPMemo.get(memoKey);
@@ -66184,6 +66427,13 @@ var FISHING_BOOSTS = [{
   scope: "fishYield",
   fishYieldAdd: 2,
   note: "+2 Fish per catch \xB7 20% chance a reel doesn't use a daily fishing attempt (wearable)"
+}, {
+  id: "fish_trap",
+  name: "Fish Trap",
+  category: "fishing",
+  scope: "fishAging",
+  agingTimeMult: 0.8,
+  note: "x0.8 Fish Aging time, fish age 20% faster in the Aging Shed (wearable)"
 }];
 FISHING_BOOSTS.forEach((b) => {
   b.source = "boost";
@@ -71718,8 +71968,8 @@ function profileTradableResourceRows(g) {
   });
   return rows.sort((a, b) => b.value - a.value);
 }
-var COLLECTIBLE_BOOST_NAMES = ["Giant Truffle", "Brick House", "Stick House", "Mushroom Chicken", "Ladybug Cow", "Cyclops Bloom", "Macropinna", "Alba", "Alien Chicken", "Ancient Tree", "Anemone Flower", "Apprentice Beaver", "Ascended Chicken", "Ascended Cow", "Ascended Idol", "Ascended Sheep", "Ascension Monument", "Astrolabe", "Astronaut Sheep", "Autumn Guardian", "Ayam Cemani", "Baby Cow", "Badger Shrine", "Bale", "Banana Chicken", "Bantam Shrine", "Barn Blueprint", "Beetle Sheep", "Basic Scarecrow", "Battle Fish", "Bear Shrine", "Beehive", "Black Bearry", "Blossom Hourglass", "Blossombeard", "Boar Shrine", "Butterfly", "Cabbage Boy", "Cabbage Girl", "Camel", "Cannonball", "Carrot Sword", "Chicken Coop", "Chicory", "Christmas Tree", "Cluckulator", "Collie Shrine", "Cornucopia", "Crab House", "Crim Peckster", "Crimson Carp", "Crimstone Clam", "Crystal Altar", "Deep Sea Slug", "Desert Gnome", "Desert Rose", "Dino Egg Trophy", "Dr Cow", "Dumbo Octopus", "Easter Bunny", "El Pollo Veloz", "Emerald Turtle", "Fairy Circle", "Farm Dog", "Farmer's Monument", "Fat Chicken", "Festive Tree", "Fisher's Hourglass", "Flamingo Chicken", "Flower Fox", "Foliant", "Foreman Beaver", "Fox Shrine", "Freya Fox", "Frozen Cow", "Frozen Sheep", "Fruit Tune Box", "Fruitful Blend", "Fused Stone Rock", "Genie Lamp", "Giant Artichoke", "Giant Gold Bone", "Giant Kale", "Giant Onion", "Giant Turnip", "Giant Yam", "Giant Zucchini", "Gilded Swordfish", "Gnome", "Gold Beetle", "Gold Egg", "Golden Cauliflower", "Golden Cow", "Golden Sheep", "Gourmet Hourglass", "Grain Grinder", "Grape Granny", "Greenhouse Glow", "Greenhouse Goodie", "Grinx's Hammer", "Groovy Gramophone", "Harvest Hourglass", "Heart of Davy Jones", "Honey Treat", "Hoot", "Hound Shrine", "Humming Bird", "Hungry Caterpillar", "Hungry Hare", "Immortal Pear", "Iron Beetle", "Iron Idol", "Janitor Chicken", "Jellyfish", "Karkinos", "Kernaldo", "King of Bears", "Knight Chicken", "Knowledge Crab", "Kuebiko", "Lab Grown Carrot", "Lab Grown Pumpkin", "Lab Grown Radish", "Lady Bug", "Laurie the Chuckle Crow", "Legendary Shrine", "Lemon Frog", "Lemon Shark", "Lemon Tea Bath", "Longhorn Cowfish", "Lunar Calendar", "Lunar Temple", "Macaw", "Magma Stone", "Mammoth", "Maneki Neko", "Maximus", "Meerkat", "Mermaid Sheep", "Miner's Monument", "Mole Shrine", "Moo-ver", "Mootant", "Moth Shrine", "Mushroom House", "Mysterious Parsnip", "Nana", "Nancy", "Nautilus", "Navigation Table", "Nugget", "Nurse Sheep", "Oaken", "Obie", "Observatory", "Obsidian Shrine", "Obsidian Turtle", "Orchard Hourglass", "Ore Hourglass", "Otty the Otter", "Pablo The Bunny", "Peeled Potato", "Pet Bowls", "Pharaoh Chicken", "Pharaoh Gnome", "Pink Dolphin", "Poppy", "Poseidon", "Poseidon's Throne", "Potent Potato", "Prime Gold Rock", "Pure Gold Rock", "Purple Trail", "Quarry", "Queen Bee", "Queen Cornelia", "Radiant Ray", "Radical Radish", "Rapid Root", "Reelmaster's Chair", "Refined Iron Rock", "Reinforced Stone Rock", "Reveling Lemon", "Rice Panda", "Rich Chicken", "Rock Golem", "Rocky the Mole", "Rooster", "Royal Crab Pot", "Ruins Flower", "Sacred Tree", "Salt Crystal Flower", "Salt Lick", "Salt Sculpture", "Salt Worker Gnome", "Scarecrow", "Scary Mike", "Sheaf of Plenty", "Sir Goldensnout", "Skill Shrimpy", "Sleepy Chicken", "Soil Krabby", "Soybliss", "Spa Cow", "Spa Sheep", "Sparrow Shrine", "Speed Chicken", "Speed Trap", "Spring Guardian", "Sprout Mix", "Sproutroot Surprise", "Squid Chicken", "Squirrel", "Squirrel Monkey", "Stag Shrine", "Stellar Sunflower", "Stone Beetle", "Straw House", "Summer Chicken", "Summer Guardian", "Super Star", "Super Totem", "Swiss Whiskers", "Teamwork Monument", "Tempered Iron Rock", "Tiki Totem", "Timber Hourglass", "Time Warp Totem", "Tin Turtle", "Tomato Bombard", "Tomato Clown", "Toolshed", "Tortoise Shrine", "Toucan Shrine", "Toxic Tuft", "Trading Shrine", "Treasure Map", "Tunnel Mole", "Turbo Sprout", "Turbofruit Mix", "Undead Rooster", "Vibraphone", "Victoria Sisters", "Vinny", "Volcano Gnome", "Walrus", "Warehouse", "Winged Vase", "Winter Guardian", "Wood Nymph Wendy", "Woodcutter's Monument", "Woody the Beaver"];
-var WEARABLE_BOOST_NAMES = ["Duende Hat", "Hercules Beetle Hat", "Firefly Aura", "Harpoon", "Alchemist Apron", "Ancient Rod", "Ancient Shovel", "Angel Wings", "Angler Waders", "Architect Ruler", "Autumn's Embrace", "Banana Amulet", "Banana Onesie", "Beast Shoes", "Bee Suit", "Beekeeper Hat", "Beetroot Amulet", "Bionic Drill", "Black Sheep Onesie", "Blossom Ward", "Broccoli Hat", "Bubble Aura", "Bucket O' Worms", "Bumpkin Armor", "Bumpkin Crown", "Bumpkin Helmet", "Bumpkin Medallion", "Bumpkin Pants", "Bumpkin Quiver", "Bumpkin Sabatons", "Bumpkin Shield", "Bumpkin Sword", "Camel Onesie", "Carrot Amulet", "Cattlegrim", "Chef Apron", "Chicken Suit", "Corn Onesie", "Corn Silk Hair", "Cowbell Necklace", "Crab Hat", "Crab Trap", "Crimstone Amulet", "Crimstone Armor", "Crimstone Hammer", "Crimstone Spikes Hair", "Deep Sea Helm", "Deep Sea Salt Cave Background", "Dev Wrench", "Devil Wings", "Dream Scarf", "Eggplant Onesie", "Flower Crown", "Frozen Heart", "Fruit Picker Apron", "Goblin Armor", "Goblin Axe", "Goblin Crown", "Goblin Helmet", "Goblin Medallion", "Goblin Pants", "Goblin Quiver", "Goblin Sabatons", "Goblin Shield", "Golden Spatula", "Grape Pants", "Green Amulet", "Honeycomb Shield", "Hornet Mask", "Infernal Bullwhip", "Infernal Drill", "Infernal Pitchfork", "Ladybug Suit", "Lava Swimwear", "Lemon Shield", "Luminous Anglerfish Topper", "Luna's Crescent", "Luna's Hat", "Master Chef's Cleaver", "Medic Apron", "Merino Jumper", "Milk Apron", "Moon Hair", "Mushroom Hat", "Nightshade Armor", "Nightshade Crown", "Nightshade Helmet", "Nightshade Medallion", "Nightshade Pants", "Nightshade Quiver", "Nightshade Sabatons", "Nightshade Shield", "Nightshade Sword", "Non La Hat", "Obsidian Necklace", "Oil Can", "Oil Gallon", "Oil Overalls", "Olive Royalty Shirt", "Olive Shield", "Oracle Syringe", "Pan", "Parsnip", "Paw Aura", "Paw Shield", "Pickaxe Shark", "Pirate Potion", "Pistol Shrimp", "Red Pepper Onesie", "Rice Shirt", "Salt Bottle Onesie", "Saw Fish", "Shrimp Onesie", "Sickle", "Sol & Luna", "Solflare Aegis", "Squirrel Onesie", "Sunflorian Armor", "Sunflorian Crown", "Sunflorian Helmet", "Sunflorian Medallion", "Sunflorian Pants", "Sunflorian Quiver", "Sunflorian Sabatons", "Sunflorian Shield", "Sunflorian Sword", "Sunflower Amulet", "Sunflower Rod", "Sunflower Shield", "Surfer Hair", "Tofu Mask", "Training Whistle", "Trident", "Turd Topper", "Victoria's Apron", "Walrus Onesie", "White Sheep Onesie"];
+var COLLECTIBLE_BOOST_NAMES = ["Giant Truffle", "Brick House", "Stick House", "Mushroom Chicken", "Ladybug Cow", "Cyclops Bloom", "Macropinna", "Pot of Luck", "Duende Monument", "Alba", "Alien Chicken", "Ancient Tree", "Anemone Flower", "Apprentice Beaver", "Ascended Chicken", "Ascended Cow", "Ascended Idol", "Ascended Sheep", "Ascension Monument", "Astrolabe", "Astronaut Sheep", "Autumn Guardian", "Ayam Cemani", "Baby Cow", "Badger Shrine", "Bale", "Banana Chicken", "Bantam Shrine", "Barn Blueprint", "Beetle Sheep", "Basic Scarecrow", "Battle Fish", "Bear Shrine", "Beehive", "Black Bearry", "Blossom Hourglass", "Blossombeard", "Boar Shrine", "Butterfly", "Cabbage Boy", "Cabbage Girl", "Camel", "Cannonball", "Carrot Sword", "Chicken Coop", "Chicory", "Christmas Tree", "Cluckulator", "Collie Shrine", "Cornucopia", "Crab House", "Crim Peckster", "Crimson Carp", "Crimstone Clam", "Crystal Altar", "Deep Sea Slug", "Desert Gnome", "Desert Rose", "Dino Egg Trophy", "Dr Cow", "Dumbo Octopus", "Easter Bunny", "El Pollo Veloz", "Emerald Turtle", "Fairy Circle", "Farm Dog", "Farmer's Monument", "Fat Chicken", "Festive Tree", "Fisher's Hourglass", "Flamingo Chicken", "Flower Fox", "Foliant", "Foreman Beaver", "Fox Shrine", "Freya Fox", "Frozen Cow", "Frozen Sheep", "Fruit Tune Box", "Fruitful Blend", "Fused Stone Rock", "Genie Lamp", "Giant Artichoke", "Giant Gold Bone", "Giant Kale", "Giant Onion", "Giant Turnip", "Giant Yam", "Giant Zucchini", "Gilded Swordfish", "Gnome", "Gold Beetle", "Gold Egg", "Golden Cauliflower", "Golden Cow", "Golden Sheep", "Gourmet Hourglass", "Grain Grinder", "Grape Granny", "Greenhouse Glow", "Greenhouse Goodie", "Grinx's Hammer", "Groovy Gramophone", "Harvest Hourglass", "Heart of Davy Jones", "Honey Treat", "Hoot", "Hound Shrine", "Humming Bird", "Hungry Caterpillar", "Hungry Hare", "Immortal Pear", "Iron Beetle", "Iron Idol", "Janitor Chicken", "Jellyfish", "Karkinos", "Kernaldo", "King of Bears", "Knight Chicken", "Knowledge Crab", "Kuebiko", "Lab Grown Carrot", "Lab Grown Pumpkin", "Lab Grown Radish", "Lady Bug", "Laurie the Chuckle Crow", "Legendary Shrine", "Lemon Frog", "Lemon Shark", "Lemon Tea Bath", "Longhorn Cowfish", "Lunar Calendar", "Lunar Temple", "Macaw", "Magma Stone", "Mammoth", "Maneki Neko", "Maximus", "Meerkat", "Mermaid Sheep", "Miner's Monument", "Mole Shrine", "Moo-ver", "Mootant", "Moth Shrine", "Mushroom House", "Mysterious Parsnip", "Nana", "Nancy", "Nautilus", "Navigation Table", "Nugget", "Nurse Sheep", "Oaken", "Obie", "Observatory", "Obsidian Shrine", "Obsidian Turtle", "Orchard Hourglass", "Ore Hourglass", "Otty the Otter", "Pablo The Bunny", "Peeled Potato", "Pet Bowls", "Pharaoh Chicken", "Pharaoh Gnome", "Pink Dolphin", "Poppy", "Poseidon", "Poseidon's Throne", "Potent Potato", "Prime Gold Rock", "Pure Gold Rock", "Purple Trail", "Quarry", "Queen Bee", "Queen Cornelia", "Radiant Ray", "Radical Radish", "Rapid Root", "Reelmaster's Chair", "Refined Iron Rock", "Reinforced Stone Rock", "Reveling Lemon", "Rice Panda", "Rich Chicken", "Rock Golem", "Rocky the Mole", "Rooster", "Royal Crab Pot", "Ruins Flower", "Sacred Tree", "Salt Crystal Flower", "Salt Lick", "Salt Sculpture", "Salt Worker Gnome", "Scarecrow", "Scary Mike", "Sheaf of Plenty", "Sir Goldensnout", "Skill Shrimpy", "Sleepy Chicken", "Soil Krabby", "Soybliss", "Spa Cow", "Spa Sheep", "Sparrow Shrine", "Speed Chicken", "Speed Trap", "Spring Guardian", "Sprout Mix", "Sproutroot Surprise", "Squid Chicken", "Squirrel", "Squirrel Monkey", "Stag Shrine", "Stellar Sunflower", "Stone Beetle", "Straw House", "Summer Chicken", "Summer Guardian", "Super Star", "Super Totem", "Swiss Whiskers", "Teamwork Monument", "Tempered Iron Rock", "Tiki Totem", "Timber Hourglass", "Time Warp Totem", "Tin Turtle", "Tomato Bombard", "Tomato Clown", "Toolshed", "Tortoise Shrine", "Toucan Shrine", "Toxic Tuft", "Trading Shrine", "Treasure Map", "Tunnel Mole", "Turbo Sprout", "Turbofruit Mix", "Undead Rooster", "Vibraphone", "Victoria Sisters", "Vinny", "Volcano Gnome", "Walrus", "Warehouse", "Winged Vase", "Winter Guardian", "Wood Nymph Wendy", "Woodcutter's Monument", "Woody the Beaver"];
+var WEARABLE_BOOST_NAMES = ["Duende Hat", "Hercules Beetle Hat", "Firefly Aura", "Harpoon", "Antique Dress", "Pig Onesie", "Ascension Staff", "Fish Trap", "Alchemist Apron", "Ancient Rod", "Ancient Shovel", "Angel Wings", "Angler Waders", "Architect Ruler", "Autumn's Embrace", "Banana Amulet", "Banana Onesie", "Beast Shoes", "Bee Suit", "Beekeeper Hat", "Beetroot Amulet", "Bionic Drill", "Black Sheep Onesie", "Blossom Ward", "Broccoli Hat", "Bubble Aura", "Bucket O' Worms", "Bumpkin Armor", "Bumpkin Crown", "Bumpkin Helmet", "Bumpkin Medallion", "Bumpkin Pants", "Bumpkin Quiver", "Bumpkin Sabatons", "Bumpkin Shield", "Bumpkin Sword", "Camel Onesie", "Carrot Amulet", "Cattlegrim", "Chef Apron", "Chicken Suit", "Corn Onesie", "Corn Silk Hair", "Cowbell Necklace", "Crab Hat", "Crab Trap", "Crimstone Amulet", "Crimstone Armor", "Crimstone Hammer", "Crimstone Spikes Hair", "Deep Sea Helm", "Deep Sea Salt Cave Background", "Dev Wrench", "Devil Wings", "Dream Scarf", "Eggplant Onesie", "Flower Crown", "Frozen Heart", "Fruit Picker Apron", "Goblin Armor", "Goblin Axe", "Goblin Crown", "Goblin Helmet", "Goblin Medallion", "Goblin Pants", "Goblin Quiver", "Goblin Sabatons", "Goblin Shield", "Golden Spatula", "Grape Pants", "Green Amulet", "Honeycomb Shield", "Hornet Mask", "Infernal Bullwhip", "Infernal Drill", "Infernal Pitchfork", "Ladybug Suit", "Lava Swimwear", "Lemon Shield", "Luminous Anglerfish Topper", "Luna's Crescent", "Luna's Hat", "Master Chef's Cleaver", "Medic Apron", "Merino Jumper", "Milk Apron", "Moon Hair", "Mushroom Hat", "Nightshade Armor", "Nightshade Crown", "Nightshade Helmet", "Nightshade Medallion", "Nightshade Pants", "Nightshade Quiver", "Nightshade Sabatons", "Nightshade Shield", "Nightshade Sword", "Non La Hat", "Obsidian Necklace", "Oil Can", "Oil Gallon", "Oil Overalls", "Olive Royalty Shirt", "Olive Shield", "Oracle Syringe", "Pan", "Parsnip", "Paw Aura", "Paw Shield", "Pickaxe Shark", "Pirate Potion", "Pistol Shrimp", "Red Pepper Onesie", "Rice Shirt", "Salt Bottle Onesie", "Saw Fish", "Shrimp Onesie", "Sickle", "Sol & Luna", "Solflare Aegis", "Squirrel Onesie", "Sunflorian Armor", "Sunflorian Crown", "Sunflorian Helmet", "Sunflorian Medallion", "Sunflorian Pants", "Sunflorian Quiver", "Sunflorian Sabatons", "Sunflorian Shield", "Sunflorian Sword", "Sunflower Amulet", "Sunflower Rod", "Sunflower Shield", "Surfer Hair", "Tofu Mask", "Training Whistle", "Trident", "Turd Topper", "Victoria's Apron", "Walrus Onesie", "White Sheep Onesie"];
 var MARKETPLACE_WEARABLE_NAMES = ["2026 Tiara", "404 Chic Boots", "404 Chic Skirt", "404 Chic Top", "Abyssal Angler Hat", "Acorn Hat", "Admin Fools Tools", "Adventurer's Suit", "Adventurer's Torch", "Aether Specs", "Alchemist Apron", "Amber Amulet", "Amberfall Suit", "Ancient Goblin Sword", "Ancient Rod", "Ancient Shovel", "Ancient War Hammer", "Angel Wings", "Angler Waders", "Angry Mouth", "Ankh Shirt", "Antique Dress", "Architect Ruler", "Artist Scarf", "Ascension Staff", "Ascension Wings", "Ash Ponytail", "Auction Megaphone", "Auctioneer Slacks", "Autumn's Embrace", "Baby Teeth", "Banana Amulet", "Banana Onesie", "Basic Hair", "Bat Wings", "Beach Sarong", "Beach Trunks", "Bear Onesie", "Beast Shoes", "Bee Smoker", "Bee Suit", "Bee Wings", "Beehive Staff", "Beekeeper Hat", "Beekeeper Suit", "Beetroot Amulet", "Beige Farmer Potion", "Bidder's Brocade", "Big Smile", "Big Wink Eyes", "Bionic Drill", "Birthday Hat", "Black Farmer Boots", "Black Sheep Onesie", "Blacksmith Hair", "Bloomwarden Suit", "Blossom Dumbo", "Blossom Ward", "Blue Blossom Shirt", "Blue Farmer Shirt", "Blue Jelly Shoes", "Blue Monarch Dress", "Blue Monarch Shirt", "Blue Rose Dress", "Blue Slime Shirt", "Blue Suspenders", "Boater Hat", "Brasil Jersey", "Broccoli Hat", "Brown Boots", "Brown Long Hair", "Brown Rancher Hair", "Brown Suspenders", "Brush Back Hair", "Bubble Aura", "Bucket O' Worms", "Bumpkin Armor", "Bumpkin Art Competition Merch", "Bumpkin Boots", "Bumpkin Crown", "Bumpkin Eyes", "Bumpkin Helmet", "Bumpkin Medallion", "Bumpkin Pants", "Bumpkin Puppet", "Bumpkin Quiver", "Bumpkin Sabatons", "Bumpkin Shield", "Bumpkin Smile", "Bumpkin Sword", "Bunny Mask", "Bunny Onesie", "Bunny Pants", "Butterfly Aura", "Butterfly Wings", "Buzz Cut", "Camel Onesie", "Candy Cane", "Candy Halbred", "Cap n Bells", "Cardboard Wings", "Carrot Amulet", "Carrot Pitchfork", "Cemetery Background", "Chef Apron", "Chef Hat", "Chef Shirt", "Chemist Potion", "Chic Gala Blouse", "Chicken Hat", "Chicken Suit", "China Town Background", "Christmas Background", "Clam Shell Hat", "Clown Shirt", "Club Polo", "Coconut Mask", "Coin Aura", "Coin Head", "Comfy Xmas Pants", "Comfy Xmas Sweater", "Companion Cap", "Cookie Shield", "Cool Glasses", "Corn Onesie", "Corn Silk Hair", "Cowbell Necklace", "Cowboy Boots", "Cowboy Hat", "Cowboy Shirt", "Cowboy Trouser", "Cowgirl Skirt", "Cozy Hoodie", "Cozy Reindeer Onesie", "Crab Claw", "Crab Hat", "Crab Trap", "Crimson Skirt", "Crimstone Amulet", "Crimstone Armor", "Crimstone Boots", "Crimstone Hammer", "Crimstone Pants", "Crimstone Spikes Hair", "Crow Wings", "Crumple Crown", "Crystal Shoes", "Cupid Dress", "Cupid Hair", "Cupid Sandals", "Daisy Tee", "Dark Brown Farmer Potion", "Dark Enchantment Gown", "Dawn Breaker Background", "Dawn Breaker Tee", "Dawn Lamp", "Deep Sea Helm", "Deep Sea Salt Cave Background", "Desert Background", "Desert Camel Background", "Desert Merchant Shoes", "Desert Merchant Suit", "Desert Merchant Turban", "Dev Wrench", "Developer Hoodie", "Devil Wings", "Diamond Patterned Vest", "Diamond Snow Aura", "Dino Onesie", "Double Harvest Cap", "Dream Scarf", "Earn Alliance Sombrero", "Easter Apron", "Eggplant Onesie", "Elf Hat", "Elf Potion", "Elf Shoes", "Elf Suit", "Embersteel Suit", "Explorer Hair", "Explorer Hat", "Explorer Shirt", "Explorer Shorts", "Fairy Sandals", "Fancy Pants", "Fancy Top", "Fanged Smile", "Farm Background", "Farmer Hat", "Farmer Overalls", "Farmer Pants", "Farmer Pitchfork", "Faulty Barrier Background", "Feather Hat", "Festival of Colors Background", "Fire Hair", "Fire Shirt", "Fish Hook Hat", "Fish Hook Vest", "Fish Hook Waders", "Fish Pro Vest", "Fish Trap", "Fishing Hat", "Fishing Pants", "Fishing Spear", "Flip Flops", "Flower Bouquet", "Flower Crown", "Flower Mask", "Forest Background", "Fossil Armor", "Fossil Head", "Fossil Pants", "Fox Hat", "Frank Onesie", "Fresh Catch Vest", "Frizzy Bob Cut", "Frog Onesie", "Frost Sword", "Frozen Heart", "Fruit Bowl", "Fruit Picker Apron", "Fruit Picker Shirt", "Full Bloom Shirt", "Fun Eyes", "Gam3s Cap", "Garbage Bin Hat", "Gardening Overalls", "Gift Giver", "Giggle Eyes", "Gingerbread Onesie", "Glacial Plume", "Glacierguard Suit", "Glitch Aura", "Gloomy Dumbo", "Goblin Armor", "Goblin Axe", "Goblin Crown", "Goblin Helmet", "Goblin Medallion", "Goblin Pants", "Goblin Potion", "Goblin Puppet", "Goblin Quiver", "Goblin Retreat Background", "Goblin Sabatons", "Goblin Shield", "Gold Teeth", "Golden Seedling", "Golden Spatula", "Golden Wings", "Goth Hair", "Gothic Twilight", "Grape Pants", "Grave Diggers Shovel", "Green Amulet", "Green Monarch Dress", "Green Monarch Shirt", "Green Slime Hair", "Grey Merch Hoodie", "Greyed Glory", "Grumpy Cat", "Grumpy Eyes", "Halloween Deathscythe", "Handheld Bunny", "Harry's Hat", "Hawaiian Shirt", "Hoary Chin", "Holiday Feast Background", "Honeycomb Shield", "Hornet Mask", "Imp Costume", "Infected Potion", "Infernal Bullwhip", "Infernal Bumpkin Potion", "Infernal Drill", "Infernal Goblin Potion", "Infernal Horns", "Infernal Pitchfork", "Infernal Rod", "Infernal Smile", "Jack O'Sweets", "Jail Background", "Kingdom Background", "Knight Gambit", "Koi Fish Hat", "Ladybug Suit", "Lava Swimwear", "Leather Shoes", "Lemon Shield", "Lifeguard Hat", "Lifeguard Pants", "Lifeguard Shirt", "Light Brown Farmer Potion", "Light Brown Worried Farmer Potion", "Lion Dance Mask", "Locust King Onesie", "Locust Onesie", "Love Bear Onesie", "Love Charm Shirt", "Love Heart Onesie", "Love Puff Aura", "Love Quiver", "Love's Topper", "Lucky Red Hat", "Lucky Red Suit", "Lumberjack Overalls", "Luminous Anglerfish Topper", "Luna's Crescent", "Luna's Hat", "Luscious Hair", "Luvvy Head", "Maiden Skirt", "Maiden Top", "Maple Dumbo", "Marble Pants", "Master Chef's Cleaver", "Medic Apron", "Merch Bucket Hat", "Merch Coffee Mug", "Merch Hoodie", "Merch Tee", "Merino Jumper", "Mermaid Potion", "Milk Apron", "Moon Hair", "Moonseeker Hand Puppet", "Moonseeker Potion", "Mountain View Background", "Mushroom Hat", "Mushroom Lamp", "Mushroom Lights Background", "Mushroom Pants", "Mushroom Shield", "Mushroom Shoes", "Mushroom Sweater", "Neon Noiz Jacket", "Neon Noiz Pants", "Neon Noiz Shoes", "Neutral Mouth", "New Years Crown", "New Years Tiara", "Nightshade Armor", "Nightshade Crown", "Nightshade Helmet", "Nightshade Medallion", "Nightshade Pants", "Nightshade Quiver", "Nightshade Sabatons", "Nightshade Shield", "Nightshade Sword", "Non La Hat", "Normal Fish Hat", "Northern Lights Background", "Obsidian Necklace", "Oil Can", "Oil Gallon", "Oil Overalls", "Oil Protection Hat", "Old Shoes", "Olive Royalty Shirt", "Olive Shield", "Onion Leek", "Oracle Syringe", "Orange Monarch Dress", "Orange Monarch Shirt", "Ox Costume", "Paint Splattered Hair", "Paint Splattered Overalls", "Paint Splattered Shirt", "Paint Spray Can", "Painter's Cap", "Pale Potion", "Parlour Hair", "Parsnip Horns", "Paw Aura", "Paw Shield", "Peasant Skirt", "Peg Leg", "Pet Specialist Hat", "Pet Specialist Pants", "Pet Specialist Shirt", "Pharaoh Headdress", "Pickaxe Shark", "Pineapple Shirt", "Pink Ponytail", "Pirate General Coat", "Pirate Hat", "Pirate Leather Polo", "Pirate Pants", "Pirate Potion", "Pirate Scimitar", "Pistol Shrimp", "Pixel Perfect Hoodie", "Polkastarter Shirt", "Potato Suit", "Project Dignity Hoodie", "Propeller Hat", "Pumpkin Hat", "Pumpkin Head", "Pumpkin Plaza Background", "Pumpkin Shirt", "Queen Bee Crown", "Queen's Crown", "Raccoon Onesie", "Radiant Dumbo", "Rainbow Wings", "Rancher Hair", "Rash Vest", "Recycle Shirt", "Red Farmer Shirt", "Red Jelly Pants", "Red Long Hair", "Red Pepper Onesie", "Reel Fishing Vest", "Reindeer Antlers", "Reindeer Mask", "Reindeer Suit", "Relaxed Eyes", "Research Uniform", "Rice Shirt", "Rock Hammer", "Rocket Onesie", "Rose Dress", "Royal Braids", "Royal Dress", "Royal Robe", "Royal Scepter", "SFL Office Background", "SFL T-Shirt", "Sad Slime Hat", "Sad Slime Pants", "Sad Slime Slippers", "Sakura Shirt", "Salt Bottle Onesie", "Santa Beard", "Santa Hat", "Santa Suit", "Saw Fish", "Scarab Wings", "Scared Eyes", "Seashore Background", "Seaside Tank Top", "Seedling Hat", "Sequence Hat", "Sequence Shirt", "Shark Onesie", "Shepherd Staff", "Short Shorts", "Shrimp Onesie", "Silver Streaks", "Skinning Knife", "Skull Hat", "Skull Shirt", "Sky Island Background", "Sleeping Otter", "Slime Aura", "Slime Hat", "Slime Splattered Shirt", "Slime Wall Background", "Slime Wings", "Snowman Mask", "Snowman Onesie", "Sol & Luna", "Solflare Aegis", "Soybean Onesie", "Spa Hat", "Spa Robe", "Spa Slippers", "Space Background", "Speed Boots", "Spooky Coat", "Squid Hat", "Squirrel Monkey Potion", "Squirrel Onesie", "St Patricks Hat", "Stockeye Salmon Onesie", "Straw Hat", "Streamer Hat", "Streamer Helmet", "Stretched Jeans", "Striped Blue Shirt", "Striped Red Shirt", "Striped Yellow Shirt", "Summer Top", "Sun Scarab Amulet", "Sun Spots", "Sunburst Potion", "Sunflorian Armor", "Sunflorian Crown", "Sunflorian Helmet", "Sunflorian Medallion", "Sunflorian Pants", "Sunflorian Quiver", "Sunflorian Sabatons", "Sunflorian Shield", "Sunflorian Sword", "Sunflower Amulet", "Sunflower Rod", "Sunflower Shield", "Surfer Hair", "Surprised Eyes", "Swamp Armor", "Swamp Lily Hat", "Swamp Pants", "Sweet Devil Dress", "Sweet Devil Horns", "Sweet Devil Wings", "Tackle Box", "Tangerine Hair", "Tattered Jacket", "Tattered Slacks", "Teal Mohawk", "Tiger Onesie", "Tiki Armor", "Tiki Mask", "Tiki Pants", "Tofu Mask", "Tomato Apron", "Training Whistle", "Traveller's Backpack", "Traveller's Pants", "Traveller's Shirt", "Trial Tee", "Trick and Treat", "Tropical Sarong", "Turd Topper", "Two-toned Layered", "Ugly Christmas Sweater", "Underworld Stimpack", "Unicorn Hat", "Unicorn Horn", "Valentine's Field Background", "Valoria Wreath", "Victoria's Apron", "Victorian Hat", "Walrus Onesie", "Warrior Helmet", "Warrior Pants", "Warrior Shirt", "Water Gourd", "Water Gun", "Wavy Pants", "Weather Hat", "Whale Hat", "White Long Hair", "White Sheep Onesie", "White Turtle Neck", "Wink Eyes", "Winter Jacket", "Wise Beard", "Wise Book", "Wise Hair", "Wise Robes", "Wise Slacks", "Wise Staff", "Wisp Aura", "Witch's Broom", "Witches' Eve Tee", "Witching Wardrobe", "Wooly Dress", "Xmas Top Hat", "Yellow Boots", "Yellow Farmer Shirt", "Yellow Slime Puppet"];
 function profileCollectibleBoostNameSet() {
   return new Set(COLLECTIBLE_BOOST_NAMES);
@@ -73115,6 +73365,24 @@ function realStamp(groupKey, node, now) {
 function dailyHarvestSetResolver(fn) {
   pendResolver = typeof fn === "function" ? fn : null;
 }
+var animalYieldProvider;
+function dailyHarvestSetAnimalYieldProvider(fn) {
+  animalYieldProvider = typeof fn === "function" ? fn : null;
+}
+function claimedAnimalYield(groupKey, current, before) {
+  if (!animalYieldProvider || !current) return null;
+  const state = typeof current.s === "string" ? current.s : "";
+  let xp = null;
+  if (state === "idle" || state === "sick") xp = current.x;
+  else if (before && before.s === "ready") xp = before.x;
+  if (typeof xp !== "number" || !isFinite(xp)) return null;
+  const buff = before && typeof before.s === "string" ? before.b || "" : current.b || "";
+  try {
+    return animalYieldProvider(groupKey, xp, buff);
+  } catch (e) {
+    return null;
+  }
+}
 function pickActivity(fa) {
   const out = {};
   if (!fa || typeof fa !== "object") return out;
@@ -73299,6 +73567,12 @@ function collectGroups(g, now) {
       if (!animal || !animal.type) return;
       const ts = numTs(animal.asleepAt);
       add(animal.type, "ts", id, ts, String(ts), false, void 0, "animal");
+      const node = groups[animal.type].nodes[id];
+      const xp = Number(animal.experience);
+      if (isFinite(xp)) node.x = xp;
+      if (typeof animal.state === "string") node.s = animal.state;
+      const fb = animal.feedBuff;
+      if (fb && typeof fb === "object" && fb.name && !(fb.harvestsRemaining <= 0)) node.b = fb.name;
     });
   });
   return groups;
@@ -73592,12 +73866,27 @@ function dailyHarvestTrack(g, farmId) {
         y: 0,
         miss: false,
         tl: 0,
-        ids: []
+        ids: [],
+        p: null
       });
       b.t = Math.max(b.t, t);
       b.n += 1;
       b.tl += nodeToolMult(id);
       b.ids.push(id);
+      if (grp.kind === "animal" && animalYieldProvider) {
+        const priorNode = prev && prev.nodes ? prev.nodes[id] : carried && carried.nodes ? carried.nodes[id] : null;
+        const real = claimedAnimalYield(groupKey, grp.nodes[id], priorNode);
+        if (real && typeof real.total === "number" && real.parts) {
+          b.y += real.total;
+          b.p = b.p || {};
+          Object.keys(real.parts).forEach((name) => {
+            b.p[name] = (b.p[name] || 0) + real.parts[name];
+          });
+          return;
+        }
+        b.miss = true;
+        return;
+      }
       const known = rec.amts ? rec.amts[id] : null;
       const prevAmt = typeof known === "number" && known > 0 ? known : null;
       const oilAmt = groupKey === "Oil" ? prevAmt !== null ? prevAmt : oilAmountOf(g, id) : null;
@@ -73613,6 +73902,7 @@ function dailyHarvestTrack(g, farmId) {
         n: b.n,
         y: b.miss ? null : b.y
       };
+      if (!b.miss && b.p) entry.p = b.p;
       if (toolInfo) entry.tl = roundTools(b.tl * toolInfo.factor);
       if (resolvable) entry.ids = b.ids;
       return entry;
@@ -75145,6 +75435,7 @@ export {
   PIG_FEEDS,
   PIG_FEED_KEYS,
   PIG_MUD_PER_APPLICATION,
+  PIG_BRISTLES_PER_LEVEL,
   FEED_RECIPE,
   ANIMAL_DATA,
   ANIMAL_XP_THRESHOLDS,

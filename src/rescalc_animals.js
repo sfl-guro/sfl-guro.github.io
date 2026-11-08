@@ -512,9 +512,12 @@ function levelsInfoHtml() {
     const rows = data.levels.map((lv, i) => {
       const level = i + 1;
       const xp = th[level] - th[level - 1];
-      return `<div class="ct-trow an-lv-row"><span>${level}</span><span>${n2(xp)}</span><span class="ct-tcell">${ui.getIcon(calc.FEED_LABELS[lv.feed])}<span>×${n2(lv.qty)}</span></span></div>`;
+      const yields = data.products.map((p, pi) => lv.y[pi] > 0 ? `<span class="an-yield">+${n2(lv.y[pi])}${ui.getIcon(p)}</span>` : "");
+      const bristles = type === "pig" ? calc.PIG_BRISTLES_PER_LEVEL[level] || 0 : 0;
+      if (bristles > 0) yields.push(`<span class="an-yield">+${n2(bristles)}${ui.getIcon("Pig Bristles")}</span>`);
+      return `<div class="ct-trow an-lv-row an-lv-yrow"><span>${level}</span><span>${n2(xp)}</span><span class="ct-tcell">${ui.getIcon(calc.FEED_LABELS[lv.feed])}<span>×${n2(lv.qty)}</span></span><span class="an-yields">${yields.join("") || "—"}</span></div>`;
     }).join("");
-    return `<div class="an-lv-block"><div class="an-lv-head"><span class="an-lv-icon">${iconOf(type)}</span><span class="an-lv-name">${esc(data.label)}</span></div><div class="ct-trow ct-thead an-lv-row"><span>Level</span><span>Exp</span><span>Feed / Qty</span></div>${rows}</div>`;
+    return `<div class="an-lv-block"><div class="an-lv-head"><span class="an-lv-icon">${iconOf(type)}</span><span class="an-lv-name">${esc(data.label)}</span></div><div class="ct-trow ct-thead an-lv-row an-lv-yrow"><span>Level</span><span>Exp</span><span>Feed / Qty</span><span>Yield</span></div>${rows}</div>`;
   }).join("");
   return `<div class="an-lv-list">${feedsInfoHtml()}${blocks}</div>`;
 }

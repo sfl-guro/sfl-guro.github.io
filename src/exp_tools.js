@@ -28,14 +28,14 @@ function pct(mult) {
 }
 
 function expBoosts() {
-  return calc.BOOSTS.filter(b => b.category === "cooking" || b.agedFishXpMult);
+  return calc.BOOSTS.filter(b => b.category === "cooking" || b.agedFishXpMult || b.agingTimeMult);
 }
 
 function boostGroupLabel(b) {
   if (b.id === "vip_access") return "VIP";
   if (b.portBud) return "Buds";
   if (b.scope === "cookTimeGlobal") return "Cooking Time";
-  if (b.agedFishXpMult) return "Fish Aging";
+  if (b.agedFishXpMult || b.agingTimeMult) return "Fish Aging";
   return "Food and Fish EXP";
 }
 
@@ -48,6 +48,7 @@ function boostEffectText(b) {
   if (b.expAdd) parts.push(`+${n2(b.expAdd)} flat EXP`);
   if (b.timeMult) parts.push(`${n2((b.timeMult - 1) * 100)}% cooking time`);
   if (b.agedFishXpMult) parts.push(`×${n2(b.agedFishXpMult)} aged fish EXP`);
+  if (b.agingTimeMult) parts.push(`×${n2(b.agingTimeMult)} fish aging time`);
   return parts.join(", ");
 }
 

@@ -1112,6 +1112,7 @@ function boostFx(ids) {
     cheese: 0,
     specific: {},
     time: 1,
+    agingTime: 1,
     fishYield: [],
     crust: [],
     crustTime: [],
@@ -1136,6 +1137,7 @@ function boostFx(ids) {
     const b = BOOSTS.find(x => x.id === id);
     if (!b || isBoostActive(b.id)) return;
     if (b.agedFishXpMult) fx.aged *= b.agedFishXpMult;
+    if (b.agingTimeMult) fx.agingTime *= b.agingTimeMult;
     if (b.scope === "foodGlobal" && b.expMult) fx.food *= b.expMult; else if (b.scope === "foodFish" && b.expMult) fx.fish *= b.expMult; else if (b.scope === "foodCheese" && b.expAdd) fx.cheese += b.expAdd; else if (b.scope === "foodSpecific" && b.expMult) fx.specific[b.target] = (fx.specific[b.target] || 1) * b.expMult; else if (b.scope === "cookTimeGlobal" && b.timeMult) {
       fx.time *= b.timeMult;
       if (b.id === "master_chefs_cleaver") fx.cleaver = true;
@@ -1292,7 +1294,7 @@ function scoreFish(r, st, ranks, fx) {
   const myYield = 1 + boostAdd + fishSkillAdd(r.tier, ranks) + pickedAdd;
   const casts = castsFor(ranks);
   let perDay = casts * myYield;
-  const agingMult = 1 - (BG_SPEEDY_AGING[(ranks.skill_speedy_aging || 0) - 1] || 0);
+  const agingMult = (1 - (BG_SPEEDY_AGING[(ranks.skill_speedy_aging || 0) - 1] || 0)) * (isBoostActive("fish_trap") ? .8 : 1) * (fx ? fx.agingTime : 1);
   if (stage === "aged") perDay = Math.min(perDay, st.agingSlots * BG_DAY / (r.agingSec * agingMult));
   let catchCost = r.yieldScaled ? r.catchCost * r.appYield / myYield : r.catchCost;
   if (fx && fx.rodFree && !r.guaranteed) catchCost = Math.max(0, catchCost - fishRodCostCoins() / (r.yieldScaled ? myYield : r.appYield));
@@ -1806,6 +1808,7 @@ function boostGain(b, plan) {
   const cook = plan.cook;
   const fish = plan.fish;
   if (b.agedFishXpMult) return fish && fish.stage === "aged" ? fish.xpDay * (b.agedFishXpMult - 1) : 0;
+  if (b.agingTimeMult) return fish && fish.stage === "aged" && fish.castsUsed < fish.casts - 1e-9 ? fish.xpDay * (Math.min(1 / b.agingTimeMult, fish.casts / fish.castsUsed) - 1) : 0;
   if (b.scope === "foodGlobal") return (plan.xpDay || 0) * (b.expMult - 1);
   if (b.scope === "foodFish") return fish ? fish.xpDay * (b.expMult - 1) : 0;
   if (b.scope === "foodCheese") return cook && cook.usesCheese ? b.expAdd * cook.per24 : 0;
@@ -1826,14 +1829,14 @@ function boostEntry(b, plan) {
     gain: gain,
     price: price,
     payback: price > 0 && weighted > 0 ? price / weighted : 0,
-    group: b.category === "fishing" ? "Fish yield" : b.scope === "foodFish" ? "Fish EXP" : b.scope === "cookTimeGlobal" ? "Cooking speed" : "Food EXP"
+    group: b.agingTimeMult ? "Fish EXP" : b.category === "fishing" ? "Fish yield" : b.scope === "foodFish" ? "Fish EXP" : b.scope === "cookTimeGlobal" ? "Cooking speed" : "Food EXP"
   };
 }
 
 function boostSuggestions(plan) {
   const out = [];
   BOOSTS.forEach(b => {
-    if (b.category !== "cooking" || isBoostActive(b.id)) return;
+    if (b.category !== "cooking" && !b.agingTimeMult || isBoostActive(b.id)) return;
     if (/\(|Shrine|Totem|Hourglass/.test(b.name)) return;
     const e = boostEntry(b, plan);
     if (e.gain <= 0) return;
@@ -1860,7 +1863,7 @@ function strategyBoosts(st, plan) {
     if (/\(|Shrine|Totem|Hourglass/.test(b.name)) return;
     let group = null;
     if (st.strategy === "fish") {
-      if (b.scope === "fishYield") group = "Fish yield"; else if (b.scope === "foodGlobal" && b.expMult) group = "Food and fish EXP (affects both)"; else if (b.agedFishXpMult) group = "Fish EXP"; else if (b.scope === "foodFish") group = "Fish EXP"; else if (b.scope === "fishRod") group = "Fish rod (cheaper catches)"; else if (b.scope === "fishMarket") group = "Fish Market output (yield and speed)"; else if ((b.scope === "crustacean" || b.scope === "fishCrab") && (BG_CRUST_COST_IDS.indexOf(b.id) >= 0 || BG_CRUST_TIME_IDS.indexOf(b.id) >= 0)) group = "Crustacean and crab (cheaper Fish Market items and chum)";
+      if (b.scope === "fishYield") group = "Fish yield"; else if (b.scope === "foodGlobal" && b.expMult) group = "Food and fish EXP (affects both)"; else if (b.agedFishXpMult || b.agingTimeMult) group = "Fish EXP"; else if (b.scope === "foodFish") group = "Fish EXP"; else if (b.scope === "fishRod") group = "Fish rod (cheaper catches)"; else if (b.scope === "fishMarket") group = "Fish Market output (yield and speed)"; else if ((b.scope === "crustacean" || b.scope === "fishCrab") && (BG_CRUST_COST_IDS.indexOf(b.id) >= 0 || BG_CRUST_TIME_IDS.indexOf(b.id) >= 0)) group = "Crustacean and crab (cheaper Fish Market items and chum)";
     } else if (b.category === "cooking" && (b.expMult || b.expAdd)) {
       const cook = plan.cook;
       if (b.scope === "foodGlobal" || cook && (b.scope === "foodCheese" && cook.usesCheese || b.scope === "foodSpecific" && b.target === cook.name)) group = cook ? `${cook.name} EXP` : "Food EXP";

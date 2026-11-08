@@ -15939,6 +15939,10 @@ body.sfl-theme .rc-yield-row{ background:var(--sfl-inner); }
 .an-lv-head{ display:flex; align-items:center; gap:6px; padding:4px 2px; font-weight:800; font-size:14px; }
 .an-lv-icon img{ width:20px; height:20px; image-rendering:pixelated; }
 .ct-trow.an-lv-row{ grid-template-columns:minmax(0, .7fr) minmax(0, 1fr) minmax(0, 1.5fr); }
+.ct-trow.an-lv-yrow{ grid-template-columns:minmax(0, .8fr) minmax(0, .8fr) minmax(0, 1.05fr) minmax(0, 1.55fr); }
+.an-yields{ display:flex; flex-wrap:wrap; align-items:center; gap:2px 8px; overflow:visible; }
+.an-yield img{ width:16px; height:16px; flex:0 0 auto; image-rendering:pixelated; }
+.an-yield{ display:inline-flex; align-items:center; gap:2px; white-space:nowrap; overflow:visible; }
 .an-lv-row .ct-tcell span{ overflow:visible; }
 .ct-trow.an-fd-row{ grid-template-columns:minmax(0, 1.9fr) minmax(0, .7fr) minmax(0, .8fr); }
 .an-fd-row .ct-tcell > span{ overflow:visible; text-overflow:clip; }
@@ -16036,3 +16040,22 @@ html body .cave-data-card .dig-data-tools .es-toolcfg{
 
 .guro-profile-label{ font-weight:800; margin-right:4px; }
 .guro-profile-farmid .guro-profile-val, .guro-profile-line .guro-profile-val{ display:inline-flex; align-items:center; gap:3px; }
+
+.fp-feed-pick{ display:flex; flex-direction:column; gap:6px; margin:10px 0 4px; }
+.fp-feed-pick .label{ font-family:var(--pixel-font); font-size:9px; text-transform:uppercase; letter-spacing:.3px; }
+.fp-feed-row{ display:flex; flex-wrap:wrap; gap:6px; }
+html body .fp-feed-btn{ appearance:none; -webkit-appearance:none; box-sizing:border-box; margin:0; cursor:pointer; display:flex; align-items:center; justify-content:center; width:38px; height:38px; padding:0; background:var(--parchment, #f2d9a0); touch-action:manipulation; }
+html body .fp-feed-btn.fp-fav-btn{ width:auto; min-width:38px; padding:0 10px; font-family:var(--pixel-font); font-size:9px; text-transform:uppercase; letter-spacing:.3px; color:inherit; white-space:nowrap; }
+.ay-proj{ margin-top:5px; display:flex; }
+.ay-proj-tag{ white-space:normal; }
+html body .fp-feed-btn img{ width:22px; height:22px; image-rendering:pixelated; pointer-events:none; }
+html body .fp-feed-btn.is-on{ background:var(--sun-deep); }
+html body .fp-feed-btn.is-on img{ filter:brightness(1.15) saturate(1.6) drop-shadow(0 0 2px rgba(255,255,255,.55)); }
+html body.sfl-theme .fp-feed-btn.is-on{
+  background-color:var(--sfl-outer) !important; background-image:none !important;
+  border-image:var(--sfl-btn-pressed-image) 3 3 4 3 fill !important;
+}
+html body.app-dark:not(.sfl-theme) .fp-feed-btn{ background-color:#2c2e36 !important; background-image:none !important; }
+html body.app-dark:not(.sfl-theme) .fp-feed-btn.is-on{ background-color:#1c1e24 !important; border-image:var(--dark-btn-pressed-image) 3 3 4 3 fill !important; }
+.animal-merged-card .card-name-row .card-name{ display:flex; align-items:center; flex-wrap:nowrap; gap:6px; white-space:nowrap; }
+.animal-merged-card .card-name-row .card-name img{ width:18px !important; height:18px !important; flex:0 0 auto; image-rendering:pixelated; }
