@@ -15120,7 +15120,8 @@ function renderAnimalYieldGroupsList(card2) {
       const perFeed = f.xpMin === f.xpMax ? `+${num(f.xpMin)}` : `+${num(f.xpMin)}\u2013${num(f.xpMax)}`;
       return `<div class="ay-sum-row"><span class="ay-sum-name">${getIcon(f.name)} <b>${escapeHtml(f.name)}</b></span><span class="ay-sum-for">${f.ids.join(" ")}</span><span class="ay-sum-qty">\xD7 ${num(f.qty)}</span></div><div class="ay-sum-xp">${perFeed} XP per feed</div>`;
     }).join("");
-    summaryHtml = `<div class="lib-section-title" style="margin-top:10px;">Feeds Needed \xB7 All Animals</div><div class="ay-summary guro-frame">${rowsHtml}<div class="ay-sum-total"><span>Total feeds</span><b>${num(totalFeeds)}</b></div></div>`;
+    const freeNote = card2.freeFeed ? `<div class="ay-sum-xp">Free feed active \xB7 feeding costs nothing</div>` : "";
+    summaryHtml = `<div class="lib-section-title" style="margin-top:10px;">Feeds Needed \xB7 All Animals</div><div class="ay-summary guro-frame">${rowsHtml}<div class="ay-sum-total"><span>Total feeds</span><b>${num(totalFeeds)}</b></div>${freeNote}</div>`;
   } else {
     summaryHtml = `<div class="lib-section-title" style="margin-top:10px;">Feeds Needed \xB7 All Animals</div><div class="ay-summary guro-frame"><div class="ay-sum-row"><span class="ay-sum-name">No feed needed right now</span></div></div>`;
   }
@@ -18800,8 +18801,8 @@ function renderBumpkinLevelPanel() {
     };
   });
 }
-var AUCTION_TICKET_ICON_SRC = "data:image/webp;base64,UklGRpIAAABXRUJQVlA4TIUAAAAvCsADEEegkJEk5vwpDuo7QYN4DQJBiJwx2llqGkmB7jF/ElCHAVpawvwHwP9LTltlHDNNG1wB28i2lSo72cu/NGAQSwfWgJXAkLo08CGi/wHr8wC5csJaFjvkuhLWTtXCOpnxYu3TtLOGFE/yznZR1t6MO2uW4g1LmgXW7wb4BWB9AXgAAA==";
-var AUCTION_TICKET_ICON_HTML = `<img src="${AUCTION_TICKET_ICON_SRC}" alt="Shiny Feather" style="width:14px;height:14px;vertical-align:-2px;image-rendering:pixelated;">`;
+var AUCTION_TICKET_ICON_SRC = "data:image/webp;base64,UklGRsYAAABXRUJQVlA4TLoAAAAvD8ACEG+gJgCQhosYZKEpCShBj6Hf1tPTGmoCAGkIQQwakJQ2u4HfNoWnagIAadhgA6rYxK7W2vrMfwCARrO2ob7q/+ZeM7hw7FCOty+pZP1jRQQJTmttW5vXfTrZgFGWFvhPJwj4kg7/sEBGaGcgjbI2vjxNlojo/wQAOccwn/V8MHv8/gTko/6/V8CMP0/7PaHb8rumEbrdOdKNEpy7pmkuKN9sGGOrNt/M4yRhLbIk4VnSIOccOSc=";
+var AUCTION_TICKET_ICON_HTML = `<img src="${AUCTION_TICKET_ICON_SRC}" alt="Duende Cap" style="width:16px;height:12px;vertical-align:-1px;image-rendering:pixelated;">`;
 var AUCTION_TRACKER_API_URL = "https://sfl-community-proxy.bossweki.workers.dev/community/data?type=ticketLeaderboard";
 var AUCTION_TRACKER_FARM_ID_LS_KEY = "hl_auction_tracker_farm_id";
 var AUCTION_TRACKER_FILTER_DEFS = [{
@@ -19009,7 +19010,7 @@ function renderAuctionTrackerPanel() {
         <div class="at-rank-label">Chapter Race Ranking</div>
         <div class="at-rank-card">
           <div class="at-rank-value">${chapterRankHtml}</div>
-          <div class="at-ticket-row">${AUCTION_TICKET_ICON_HTML} Shiny Feather <span class="at-ticket-count">${chapterTicketCount != null ? fmtInt(chapterTicketCount) : "\u2014"}</span></div>
+          <div class="at-ticket-row">${AUCTION_TICKET_ICON_HTML} Duende Cap <span class="at-ticket-count">${chapterTicketCount != null ? fmtInt(chapterTicketCount) : "\u2014"}</span></div>
         </div>
       </div>
       <div class="at-display-wrap">
@@ -19019,7 +19020,7 @@ function renderAuctionTrackerPanel() {
     </div>
     <div class="at-list-wrap">
       ${auctionTrackerData && auctionTrackerData.lastUpdated ? `<div class="at-updated-note">Last Updated ${escapeHtml(auctionTrackerRelativeTime(auctionTrackerData.lastUpdated))}</div>` : ""}
-      <div class="at-section-label">Top ${fmtInt(auctionTrackerDisplayLimit)} Players for ${AUCTION_TICKET_ICON_HTML} Shiny Feather</div>
+      <div class="at-section-label">Top ${fmtInt(auctionTrackerDisplayLimit)} Players for ${AUCTION_TICKET_ICON_HTML} Duende Cap</div>
       <div class="at-filter-row">${filterHtml}</div>
       <div class="at-cols-head">
         <span class="at-col-rank">${auctionTrackerFilter !== "all" ? `Rank 1-${fmtInt(auctionTrackerDisplayLimit)}` : "Rank"}</span><span class="at-col-name">Name</span><span class="at-col-bumpkin">Bumpkin</span><span class="at-col-exp">EXP</span><span class="at-col-ascension">Ascension</span><span class="at-col-tickets">Tickets</span>
@@ -31547,7 +31548,8 @@ function farmPanelComputeAnimalCards(rawRows) {
     const activeAnimalBoosts = getActiveAnimalBoosts(type);
     const yieldBoosts = activeAnimalBoosts.filter((b) => b.yieldAdd || b.yieldMultAll || b.yieldAddAll || b.truffleMult);
     const timeBoosts = activeAnimalBoosts.filter((b) => b.timeMult || b.timeMultAll);
-    const costBoosts = activeAnimalBoosts.filter((b) => b.feedMult || b.feedMultAll || b.xpMult);
+    const freeFeedBoosts = activeAnimalBoosts.filter((b) => b.freeFeed);
+    const costBoosts = freeFeedBoosts.length ? freeFeedBoosts : activeAnimalBoosts.filter((b) => b.feedMult || b.feedMultAll || b.xpMult);
     const saltLickYieldByProduct = {};
     const truffleSeasoningYieldByProduct = {};
     let honeyTreatSavingsFlower = 0;
@@ -31622,6 +31624,7 @@ function farmPanelComputeAnimalCards(rawRows) {
       yieldBoosts,
       timeBoosts,
       costBoosts,
+      freeFeed: freeFeedBoosts.length > 0,
       spiceBuffCards,
       cycleTimeSec,
       animalYieldGroups,
@@ -33321,6 +33324,7 @@ function farmPanelRenderAnimalYieldBoostList(boosts, productNames, products, fal
   });
   const costHtmlParts = (costBoosts || []).map((b) => {
     const parts = [];
+    if (b.freeFeed) parts.push("free feed");
     if (b.feedMult) parts.push(`\xD7${b.feedMult} feed`);
     if (b.feedMultAll) parts.push(`\xD7${b.feedMultAll} feed`);
     if (b.xpMult) parts.push(`\xD7${b.xpMult} feed XP`);

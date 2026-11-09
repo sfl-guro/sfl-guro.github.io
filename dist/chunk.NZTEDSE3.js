@@ -13,7 +13,7 @@ import {
   prices_exports,
   setAppDarkMode,
   ui_exports
-} from "./chunk.RDER6S4K.js";
+} from "./chunk.VLIPRZ2Z.js";
 import {
   KEY_ICON_DATA,
   NAV_ICON_DATA
@@ -43,13 +43,13 @@ var PAGES = [{
   path: "/digging",
   label: "Desert Digging",
   root: "pageDigging",
-  load: () => import("./digging.GQVTPICJ.js")
+  load: () => import("./digging.NZBTVTRH.js")
 }, {
   id: "cavesolver",
   path: "/cave-solver",
   label: "Cave Digging",
   root: "pageCaveSolver",
-  load: () => import("./cavesolver.JZLCNC5Y.js")
+  load: () => import("./cavesolver.F34ZWPWT.js")
 }, {
   id: "potionroom",
   path: "/potionroom",
@@ -73,7 +73,7 @@ var PAGES = [{
   path: "/settings",
   label: "Settings",
   root: "pageSettings",
-  load: () => import("./settings.TOQL4ULU.js")
+  load: () => import("./settings.GBJP4QGH.js")
 }, {
   id: "nodes",
   path: "/nodes",
@@ -175,13 +175,13 @@ var PAGES = [{
   path: "/experience-calculator",
   label: "Experience Calculator",
   root: "cookingPanel",
-  load: () => import("./experiencecalc.AUGCDURQ.js")
+  load: () => import("./experiencecalc.AHVATPRT.js")
 }, {
   id: "beginnerguide",
   path: "/beginner-guide",
   label: "Beginner Guide",
   root: "beginnerPanel",
-  load: () => import("./beginnerguide.JQNC442V.js")
+  load: () => import("./beginnerguide.T2WKUYDY.js")
 }, {
   id: "fishing",
   path: "/fishing",
@@ -199,7 +199,7 @@ var PAGES = [{
   path: "/resource-calculators",
   label: "Resource Calculators",
   root: "pageResourceCalc",
-  load: () => import("./resourcecalc.FAKBL7W5.js")
+  load: () => import("./resourcecalc.PJQ2BROM.js")
 }, {
   id: "sflbubbles",
   path: "/sflbubbleschart",
@@ -217,13 +217,13 @@ var PAGES = [{
   path: "/userguide",
   label: "User Guide",
   root: "pageUserGuide",
-  load: () => import("./userguide.AVM2AOA5.js")
+  load: () => import("./userguide.M5MLL5PK.js")
 }, {
   id: "profile",
   path: "/profile",
   label: "Profile",
   root: "pageProfile",
-  load: () => import("./profile.FJGK43R2.js")
+  load: () => import("./profile.FJ6V437R.js")
 }];
 var DEFAULT_PAGE_ID = "growing";
 function pageById(id) {
