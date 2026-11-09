@@ -19,7 +19,7 @@ import {
   farmSyncCollectEquippedAndPlacedNames,
   feePercent,
   solveCaveBatch
-} from "./chunk.L65WRR54.js";
+} from "./chunk.RDER6S4K.js";
 import "./chunk.LPEVZJ4B.js";
 import "./chunk.ZJUAGS4L.js";
 import "./chunk.VR6FV3KR.js";
@@ -483,6 +483,7 @@ var listening = false;
 var guideOpen = false;
 var syncing = false;
 var selectedBin = null;
+var viewMode = "items";
 function esc2(s) {
   return String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
@@ -520,7 +521,7 @@ function formatSpan(ms) {
   if (h > 0) return h + "h " + m + "m";
   return m + "m";
 }
-function cellHtml(machineId, c, best) {
+function cellHtml(machineId, c, best, mode) {
   const key = machineId + ":" + c.x + "," + c.y;
   if (c.dug) {
     const t = c.tile;
@@ -531,19 +532,42 @@ function cellHtml(machineId, c, best) {
   }
   let cls = "is-possible";
   let inner = `<span class="cave-pct">${pctText(c.p)}</span>`;
-  if (c.none) {
+  if (mode === "beetle") {
+    const b = c.beetle || 0;
+    if (c.none || b <= 1e-9) {
+      cls = "is-empty";
+      inner = `<span class="cave-pct">0%</span>`;
+    } else if (b >= 1 - 1e-9) {
+      cls = "is-guaranteed";
+      inner = c.single ? itemIcon(c.single) : `<span class="cave-pct">100%</span>`;
+    } else {
+      inner = `<span class="cave-pct">${pctText(b)}</span>`;
+    }
+  } else if (c.none) {
     cls = "is-empty";
     inner = `<span class="cave-pct">0%</span>`;
   } else if (c.certain) {
     cls = "is-guaranteed";
     inner = c.single ? itemIcon(c.single) : `<span class="cave-pct">100%</span>`;
   }
-  const star = best && best.x === c.x && best.y === c.y && !c.none ? " cave-best" : "";
+  const star = best && best.x === c.x && best.y === c.y && !c.none && (mode !== "beetle" || best.beetle > 1e-9) ? " cave-best" : "";
   return `<div class="dig-cell ${cls}${star}" data-cave-cell="${key}">${inner}</div>`;
 }
 function chipsHtml(res) {
   if (!res.remaining) return `<span class="dig-legend-item">Nothing valuable left buried</span>`;
   return Object.keys(res.names).map((name) => `<span class="dig-legend-item cave-chip">${itemIcon(name)} \xD7${res.names[name]}</span>`).join("");
+}
+function touchingCluesHtml(res, c) {
+  const near = [];
+  [[0, -1], [-1, 0], [1, 0], [0, 1]].forEach(([dx, dy]) => {
+    const nx = c.x + dx;
+    const ny = c.y + dy;
+    if (nx < 0 || ny < 0 || nx >= CAVE_WIDTH || ny >= CAVE_WIDTH) return;
+    const n = res.cells[ny * CAVE_WIDTH + nx];
+    if (n && n.dug && n.clue !== void 0) near.push(`<span class="cave-kind"><b>${cellLabel(n)}</b> clue ${n.clue}</span>`);
+  });
+  if (!near.length) return "";
+  return `<div class="cave-kinds">${near.join("")}</div>`;
 }
 function infoHtml(res, machineId) {
   const key = selected[machineId];
@@ -559,10 +583,11 @@ function infoHtml(res, machineId) {
   }
   const parts = [];
   parts.push(`<b>${cellLabel(c)}</b> holds something: <b>${pctText(c.p)}</b>`);
-  const kinds = Object.keys(c.kinds).filter((k) => k !== "Mud" && c.kinds[k] > 0);
+  const isBeetleName = (k) => k === "Beetle" || /Beetle$/.test(k);
+  const kinds = Object.keys(c.kinds).filter((k) => k !== "Mud" && c.kinds[k] > 0).sort((a, b) => Number(isBeetleName(b)) - Number(isBeetleName(a)));
   const lines = kinds.map((k) => `<span class="cave-kind">${itemIcon(k)} ${esc2(k)} ${pctText(c.kinds[k])}</span>`);
   lines.push(`<span class="cave-kind">${itemIcon("Mud")} Mud ${pctText(c.kinds.Mud)}</span>`);
-  return `<div class="dig-panel-status cave-info">${parts.join("")}<div class="cave-kinds">${lines.join("")}</div></div>`;
+  return `<div class="dig-panel-status cave-info">${parts.join("")}<div class="cave-kinds">${lines.join("")}</div>${touchingCluesHtml(res, c)}</div>`;
 }
 function boardHtml(machineId, batch, game, now) {
   const head = `<div class="cave-board-title"><span class="cave-myco-icon">${apiRef.ui.getIcon("Myco Bin")}</span> Myco Bin ${esc2(machineId)}</div>`;
@@ -584,14 +609,31 @@ function boardHtml(machineId, batch, game, now) {
   for (let x = 0; x < CAVE_WIDTH; x++) grid += `<div class="dig-grid-label">${COLS[x]}</div>`;
   for (let y = 0; y < CAVE_WIDTH; y++) {
     grid += `<div class="dig-grid-label">${y + 1}</div>`;
-    for (let x = 0; x < CAVE_WIDTH; x++) grid += cellHtml(machineId, res.cells[y * CAVE_WIDTH + x], res.best);
+    for (let x = 0; x < CAVE_WIDTH; x++) grid += cellHtml(machineId, res.cells[y * CAVE_WIDTH + x], res.best, viewMode);
   }
   const hints = [];
-  if (res.best && res.best.p > 0) hints.push(`Best dig: <b>${cellLabel(res.best)}</b> (${pctText(res.best.p)})`);
-  if (res.drill && res.drill.expected > 0) hints.push(`Best drill: <b>${COLS[res.drill.x]}${res.drill.y + 1}</b> square, about ${res.drill.expected.toFixed(1)} items`);
+  hints.push(`Beetles found: <b>${res.beetleFound}/${res.beetleTotal}</b>`);
+  if (viewMode === "beetle") {
+    if (res.best && res.best.beetle > 1e-9) hints.push(`Best beetle dig: <b>${cellLabel(res.best)}</b> (${pctText(res.best.beetle)} Beetle)`);
+    if (res.drill && res.drill.beetles > 1e-9) hints.push(`Best drill: <b>${COLS[res.drill.x]}${res.drill.y + 1}</b> square, about ${res.drill.beetles.toFixed(2)} beetles`);
+  } else {
+    if (res.best && res.best.p > 0) hints.push(`Best dig: <b>${cellLabel(res.best)}</b> (${pctText(res.best.p)})`);
+    if (res.drill && res.drill.expected > 0) hints.push(`Best drill: <b>${COLS[res.drill.x]}${res.drill.y + 1}</b> square, about ${res.drill.expected.toFixed(1)} items`);
+  }
   const seedNote = res.hasSeed ? "" : `<div class="dig-panel-status cave-note">Beetle species and Magic Mushrooms are not in the synced data, so kinds are shown as Mushroom and Beetle.</div>`;
   const found = res.beetleLeft === 0 ? `<div class="dig-panel-status cave-note">Every Beetle is found. You can restart this batch.</div>` : "";
   return `<div class="cave-board guro-frame">${head}${sub}<div class="dig-panel-legend cave-chips">${chipsHtml(res)}</div><div class="dig-panel-grid-wrap"><div class="dig-panel-grid cave-grid">${grid}</div></div><div class="dig-panel-status">${hints.join("<br>")}</div>${infoHtml(res, machineId)}${found}${seedNote}</div>`;
+}
+function viewTabsHtml() {
+  const modes = [["items", "Any item"], ["beetle", "Beetles"]];
+  const buttons = modes.map((m) => `<button type="button" class="cave-tab${m[0] === viewMode ? " active" : ""}" data-cave-view="${m[0]}">${m[1]}</button>`).join("");
+  return `<div class="cave-tabs cave-view-tabs">${buttons}</div>`;
+}
+function legendHtml() {
+  const red = viewMode === "beetle" ? "No Beetle" : "Only Mud";
+  const yellow = viewMode === "beetle" ? "Beetle chance" : "Chance";
+  const blue = viewMode === "beetle" ? "Sure Beetle" : "Sure thing";
+  return `<div class="dig-panel-legend"><span class="dig-legend-item"><span class="dig-swatch dig-swatch-red"></span>${red}</span><span class="dig-legend-item"><span class="dig-swatch dig-swatch-yellow"></span>${yellow}</span><span class="dig-legend-item"><span class="dig-swatch dig-swatch-blue"></span>${blue}</span></div>`;
 }
 function binState(batch, now) {
   if (!batch) return "idle";
@@ -611,6 +653,7 @@ function guideHtml() {
     "The patch needs 12 hours to grow, and your very first batch only 10 minutes. You cannot dig it until the timer ends.",
     "When it is ready, dig with a Sand Shovel, or drill a 2x2 square with a Sand Drill. Tiles hold Mushrooms, Beetles or Mud.",
     "The small number in the corner of a dug tile is a clue: how many of its four neighbours (up, down, left, right) hold a Mushroom or a Beetle. Mud does not count and Beetles show no number. The solver uses every clue to work out the odds on each tile.",
+    "Clues count Beetles and Mushrooms together, so they show where something is buried, not which one. Switch to Beetles to see the exact Beetle chance on every tile. When tiles tie, Best dig prefers the one whose clue will tell you the most.",
     "Feed the bin again once the patch is fully dug or every Beetle is found. There is no limit and the cost stays the same.",
     "Every Cave upgrade adds one more Myco Bin, so more patches can grow at the same time."
   ];
@@ -767,8 +810,8 @@ function render() {
     farmId: farmKey,
     now
   });
-  const legend = `<div class="dig-panel-legend"><span class="dig-legend-item"><span class="dig-swatch dig-swatch-red"></span>Only Mud</span><span class="dig-legend-item"><span class="dig-swatch dig-swatch-yellow"></span>Chance</span><span class="dig-legend-item"><span class="dig-swatch dig-swatch-blue"></span>Sure thing</span></div>`;
-  card.innerHTML = `<div class="dig-panel-divider-solid cave-hide-on-data"></div><div class="cave-top-row cave-hide-on-data">${guideHtml()}${statusHtml(cave, ids, now)}</div><div class="cave-hide-on-data">${legend}${tabs}</div><div class="cave-main"><div class="cave-boards cave-hide-on-data">${dugToday}${boards}</div><div class="cave-merchant-wrap">${dataCard}<div class="cave-hide-on-data">${merchant}</div></div></div>`;
+  const legend = legendHtml();
+  card.innerHTML = `<div class="dig-panel-divider-solid cave-hide-on-data"></div><div class="cave-top-row cave-hide-on-data">${guideHtml()}${statusHtml(cave, ids, now)}</div><div class="cave-hide-on-data">${viewTabsHtml()}${legend}${tabs}</div><div class="cave-main"><div class="cave-boards cave-hide-on-data">${dugToday}${boards}</div><div class="cave-merchant-wrap">${dataCard}<div class="cave-hide-on-data">${merchant}</div></div></div>`;
   const growing = ids.some((id) => {
     const b = cave.machines[id] && cave.machines[id].batch;
     return b && b.readyAt > now;
@@ -788,6 +831,12 @@ function onClick(e) {
   }
   if (e.target.closest("[data-cave-guide]")) {
     guideOpen = !guideOpen;
+    render();
+    return;
+  }
+  const view = e.target.closest("[data-cave-view]");
+  if (view) {
+    viewMode = view.dataset.caveView === "beetle" ? "beetle" : "items";
     render();
     return;
   }
@@ -893,6 +942,7 @@ function mount(root, api) {
   selected = {};
   guideOpen = false;
   selectedBin = null;
+  viewMode = "items";
   setDataMode(root, false);
   const bar = document.getElementById("guroPageTitle");
   if (bar) {

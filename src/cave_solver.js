@@ -399,32 +399,68 @@ export function solveCaveBatch(batch) {
       for (const name of Object.keys(names)) kinds[name] = p * names[name] / remaining;
     }
     kinds.Mud = 1 - p;
+    let beetle = 0;
+    let mushroom = 0;
+    for (const name of Object.keys(names)) {
+      const share = kinds[name] || 0;
+      if (name === "Beetle" || BEETLES.indexOf(name) >= 0) beetle += share; else mushroom += share;
+    }
     result.cells.push({
       x: x,
       y: y,
       dug: false,
       p: p,
+      beetle: beetle,
+      mushroom: mushroom,
       certain: certain,
       none: none,
       kinds: kinds,
       single: certain && Object.keys(names).length === 1 ? Object.keys(names)[0] : null
     });
   }
+  result.beetleTotal = composition.Beetle;
+  result.beetleFound = composition.Beetle - beetleLeft;
+  const spread = c => {
+    let total = 0;
+    for (const [dx, dy] of NEIGHBOURS) {
+      const nx = c.x + dx;
+      const ny = c.y + dy;
+      if (nx < 0 || ny < 0 || nx >= width || ny >= width) continue;
+      const near = result.cells[ny * width + nx];
+      if (near.dug) continue;
+      total += 4 * near.p * (1 - near.p);
+    }
+    return total;
+  };
   const undug = result.cells.filter(c => !c.dug);
   let best = null;
+  let bestSpread = 0;
   undug.forEach(c => {
-    if (!best || c.p > best.p) best = c;
+    if (!best || c.p > best.p + 1e-9) {
+      best = c;
+      bestSpread = spread(c);
+      return;
+    }
+    if (Math.abs(c.p - best.p) <= 1e-9) {
+      const s = spread(c);
+      if (s > bestSpread + 1e-9) {
+        best = c;
+        bestSpread = s;
+      }
+    }
   });
   result.best = best;
   let drill = null;
   for (let top = 0; top < width - 1; top += 1) {
     for (let left = 0; left < width - 1; left += 1) {
       let expected = 0;
+      let beetles = 0;
       let fresh = 0;
       [ [ 0, 0 ], [ 1, 0 ], [ 0, 1 ], [ 1, 1 ] ].forEach(([dx, dy]) => {
         const cell = result.cells[(top + dy) * width + left + dx];
         if (!cell.dug) {
           expected += cell.p;
+          beetles += cell.beetle;
           fresh += 1;
         }
       });
@@ -432,6 +468,7 @@ export function solveCaveBatch(batch) {
         x: left,
         y: top,
         expected: expected,
+        beetles: beetles,
         fresh: fresh
       };
     }

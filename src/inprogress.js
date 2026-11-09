@@ -3202,7 +3202,8 @@ function farmPanelComputeAnimalCards(rawRows) {
     const activeAnimalBoosts = getActiveAnimalBoosts(type);
     const yieldBoosts = activeAnimalBoosts.filter(b => b.yieldAdd || b.yieldMultAll || b.yieldAddAll || b.truffleMult);
     const timeBoosts = activeAnimalBoosts.filter(b => b.timeMult || b.timeMultAll);
-    const costBoosts = activeAnimalBoosts.filter(b => b.feedMult || b.feedMultAll || b.xpMult);
+    const freeFeedBoosts = activeAnimalBoosts.filter(b => b.freeFeed);
+    const costBoosts = freeFeedBoosts.length ? freeFeedBoosts : activeAnimalBoosts.filter(b => b.feedMult || b.feedMultAll || b.xpMult);
     const saltLickYieldByProduct = {};
     const truffleSeasoningYieldByProduct = {};
     let honeyTreatSavingsFlower = 0;
@@ -3277,6 +3278,7 @@ function farmPanelComputeAnimalCards(rawRows) {
       yieldBoosts: yieldBoosts,
       timeBoosts: timeBoosts,
       costBoosts: costBoosts,
+      freeFeed: freeFeedBoosts.length > 0,
       spiceBuffCards: spiceBuffCards,
       cycleTimeSec: cycleTimeSec,
       animalYieldGroups: animalYieldGroups,
@@ -5019,6 +5021,7 @@ function farmPanelRenderAnimalYieldBoostList(boosts, productNames, products, fal
   });
   const costHtmlParts = (costBoosts || []).map(b => {
     const parts = [];
+    if (b.freeFeed) parts.push("free feed");
     if (b.feedMult) parts.push(`×${b.feedMult} feed`);
     if (b.feedMultAll) parts.push(`×${b.feedMultAll} feed`);
     if (b.xpMult) parts.push(`×${b.xpMult} feed XP`);
