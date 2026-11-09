@@ -15710,6 +15710,7 @@ html body #caveSidePanel #caveCard.dig-panel-card::before, html body #caveSidePa
 .cave-tab{ min-width:0; padding:8px 4px; font-family:var(--pixel-font); font-size:10px; text-transform:uppercase; letter-spacing:.4px; color:var(--ink); background:var(--wheat-dim); border:2px solid var(--soil-dark); border-radius:0; cursor:pointer; box-shadow:2px 2px 0 rgba(0,0,0,.35); }
 .cave-tab:active{ transform:translate(2px,2px); box-shadow:none; }
 .cave-tab.active{ background:var(--sun); box-shadow:inset 0 0 0 2px var(--ink); }
+.cave-view-tabs{ grid-template-columns:repeat(2, minmax(0, 1fr)); margin-bottom:6px; }
 .cave-merchant-wrap{ min-width:0; }
 .cave-offers{ display:flex; flex-direction:column; gap:6px; margin-top:4px; }
 .cave-offer{ display:flex; flex-direction:column; gap:2px; padding:6px 8px; background:var(--wheat-dim); box-sizing:border-box; }

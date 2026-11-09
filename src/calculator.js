@@ -2016,7 +2016,7 @@ export function computeAnimalAffectionFigures(type, fromLevel, scales, modsIn, p
   const tools = Object.keys(ANIMAL_LOVE_ITEM_XP).map(key => {
     const chance = ((curShare[key] || 0) + (prvShare[key] || 0)) / 2;
     const owned = !!animalAffectionTools[key];
-    const xpEach = (ANIMAL_LOVE_ITEM_XP[key] + mods.loveFlatXpAddTotal) * mods.affectionXpMultTotal;
+    const xpEach = ANIMAL_LOVE_ITEM_XP[key] * mods.affectionXpMultTotal + mods.loveFlatXpAddTotal;
     let uses = owned ? opportunities * chance : 0;
     const override = owned && effectiveScales ? effectiveScales[key] : null;
     if (override) uses = override.scale !== undefined ? uses * override.scale : override.perHead;
@@ -2068,7 +2068,7 @@ export function computeAnimalAffectionSummary(type) {
       key: k,
       owned: !!animalAffectionTools[k],
       hasOverride: overrides[k] !== undefined,
-      xpEach: (ANIMAL_LOVE_ITEM_XP[k] + mods.loveFlatXpAddTotal) * mods.affectionXpMultTotal,
+      xpEach: ANIMAL_LOVE_ITEM_XP[k] * mods.affectionXpMultTotal + mods.loveFlatXpAddTotal,
       defaultCount: 0,
       count: 0,
       xp: 0

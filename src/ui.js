@@ -2533,7 +2533,8 @@ export function renderAnimalYieldGroupsList(card) {
       const perFeed = f.xpMin === f.xpMax ? `+${num(f.xpMin)}` : `+${num(f.xpMin)}–${num(f.xpMax)}`;
       return `<div class="ay-sum-row"><span class="ay-sum-name">${getIcon(f.name)} <b>${escapeHtml(f.name)}</b></span><span class="ay-sum-for">${f.ids.join(" ")}</span><span class="ay-sum-qty">× ${num(f.qty)}</span></div><div class="ay-sum-xp">${perFeed} XP per feed</div>`;
     }).join("");
-    summaryHtml = `<div class="lib-section-title" style="margin-top:10px;">Feeds Needed · All Animals</div><div class="ay-summary guro-frame">${rowsHtml}<div class="ay-sum-total"><span>Total feeds</span><b>${num(totalFeeds)}</b></div></div>`;
+    const freeNote = card.freeFeed ? `<div class="ay-sum-xp">Free feed active · feeding costs nothing</div>` : "";
+    summaryHtml = `<div class="lib-section-title" style="margin-top:10px;">Feeds Needed · All Animals</div><div class="ay-summary guro-frame">${rowsHtml}<div class="ay-sum-total"><span>Total feeds</span><b>${num(totalFeeds)}</b></div>${freeNote}</div>`;
   } else {
     summaryHtml = `<div class="lib-section-title" style="margin-top:10px;">Feeds Needed · All Animals</div><div class="ay-summary guro-frame"><div class="ay-sum-row"><span class="ay-sum-name">No feed needed right now</span></div></div>`;
   }
