@@ -29,6 +29,7 @@ import {
   FLOWER_ICON,
   FLOWER_VARIETIES,
   GEM_ICON,
+  GRAPE_FRUIT_GLOBAL_BOOSTS,
   IMAGE_ICONS,
   LAVA_PIT_RECIPES,
   OBSIDIAN_WEEKLY_PURCHASE_CAP,
@@ -197,7 +198,7 @@ import {
   toast,
   updateCalcSummary,
   updateSkillSaveBarState
-} from "./chunk.VLIPRZ2Z.js";
+} from "./chunk.525F2XGK.js";
 import "./chunk.LPEVZJ4B.js";
 import "./chunk.ZJUAGS4L.js";
 import "./chunk.VR6FV3KR.js";
@@ -2539,7 +2540,7 @@ function boostBodyHtml3() {
     icon: getIcon(n)
   }));
   const grapeOnly = /* @__PURE__ */ new Set(["time_warp_totem", "super_totem", "bountiful_harvest"]);
-  const boosts = BOOSTS.filter((b) => b.source !== "skill" && !b.hiddenFromOwnPanel && (b.category === "greenhouse" || b.category === "crops"));
+  const boosts = BOOSTS.filter((b) => b.source !== "skill" && !b.hiddenFromOwnPanel && (b.category === "greenhouse" || b.category === "crops" || b.category === "fruits" && GRAPE_FRUIT_GLOBAL_BOOSTS.has(b.id)));
   const appliesTo = (b, s) => {
     const lower = s.name.toLowerCase();
     if (b.category === "greenhouse") {
@@ -2547,6 +2548,7 @@ function boostBodyHtml3() {
       if (b.scope === "greenhouse") return (b.target || "").toLowerCase() === lower;
       return false;
     }
+    if (b.category === "fruits") return s.name === "Grape" && GRAPE_FRUIT_GLOBAL_BOOSTS.has(b.id);
     if (b.category === "crops" && b.scope === "global" && !b.composterFertilizer) {
       if (s.name === "Grape") return grapeOnly.has(b.id);
       return !CROPS_GLOBAL_EXCLUDED_FROM_GREENHOUSE.has(b.id) && (b.id !== "hoot" || lower === "rice");
