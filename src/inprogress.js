@@ -1,4 +1,4 @@
-import { withAnimalFeedContext, ANIMAL_FEED_CHOICES, ICONS, NPC_ICONS, ALL_ANIMAL_PRODUCTS, ANIMAL_BASE_CYCLE_SEC, ANIMAL_DATA, ANIMAL_XP_THRESHOLDS, ANIMAL_PRODUCT_LOOKUP, ASCENSION_RANK_DATA, BAIT_RECIPES, BASE_CROPS, BASE_FRUITS, BASE_GREENHOUSE, BASE_STOCK_TOOLS, BEE_SWARM_ICON, BOOSTS, CALENDAR_SEASONAL_BOOSTS, COIN_ICON, COOKING_BUILDINGS, COOKING_BUILDING_ICONS, COOKING_CAKE_DISHES, COOKING_FOOD_IMAGES, COOKING_RECIPES, CRIMSTONE_KNOWN_IDS, CROPS_GLOBAL_EXCLUDED_FROM_GREENHOUSE, CROP_AOE_RANKS, CROP_HARVEST_SEC, CROP_KNOWN_IDS, CROP_PRNG_EXCLUDE, FARM_LEVEL_NODES, FARM_PANEL_SCROLL_IDLE_MS, FEED_LABELS, FERMENTATION_BAIT_FAMILIES, FERMENTATION_SPICE_KNOWN_IDS, FERMENTATION_STATIC_RECIPES, FISH_AGING_KNOWN_IDS, FISH_SALT_DATA, FLOWER_ICON, FLOWER_SEEDS, FLOWER_VARIETIES, FOOD_KNOWN_IDS, FRUIT_KNOWN_IDS, FRUIT_PRNG_EXCLUDE, GAMESTATE_SECTION_KEYS, GEM_ICON, GOLD_KNOWN_IDS, IMAGE_ICONS, IRON_KNOWN_IDS, MUTANT_TYPE_EMOJI, OIL_BONUS_DROP_AMOUNT, OIL_SINGLE_HARVEST_BASE, PATCH_FRUIT_ONLY_GLOBAL_BOOSTS_EXCLUDED_FROM_GREENHOUSE, RCM_GREENHOUSE_ICON_HTML, REQUIRED_FOOD_QTY_MAP, RESOURCE_DATA, RESOURCE_NODE_TIERS, SALT_BASE_CHARGE_CAP, SALT_BASE_TIME_SEC, SALT_BASE_YIELD, SALT_KNOWN_ID, SPICE_RECIPES, SPICE_STATIC_RECIPES, STONE_KNOWN_IDS, SYNODIC_MONTH_DAYS, TREE_KNOWN_IDS, __farmPanelSaveGameStateHandle, __gameStateSectionLenSigs, __set___farmPanelSaveGameStateHandle, __set___gameStateSectionLenSigs, allResourceBudBoostEntries, applyFarmBoostsOnly, applyFarmSkillsOnly, coinPerFlower, coinsToFlower, computeAgedFishFigures, computeAnimalFeedFigures, computeAnimalRealProgress, computeAnimalTypeFigures, computeAnimalYieldsForLevel, computeBoostedCropStats, computeBoostedStock, computeBoostedFlowerVarietyStats, computeBoostedFruitStats, computeBoostedGreenhouseStats, computeBoostedLavaPitStats, computeBoostedResourceStats, computeComposterFigures, composterRollWorms, BASE_COMPOSTERS, previewSeason, computeDestroyedCropPlotIds, computeHiveStats, computeHoneyRestockBreakdown, computeQtyRestockGems, computeSpiceFigures, currentSeason, escapeHtml, farmIdPromptStartSync, farmSyncExtractBudTraits, farmSyncExtractGameState, farmSyncExtractPetTraits, farmSyncFindBagByNameHeuristic, farmSyncGetAnimalRecords, farmSyncGetCoords, farmSyncGetPetRecords, farmSyncPickActivePlacedInstances, feePercent, fmt, fmtAnimal, fmtAnimalCost, fullMoonSeedStockQty, getActiveAnimalBoosts, getActiveBoostsForHive, getActiveFeedInfo, getActiveSaltRechargeMult, getActiveSaltYieldBonus, getActiveSeasonGuardianName, getAnimalLevelFromXp, getAscensionRank, getBeeSwarmPerSwarmYield, getCropPlotSunshowerSpeedMultiplier, getCurrentChapterMutantSet, getCurrentChapterName, getEffectiveYieldAdd, getNodeIconHtml, getNodeLabel, getPowerHourWindow, getSpiceLickDurationHarvests, getTruffleSeasoningSleeps, getSpiceEffectForAnimalType, isBoostActive, isCropInSeason, isOvernightGroundCrop, isSkillActive, onDeferredInitialRenderDone, parseYieldBoostAmount, resourceBuds, saltSculptureLevel, sculptureEffects, sflPrngChance, syncCookingCountsFromInventory } from "./calculator.js";
+import { withAnimalFeedContext, ANIMAL_FEED_CHOICES, ICONS, NPC_ICONS, ALL_ANIMAL_PRODUCTS, ANIMAL_BASE_CYCLE_SEC, ANIMAL_DATA, ANIMAL_XP_THRESHOLDS, ANIMAL_PRODUCT_LOOKUP, ASCENSION_RANK_DATA, BAIT_RECIPES, BASE_CROPS, BASE_FRUITS, BASE_GREENHOUSE, BASE_STOCK_TOOLS, BEE_SWARM_ICON, BOOSTS, CALENDAR_SEASONAL_BOOSTS, COIN_ICON, COOKING_BUILDINGS, COOKING_BUILDING_ICONS, COOKING_CAKE_DISHES, COOKING_FOOD_IMAGES, COOKING_RECIPES, CRIMSTONE_KNOWN_IDS, CROPS_GLOBAL_EXCLUDED_FROM_GREENHOUSE, CROP_AOE_RANKS, CROP_HARVEST_SEC, CROP_KNOWN_IDS, CROP_PRNG_EXCLUDE, FARM_LEVEL_NODES, FARM_PANEL_SCROLL_IDLE_MS, FEED_LABELS, FERMENTATION_BAIT_FAMILIES, FERMENTATION_SPICE_KNOWN_IDS, FERMENTATION_STATIC_RECIPES, FISH_AGING_KNOWN_IDS, FISH_SALT_DATA, FLOWER_ICON, FLOWER_SEEDS, FLOWER_VARIETIES, FOOD_KNOWN_IDS, FRUIT_KNOWN_IDS, FRUIT_PRNG_EXCLUDE, GAMESTATE_SECTION_KEYS, GEM_ICON, GOLD_KNOWN_IDS, IMAGE_ICONS, IRON_KNOWN_IDS, MUTANT_TYPE_EMOJI, OIL_BONUS_DROP_AMOUNT, OIL_SINGLE_HARVEST_BASE, PATCH_FRUIT_ONLY_GLOBAL_BOOSTS_EXCLUDED_FROM_GREENHOUSE, RCM_GREENHOUSE_ICON_HTML, REQUIRED_FOOD_QTY_MAP, RESOURCE_DATA, RESOURCE_NODE_TIERS, SALT_BASE_CHARGE_CAP, SALT_BASE_TIME_SEC, SALT_BASE_YIELD, SALT_KNOWN_ID, SPICE_RECIPES, SPICE_STATIC_RECIPES, STONE_KNOWN_IDS, SYNODIC_MONTH_DAYS, TREE_KNOWN_IDS, __farmPanelSaveGameStateHandle, __gameStateSectionLenSigs, __set___farmPanelSaveGameStateHandle, __set___gameStateSectionLenSigs, allResourceBudBoostEntries, applyFarmBoostsOnly, applyFarmSkillsOnly, coinPerFlower, coinsToFlower, computeAgedFishFigures, computeAnimalFeedFigures, computeAnimalRealProgress, computeAnimalTypeFigures, computeAnimalYieldsForLevel, computeBoostedCropStats, computeBoostedStock, computeBoostedFlowerVarietyStats, computeBoostedFruitStats, computeBoostedGreenhouseStats, computeBoostedLavaPitStats, computeBoostedResourceStats, computeComposterFigures, composterRollWorms, BASE_COMPOSTERS, previewSeason, computeDestroyedCropPlotIds, computeHiveStats, computeHoneyRestockBreakdown, computeQtyRestockGems, computeSpiceFigures, currentSeason, escapeHtml, farmIdPromptStartSync, farmSyncExtractBudTraits, farmSyncExtractGameState, farmSyncExtractPetTraits, farmSyncFindBagByNameHeuristic, farmSyncGetAnimalRecords, farmSyncGetCoords, farmSyncGetPetRecords, farmSyncPickActivePlacedInstances, feePercent, fmt, fmtAnimal, fmtAnimalCost, fullMoonSeedStockQty, getActiveAnimalBoosts, getActiveBoostsForHive, getActiveFeedInfo, getActiveSaltRechargeMult, getActiveSaltYieldBonus, getActiveSeasonGuardianName, getAnimalLevelFromXp, getAscensionRank, getBeeSwarmPerSwarmYield, getCurrentChapterMutantSet, getCurrentChapterName, getEffectiveYieldAdd, getNodeIconHtml, getNodeLabel, getPowerHourWindow, getSpiceLickDurationHarvests, getTruffleSeasoningSleeps, getSpiceEffectForAnimalType, isBoostActive, isCropInSeason, isOvernightGroundCrop, isSkillActive, onDeferredInitialRenderDone, parseYieldBoostAmount, resourceBuds, saltSculptureLevel, sculptureEffects, sflPrngChance, syncCookingCountsFromInventory } from "./calculator.js";
 
 import { findLivePriceForName, SFL_COMMUNITY_PROXY_BASE, SFL_NFT_PRICE_API, SFL_PROXY_BASE, computeRestockCost24h, cookingCostMode, cookingIngredientUnitCostCoins, fishSaltCostFlower, getActiveShrineDailyCostStable, getItemCostByName, getRestockGemCost, restocksForMode, getSpiceCostPerUseFlower, hasFreeSaltRakeCost, honeyCostFlowerForSpiceRack, marketItems, pickledVegCost, refinedSaltUnitCostFlower, saltCostFlowerForSpiceRack } from "./prices.js";
 
@@ -12,6 +12,8 @@ import { caveTrackFromState } from "./cave_track.js";
 import { dailyHarvestTrack, dailyHarvestBadgeHtml, dailyHarvestSetYield, dailyHarvestSetResolver, dailyHarvestSetAnimalYieldProvider, dailyHarvestSetCookingProvider, dailyHarvestSetIconProvider, dailyHarvestSetToolProvider, dailyHarvestSetPriceProvider, dailyHarvestNodeToolMult } from "./daily_harvest.js";
 
 import { harvestLogArm } from "./harvest_log.js";
+
+import { cropPlotWindows, cropFertiliserWindows, fruitWindows, turbofruitWindows, greenhouseWindows, greenhouseGlowWindows, flowerWindows, treeWindows, mineWindows, oilWindows, animalWindows, cookingWindows, computeReadyAt, growDurationMsFor, resolveCookingQueue } from "./speed_windows.js";
 
 import { craftedToolsTrack } from "./crafted_tools.js";
 
@@ -882,16 +884,17 @@ export function farmPanelIsWithinTurtleAOE(turtlePos, rockPos) {
   return Math.abs(dx) <= 1 && Math.abs(dy) <= 1 && (dx !== 0 || dy !== 0);
 }
 
-function farmPanelGetRockRecoveryDurationMsFromSync(node, baseRecoverySec, resourceName) {
+function farmPanelGetRockRecoveryDurationMsFromSync(g, node, baseRecoverySec, resourceName) {
   const jobData = node && node.stone;
   const baseMs = baseRecoverySec * 1e3;
   if (!jobData) return baseMs;
-  if (typeof jobData.baseDurationMs === "number") {
-    if (!resourceName) return jobData.baseDurationMs;
-    const boosted = farmPanelGetBoostedYieldStats(resourceName);
-    const boostedMs = typeof boosted.timeVal === "number" ? boosted.timeVal * 1e3 : baseMs;
-    const ratio = baseMs > 0 ? boostedMs / baseMs : 1;
-    return jobData.baseDurationMs * ratio;
+  if (typeof jobData.baseDurationMs === "number" && typeof jobData.minedAt === "number") {
+    const family = String(resourceName || "").toLowerCase();
+    return growDurationMsFor({
+      startedAt: jobData.minedAt,
+      baseDurationMs: jobData.baseDurationMs,
+      windows: mineWindows(g, family)
+    });
   }
   return baseMs - (typeof jobData.boostedTime === "number" ? jobData.boostedTime : 0);
 }
@@ -908,7 +911,7 @@ export function farmPanelCheckTurtleAOEBonus(g, turtleName, node, baseRecoverySe
   const dx = node.x - turtlePos.x;
   const dy = node.y - turtlePos.y;
   const lastUsed = aoeState[turtleName] && aoeState[turtleName][dx] && typeof aoeState[turtleName][dx][dy] === "number" ? aoeState[turtleName][dx][dy] : 0;
-  const cooldownMs = farmPanelGetRockRecoveryDurationMsFromSync(node, baseRecoverySec, resourceName);
+  const cooldownMs = farmPanelGetRockRecoveryDurationMsFromSync(g, node, baseRecoverySec, resourceName);
   const referenceTime = typeof atTime === "number" ? atTime : Date.now();
   const idleMs = referenceTime - lastUsed;
   return idleMs >= cooldownMs;
@@ -1531,17 +1534,31 @@ function farmPanelCropAOEBonus(g, collectibleName, plot, dims, rankSkillId, cool
   return idleMs >= cooldownSec * 1e3;
 }
 
-export function farmPanelGetCropGrowDurationMsFromSync(job, cropName) {
+export function farmPanelGetCropGrowDurationMsFromSync(job, cropName, g, fertiliser) {
   const baseSec = farmPanelGrowTimeSec(cropName);
   const baseMs = (typeof baseSec === "number" ? baseSec : 0) * 1e3;
   if (!job) return baseMs;
-  if (typeof job.baseDurationMs === "number") {
-    const boosted = farmPanelGetBoostedYieldStats(cropName);
-    const boostedMs = typeof boosted.timeVal === "number" ? boosted.timeVal * 1e3 : baseMs;
-    const ratio = baseMs > 0 ? boostedMs / baseMs : 1;
-    return job.baseDurationMs * ratio;
+  if (typeof job.baseDurationMs === "number" && typeof job.plantedAt === "number" && g) {
+    return growDurationMsFor({
+      startedAt: job.plantedAt,
+      baseDurationMs: job.baseDurationMs,
+      windows: cropPlotWindows(g).concat(cropFertiliserWindows(fertiliser))
+    });
   }
+  if (typeof job.baseDurationMs === "number") return job.baseDurationMs;
   return baseMs - (typeof job.boostedTime === "number" ? job.boostedTime : 0);
+}
+
+function farmPanelWindowedRemainingSec(g, kind, job, plot, refTime, now) {
+  if (!g || !job || typeof job.baseDurationMs !== "number") return null;
+  let windows;
+  if (kind === "crop") windows = cropPlotWindows(g).concat(cropFertiliserWindows(plot && plot.fertiliser)); else if (kind === "fruit") windows = fruitWindows(g).concat(turbofruitWindows(plot && plot.fertiliser)); else if (kind === "greenhouse") windows = greenhouseWindows(g, job.name).concat(greenhouseGlowWindows(plot && plot.fertiliser)); else if (kind === "flower") windows = flowerWindows(g); else return null;
+  const readyAt = computeReadyAt({
+    startedAt: refTime,
+    baseDurationMs: job.baseDurationMs,
+    windows: windows
+  });
+  return Math.max(0, (readyAt - now) / 1e3);
 }
 
 let farmPanelCropYieldExcludedSet = null;
@@ -1558,22 +1575,6 @@ function farmPanelPowerHourYieldAt(atTime, isGreenhouse) {
   const nowMs = Date.now();
   const t = Math.max(typeof atTime === "number" ? atTime : nowMs, nowMs);
   return t >= win.startedAt && t < win.expiresAt;
-}
-
-function farmPanelCropRemainingSec(job, refTime, now, growSec) {
-  const elapsedSec = (now - refTime) / 1e3;
-  const plain = Math.max(0, growSec - elapsedSec);
-  if (plain <= 0 || !job || typeof job.baseDurationMs !== "number" || !isBoostActive("power_hour")) return plain;
-  const win = getPowerHourWindow();
-  if (!win) return plain;
-  const overlapStart = Math.max(refTime, win.startedAt);
-  const overlapEnd = Math.min(now, win.expiresAt);
-  const accruedExtraSec = Math.max(0, overlapEnd - overlapStart) / 1e3;
-  const workLeft = Math.max(0, growSec - elapsedSec - accruedExtraSec);
-  if (workLeft <= 0) return 0;
-  const windowLeftSec = Math.max(0, (win.expiresAt - Math.max(now, win.startedAt)) / 1e3);
-  if (now < win.startedAt || windowLeftSec <= 0) return workLeft;
-  return workLeft <= 2 * windowLeftSec ? workLeft / 2 : windowLeftSec + (workLeft - 2 * windowLeftSec);
 }
 
 export function farmPanelComputeExactCropYield(json, g, cropName, plot, counter, isGreenhouse, atTime) {
@@ -1712,7 +1713,7 @@ export function farmPanelComputeExactCropYield(json, g, cropName, plot, counter,
       });
     }
   }
-  const cropAoeCooldownSec = farmPanelGetCropGrowDurationMsFromSync(plot && plot.crop, cropName) / 1e3;
+  const cropAoeCooldownSec = farmPanelGetCropGrowDurationMsFromSync(plot && plot.crop, cropName, g, plot && plot.fertiliser) / 1e3;
   if (isSkillActive("skill_chonky_scarecrow") && tierLabel === "Basic" && farmPanelCropAOEBonus(g, "Basic Scarecrow", plot, {
     width: 1,
     height: 1
@@ -2219,13 +2220,27 @@ function farmPanelMapPos(id, node, defW, defH) {
   };
 }
 
-function farmPanelIsNodeReadyNow(resourceName, node, subKey, now) {
+function farmPanelNodeWindowedRemainingSec(g, resourceName, job, ts, now) {
+  if (!g || !job || typeof job.baseDurationMs !== "number" || !ts) return null;
+  let windows;
+  if (resourceName === "Wood") windows = treeWindows(g); else if (resourceName === "Oil") windows = oilWindows(g); else windows = mineWindows(g, String(resourceName).toLowerCase());
+  const readyAt = computeReadyAt({
+    startedAt: ts,
+    baseDurationMs: job.baseDurationMs,
+    windows: windows
+  });
+  return Math.max(0, (readyAt - now) / 1e3);
+}
+
+function farmPanelIsNodeReadyNow(resourceName, node, subKey, now, g) {
   const job = node && node[subKey];
   const ts = job && (job.minedAt || job.choppedAt || job.harvestedAt || job.stoneMinedAt || job.recoveredAt) || node && (node.minedAt || node.choppedAt || node.harvestedAt);
   if (!ts) {
     const amountVal = job && typeof job.amount === "number" ? job.amount : node && typeof node.amount === "number" ? node.amount : null;
     return amountVal !== 0;
   }
+  const windowed = farmPanelNodeWindowedRemainingSec(g, resourceName, job, ts, now);
+  if (windowed != null) return windowed <= 0;
   const growSec = farmPanelGrowTimeSec(resourceName);
   const elapsedSec = (now - ts) / 1e3;
   const remainingSec = growSec != null ? Math.max(0, growSec - elapsedSec) : null;
@@ -2325,11 +2340,8 @@ function farmPanelComputeInProgressRaw(json, opts) {
         if (kind === "crop" && cropWeatherDestruction.activeEvent && cropWeatherDestruction.destroyedIds.has(plotId)) return;
         const refTime = job.harvestedAt && job.harvestedAt > plantedAt ? job.harvestedAt : plantedAt;
         const growSec = farmPanelGrowTimeSec(name);
-        let waitSec = growSec != null ? kind === "crop" ? farmPanelCropRemainingSec(job, refTime, now, growSec) : Math.max(0, growSec - (now - refTime) / 1e3) : 0;
-        if (kind === "crop" && waitSec > 0 && typeof job.baseDurationMs === "number") {
-          const sunshowerMult = getCropPlotSunshowerSpeedMultiplier();
-          if (sunshowerMult > 1) waitSec = waitSec / sunshowerMult;
-        }
+        const windowedWait = farmPanelWindowedRemainingSec(g, kind, job, plot, refTime, now);
+        const waitSec = windowedWait != null ? windowedWait : growSec != null ? Math.max(0, growSec - (now - refTime) / 1e3) : 0;
         (groups[name] = groups[name] || []).push({
           key: plotId,
           id: `${kind}:${plotId}`,
@@ -2348,11 +2360,8 @@ function farmPanelComputeInProgressRaw(json, opts) {
       const refTime = job.harvestedAt && job.harvestedAt > plantedAt ? job.harvestedAt : plantedAt;
       const growSec = farmPanelGrowTimeSec(name);
       const elapsedSec = (now - refTime) / 1e3;
-      let remainingSec = growSec != null ? kind === "crop" ? farmPanelCropRemainingSec(job, refTime, now, growSec) : Math.max(0, growSec - elapsedSec) : null;
-      if (kind === "crop" && remainingSec != null && remainingSec > 0 && typeof job.baseDurationMs === "number") {
-        const sunshowerMult = getCropPlotSunshowerSpeedMultiplier();
-        if (sunshowerMult > 1) remainingSec = remainingSec / sunshowerMult;
-      }
+      const windowedRemaining = farmPanelWindowedRemainingSec(g, kind, job, plot, refTime, now);
+      const remainingSec = windowedRemaining != null ? windowedRemaining : growSec != null ? Math.max(0, growSec - elapsedSec) : null;
       const isReadyNow = isWeatherDestroyedPlot ? false : remainingSec != null ? remainingSec <= 0 : false;
       const storedAmount = typeof job.amount === "number" ? job.amount : null;
       const plotIdx = (plotIndexByName[name] || 0) + 1;
@@ -2485,8 +2494,9 @@ function farmPanelComputeInProgressRaw(json, opts) {
         if (!ts) {
           const amountVal = job && typeof job.amount === "number" ? job.amount : node && typeof node.amount === "number" ? node.amount : null;
           waitSec = amountVal === 0 ? growSec != null ? growSec : 0 : 0;
-        } else if (growSec != null) {
-          waitSec = Math.max(0, growSec - (now - ts) / 1e3);
+        } else {
+          const windowedWait = farmPanelNodeWindowedRemainingSec(g, resourceName, job, ts, now);
+          if (windowedWait != null) waitSec = windowedWait; else if (growSec != null) waitSec = Math.max(0, growSec - (now - ts) / 1e3);
         }
         const type = resourceName === "Wood" ? farmPanelTreeTypeForNode(node) : resourceName === "Stone" ? farmPanelRockNameForNode(node, STONE_KNOWN_IDS, "Stone Rock") : resourceName === "Iron" ? farmPanelRockNameForNode(node, IRON_KNOWN_IDS, "Iron Rock") : resourceName === "Gold" ? farmPanelRockNameForNode(node, GOLD_KNOWN_IDS, "Gold Rock") : "Crimstone";
         (groups[type] = groups[type] || []).push({
@@ -2517,10 +2527,11 @@ function farmPanelComputeInProgressRaw(json, opts) {
       const stoneRockName = resourceName === "Stone" ? farmPanelRockNameForNode(node, STONE_KNOWN_IDS, "Stone Rock") : null;
       const ironRockName = resourceName === "Iron" ? farmPanelRockNameForNode(node, IRON_KNOWN_IDS, "Iron Rock") : null;
       const goldRockName = resourceName === "Gold" ? farmPanelRockNameForNode(node, GOLD_KNOWN_IDS, "Gold Rock") : null;
-      const isReadyNow = farmPanelIsNodeReadyNow(resourceName, node, subKey, now);
+      const isReadyNow = farmPanelIsNodeReadyNow(resourceName, node, subKey, now, g);
       const storedAmount = job && typeof job.amount === "number" ? job.amount : null;
       const growSecForNode = farmPanelGrowTimeSec(resourceName);
-      const remainingSecForNode = ts && growSecForNode != null ? Math.max(0, growSecForNode - (now - ts) / 1e3) : null;
+      const windowedNodeRemaining = farmPanelNodeWindowedRemainingSec(g, resourceName, job, ts, now);
+      const remainingSecForNode = windowedNodeRemaining != null ? windowedNodeRemaining : ts && growSecForNode != null ? Math.max(0, growSecForNode - (now - ts) / 1e3) : null;
       const predictedMineAt = remainingSecForNode != null ? now + remainingSecForNode * 1e3 : now;
       let exactAmount = null;
       let exactBoosts = null;
@@ -2668,7 +2679,7 @@ function farmPanelComputeInProgressRaw(json, opts) {
       }
       const growSec = farmPanelGrowTimeSec(resourceName);
       const elapsedSec = (now - ts) / 1e3;
-      const remainingSec = growSec != null ? Math.max(0, growSec - elapsedSec) : null;
+      const remainingSec = windowedNodeRemaining != null ? windowedNodeRemaining : growSec != null ? Math.max(0, growSec - elapsedSec) : null;
       rows.push({
         name: resourceName,
         qty: qty,
@@ -2734,7 +2745,8 @@ function farmPanelComputeInProgressRaw(json, opts) {
       }
       const growSec = farmPanelGrowTimeSec("Oil");
       const elapsedSec = (now - ts) / 1e3;
-      const remainingSec = growSec != null ? Math.max(0, growSec - elapsedSec) : null;
+      const windowedOilRemaining = farmPanelNodeWindowedRemainingSec(g, "Oil", job, ts, now);
+      const remainingSec = windowedOilRemaining != null ? windowedOilRemaining : growSec != null ? Math.max(0, growSec - elapsedSec) : null;
       rows.push({
         name: "Oil",
         qty: oilQtyPerNode,
@@ -2953,8 +2965,12 @@ function farmPanelComputeInProgressRaw(json, opts) {
       Object.entries(bag).forEach(([animalId, animal]) => {
         if (!animal || typeof animal !== "object") return;
         const toTs = v => typeof v === "number" ? v : typeof v === "string" && v.trim() && !isNaN(Number(v)) ? Number(v) : null;
-        const awakeAt = toTs(animal.awakeAt);
         const asleepAt = toTs(animal.asleepAt ?? animal.sleepAt ?? animal.wentToSleepAt);
+        const awakeAt = typeof animal.baseDurationMs === "number" && asleepAt != null ? computeReadyAt({
+          startedAt: asleepAt,
+          baseDurationMs: animal.baseDurationMs,
+          windows: animalWindows(g, String(animal.type || type).replace(/^./, c => c.toUpperCase()))
+        }) : toTs(animal.awakeAt);
         const stateStr = typeof animal.state === "string" ? animal.state.toLowerCase() : "";
         const sick = animal.sick === true || stateStr === "sick" || typeof animal.sickenedAt === "number";
         const xpRaw = animal.experience ?? animal.exp ?? animal.xp;
@@ -3520,14 +3536,23 @@ function cookingIsWearableEquipped(g, wearableName) {
   return false;
 }
 
-function farmPanelBuildCookingBuildingCard(building, instances, farmActivity) {
+function farmPanelBuildCookingBuildingCard(building, instances, farmActivity, g) {
   const allSlots = [];
   instances.forEach((inst, instIdx) => {
     const crafting = Array.isArray(inst.crafting) ? inst.crafting : [];
     if (!crafting.length) return;
     const yields = cookingComputeQueueYields(building, crafting, farmActivity);
-    yields.forEach(y => {
-      const readyAt = typeof y.recipe.readyAt === "number" ? y.recipe.readyAt : 0;
+    const windowedReadyAts = resolveCookingQueue({
+      crafting: crafting,
+      windows: cookingWindows(g),
+      oil: inst.oilSettledAt !== undefined ? {
+        tank: typeof inst.oil === "number" ? inst.oil : 0,
+        settledAt: inst.oilSettledAt
+      } : undefined,
+      buildingName: building
+    }).map(t => t.readyAt);
+    yields.forEach((y, yi) => {
+      const readyAt = typeof windowedReadyAts[yi] === "number" ? windowedReadyAts[yi] : typeof y.recipe.readyAt === "number" ? y.recipe.readyAt : 0;
       allSlots.push({
         buildingIndex: instIdx,
         name: y.name,
@@ -4390,7 +4415,7 @@ function farmPanelComputeCookingCardsFromState(g) {
   COOKING_BUILDINGS.forEach(building => {
     const instances = buildings && Array.isArray(buildings[building]) ? buildings[building] : null;
     if (!instances || !instances.length) return;
-    const card = farmPanelBuildCookingBuildingCard(building, instances, farmActivity);
+    const card = farmPanelBuildCookingBuildingCard(building, instances, farmActivity, g);
     if (card) cards.push(card);
   });
   const fishMarketInstances = buildings && Array.isArray(buildings["Fish Market"]) ? buildings["Fish Market"] : null;

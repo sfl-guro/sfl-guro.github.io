@@ -501,7 +501,7 @@ function boostBodyHtml() {
     icon: ui.getIcon(n)
   }));
   const grapeOnly = new Set([ "time_warp_totem", "super_totem", "bountiful_harvest" ]);
-  const boosts = calc.BOOSTS.filter(b => b.source !== "skill" && !b.hiddenFromOwnPanel && (b.category === "greenhouse" || b.category === "crops"));
+  const boosts = calc.BOOSTS.filter(b => b.source !== "skill" && !b.hiddenFromOwnPanel && (b.category === "greenhouse" || b.category === "crops" || b.category === "fruits" && calc.GRAPE_FRUIT_GLOBAL_BOOSTS.has(b.id)));
   const appliesTo = (b, s) => {
     const lower = s.name.toLowerCase();
     if (b.category === "greenhouse") {
@@ -509,6 +509,7 @@ function boostBodyHtml() {
       if (b.scope === "greenhouse") return (b.target || "").toLowerCase() === lower;
       return false;
     }
+    if (b.category === "fruits") return s.name === "Grape" && calc.GRAPE_FRUIT_GLOBAL_BOOSTS.has(b.id);
     if (b.category === "crops" && b.scope === "global" && !b.composterFertilizer) {
       if (s.name === "Grape") return grapeOnly.has(b.id);
       return !calc.CROPS_GLOBAL_EXCLUDED_FROM_GREENHOUSE.has(b.id) && (b.id !== "hoot" || lower === "rice");

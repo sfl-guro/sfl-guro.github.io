@@ -132,6 +132,7 @@ __export(calculator_exports, {
   GAMESTATE_SECTION_KEYS: () => GAMESTATE_SECTION_KEYS,
   GEM_ICON: () => GEM_ICON,
   GOLD_KNOWN_IDS: () => GOLD_KNOWN_IDS,
+  GRAPE_FRUIT_GLOBAL_BOOSTS: () => GRAPE_FRUIT_GLOBAL_BOOSTS,
   GUNTER_FLOWER_COST_MODE_LS_KEY: () => GUNTER_FLOWER_COST_MODE_LS_KEY,
   GUNTER_UPGRADE_NODES: () => GUNTER_UPGRADE_NODES,
   ICONS: () => ICONS,
@@ -7979,7 +7980,7 @@ function handleGuideInput(e) {
   if (!el) return false;
   const parts = el.dataset.bgAin.split("|");
   const type = parts[0];
-  const field = parts[1];
+  const field2 = parts[1];
   const key = `anim:${type}`;
   const d = simDraft(key);
   const cur = d.q || animalDefaultInput(type);
@@ -7989,8 +7990,8 @@ function handleGuideInput(e) {
     level: cur.level,
     spice: cur.spice || "none"
   };
-  if (field === "spice") next.spice = el.value === "saltLick" || el.value === "honeyTreat" || el.value === "truffleSeasoning" ? el.value : "none";
-  else if (field === "qty") next.qty = Math.max(0, Math.min(9999, raw));
+  if (field2 === "spice") next.spice = el.value === "saltLick" || el.value === "honeyTreat" || el.value === "truffleSeasoning" ? el.value : "none";
+  else if (field2 === "qty") next.qty = Math.max(0, Math.min(9999, raw));
   else next.level = Math.max(0, Math.min(15, raw));
   const def = animalDefaultInput(type);
   d.q = next.qty === def.qty && next.level === def.level && next.spice === def.spice ? null : next;
@@ -28553,6 +28554,471 @@ function caveDayTotals(farmId, now) {
   return day;
 }
 
+// src/speed_windows.js
+var HOUR_MS = 60 * 60 * 1e3;
+var DAY_MS = 24 * HOUR_MS;
+var BOOST_EXPIRY_MS = {
+  "Time Warp Totem": 4 * HOUR_MS,
+  "Gourmet Hourglass": 6 * HOUR_MS,
+  "Harvest Hourglass": 9 * HOUR_MS,
+  "Timber Hourglass": 4 * HOUR_MS,
+  "Ore Hourglass": 5 * HOUR_MS,
+  "Orchard Hourglass": 8 * HOUR_MS,
+  "Blossom Hourglass": 12 * HOUR_MS,
+  "Fisher's Hourglass": 4 * HOUR_MS,
+  "Super Totem": 7 * DAY_MS,
+  "Legendary Shrine": DAY_MS,
+  "Obsidian Shrine": 14 * DAY_MS,
+  "Trading Shrine": 30 * DAY_MS
+};
+["Sparrow Shrine", "Toucan Shrine", "Collie Shrine", "Badger Shrine", "Stag Shrine", "Mole Shrine", "Bear Shrine", "Tortoise Shrine", "Moth Shrine", "Bantam Shrine", "Fox Shrine", "Boar Shrine", "Hound Shrine"].forEach((name) => {
+  BOOST_EXPIRY_MS[name] = 7 * DAY_MS;
+});
+var CROP_PLOT_SPEED = {
+  "Sparrow Shrine": 1.35,
+  "Harvest Hourglass": 1.35,
+  "Super Totem": 2,
+  "Time Warp Totem": 2,
+  "Power hour": 2,
+  "Rapid Root": 2,
+  "Sproutroot Surprise": 2,
+  sunshower: 2,
+  sunshowerGuardian: 2
+};
+var TREE_SPEED = {
+  totem: 2,
+  "Timber Hourglass": 1.35,
+  "Badger Shrine": 1.35
+};
+var MINE_SPEED = {
+  totem: 2,
+  "Ore Hourglass": 2,
+  "Badger Shrine": 1.35,
+  "Mole Shrine": 1.35
+};
+var FRUIT_SPEED = {
+  totem: 2,
+  "Orchard Hourglass": 1.35,
+  "Toucan Shrine": 1.35,
+  "Turbofruit Mix": 1.25
+};
+var FLOWER_SPEED = {
+  "Blossom Hourglass": 1.35,
+  "Moth Shrine": 1.35
+};
+var OIL_SPEED = {
+  "Stag Shrine": 1.35
+};
+var ANIMAL_SPEED = {
+  "Collie Shrine": 1.35,
+  "Bantam Shrine": 1.35
+};
+var ANIMAL_SLEEP_SHRINE = {
+  Chicken: "Bantam Shrine",
+  Cow: "Collie Shrine",
+  Sheep: "Collie Shrine"
+};
+var COOKING_SPEED = {
+  totem: 2,
+  "Gourmet Hourglass": 2,
+  "Legendary Shrine": 2,
+  "Boar Shrine": 1.25
+};
+var GREENHOUSE_SPEED = {
+  totem: 2,
+  "Harvest Hourglass": 1.35,
+  "Orchard Hourglass": 1.35,
+  "Tortoise Shrine": 1.5,
+  "Greenhouse Glow": 1.25
+};
+var CROP_MACHINE_SPEED = {
+  "Tortoise Shrine": 10 / 9
+};
+var SEASON_ROTATION = ["spring", "summer", "autumn", "winter"];
+var FIRST_WEEK_START_AT = Date.UTC(2024, 11, 16);
+var GUARDIAN_BY_SEASON = {
+  spring: "Spring Guardian",
+  summer: "Summer Guardian",
+  autumn: "Autumn Guardian",
+  winter: "Winter Guardian"
+};
+function seasonAt(ts) {
+  const days = Math.floor((ts - FIRST_WEEK_START_AT) / DAY_MS);
+  const weeks = Math.max(Math.floor(days / 7), 0);
+  return SEASON_ROTATION[weeks % 4];
+}
+function asObj(v) {
+  return v && typeof v === "object" && !Array.isArray(v) ? v : null;
+}
+function field(g, key) {
+  if (!g) return null;
+  if (g[key] != null) return g[key];
+  if (g.land && g.land[key] != null) return g.land[key];
+  return null;
+}
+function collectibleBags(g) {
+  const bags = [];
+  const farmBag = asObj(field(g, "collectibles"));
+  if (farmBag) bags.push(farmBag);
+  const home = asObj(g && g.home);
+  if (home) {
+    const b = asObj(home.collectibles != null ? home.collectibles : home.land && home.land.collectibles);
+    if (b) bags.push(b);
+  }
+  const interior = asObj(g && g.interior);
+  if (interior) {
+    Object.keys(interior).forEach((k) => {
+      const level = asObj(interior[k]);
+      const b = level && asObj(level.collectibles);
+      if (b) bags.push(b);
+    });
+  }
+  return bags;
+}
+function placementsOf(g, name) {
+  const out = [];
+  collectibleBags(g).forEach((bag) => {
+    const arr = bag[name];
+    if (Array.isArray(arr)) arr.forEach((p) => {
+      if (p && typeof p === "object") out.push(p);
+    });
+  });
+  return out;
+}
+function mergeWindows(windows) {
+  if (windows.length <= 1) return windows;
+  const sorted = [...windows].sort((a, b) => a.from - b.from);
+  const merged = [{
+    ...sorted[0]
+  }];
+  for (let i = 1; i < sorted.length; i++) {
+    const last = merged[merged.length - 1];
+    const cur = sorted[i];
+    if (cur.speed === last.speed && cur.from <= last.to) {
+      last.to = Math.max(last.to, cur.to);
+    } else {
+      merged.push({
+        ...cur
+      });
+    }
+  }
+  return merged;
+}
+function collectibleExpiry(name, placed) {
+  const dur = BOOST_EXPIRY_MS[name];
+  return (typeof placed.createdAt === "number" ? placed.createdAt : 0) + (dur || 0) + (typeof placed.extendedMs === "number" ? placed.extendedMs : 0);
+}
+function boostWindowsFor(g, name, speed) {
+  const live = placementsOf(g, name).filter((p) => typeof p.createdAt === "number").map((p) => {
+    const expiry = collectibleExpiry(name, p);
+    const to = typeof p.removedAt === "number" ? Math.min(expiry, p.removedAt) : expiry;
+    return {
+      from: p.createdAt,
+      to,
+      speed
+    };
+  });
+  const hist = boostHistoryOf(g, name).map((w) => ({
+    from: w.from,
+    to: w.to,
+    speed
+  }));
+  return mergeWindows(live.concat(hist).filter((w) => w.to > w.from));
+}
+function boostHistoryOf(g, name) {
+  const h = asObj(field(g, "boostHistory"));
+  const arr = h && h[name];
+  return Array.isArray(arr) ? arr.filter((w) => w && typeof w.from === "number" && typeof w.to === "number") : [];
+}
+function mergedTotemWindows(g, speed) {
+  return mergeWindows(boostWindowsFor(g, "Super Totem", speed).concat(boostWindowsFor(g, "Time Warp Totem", speed)));
+}
+function powerHourWindows(g) {
+  const speed = CROP_PLOT_SPEED["Power hour"];
+  const buffs = asObj(field(g, "buffs"));
+  const buff = buffs && asObj(buffs["Power hour"]);
+  const live = buff && typeof buff.startedAt === "number" ? [{
+    from: buff.startedAt,
+    to: buff.startedAt + (typeof buff.durationMS === "number" ? buff.durationMS : HOUR_MS),
+    speed
+  }] : [];
+  const hist = boostHistoryOf(g, "Power hour").filter((w) => !buff || w.from !== buff.startedAt).map((w) => ({
+    from: w.from,
+    to: w.to,
+    speed
+  }));
+  return mergeWindows(live.concat(hist).filter((w) => w.to > w.from));
+}
+function sunshowerWindows(g) {
+  const speed = CROP_PLOT_SPEED.sunshower;
+  const hist = boostHistoryOf(g, "Sunshower").map((w) => ({
+    from: w.from,
+    to: w.to,
+    speed
+  }));
+  const calendar = asObj(field(g, "calendar"));
+  const sun = calendar && asObj(calendar.sunshower);
+  if (sun && typeof sun.startedAt === "number" && !hist.some((w) => w.from === sun.startedAt)) {
+    const d = new Date(sun.startedAt);
+    const to = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1);
+    return [{
+      from: sun.startedAt,
+      to,
+      speed
+    }].concat(hist);
+  }
+  return hist;
+}
+function sunshowerGuardianWindows(g) {
+  const speed = CROP_PLOT_SPEED.sunshowerGuardian;
+  const out = [];
+  sunshowerWindows(g).forEach((sun) => {
+    const guardian = GUARDIAN_BY_SEASON[seasonAt(sun.from)];
+    if (!guardian) return;
+    const placed = placementsOf(g, guardian).filter((p) => p.coordinates).map((p) => ({
+      from: typeof p.placedAt === "number" ? p.placedAt : 0,
+      to: Number.MAX_SAFE_INTEGER
+    })).concat(boostHistoryOf(g, guardian));
+    placed.forEach((p) => {
+      const from = Math.max(p.from, sun.from);
+      const to = Math.min(p.to, sun.to);
+      if (to > from) out.push({
+        from,
+        to,
+        speed
+      });
+    });
+  });
+  return mergeWindows(out);
+}
+function cropPlotWindows(g) {
+  return [...boostWindowsFor(g, "Sparrow Shrine", CROP_PLOT_SPEED["Sparrow Shrine"]), ...boostWindowsFor(g, "Harvest Hourglass", CROP_PLOT_SPEED["Harvest Hourglass"]), ...mergedTotemWindows(g, CROP_PLOT_SPEED["Super Totem"]), ...powerHourWindows(g), ...sunshowerWindows(g), ...sunshowerGuardianWindows(g)];
+}
+function treeWindows(g) {
+  return [...mergedTotemWindows(g, TREE_SPEED.totem), ...boostWindowsFor(g, "Timber Hourglass", TREE_SPEED["Timber Hourglass"]), ...boostWindowsFor(g, "Badger Shrine", TREE_SPEED["Badger Shrine"])];
+}
+function mineWindows(g, family) {
+  if (family === "crimstone") return boostWindowsFor(g, "Mole Shrine", MINE_SPEED["Mole Shrine"]);
+  if (family === "stone") {
+    return [...mergedTotemWindows(g, MINE_SPEED.totem), ...boostWindowsFor(g, "Ore Hourglass", MINE_SPEED["Ore Hourglass"]), ...boostWindowsFor(g, "Badger Shrine", MINE_SPEED["Badger Shrine"])];
+  }
+  if (family === "iron" || family === "gold") {
+    return [...mergedTotemWindows(g, MINE_SPEED.totem), ...boostWindowsFor(g, "Ore Hourglass", MINE_SPEED["Ore Hourglass"]), ...boostWindowsFor(g, "Mole Shrine", MINE_SPEED["Mole Shrine"])];
+  }
+  return [];
+}
+function fruitWindows(g) {
+  return [...mergedTotemWindows(g, FRUIT_SPEED.totem), ...boostWindowsFor(g, "Orchard Hourglass", FRUIT_SPEED["Orchard Hourglass"]), ...boostWindowsFor(g, "Toucan Shrine", FRUIT_SPEED["Toucan Shrine"])];
+}
+function flowerWindows(g) {
+  return [...boostWindowsFor(g, "Blossom Hourglass", FLOWER_SPEED["Blossom Hourglass"]), ...boostWindowsFor(g, "Moth Shrine", FLOWER_SPEED["Moth Shrine"])];
+}
+function oilWindows(g) {
+  return boostWindowsFor(g, "Stag Shrine", OIL_SPEED["Stag Shrine"]);
+}
+function animalWindows(g, animalType) {
+  const name = ANIMAL_SLEEP_SHRINE[animalType];
+  if (!name) return [];
+  return boostWindowsFor(g, name, ANIMAL_SPEED[name]);
+}
+function cookingWindows(g) {
+  return [...mergedTotemWindows(g, COOKING_SPEED.totem), ...boostWindowsFor(g, "Gourmet Hourglass", COOKING_SPEED["Gourmet Hourglass"]), ...boostWindowsFor(g, "Legendary Shrine", COOKING_SPEED["Legendary Shrine"]), ...boostWindowsFor(g, "Boar Shrine", COOKING_SPEED["Boar Shrine"])];
+}
+function greenhouseWindows(g, plantName) {
+  const shared = [...mergedTotemWindows(g, GREENHOUSE_SPEED.totem), ...boostWindowsFor(g, "Tortoise Shrine", GREENHOUSE_SPEED["Tortoise Shrine"])];
+  if (plantName === "Rice" || plantName === "Olive") {
+    return shared.concat(boostWindowsFor(g, "Harvest Hourglass", GREENHOUSE_SPEED["Harvest Hourglass"]));
+  }
+  if (plantName === "Grape") {
+    return shared.concat(boostWindowsFor(g, "Orchard Hourglass", GREENHOUSE_SPEED["Orchard Hourglass"]));
+  }
+  return shared;
+}
+function openWindow(fertiliser, names, speedOf) {
+  if (!fertiliser || !names.includes(fertiliser.name) || typeof fertiliser.fertilisedAt !== "number") return [];
+  return [{
+    from: fertiliser.fertilisedAt,
+    to: Number.MAX_SAFE_INTEGER,
+    speed: speedOf(fertiliser.name)
+  }];
+}
+function cropFertiliserWindows(fertiliser) {
+  return openWindow(fertiliser, ["Rapid Root", "Sproutroot Surprise"], (n) => CROP_PLOT_SPEED[n]);
+}
+function turbofruitWindows(fertiliser) {
+  return openWindow(fertiliser, ["Turbofruit Mix"], () => FRUIT_SPEED["Turbofruit Mix"]);
+}
+function greenhouseGlowWindows(fertiliser) {
+  return openWindow(fertiliser, ["Greenhouse Glow"], () => GREENHOUSE_SPEED["Greenhouse Glow"]);
+}
+function buildSegments(startedAt, windows) {
+  const clipped = windows.map((w) => ({
+    from: Math.max(w.from, startedAt),
+    to: w.to,
+    speed: w.speed
+  })).filter((w) => w.to > w.from);
+  if (!clipped.length) return [];
+  const boundaries = [.../* @__PURE__ */ new Set([startedAt, ...clipped.flatMap((w) => [w.from, w.to])])].sort((a, b) => a - b);
+  const segments = [];
+  for (let i = 0; i < boundaries.length - 1; i++) {
+    const from = boundaries[i];
+    const to = boundaries[i + 1];
+    const mid = (from + to) / 2;
+    const speed = clipped.reduce((acc, w) => w.from <= mid && mid < w.to ? acc * w.speed : acc, 1);
+    segments.push({
+      from,
+      to,
+      speed
+    });
+  }
+  return segments;
+}
+function computeReadyAt({ startedAt, baseDurationMs, windows }) {
+  if (!(baseDurationMs > 0)) return startedAt;
+  const segments = buildSegments(startedAt, windows);
+  let accumulated = 0;
+  for (const seg of segments) {
+    const work = (seg.to - seg.from) * seg.speed;
+    if (accumulated + work >= baseDurationMs) {
+      return seg.from + (baseDurationMs - accumulated) / seg.speed;
+    }
+    accumulated += work;
+  }
+  const tailStart = segments.length ? segments[segments.length - 1].to : startedAt;
+  return tailStart + (baseDurationMs - accumulated);
+}
+function workAccruedAt({ startedAt, at, windows }) {
+  if (at <= startedAt) return 0;
+  const segments = buildSegments(startedAt, windows);
+  let work = 0;
+  for (const seg of segments) {
+    if (at <= seg.from) return work;
+    const end = Math.min(at, seg.to);
+    work += (end - seg.from) * seg.speed;
+    if (at <= seg.to) return work;
+  }
+  const tailStart = segments.length ? segments[segments.length - 1].to : startedAt;
+  if (at > tailStart) work += at - tailStart;
+  return work;
+}
+function growDurationMsFor({ startedAt, baseDurationMs, windows }) {
+  return computeReadyAt({
+    startedAt,
+    baseDurationMs,
+    windows
+  }) - startedAt;
+}
+var COOKING_OIL_CLOCK_RATE = {
+  "Fire Pit": 1.25,
+  Kitchen: 6.75,
+  "Smoothie Shack": 11.5,
+  Bakery: 15.5,
+  Deli: 20
+};
+function resolveCookingQueue({ crafting, windows, oil, buildingName }) {
+  let previousReadyAt;
+  let tank = oil ? Math.max(oil.tank, 0) : 0;
+  const clockRate = COOKING_OIL_CLOCK_RATE[buildingName] || 0;
+  return crafting.map((recipe) => {
+    const baseDurationMs = recipe.baseDurationMs;
+    const startedAt = recipe.startedAt !== void 0 ? recipe.startedAt : previousReadyAt;
+    if (typeof baseDurationMs !== "number" || startedAt === void 0) {
+      previousReadyAt = recipe.readyAt;
+      return {
+        startedAt,
+        readyAt: recipe.readyAt
+      };
+    }
+    if (!oil || recipe.oilBoost === void 0 || tank <= 0) {
+      const readyAt2 = computeReadyAt({
+        startedAt,
+        baseDurationMs,
+        windows
+      });
+      previousReadyAt = readyAt2;
+      return {
+        startedAt,
+        readyAt: readyAt2
+      };
+    }
+    const from = Math.max(startedAt, oil.settledAt);
+    const speed = 1 / (1 - recipe.oilBoost);
+    if (recipe.oilRate === void 0) {
+      const fuelled = {
+        from,
+        to: from + tank / clockRate * DAY_MS,
+        speed
+      };
+      const readyAt2 = computeReadyAt({
+        startedAt,
+        baseDurationMs,
+        windows: [...windows, fuelled]
+      });
+      previousReadyAt = readyAt2;
+      const to2 = Math.min(readyAt2, fuelled.to);
+      if (to2 > from) tank -= (to2 - from) / DAY_MS * clockRate;
+      return {
+        startedAt,
+        readyAt: readyAt2
+      };
+    }
+    const oilRate = recipe.oilRate;
+    if (!(oilRate > 0)) {
+      const readyAt2 = computeReadyAt({
+        startedAt,
+        baseDurationMs,
+        windows
+      });
+      previousReadyAt = readyAt2;
+      return {
+        startedAt,
+        readyAt: readyAt2
+      };
+    }
+    const fuelledWork = Math.min(baseDurationMs - workAccruedAt({
+      startedAt,
+      at: from,
+      windows
+    }), tank / oilRate * DAY_MS);
+    if (!(fuelledWork > 0)) {
+      const readyAt2 = computeReadyAt({
+        startedAt,
+        baseDurationMs,
+        windows
+      });
+      previousReadyAt = readyAt2;
+      return {
+        startedAt,
+        readyAt: readyAt2
+      };
+    }
+    const to = computeReadyAt({
+      startedAt: from,
+      baseDurationMs: fuelledWork,
+      windows: [...windows, {
+        from,
+        to: from + fuelledWork,
+        speed
+      }]
+    });
+    const readyAt = computeReadyAt({
+      startedAt,
+      baseDurationMs,
+      windows: [...windows, {
+        from,
+        to,
+        speed
+      }]
+    });
+    previousReadyAt = readyAt;
+    tank -= fuelledWork / DAY_MS * oilRate;
+    return {
+      startedAt,
+      readyAt
+    };
+  });
+}
+
 // src/inprogress.js
 function farmPanelDetectNodeTier(resourceName, node) {
   const tiers = RESOURCE_NODE_TIERS[resourceName];
@@ -29323,16 +29789,17 @@ function farmPanelIsWithinTurtleAOE(turtlePos, rockPos) {
   const dy = turtlePos.y - rockPos.y;
   return Math.abs(dx) <= 1 && Math.abs(dy) <= 1 && (dx !== 0 || dy !== 0);
 }
-function farmPanelGetRockRecoveryDurationMsFromSync(node, baseRecoverySec, resourceName) {
+function farmPanelGetRockRecoveryDurationMsFromSync(g, node, baseRecoverySec, resourceName) {
   const jobData = node && node.stone;
   const baseMs = baseRecoverySec * 1e3;
   if (!jobData) return baseMs;
-  if (typeof jobData.baseDurationMs === "number") {
-    if (!resourceName) return jobData.baseDurationMs;
-    const boosted = farmPanelGetBoostedYieldStats(resourceName);
-    const boostedMs = typeof boosted.timeVal === "number" ? boosted.timeVal * 1e3 : baseMs;
-    const ratio = baseMs > 0 ? boostedMs / baseMs : 1;
-    return jobData.baseDurationMs * ratio;
+  if (typeof jobData.baseDurationMs === "number" && typeof jobData.minedAt === "number") {
+    const family = String(resourceName || "").toLowerCase();
+    return growDurationMsFor({
+      startedAt: jobData.minedAt,
+      baseDurationMs: jobData.baseDurationMs,
+      windows: mineWindows(g, family)
+    });
   }
   return baseMs - (typeof jobData.boostedTime === "number" ? jobData.boostedTime : 0);
 }
@@ -29348,7 +29815,7 @@ function farmPanelCheckTurtleAOEBonus(g, turtleName, node, baseRecoverySec, atTi
   const dx = node.x - turtlePos.x;
   const dy = node.y - turtlePos.y;
   const lastUsed = aoeState[turtleName] && aoeState[turtleName][dx] && typeof aoeState[turtleName][dx][dy] === "number" ? aoeState[turtleName][dx][dy] : 0;
-  const cooldownMs = farmPanelGetRockRecoveryDurationMsFromSync(node, baseRecoverySec, resourceName);
+  const cooldownMs = farmPanelGetRockRecoveryDurationMsFromSync(g, node, baseRecoverySec, resourceName);
   const referenceTime = typeof atTime === "number" ? atTime : Date.now();
   const idleMs = referenceTime - lastUsed;
   return idleMs >= cooldownMs;
@@ -29894,17 +30361,34 @@ function farmPanelCropAOEBonus(g, collectibleName, plot, dims, rankSkillId, cool
   const idleMs = referenceTime - lastUsed;
   return idleMs >= cooldownSec * 1e3;
 }
-function farmPanelGetCropGrowDurationMsFromSync(job, cropName) {
+function farmPanelGetCropGrowDurationMsFromSync(job, cropName, g, fertiliser) {
   const baseSec = farmPanelGrowTimeSec(cropName);
   const baseMs = (typeof baseSec === "number" ? baseSec : 0) * 1e3;
   if (!job) return baseMs;
-  if (typeof job.baseDurationMs === "number") {
-    const boosted = farmPanelGetBoostedYieldStats(cropName);
-    const boostedMs = typeof boosted.timeVal === "number" ? boosted.timeVal * 1e3 : baseMs;
-    const ratio = baseMs > 0 ? boostedMs / baseMs : 1;
-    return job.baseDurationMs * ratio;
+  if (typeof job.baseDurationMs === "number" && typeof job.plantedAt === "number" && g) {
+    return growDurationMsFor({
+      startedAt: job.plantedAt,
+      baseDurationMs: job.baseDurationMs,
+      windows: cropPlotWindows(g).concat(cropFertiliserWindows(fertiliser))
+    });
   }
+  if (typeof job.baseDurationMs === "number") return job.baseDurationMs;
   return baseMs - (typeof job.boostedTime === "number" ? job.boostedTime : 0);
+}
+function farmPanelWindowedRemainingSec(g, kind, job, plot, refTime, now) {
+  if (!g || !job || typeof job.baseDurationMs !== "number") return null;
+  let windows;
+  if (kind === "crop") windows = cropPlotWindows(g).concat(cropFertiliserWindows(plot && plot.fertiliser));
+  else if (kind === "fruit") windows = fruitWindows(g).concat(turbofruitWindows(plot && plot.fertiliser));
+  else if (kind === "greenhouse") windows = greenhouseWindows(g, job.name).concat(greenhouseGlowWindows(plot && plot.fertiliser));
+  else if (kind === "flower") windows = flowerWindows(g);
+  else return null;
+  const readyAt = computeReadyAt({
+    startedAt: refTime,
+    baseDurationMs: job.baseDurationMs,
+    windows
+  });
+  return Math.max(0, (readyAt - now) / 1e3);
 }
 var farmPanelCropYieldExcludedSet = null;
 function farmPanelCropYieldExcluded() {
@@ -29918,21 +30402,6 @@ function farmPanelPowerHourYieldAt(atTime, isGreenhouse) {
   const nowMs = Date.now();
   const t = Math.max(typeof atTime === "number" ? atTime : nowMs, nowMs);
   return t >= win.startedAt && t < win.expiresAt;
-}
-function farmPanelCropRemainingSec(job, refTime, now, growSec) {
-  const elapsedSec = (now - refTime) / 1e3;
-  const plain = Math.max(0, growSec - elapsedSec);
-  if (plain <= 0 || !job || typeof job.baseDurationMs !== "number" || !isBoostActive("power_hour")) return plain;
-  const win = getPowerHourWindow();
-  if (!win) return plain;
-  const overlapStart = Math.max(refTime, win.startedAt);
-  const overlapEnd = Math.min(now, win.expiresAt);
-  const accruedExtraSec = Math.max(0, overlapEnd - overlapStart) / 1e3;
-  const workLeft = Math.max(0, growSec - elapsedSec - accruedExtraSec);
-  if (workLeft <= 0) return 0;
-  const windowLeftSec = Math.max(0, (win.expiresAt - Math.max(now, win.startedAt)) / 1e3);
-  if (now < win.startedAt || windowLeftSec <= 0) return workLeft;
-  return workLeft <= 2 * windowLeftSec ? workLeft / 2 : windowLeftSec + (workLeft - 2 * windowLeftSec);
 }
 function farmPanelComputeExactCropYield(json, g, cropName, plot, counter, isGreenhouse, atTime) {
   const lastInfo = farmPanelGetLastInfo();
@@ -30070,7 +30539,7 @@ function farmPanelComputeExactCropYield(json, g, cropName, plot, counter, isGree
       });
     }
   }
-  const cropAoeCooldownSec = farmPanelGetCropGrowDurationMsFromSync(plot && plot.crop, cropName) / 1e3;
+  const cropAoeCooldownSec = farmPanelGetCropGrowDurationMsFromSync(plot && plot.crop, cropName, g, plot && plot.fertiliser) / 1e3;
   if (isSkillActive("skill_chonky_scarecrow") && tierLabel === "Basic" && farmPanelCropAOEBonus(g, "Basic Scarecrow", plot, {
     width: 1,
     height: 1
@@ -30569,13 +31038,28 @@ function farmPanelMapPos(id, node, defW, defH) {
     h: typeof node.height === "number" ? node.height : defH
   };
 }
-function farmPanelIsNodeReadyNow(resourceName, node, subKey, now) {
+function farmPanelNodeWindowedRemainingSec(g, resourceName, job, ts, now) {
+  if (!g || !job || typeof job.baseDurationMs !== "number" || !ts) return null;
+  let windows;
+  if (resourceName === "Wood") windows = treeWindows(g);
+  else if (resourceName === "Oil") windows = oilWindows(g);
+  else windows = mineWindows(g, String(resourceName).toLowerCase());
+  const readyAt = computeReadyAt({
+    startedAt: ts,
+    baseDurationMs: job.baseDurationMs,
+    windows
+  });
+  return Math.max(0, (readyAt - now) / 1e3);
+}
+function farmPanelIsNodeReadyNow(resourceName, node, subKey, now, g) {
   const job = node && node[subKey];
   const ts = job && (job.minedAt || job.choppedAt || job.harvestedAt || job.stoneMinedAt || job.recoveredAt) || node && (node.minedAt || node.choppedAt || node.harvestedAt);
   if (!ts) {
     const amountVal = job && typeof job.amount === "number" ? job.amount : node && typeof node.amount === "number" ? node.amount : null;
     return amountVal !== 0;
   }
+  const windowed = farmPanelNodeWindowedRemainingSec(g, resourceName, job, ts, now);
+  if (windowed != null) return windowed <= 0;
   const growSec = farmPanelGrowTimeSec(resourceName);
   const elapsedSec = (now - ts) / 1e3;
   const remainingSec = growSec != null ? Math.max(0, growSec - elapsedSec) : null;
@@ -30670,11 +31154,8 @@ function farmPanelComputeInProgressRaw(json, opts) {
         if (kind === "crop" && cropWeatherDestruction.activeEvent && cropWeatherDestruction.destroyedIds.has(plotId)) return;
         const refTime = job.harvestedAt && job.harvestedAt > plantedAt ? job.harvestedAt : plantedAt;
         const growSec = farmPanelGrowTimeSec(name);
-        let waitSec = growSec != null ? kind === "crop" ? farmPanelCropRemainingSec(job, refTime, now, growSec) : Math.max(0, growSec - (now - refTime) / 1e3) : 0;
-        if (kind === "crop" && waitSec > 0 && typeof job.baseDurationMs === "number") {
-          const sunshowerMult = getCropPlotSunshowerSpeedMultiplier();
-          if (sunshowerMult > 1) waitSec = waitSec / sunshowerMult;
-        }
+        const windowedWait = farmPanelWindowedRemainingSec(g, kind, job, plot, refTime, now);
+        const waitSec = windowedWait != null ? windowedWait : growSec != null ? Math.max(0, growSec - (now - refTime) / 1e3) : 0;
         (groups[name] = groups[name] || []).push({
           key: plotId,
           id: `${kind}:${plotId}`,
@@ -30693,11 +31174,8 @@ function farmPanelComputeInProgressRaw(json, opts) {
       const refTime = job.harvestedAt && job.harvestedAt > plantedAt ? job.harvestedAt : plantedAt;
       const growSec = farmPanelGrowTimeSec(name);
       const elapsedSec = (now - refTime) / 1e3;
-      let remainingSec = growSec != null ? kind === "crop" ? farmPanelCropRemainingSec(job, refTime, now, growSec) : Math.max(0, growSec - elapsedSec) : null;
-      if (kind === "crop" && remainingSec != null && remainingSec > 0 && typeof job.baseDurationMs === "number") {
-        const sunshowerMult = getCropPlotSunshowerSpeedMultiplier();
-        if (sunshowerMult > 1) remainingSec = remainingSec / sunshowerMult;
-      }
+      const windowedRemaining = farmPanelWindowedRemainingSec(g, kind, job, plot, refTime, now);
+      const remainingSec = windowedRemaining != null ? windowedRemaining : growSec != null ? Math.max(0, growSec - elapsedSec) : null;
       const isReadyNow = isWeatherDestroyedPlot ? false : remainingSec != null ? remainingSec <= 0 : false;
       const storedAmount = typeof job.amount === "number" ? job.amount : null;
       const plotIdx = (plotIndexByName[name] || 0) + 1;
@@ -30830,8 +31308,10 @@ function farmPanelComputeInProgressRaw(json, opts) {
         if (!ts) {
           const amountVal = job && typeof job.amount === "number" ? job.amount : node && typeof node.amount === "number" ? node.amount : null;
           waitSec = amountVal === 0 ? growSec != null ? growSec : 0 : 0;
-        } else if (growSec != null) {
-          waitSec = Math.max(0, growSec - (now - ts) / 1e3);
+        } else {
+          const windowedWait = farmPanelNodeWindowedRemainingSec(g, resourceName, job, ts, now);
+          if (windowedWait != null) waitSec = windowedWait;
+          else if (growSec != null) waitSec = Math.max(0, growSec - (now - ts) / 1e3);
         }
         const type = resourceName === "Wood" ? farmPanelTreeTypeForNode(node) : resourceName === "Stone" ? farmPanelRockNameForNode(node, STONE_KNOWN_IDS, "Stone Rock") : resourceName === "Iron" ? farmPanelRockNameForNode(node, IRON_KNOWN_IDS, "Iron Rock") : resourceName === "Gold" ? farmPanelRockNameForNode(node, GOLD_KNOWN_IDS, "Gold Rock") : "Crimstone";
         (groups[type] = groups[type] || []).push({
@@ -30862,10 +31342,11 @@ function farmPanelComputeInProgressRaw(json, opts) {
       const stoneRockName = resourceName === "Stone" ? farmPanelRockNameForNode(node, STONE_KNOWN_IDS, "Stone Rock") : null;
       const ironRockName = resourceName === "Iron" ? farmPanelRockNameForNode(node, IRON_KNOWN_IDS, "Iron Rock") : null;
       const goldRockName = resourceName === "Gold" ? farmPanelRockNameForNode(node, GOLD_KNOWN_IDS, "Gold Rock") : null;
-      const isReadyNow = farmPanelIsNodeReadyNow(resourceName, node, subKey, now);
+      const isReadyNow = farmPanelIsNodeReadyNow(resourceName, node, subKey, now, g);
       const storedAmount = job && typeof job.amount === "number" ? job.amount : null;
       const growSecForNode = farmPanelGrowTimeSec(resourceName);
-      const remainingSecForNode = ts && growSecForNode != null ? Math.max(0, growSecForNode - (now - ts) / 1e3) : null;
+      const windowedNodeRemaining = farmPanelNodeWindowedRemainingSec(g, resourceName, job, ts, now);
+      const remainingSecForNode = windowedNodeRemaining != null ? windowedNodeRemaining : ts && growSecForNode != null ? Math.max(0, growSecForNode - (now - ts) / 1e3) : null;
       const predictedMineAt = remainingSecForNode != null ? now + remainingSecForNode * 1e3 : now;
       let exactAmount = null;
       let exactBoosts = null;
@@ -31013,7 +31494,7 @@ function farmPanelComputeInProgressRaw(json, opts) {
       }
       const growSec = farmPanelGrowTimeSec(resourceName);
       const elapsedSec = (now - ts) / 1e3;
-      const remainingSec = growSec != null ? Math.max(0, growSec - elapsedSec) : null;
+      const remainingSec = windowedNodeRemaining != null ? windowedNodeRemaining : growSec != null ? Math.max(0, growSec - elapsedSec) : null;
       rows.push({
         name: resourceName,
         qty,
@@ -31079,7 +31560,8 @@ function farmPanelComputeInProgressRaw(json, opts) {
       }
       const growSec = farmPanelGrowTimeSec("Oil");
       const elapsedSec = (now - ts) / 1e3;
-      const remainingSec = growSec != null ? Math.max(0, growSec - elapsedSec) : null;
+      const windowedOilRemaining = farmPanelNodeWindowedRemainingSec(g, "Oil", job, ts, now);
+      const remainingSec = windowedOilRemaining != null ? windowedOilRemaining : growSec != null ? Math.max(0, growSec - elapsedSec) : null;
       rows.push({
         name: "Oil",
         qty: oilQtyPerNode,
@@ -31298,8 +31780,12 @@ function farmPanelComputeInProgressRaw(json, opts) {
       Object.entries(bag).forEach(([animalId, animal]) => {
         if (!animal || typeof animal !== "object") return;
         const toTs = (v) => typeof v === "number" ? v : typeof v === "string" && v.trim() && !isNaN(Number(v)) ? Number(v) : null;
-        const awakeAt = toTs(animal.awakeAt);
         const asleepAt = toTs(animal.asleepAt ?? animal.sleepAt ?? animal.wentToSleepAt);
+        const awakeAt = typeof animal.baseDurationMs === "number" && asleepAt != null ? computeReadyAt({
+          startedAt: asleepAt,
+          baseDurationMs: animal.baseDurationMs,
+          windows: animalWindows(g, String(animal.type || type).replace(/^./, (c) => c.toUpperCase()))
+        }) : toTs(animal.awakeAt);
         const stateStr = typeof animal.state === "string" ? animal.state.toLowerCase() : "";
         const sick = animal.sick === true || stateStr === "sick" || typeof animal.sickenedAt === "number";
         const xpRaw = animal.experience ?? animal.exp ?? animal.xp;
@@ -31849,14 +32335,23 @@ function cookingIsWearableEquipped(g, wearableName) {
   }
   return false;
 }
-function farmPanelBuildCookingBuildingCard(building, instances, farmActivity) {
+function farmPanelBuildCookingBuildingCard(building, instances, farmActivity, g) {
   const allSlots = [];
   instances.forEach((inst, instIdx) => {
     const crafting = Array.isArray(inst.crafting) ? inst.crafting : [];
     if (!crafting.length) return;
     const yields = cookingComputeQueueYields(building, crafting, farmActivity);
-    yields.forEach((y) => {
-      const readyAt = typeof y.recipe.readyAt === "number" ? y.recipe.readyAt : 0;
+    const windowedReadyAts = resolveCookingQueue({
+      crafting,
+      windows: cookingWindows(g),
+      oil: inst.oilSettledAt !== void 0 ? {
+        tank: typeof inst.oil === "number" ? inst.oil : 0,
+        settledAt: inst.oilSettledAt
+      } : void 0,
+      buildingName: building
+    }).map((t) => t.readyAt);
+    yields.forEach((y, yi) => {
+      const readyAt = typeof windowedReadyAts[yi] === "number" ? windowedReadyAts[yi] : typeof y.recipe.readyAt === "number" ? y.recipe.readyAt : 0;
       allSlots.push({
         buildingIndex: instIdx,
         name: y.name,
@@ -32703,7 +33198,7 @@ function farmPanelComputeCookingCardsFromState(g) {
   COOKING_BUILDINGS.forEach((building) => {
     const instances = buildings && Array.isArray(buildings[building]) ? buildings[building] : null;
     if (!instances || !instances.length) return;
-    const card2 = farmPanelBuildCookingBuildingCard(building, instances, farmActivity);
+    const card2 = farmPanelBuildCookingBuildingCard(building, instances, farmActivity, g);
     if (card2) cards.push(card2);
   });
   const fishMarketInstances = buildings && Array.isArray(buildings["Fish Market"]) ? buildings["Fish Market"] : null;
@@ -34418,9 +34913,9 @@ if (farmPanelDebugPetsBtnEl) farmPanelDebugPetsBtnEl.onclick = () => {
     return;
   }
   const g = farmSyncExtractGameState(farmPanelGameState);
-  const asObj = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : null;
-  const topBag = asObj(farmPanelField(g, "pets"));
-  const house = asObj(farmPanelField(g, "petHouse"));
+  const asObj2 = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : null;
+  const topBag = asObj2(farmPanelField(g, "pets"));
+  const house = asObj2(farmPanelField(g, "petHouse"));
   const heuristic = !topBag || !Object.keys(topBag).length ? farmSyncFindBagByNameHeuristic(g, /^pets$/i, 3) : null;
   const records = typeof farmSyncGetPetRecords === "function" ? farmSyncGetPetRecords(g, true) : {};
   const firstId = Object.keys(records)[0];
@@ -34485,14 +34980,14 @@ if (farmPanelDebugNftPricesBtnEl) farmPanelDebugNftPricesBtnEl.onclick = async (
   const collectiblesSuspects = collectiblesArr.filter((it) => it && looksLikeBudOrPet(it.name));
   const wearablesSuspects = wearablesArr.filter((it) => it && looksLikeBudOrPet(it.name));
   const g = farmPanelGameState ? farmSyncExtractGameState(farmPanelGameState) : null;
-  const asObj = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : null;
-  const budsBag = g ? asObj(farmPanelField(g, "buds")) : null;
+  const asObj2 = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : null;
+  const budsBag = g ? asObj2(farmPanelField(g, "buds")) : null;
   const firstBudId = budsBag ? Object.keys(budsBag)[0] : null;
   const firstBudTraits = firstBudId ? farmSyncExtractBudTraits(budsBag[firstBudId]) : null;
-  const petsRoot = g ? asObj(farmPanelField(g, "pets")) : null;
-  const petNfts = petsRoot ? asObj(petsRoot.nfts) : null;
+  const petsRoot = g ? asObj2(farmPanelField(g, "pets")) : null;
+  const petNfts = petsRoot ? asObj2(petsRoot.nfts) : null;
   const firstPetId = petNfts ? Object.keys(petNfts)[0] : null;
-  const firstPetTraitType = firstPetId && asObj(petNfts[firstPetId]) && asObj(petNfts[firstPetId].traits) ? petNfts[firstPetId].traits.type : null;
+  const firstPetTraitType = firstPetId && asObj2(petNfts[firstPetId]) && asObj2(petNfts[firstPetId].traits) ? petNfts[firstPetId].traits.type : null;
   const out = {
     "Top-level keys on the /api/v1/nfts response": topLevelKeys,
     "json.buds (array?)": budsArr ? {
@@ -34565,7 +35060,7 @@ if (farmPanelDebugMutantsBtnEl) farmPanelDebugMutantsBtnEl.onclick = () => {
     return;
   }
   const g = farmSyncExtractGameState(farmPanelGameState);
-  const asObj = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : null;
+  const asObj2 = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : null;
   const chapterName = getCurrentChapterName();
   const chapterMutants = getCurrentChapterMutantSet();
   const inspectJob = (job) => {
@@ -34578,7 +35073,7 @@ if (farmPanelDebugMutantsBtnEl) farmPanelDebugMutantsBtnEl.onclick = () => {
     };
   };
   const flowersField = farmPanelField(g, "flowers");
-  const flowerBeds = asObj(flowersField && flowersField.flowerBeds) || {};
+  const flowerBeds = asObj2(flowersField && flowersField.flowerBeds) || {};
   const flowerEntries = Object.entries(flowerBeds);
   const flowerOut = flowerEntries.length ? flowerEntries.map(([id, bed]) => ({
     bedId: id,
@@ -35659,7 +36154,7 @@ var IMAGE_ICONS = {
   "Bear Shrine (7d)": "data:image/webp;base64,UklGRhQBAABXRUJQVlA4TAgBAAAvEcAFEG+gNAAISVTFN2l0K1jfEvItcIMoDQCkIW5wN/9PdqPdX7hBTQAQjP37XeJIoY4y8uihgEAgCWz7xQIAUM0K42eGR3I+uMpdNNn6vf3n54jt8iwD3Nq2VVVPc6QBCYncyRwiz8i44zDGawApgO8FYOmXW8DXl/7o0ZXVsHdE/yfAmLgToD8x+qcpgH+4fT/YAn7g9v39FvgN3D63wIf23b7eAqTn9LnbalKueOL01296IaTTv3vX93Ohk9octy9zoZ2ShhKyYMVmZ4W6ncq1pJCtKzuVzJIN5dmpZCbBnmg7Vqgxq+XVjn/WTtVXUdFwlqSoXJhpAC0VDd8YumIaVwBcAAA=",
   "Bear Shrine": "data:image/webp;base64,UklGRhQBAABXRUJQVlA4TAgBAAAvEcAFEG+gNAAISVTFN2l0K1jfEvItcIMoDQCkIW5wN/9PdqPdX7hBTQAQjP37XeJIoY4y8uihgEAgCWz7xQIAUM0K42eGR3I+uMpdNNn6vf3n54jt8iwD3Nq2VVVPc6QBCYncyRwiz8i44zDGawApgO8FYOmXW8DXl/7o0ZXVsHdE/yfAmLgToD8x+qcpgH+4fT/YAn7g9v39FvgN3D63wIf23b7eAqTn9LnbalKueOL01296IaTTv3vX93Ohk9octy9zoZ2ShhKyYMVmZ4W6ncq1pJCtKzuVzJIN5dmpZCbBnmg7Vqgxq+XVjn/WTtVXUdFwlqSoXJhpAC0VDd8YumIaVwBcAAA=",
   "Greenhouse Goodie": "data:image/webp;base64,UklGRrQAAABXRUJQVlA4TKcAAAAvDcADEE+gJgAhSAujUVIVRLl2Tw1FbaRAuzJwgSF0Y+AWwBsFkWxQD/2bSCLKnwTmPwD4/6XTLrrIqTPiOKNmpcFtbdtKdMNPqAXwM2IvgdS+NIBMAaxHOD4TupWL9RDRfyFBgt0hwO1vAIDPHwC2Ewakm+ZzmNSNnOhg7IStEkL0TNOETllPROqY5UIId2TOHbXJPW6eBtc0zfyyGmEgoguwvY4xAAA=",
-  "Blossom Hourglass (4h)": "data:image/webp;base64,UklGRsQAAABXRUJQVlA4TLcAAAAvCgAFEF+gJgAShpca3PZPMX8bWIIaitq2gUqjr0IttGnvE9LUBACakICLLvTPoPMevvkPAPj/zG4r6VPJgRDfk3wFicUuEJzYtu00V/0/AJgAqrqOZ6GQrO9RzaVXnzx06vNxyMRldpQ5RPRfSJDQbO5AVVUCJTO3eHZELJ5E9J6ZxoWZO7EgogMWhVJrwPy7Elj0ZwDmx5BYeF9tNfjpKzzTPr+JZ6qyQeL78//r+C+n/9jv9xIA",
+  "Blossom Hourglass (12h)": "data:image/webp;base64,UklGRsQAAABXRUJQVlA4TLcAAAAvCgAFEF+gJgAShpca3PZPMX8bWIIaitq2gUqjr0IttGnvE9LUBACakICLLvTPoPMevvkPAPj/zG4r6VPJgRDfk3wFicUuEJzYtu00V/0/AJgAqrqOZ6GQrO9RzaVXnzx06vNxyMRldpQ5RPRfSJDQbO5AVVUCJTO3eHZELJ5E9J6ZxoWZO7EgogMWhVJrwPy7Elj0ZwDmx5BYeF9tNfjpKzzTPr+JZ6qyQeL78//r+C+n/9jv9xIA",
   "Blossom Hourglass": "data:image/webp;base64,UklGRsQAAABXRUJQVlA4TLcAAAAvCgAFEF+gJgAShpca3PZPMX8bWIIaitq2gUqjr0IttGnvE9LUBACakICLLvTPoPMevvkPAPj/zG4r6VPJgRDfk3wFicUuEJzYtu00V/0/AJgAqrqOZ6GQrO9RzaVXnzx06vNxyMRldpQ5RPRfSJDQbO5AVVUCJTO3eHZELJ5E9J6ZxoWZO7EgogMWhVJrwPy7Elj0ZwDmx5BYeF9tNfjpKzzTPr+JZ6qyQeL78//r+C+n/9jv9xIA",
   "Sprout Mix": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAICAYAAADA+m62AAAAAXNSR0IArs4c6QAAAKtJREFUGJVtkLEKglAYhb8b2dLWEkJLlxLa0iVcbGzsYXwOHyoXadExqNAluGjQpgQOtngvCZ7x45z/5xxBrzDwO0YUxYkAENq029oUhwW2NwdApTXr64fbQxHFiZiGgd+dT3sAvt4MgKzNcT2J87Zw5BKgm+gX97wE4PJ64lpywACMsU9yXG3I2nzAjLGpFE2lUGkNgGtJVFobPrhYlLUpoQOaDVqPTfM/0Q81AUYm90CvAwAAAABJRU5ErkJggg==",
   "Hungry Caterpillar": "data:image/webp;base64,UklGRtYAAABXRUJQVlA4TMoAAAAvDoAEEFegKrIN6oa41yOATwE00FktYcwEION0uaXQQQAx1r/ADjWNpEBXnYcH6PDfIwsFBNk2FRv9wR4A0HsArXptuh8fipXqG548gdta29bkjQ2ASxWvkW8AOPFUaO9WuiySQGnVt+bPEBH9n4ApMAWAgjYoCOiXVaH3bqbCj5lVAMT8Fb7vJis+8D3UU49VeOfI77KClu8TpwR4vv/1CC3vRR6RfM1fjy2RPMte+3Dlyvri9dqcXVm/Zvuba0I3RRn4A0A3TRMA",
@@ -35704,7 +36199,7 @@ var IMAGE_ICONS = {
   "Tomato Bombard": "data:image/gif;base64,R0lGODdhIAAgAHcAACH/C05FVFNDQVBFMi4wAwEAAAAh+QQJCgAAACwAAAAAIAAgAIMAAAAYFCU/KDImK0Q6RGaeKDX3diL/AET2dXo+iUj+52ESTokAleks6PX///8AAAAE6BDISau9OOvNu/9gKFJBoIxZwCjEiZJB07TlK8VyM+TBi8sDQq7RE6mGyAajCDomc0sjg/FURkMqqszhgF45pV5goSX+GAtxDfMrkbVT2TTdZvPGU4V+Py/xLn4ybisGhYYKaIFmFQEIWUtjCoVhAYUKdFNLjhMljpkqkgYBCSWklkufjmJLB4+goqOlJQaIrq2QabdTkQYClCUCtGmfrXQEAbpLC5ICvmHNwrYBxwAlBa4thc3bwbTHn9dMAdcL5dPZvduWBMfladeMY+ZhoYa0lO5rjPkUe3sk/AAFBDPQhsGDCBNmiAAAOw==",
   "Banana Amulet": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAABACAYAAAB7jnWuAAAC5klEQVR4nO2YP2gTURzHvxeiXRI8HAwIbgpZlBIttgiGSlzcXWo3B0FcGsTi0IItKIUSEYog4iYu7kLRwRSkqf9AXaSKi2ARrFTaJVQ9h/gu797f3zvfJQ79Qsjd8XLfz/u+/wmQQhPjYxG7LoRh/DzYXQQAzDTmAuq7yAV5U9FYBGCigFgLiMY6cxUABSTny9yk6fqk9B4rgC9zG4QSwLe5CcLYBD7NdRASgKr2vsVDkBLIUlYAn/HzYikkAHoRv6i+NsF0fTL6//vADkDWygPA1KWLEQBsbWz0HCDHzIHsxrwRADDXPOtU4j7AjHqdQq4fpgmA2YXbQT8h4r2abR2gAOr2hCQAUZRdsA8A7UR08/6DBFxWo8E4E4oQPQcQIXynMNOYC0hrQRYQ7LBCXox8QvAnJec2No0O2yhQHdHyrgDMkKXApxEM/EqUbdy7Y62g036gWq54Xzm1CfDLNAAsPWlJZQphaOwP1XIlOnpiKL5XJSIBmE6ygNzOxX1FbP3oQETtTan8q2cvUDlWBtDtP3yHTjSBzVynwp5Q+ZwZv375PvGc78gxQP38BaN59cxpAEDz0WMnCJ0YRCIBFmVauXbMifEx+WBigrClkAYiBqCMWRcIKohyHrA1BQWCgTgB8Cn4guBhVMlICVCbwgXiZG1YggE684FxKqaMChOEavYUIZQALk2RgDjwCV/OfY4/gFx7UdoE0kJ8WNqOv23mRgARgqLF9VU8PfQNd9fWsLi+SvoNeTm2pXA1/xADw3s7NyOHu9casQORFSD38S0Zgpm7iJSAM8RfkGunnvsBcIJYfmeFYPE7Adggbvw8i3bruxLCJGsvv1wdkfYJvw8eUZaN2pu4vr+V6Iyjo2/ijYnqpJUKwKbZ418To+DKrV2Yby4rvZy35RRNrZSAle59bbCE+aa6bCYAtcESuawXABdDLwD/Yiiq7/+U7gBYAXTjt2cAWUOQmyArCOeXppmaAX0F/gD4Cy6WQkPVUQAAAABJRU5ErkJggg==",
   "Groovy Gramophone": "data:image/webp;base64,UklGRkwBAABXRUJQVlA4TD8BAAAvGMAIEGegJgCQhptz9qYSzgB22PZRFACEI4H+PYRYb5pwe6iJZKv5qUuAANxQ4h4HdFkDQbZNxUZ/sAcAgN8+f9Vg6PMb7NALQhNvsRCf1MmZWx/gVtueupExVLlzfWEB/QpW90i/+zBVbG5xgOACpi4cVal4AF7KV7/kjBDRfwZu2zai2tvzG8yEmGZ2EYByEL4HaXstOHC014BC2SshEQWnIpAbCJxejP76hhQ+EcmR0LME0rWIPEUPU2DdRhf0/wiu1h1/viwgM+t7kCYQ1jYBVLEY2ysgNDY2Gp91Ywvx5Pw8v0+cbRRutb7MlYjzXY1a5y16SV+5aN8s+sSDJoc/+2yvfp4z7debn1O1vxbps14pTg1bRVKzO+yzkT6p051hsUqpGC8tnabpH4txhx23Uc8fJuLD0XhPDowxAA==",
-  "Orchard Hourglass (6h)": "data:image/webp;base64,UklGRsgAAABXRUJQVlA4TLwAAAAvCgAFEF+gJgAIhn99+pfxzQQCKKGG0gBAGh7g/8Iz5JmmSS9RaQAgDfv/t+jg9gKbzeT8BwD4/wdvI01FILrwOUek59hrLMXpA6exbbvK0fdJaAAVXcZnfCrgz7xkSR28OQMS9Rwqqpzbgx4i+j8HOB6Pgo3WegsfSC2epP3zm6XWOsiJ5AundYxXoLjIKuA0fgIoDjIKp9IkdcGpNE1f4JvjbiK+GfuJ+Ea5bMUHUstKax3UieQL+H6/Cg==",
+  "Orchard Hourglass (8h)": "data:image/webp;base64,UklGRsgAAABXRUJQVlA4TLwAAAAvCgAFEF+gJgAIhn99+pfxzQQCKKGG0gBAGh7g/8Iz5JmmSS9RaQAgDfv/t+jg9gKbzeT8BwD4/wdvI01FILrwOUek59hrLMXpA6exbbvK0fdJaAAVXcZnfCrgz7xkSR28OQMS9Rwqqpzbgx4i+j8HOB6Pgo3WegsfSC2epP3zm6XWOsiJ5AundYxXoLjIKuA0fgIoDjIKp9IkdcGpNE1f4JvjbiK+GfuJ+Ea5bMUHUstKax3UieQL+H6/Cg==",
   "Orchard Hourglass": "data:image/webp;base64,UklGRsgAAABXRUJQVlA4TLwAAAAvCgAFEF+gJgAIhn99+pfxzQQCKKGG0gBAGh7g/8Iz5JmmSS9RaQAgDfv/t+jg9gKbzeT8BwD4/wdvI01FILrwOUek59hrLMXpA6exbbvK0fdJaAAVXcZnfCrgz7xkSR28OQMS9Rwqqpzbgx4i+j8HOB6Pgo3WegsfSC2epP3zm6XWOsiJ5AundYxXoLjIKuA0fgIoDjIKp9IkdcGpNE1f4JvjbiK+GfuJ+Ea5bMUHUstKax3UieQL+H6/Cg==",
   "Fruit Tune Box": "data:image/webp;base64,UklGRjQBAABXRUJQVlA4TCgBAAAvE8AGEHegKJLUiOLL91KABUShFhOpOLgTH2oiWa0YHNCBAwxgApmooIQkXRz9ZtQEANLARQ1cHSxuDe9dYY9Xgmybio3+YA8AwGyO/yfE+9KYEfLHj3DCaomGVrm8jk7UVjswwK1tW7Vyxntf2jAacHd3vW98IhpwJ3YoQL+EeOZuqbXAj6jk3zOoYd2I/ity27ah0nXtM+TjBxBgdkUl0Nmmigptu5+59E9bSHDpn/RnrtuyZ1qxZ7rPythnj3V04ZxrCwlNbSpg8f4ZWAkV3N4BSyHBXAIMlwluFXYYDpX6Ju/cb37877nWnMEFYxsTFabUNlpW4Zti50qLh8t8WVxRhYQ2nRUAtIcEs7QCBEUJz6gPTCkuoMAT0xlAeyokJHTe/2KaAA==",
   "Camel Onesie": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACoAAABACAYAAABsrOVnAAAEpElEQVR4nMVZz2vTSRR/s2xlhYhSlsYiBXW7GpCK6dHD9hK0CEI8mIN4ioIeCtES7K1/QAnVQg5bsLlUPHQvBS+p9OpFkIgeKhjZxVhCeggKuexeZk/vy/tO3sx3Zr6T9gNfmsx8Z94n79fMexWQAvs7K5J+P3P9iUiznwlBNj4Mwj+F2GSUmkQEIQoQJ6tqOAQEt3EaDdG9Dj5+gny1IfZ3VmRarY/EZEj24OMnAADIVxup5QgAgHqpIP/60Idn96/AxEyO1SgKV+datbIEgNi6JNP7aDfy0duXx+HR8/eRFlq1skQSaDoUgONIMF9tCCqcvsuR9PJhFFovFWS9VJBzudnETVwF7e+sSHycCdoKcBkPsbcRzUpRUnPSz4jTv/4u6ZOSZ3o0K8UYYcSFSwV54VLBiij1b595L7IcUTrPrZ3Lzcq53KzkCLVqZTmXmzXu4UW2VSt7m7xZKUpKPChBHdlWrewtBMmmIfmzzUv5akM0K0U5v7Yd5cZmpSizU+Oxd7i1rVpZPnr+Hp7dvxIbcz2tjC+r5NQ5AABK1ha9Th90++qg1aiqMQ6Nz/9CGfou8qDdHcD0ZMZpDYCGKJJMMs/F8+eg8flvw+7Hh4b++AWctQlg6aMmXDx/Tjsnjp0YHvz2zktOsIvzqOFN1Md8acASbXcHAMCf+abxUYIlurC1K3odt2geNbSmb3cH0Ov0hy4Q9PPDm2edBd66d815DYBFzaTm0zdvv8L0ZCbKhzM3rsKfr/7hNydRP/HtHUxPZrx9OzGY5te2xZu3XwGfha1dAQAR2TPXn4gkzSLJmRtXvf3b69dRYajh+bVtbS1Eay2XM355cSnaz3oRV5u3amXZ6/QjNzCZ1ZYkkhv8+A6Zk6eiv1ZETQ0ElSx3P3C5hFCiFMGSNhK2hY744r0HkbkzJ09F48ZgcqkU89WGyE6NW1/7uDJlf2dFrm6ssz9Aq1E0t+lOaiJBv1NNcy5CfRfXbu6NRfOrG+siMT1lp8bBtYRQg4aS4u6iXMq6lulFD4BGozR40Pd8E7VJuwDDFQKdpzLZ+2jIxmy+2hCULApHK3EByCnF6uKMtylfcPlTJayOJ0KN9GalKOulwpG3cIaCyZTYR09Hj8SoT6oaXVuKQVqP3Cb1UoHtIaUR6rPO6LiYmjCFpElTaaE1vXp2U8JHAaOP0rRk05AYJViinDaPGjGiasBg2aGbP0zEiG7ujcHy4pLc3Bs7sqDRgTU9vROmPT5DYYjo4Md3WF5ckrSwwhqfq/N94LOe1SjWK1gW4EU3RHpyLVkQ2tsTktUdn6gV25SF7/tmEGOBtbqxLnSE0prfNSezGtUVWKog9YhVgdpTDwufH5lIKKlxYPI5/AEhTrRUrXHafKCgVWaoY9e744zma3cHsLC1K/DBedRyqNPMiij3/8xepx/r7iEWtnZFuzuIcq9uvStR5/4ogiNJUS8VJKY26gauac2aKBWIQHPbrAUYzsUj+T8TNmwpbEgCAHw5NgG//XcQW2+7VkUi0deDLMCJbPTdJscinr54KR7fvXN4wZQGT1+8PPz05KLN0DASpU3VUHh89470cYf/AU5zJDUpa3i2AAAAAElFTkSuQmCC",
@@ -35772,7 +36267,7 @@ var IMAGE_ICONS = {
   "Giant Onion": "data:image/webp;base64,UklGRjwBAABXRUJQVlA4TC8BAAAvE0AJEFegJJIV6rV49ikcRCD8z1KJGooiSXFIX74UBhCS/AtAywVVkW1Q916PEP5VEV0BgRBk21Rs9Ad7AOD/n9aZ1KTOPWWEyFFjbs+eBTjStsdNvrBDpy4low4qZmSWXgvtqt8XQNIFsHt24ZIKpcpQOcfE/sUZIvpPNmlj6ZRPAHjAg63bvWm5QDdUC5WOWu6mpxh2mUSxY0Ki1BErMSRqWYldpLTLSh+p3+Ul2p6qYmMLPM3Fxmvg0fXRP0QHPLg0CRbQNpF98M0sVs6aQFbb7Yl68FabCZT2RjUA1lfaGPV6BAxCmUaJEessrpR6Fflo8qzUcjLkpchZPOdxyFkIITKT5+dxlattVl/cz5/Clc1vKezlVJZqUsr6x1J+l3Ii5RZkNQD/HJjiFgAA",
   Poppy: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAsAAAALCAYAAACprHcmAAAAAXNSR0IArs4c6QAAAKFJREFUGJVjZEAC/9aZ/GdAA0xBZxjhbBSFlroMP0+8g2MGS10UA1hgjJ8n3jGwWzIwsBfao5j888Q7hC0oMscvM+DjoypmYGCQ0j3CwHD8MoRGdz+GCB7AyMDAwCAhomrOwMDAcD/p7wl2CyEU9yrOY7ZgYGBgePHm9klGmEIYuJ/09wSMDVMINxldMdHOwAdevLl9khFZAJumF29un4SxAWqBN/PuGS9nAAAAAElFTkSuQmCC",
   "Time Warp Totem": "data:image/webp;base64,UklGRuQAAABXRUJQVlA4TNcAAAAvDUAEEHegJpKk6P7PwMXExDjBvwAyMIANRZEkNZcPAZjgjzQMJifxjQLUBADB2EIooI2WmnjVcSLItinU/Anu9AAA//8PnhGzEt/qAqd5w9Fj8xYro0O4qe26Ki9Arq3teBXbtkYZOmkgLagC60cHsc0GzBHfBjLVVBXcJv6bHiL6PwEkIJL2f0TuF6AMIEAstdfJwkSW2Yl1yUQgHp4CE4HhKwZMJKGWdQ5MJKGXPQ9MpKD33UJMpKYWd05MBMavCjARf7189TMRWC0vwMT/8f6wOYnUHwA=",
-  "Time Warp Totem (2h)": "data:image/webp;base64,UklGRuQAAABXRUJQVlA4TNcAAAAvDUAEEHegJpKk6P7PwMXExDjBvwAyMIANRZEkNZcPAZjgjzQMJifxjQLUBADB2EIooI2WmnjVcSLItinU/Anu9AAA//8PnhGzEt/qAqd5w9Fj8xYro0O4qe26Ki9Arq3teBXbtkYZOmkgLagC60cHsc0GzBHfBjLVVBXcJv6bHiL6PwEkIJL2f0TuF6AMIEAstdfJwkSW2Yl1yUQgHp4CE4HhKwZMJKGWdQ5MJKGXPQ9MpKD33UJMpKYWd05MBMavCjARf7189TMRWC0vwMT/8f6wOYnUHwA=",
+  "Time Warp Totem (4h)": "data:image/webp;base64,UklGRuQAAABXRUJQVlA4TNcAAAAvDUAEEHegJpKk6P7PwMXExDjBvwAyMIANRZEkNZcPAZjgjzQMJifxjQLUBADB2EIooI2WmnjVcSLItinU/Anu9AAA//8PnhGzEt/qAqd5w9Fj8xYro0O4qe26Ki9Arq3teBXbtkYZOmkgLagC60cHsc0GzBHfBjLVVBXcJv6bHiL6PwEkIJL2f0TuF6AMIEAstdfJwkSW2Yl1yUQgHp4CE4HhKwZMJKGWdQ5MJKGXPQ9MpKD33UJMpKYWd05MBMavCjARf7189TMRWC0vwMT/8f6wOYnUHwA=",
   "Lab Grown Radish": "data:image/gif;base64,R0lGODdhDgAVAMQAAAAAACZcQj6JSGPHTRk8PiYrRMDL3KImM+Q7RPZ1ej4nMf///xJOiTpEZgCV6Szo9QAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH/C05FVFNDQVBFMi4wAwEAAAAh+QQJDwAAACwAAAAADgAVAAAFgSAQjAFgiqQoDGwpsoMwCmsbwPRMs3ucqz3ezzQi0GiE0algMBwIUMKhWTAxD4gsIoGYVgFXbTbhtRoUCHQ6bfgWFoyD4iA/MBZuOGPPv7vfC4GCeG4MBYeIDQWGVg59e44Obg6OfQ+Uk5SWmI2UlQ6Xkp2elKFfYKSgnCdgiK4nIQAh+QQJDwAAACwAAAAADgAVAAAFgSAQjAFgiqQoDGwpsoMwCmsbwPRMs3ucqz3ezzQi0GiE0algMBwIUMKhWTAxD4gsIoGYVgFXbTbhtRoUCHQ6bfgWFoyD4iA/MBZuOGPPv7vfC4GCeG4MBYeIDQWGVg59e44Obg6OfQ+Uk5SWmI2UlQ6Xkp2elKFfYKSgnCdgiK4nIQAh+QQJDwAAACwAAAAADgAVAAAFgSAQjAFgiqQoDGwpsoMwCmsbwPRMs3ucqz3ezzQi0GiE0algMBwIUMKhWTAxD4gsIoGYVgFXbTbhtRoUCHQ6bfgWFoyD4iA/MBZuOGPPv7vfC4GCeG4MBYeIDQWGVg59e44Obg6OfQ+Uk5SWmI2UlQ6Xkp2ejqFfYJqUpidWiK4nIQAh+QQJDwAAACwAAAAADgAVAAAFgSAQjAFgiqQoDGwpsoMwCmsbwPRMs3ucqz3ezzQi0GiE0algMBwIUMKhWTAxD4gsIoGYVgFXbTbhtRoUCHQ6bfgWFoyD4iA/MBZuOGPPv7vfC4GCeG4MBYeIDQWGVg59e44Obg6OfQ+Uk5SWmI2UlQ2Xkp2RlKFfYJ6lnCdgiK4nIQAh+QQJDwAAACwAAAAADgAVAAAFgSAQjAFgiqQoDGwpsoMwCmsbwPRMs3ucqz3ezzQi0GiE0algMBwIUMKhWTAxD4gsIoGYVgFXbTbhtRoUCHQ6bfgWFoyD4iA/MBZuOGPPv7vfC4GCeG4MBYeIDQWGVg59e44Obg6OfQ+Uk5R8DZeSjZQNkJ2ZlKWjS6WUpydgiK4nIQAh+QQJDwAAACwAAAAADgAVAAAFgiAQjAFgiqQoDGwpsoMwCmsbwPRMs3ucqz3ezzQi0GiE0algMBwIUMKhWTAxD4gsIoGYVgFXbTbhtRoUCHQ6bfgWFoyD4iA/MBZuOGPPv7vfC4GCeG4MBYeIDQWGVg59e44Obg6OfA0PlJOUDXyYko2UlQ6emqGUpEumo5knVoivJyEAIfkECQ8AAAAsAAAAAA4AFQAABYMgEIwBYIqkKAxsKbKDMAprG8D0TLN7nKs93s80ItBohNGpYDAcCFDCoVkwMQ+ILCKBmFYBV2024bUaFAh0Om34FhaMg+IgPzAWbjhjz7+73wuBgnhuDAWHiA0FhlYOfQwNjg5uDo4NfA+VlJV9mZONlY4MDp6boZWlS6ekmidWiLAnIQAh+QQJDwAAACwAAAAADgAVAAAFgiAQjAFgiqQoDGwpsoMwCmsbwPRMs3ucqz3ezzQi0GiE0algMBwIUMKhWTAxD4gsIoGYVgFXbTbhtRoUCHQ6bfgWFoyD4iA/MBZuOGPPv7vfC4GCeG4MBYeIDQWGVg57DXyODm4Ojn0PlZSVl5mNlZYOmJOen5WiX2CloZ0nYIivJyEAIfkECQ8AAAAsAAAAAA4AFQAABYEgEIwBYIqkKAxsKbKDMAprG8D0TLN7nKs93s80ItBohNGpYDAcCFDCoVkwMQ+ILCKBmFYBV2024bUaFAh0Om34FhaMg+IgPzAWbjhjz7+73wuBgnhuDAWHiA0FhlYOfXuODm4Ojn0PlJOUlpiNlJUOl5KdnpShX2CkoJwnYIiuJyEAOw==",
   Obie: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAAVCAYAAACZm7S3AAAAAXNSR0IArs4c6QAAAZpJREFUOI2Vkz1Lw1AUhp+UmC2K+EEHheJnwQ9wq6AdSoUiiIOrP6BCHRzEH+Akgg4KCq7+A6E4lAhaqZuDKKV1cHAIFrlKcdFiHMINue0t2BcugZf7nPOekwT+qeRexkvuZbywZ7S7PLGe8gCiMxYA48kuAKrXP1zvXBpauB0UliwQaQajM1YAyotSZ7F+pYjZDIblPnwrzzhfelgHhYu1xk95ysxy3vpLAwA7ZtKcRhavnDuG2vk+Qr3X72oLCwS49w3VAyqPjgGgLAxgtTGLLSzKhWH/7H5gC8v3dj8oF4aZmEp7WrgTqTNPpb2UHQfAqZcDv9mrPBb0H0k2kfNWokNtu124r5zeHetn7kTa9yw7nJSO2JjfBOCkdMTk9FIQuePYW9WCAkfCUDaR88KL0imbyAW/pSGNg8VuAEZLxRZgeb+H/PYntrA4HE8HSzMHBscWAK6qPmwLC+Z+FTi//YkdM0H4u3DqZQYGxxYMCa+NZG4AnsQtrtmnjRxtvOOafYjay2IQWxboRLW356Ky7f8Wqb09FwH+AECipbwva00rAAAAAElFTkSuQmCC",
   Foliant: "data:image/webp;base64,UklGRtwAAABXRUJQVlA4TNAAAAAvD0AEEG9gKLKNX0ID/Wdk4eQ1cPsJ1FASyQr1cvB1SCSaMnSnAgq1kaQ22A4gphL6T2gHec3MfwjgPw4A72jTe/ja+hGlLr+Ux+GKElPgtta2NUGXoKP7D6VT57xfOvzD3V2GcDZgAJcJUqZCyp8y0/wMEdH/CbAls6q7QVBZECwZA0c1ma3+/iAmwUJny3reSn1CturxbvsEGfP5t4LAseNtH9UgY8ttIaqBY5zNCh0ggPsElfu5rNrtB/62++bh9f1+JwvT+Ci2rFHOZrNu",
@@ -35792,7 +36287,7 @@ var IMAGE_ICONS = {
   "Sparrow Shrine": "data:image/webp;base64,UklGRhABAABXRUJQVlA4TAQBAAAvEQAGEG+gJACYZnJ28qrJJ6lAfUqgKUAQpQGANMQN7ubb3mK0+ws3qAkAgrF/v0scKdSRRCU9FBAIJIFtv1gAAKpZYvzM8EjOB1e5F+1s673zz88R281ZcFtr25p8nD/psQGSwACxAfDa3V17W4AFXHpOvkNHSefaM090hoj+k03amO79A6I0GLsXLaRSKU30/tNK6S+bzeaHNNyXGgXzEEb94IN0FQ0dDaYHHKqaiLNxe0D5lEj/r2pTc8TmaKfhG+3med9rE0aUTj9VhPAcd9lv2iHCezl5o4Rkwt+uIUkURcLcrwVtQcJKoiR5vUGXw+PVkx0O1sDtsMhuYgMTAOMAAA==",
   "Sparrow Shrine (7d)": "data:image/webp;base64,UklGRhABAABXRUJQVlA4TAQBAAAvEQAGEG+gJACYZnJ28qrJJ6lAfUqgKUAQpQGANMQN7ubb3mK0+ws3qAkAgrF/v0scKdSRRCU9FBAIJIFtv1gAAKpZYvzM8EjOB1e5F+1s673zz88R281ZcFtr25p8nD/psQGSwACxAfDa3V17W4AFXHpOvkNHSefaM090hoj+k03amO79A6I0GLsXLaRSKU30/tNK6S+bzeaHNNyXGgXzEEb94IN0FQ0dDaYHHKqaiLNxe0D5lEj/r2pTc8TmaKfhG+3med9rE0aUTj9VhPAcd9lv2iHCezl5o4Rkwt+uIUkURcLcrwVtQcJKoiR5vUGXw+PVkx0O1sDtsMhuYgMTAOMAAA==",
   "Harvest Hourglass": "data:image/webp;base64,UklGRsYAAABXRUJQVlA4TLoAAAAvCgAFEF+gKLYN6gWwthZAGb3/BFJDMQCgURp5ZJFaUr1PiWsWUxvJVvIzIab/WijCrQcit/kPAPj/uxZtXpYmrdxbHCsmRNwoSiYCnNba9iav+3+fLNDjExXdFigTNB06OOR/WAC+WNrPp8mCbYeI/gsJEprNHVBKSVyZ+QY9ELHURPRbWcaDmQfZE9EFfd11OyCoPAH04wFA8LcE+rAwtpPS3EInY/aUOunySRxF6//7/C+W/zidTgI=",
-  "Harvest Hourglass (6h)": "data:image/webp;base64,UklGRsYAAABXRUJQVlA4TLoAAAAvCgAFEF+gKLYN6gWwthZAGb3/BFJDMQCgURp5ZJFaUr1PiWsWUxvJVvIzIab/WijCrQcit/kPAPj/uxZtXpYmrdxbHCsmRNwoSiYCnNba9iav+3+fLNDjExXdFigTNB06OOR/WAC+WNrPp8mCbYeI/gsJEprNHVBKSVyZ+QY9ELHURPRbWcaDmQfZE9EFfd11OyCoPAH04wFA8LcE+rAwtpPS3EInY/aUOunySRxF6//7/C+W/zidTgI=",
+  "Harvest Hourglass (9h)": "data:image/webp;base64,UklGRsYAAABXRUJQVlA4TLoAAAAvCgAFEF+gKLYN6gWwthZAGb3/BFJDMQCgURp5ZJFaUr1PiWsWUxvJVvIzIab/WijCrQcit/kPAPj/uxZtXpYmrdxbHCsmRNwoSiYCnNba9iav+3+fLNDjExXdFigTNB06OOR/WAC+WNrPp8mCbYeI/gsJEprNHVBKSVyZ+QY9ELHURPRbWcaDmQfZE9EFfd11OyCoPAH04wFA8LcE+rAwtpPS3EInY/aUOunySRxF6//7/C+W/zidTgI=",
   "Lunar Calendar": "data:image/webp;base64,UklGRpYAAABXRUJQVlA4TIoAAAAvDsAEENU4iiTJVu4YwQdu8IQkXM2+xcJEtBb+Nce6E2nb8Pk3ObajU0VtG7ExDlVft+dn/ieg69Ve+1BvyqoLARWwu0W5D0O1IEAWso4BFBKAsIoGhWwIxBQSUAl46cuu0wOiKEx3D2AAprv7fDtDnXkuns+pz+dq5llnygl66lR9/laHpX+7/Rg=",
   "Sunflower Amulet": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA/gAAAP4CAIAAADmucDAAAAACXBIWXMAAAsTAAALEwEAmpwYAAAE7mlUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPD94cGFja2V0IGJlZ2luPSLvu78iIGlkPSJXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQiPz4gPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iQWRvYmUgWE1QIENvcmUgOS4xLWMwMDEgNzkuYThkNDc1MywgMjAyMy8wMy8yMy0wODo1NjozNyAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczpkYz0iaHR0cDovL3B1cmwub3JnL2RjL2VsZW1lbnRzLzEuMS8iIHhtbG5zOnBob3Rvc2hvcD0iaHR0cDovL25zLmFkb2JlLmNvbS9waG90b3Nob3AvMS4wLyIgeG1sbnM6eG1wTU09Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9tbS8iIHhtbG5zOnN0RXZ0PSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvc1R5cGUvUmVzb3VyY2VFdmVudCMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIDI0LjcgKFdpbmRvd3MpIiB4bXA6Q3JlYXRlRGF0ZT0iMjAyMy0wOS0wMVQxMToyNzoyMCswODowMCIgeG1wOk1vZGlmeURhdGU9IjIwMjMtMTAtMTBUMTU6NDY6MzErMDg6MDAiIHhtcDpNZXRhZGF0YURhdGU9IjIwMjMtMTAtMTBUMTU6NDY6MzErMDg6MDAiIGRjOmZvcm1hdD0iaW1hZ2UvcG5nIiBwaG90b3Nob3A6Q29sb3JNb2RlPSIzIiB4bXBNTTpJbnN0YW5jZUlEPSJ4bXAuaWlkOjMwYTI3YTUwLTRiMjktZjA0Yi04ZTU3LThhMmM0ZGE5YzMwZiIgeG1wTU06RG9jdW1lbnRJRD0i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",
   Hoot: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAVCAYAAABPPm7SAAAAAXNSR0IArs4c6QAAAa9JREFUOI2Nkz9LA0EQxX8nqRIQFBQVAgoi+QPBJt3ZmWaLtH4DbexE8COkCVgIcp2f4YptLA0iBCQE4qkEAgZUElAETWHhWVxmvbtcJA+u2Jt5b97OzEIIlZztMwX/xUzCw8W+n5T4X2wufNC6w9lJIbHatJgVrqJKQUy3LeKQmFJFDmt3XN43LCNQydn+xsIX+Wz6j6CKkeoAXn8EQO89YwRSlZztn50UAKg7TfLZ9ARZiEcHZfP/sIZ/ed+wjANV8lGqSN1pmsS604wQxYluW38ORNHrj0B3ODooTyWKE8gYJ0Ygn03j9Ud442uEHYRzgh4wKQDgXN+yurxlzm73E4CXwSOnezZKFY0bQWQPBOfHwReH1p1IgyE0RmkiwOZ8k++bDwCeCrsRAa8/io4RGB9sH4IKs5KNA4EsVBKkgYmbGL6GblvIYsWrJ4lEphDMOUMSeu8ZIFh3rTuoEoDtT1wBgocjDQ2PLf7IzCoDLC1v2gDbiytX8vKSoNsWrbfXHYDhoNtIxRNab6877vrPVdVdM//c6jMAVXfNkAURT+JiFgwH3caEwCxCQhT8Aghi6ZSZcRJvAAAAAElFTkSuQmCC",
@@ -39346,12 +39841,12 @@ function getAnimalCount(type) {
     qty: 0
   };
 }
-function setAnimalCount(type, field, val) {
+function setAnimalCount(type, field2, val) {
   if (!animalCounts[type]) animalCounts[type] = {
     level: 1,
     qty: 0
   };
-  animalCounts[type][field] = val;
+  animalCounts[type][field2] = val;
   saveAnimalCounts();
 }
 var omnifeedEnabled = localStorage.getItem("hl_omnifeed_enabled") === "true";
@@ -39763,7 +40258,8 @@ function computeBoostedFruitStatsUncached(fruitName, baseYield, baseTimeSec, bas
     activeBoosts: active
   };
 }
-var GREENHOUSE_GLOBAL_EXCLUDED_FROM_GRAPE = /* @__PURE__ */ new Set(["tortoise_shrine", "skill_rice_and_shine", "power_hour_greenhouse"]);
+var GREENHOUSE_GLOBAL_EXCLUDED_FROM_GRAPE = /* @__PURE__ */ new Set(["skill_rice_and_shine", "power_hour_greenhouse"]);
+var GRAPE_FRUIT_GLOBAL_BOOSTS = /* @__PURE__ */ new Set(["orchard_hourglass"]);
 var CROPS_GLOBAL_EXCLUDED_FROM_GREENHOUSE = /* @__PURE__ */ new Set(["sir_goldensnout", "gnome", "sparrow_shrine", "faction_wings", "autumns_embrace", "frozen_heart", "solflare_aegis", "blossom_ward", "bee_swarm", "sunshower", "power_hour"]);
 var GRAPE_ONLY_CROPS_GLOBAL_BOOSTS = /* @__PURE__ */ new Set(["time_warp_totem", "super_totem", "bountiful_harvest"]);
 function getActiveBoostsForGreenhouse(name) {
@@ -39776,7 +40272,8 @@ function getActiveBoostsForGreenhouse(name) {
     greenhouseOwn = greenhouseOwn.filter((b) => !b.isBud);
   }
   const coreCropGlobal = isGrape ? BOOSTS.filter((b) => b.category === "crops" && isBoostActive(b.id) && b.scope === "global" && GRAPE_ONLY_CROPS_GLOBAL_BOOSTS.has(b.id)) : BOOSTS.filter((b) => b.category === "crops" && isBoostActive(b.id) && b.scope === "global" && !b.composterFertilizer && !CROPS_GLOBAL_EXCLUDED_FROM_GREENHOUSE.has(b.id)).filter((b) => b.id !== "hoot" || lname === "rice");
-  return greenhouseOwn.concat(coreCropGlobal).filter((b) => weatherBoostAppliesToItem(b, name, "greenhouse"));
+  const grapeFruitGlobal = isGrape ? BOOSTS.filter((b) => b.category === "fruits" && isBoostActive(b.id) && GRAPE_FRUIT_GLOBAL_BOOSTS.has(b.id)) : [];
+  return greenhouseOwn.concat(coreCropGlobal, grapeFruitGlobal).filter((b) => weatherBoostAppliesToItem(b, name, "greenhouse"));
 }
 function computeBoostedGreenhouseStatsUncached(name, baseYield, baseTimeSec, nodeCountOverride, windowSec) {
   windowSec = windowSec || 86400;
@@ -40418,19 +40915,19 @@ var CORE_CROP_BOOSTS = [{
   note: "Temporary, 7 days"
 }, {
   id: "time_warp_totem",
-  name: "Time Warp Totem (2h)",
+  name: "Time Warp Totem (4h)",
   scope: "global",
   target: null,
   timeMult: 0.5,
   group: "totem",
-  note: "Temporary, 2 hours"
+  note: "Temporary, 4 hours"
 }, {
   id: "harvest_hourglass",
-  name: "Harvest Hourglass (6h)",
+  name: "Harvest Hourglass (9h)",
   scope: "global",
   target: null,
-  timeMult: 0.75,
-  note: "Temporary, 6 hours"
+  timeMult: 1 / 1.35,
+  note: "Temporary, 9 hours"
 }, {
   id: "seed_specialist",
   name: "Seed Specialist",
@@ -40442,7 +40939,7 @@ var CORE_CROP_BOOSTS = [{
   name: "Sparrow Shrine (7d)",
   scope: "global",
   target: null,
-  timeMult: 0.75,
+  timeMult: 1 / 1.35,
   note: "Temporary, 7 days"
 }, {
   id: "angel_wings",
@@ -43869,7 +44366,7 @@ var RESOURCE_BOOSTS = [{
   category: "resources",
   scope: "resource",
   target: "Wood",
-  timeMult: 0.75
+  timeMult: 1 / 1.35
 }, {
   id: "rock_golem",
   name: "Rock Golem",
@@ -44090,7 +44587,7 @@ var RESOURCE_BOOSTS = [{
   scope: "resource",
   target: "Oil",
   yieldAdd: 5,
-  timeMult: 0.75
+  timeMult: 1 / 1.35
 }, {
   id: "faction_shield_res",
   name: "Faction Shield",
@@ -44141,14 +44638,14 @@ var RESOURCE_BOOSTS = [{
   category: "resources",
   scope: "resourceList",
   resources: ["Wood", "Stone"],
-  timeMult: 0.75
+  timeMult: 1 / 1.35
 }, {
   id: "mole_shrine",
   name: "Mole Shrine",
   category: "resources",
   scope: "resourceList",
   resources: ["Iron", "Gold", "Crimstone"],
-  timeMult: 0.75
+  timeMult: 1 / 1.35
 }, {
   id: "emerald_turtle",
   name: "Emerald Turtle",
@@ -44254,11 +44751,11 @@ var FRUIT_BOOSTS = [{
   note: "-10% Fruit Patch growth time (wearable)"
 }, {
   id: "orchard_hourglass",
-  name: "Orchard Hourglass (6h)",
+  name: "Orchard Hourglass (8h)",
   scope: "global",
   target: null,
-  timeMult: 0.75,
-  note: "Temporary, 6 hours"
+  timeMult: 1 / 1.35,
+  note: "Temporary, 8 hours"
 }, {
   id: "super_totem_fruit",
   name: "Super Totem (7d)",
@@ -44269,12 +44766,12 @@ var FRUIT_BOOSTS = [{
   note: "Temporary, 7 days"
 }, {
   id: "time_warp_totem_fruit",
-  name: "Time Warp Totem (2h)",
+  name: "Time Warp Totem (4h)",
   scope: "global",
   target: null,
   timeMult: 0.5,
   group: "totem_fruit",
-  note: "Temporary, 2 hours"
+  note: "Temporary, 4 hours"
 }, {
   id: "immortal_pear",
   name: "Immortal Pear",
@@ -44305,7 +44802,7 @@ var FRUIT_BOOSTS = [{
   name: "Toucan Shrine (7d)",
   scope: "global",
   target: null,
-  timeMult: 0.75,
+  timeMult: 1 / 1.35,
   note: "Temporary, 7 days"
 }, {
   id: "faction_quiver",
@@ -44464,7 +44961,7 @@ var GREENHOUSE_BOOSTS = [{
   name: "Tortoise Shrine (7d)",
   scope: "global",
   target: null,
-  timeMult: 0.67,
+  timeMult: 1 / 1.5,
   note: "Temporary, 7 days"
 }, {
   id: "faction_quiver_greenhouse",
@@ -45203,7 +45700,7 @@ var CROP_MACHINE_BOOSTS = [{
   name: "Tortoise Shrine (7d)",
   scope: "machineGlobal",
   limitedBoostName: "Tortoise Shrine",
-  timeMult: 0.9,
+  timeMult: 9 / 10,
   note: "Temporary, 7 days \xB7 machine batch time"
 }];
 CROP_MACHINE_BOOSTS.forEach((b) => {
@@ -45278,9 +45775,9 @@ var HONEY_BOOSTS = [{
   name: "Moth Shrine (7d)",
   category: "honey",
   scope: "flowerGlobal",
-  flowerTimeMult: 0.75,
+  flowerTimeMult: 1 / 1.35,
   flowerExtraChance: 0.2,
-  note: "\xD70.75 flower time, 20% chance +1 flower \xB7 Temporary, 7 days"
+  note: "1.35\xD7 flower speed, 20% chance +1 flower \xB7 Temporary, 7 days"
 }, {
   id: "flower_fox",
   name: "Flower Fox",
@@ -45290,11 +45787,11 @@ var HONEY_BOOSTS = [{
   note: "\xD70.9 flower grow time"
 }, {
   id: "blossom_hourglass",
-  name: "Blossom Hourglass (4h)",
+  name: "Blossom Hourglass (12h)",
   category: "honey",
   scope: "flowerGlobal",
-  flowerTimeMult: 0.75,
-  note: "\xD70.75 flower time \xB7 Temporary, 4 hours"
+  flowerTimeMult: 1 / 1.35,
+  note: "1.35\xD7 flower speed \xB7 Temporary, 12 hours"
 }, {
   id: "humming_bird",
   name: "Humming Bird",
@@ -45771,28 +46268,28 @@ var ANIMAL_BOOSTS = [{
   category: "animals",
   scope: "animalType",
   target: "chicken",
-  timeMult: 0.75,
+  timeMult: 1 / 1.35,
   feedMult: 0.95,
-  note: "-25% Chicken sleep time, -5% feed to feed chickens \xB7 Temporary, 7 days"
+  note: "1.35\xD7 Chicken sleep speed, -5% feed to feed chickens \xB7 Temporary, 7 days"
 }, {
   id: "collie_shrine",
   name: "Collie Shrine (7d)",
   category: "animals",
   scope: "animalType",
   target: "cow",
-  timeMult: 0.75,
+  timeMult: 1 / 1.35,
   feedMult: 0.95,
-  note: "-25% Cow sleep time, -25% Sheep sleep time, -5% feed to feed barn animals \xB7 Temporary, 7 days"
+  note: "1.35\xD7 Cow & Sheep sleep speed, -5% feed to feed barn animals \xB7 Temporary, 7 days"
 }, {
   id: "collie_shrine",
   name: "Collie Shrine (7d)",
   category: "animals",
   scope: "animalType",
   target: "sheep",
-  timeMult: 0.75,
+  timeMult: 1 / 1.35,
   feedMult: 0.95,
   hideInPanel: true,
-  note: "-25% Cow sleep time, -25% Sheep sleep time, -5% feed to feed barn animals \xB7 Temporary, 7 days"
+  note: "1.35\xD7 Cow & Sheep sleep speed, -5% feed to feed barn animals \xB7 Temporary, 7 days"
 }, {
   id: "pig_onesie",
   name: "Pig Onesie",
@@ -46165,11 +46662,11 @@ var COOKING_BOOSTS = [{
   note: "-50% cooking time while active, temporary 7 days \u2014 doesn't stack with Time Warp Totem"
 }, {
   id: "time_warp_totem_cook",
-  name: "Time Warp Totem (2h)",
+  name: "Time Warp Totem (4h)",
   scope: "cookTimeGlobal",
   timeMult: 0.5,
   group: "totem_cook",
-  note: "-50% cooking time while active, temporary 2 hours \u2014 doesn't stack with Super Totem"
+  note: "-50% cooking time while active, temporary 4 hours \u2014 doesn't stack with Super Totem"
 }, {
   id: "gourmet_hourglass",
   name: "Gourmet Hourglass",
@@ -47066,8 +47563,8 @@ function skillSyncedBoostText(s, level) {
 var LIMITED_TIME_BOOSTS = [{
   id: "lt_time_warp_totem",
   name: "Time Warp Totem",
-  durationMs: 2 * 60 * 60 * 1e3,
-  durationLabel: "2 hours",
+  durationMs: 4 * 60 * 60 * 1e3,
+  durationLabel: "4 hours",
   group: "Totem"
 }, {
   id: "lt_super_totem",
@@ -47078,14 +47575,14 @@ var LIMITED_TIME_BOOSTS = [{
 }, {
   id: "lt_gourmet_hourglass",
   name: "Gourmet Hourglass",
-  durationMs: 4 * 60 * 60 * 1e3,
-  durationLabel: "4 hours",
+  durationMs: 6 * 60 * 60 * 1e3,
+  durationLabel: "6 hours",
   group: "Hourglass"
 }, {
   id: "lt_harvest_hourglass",
   name: "Harvest Hourglass",
-  durationMs: 6 * 60 * 60 * 1e3,
-  durationLabel: "6 hours",
+  durationMs: 9 * 60 * 60 * 1e3,
+  durationLabel: "9 hours",
   group: "Hourglass"
 }, {
   id: "lt_timber_hourglass",
@@ -47096,20 +47593,20 @@ var LIMITED_TIME_BOOSTS = [{
 }, {
   id: "lt_ore_hourglass",
   name: "Ore Hourglass",
-  durationMs: 3 * 60 * 60 * 1e3,
-  durationLabel: "3 hours",
+  durationMs: 5 * 60 * 60 * 1e3,
+  durationLabel: "5 hours",
   group: "Hourglass"
 }, {
   id: "lt_orchard_hourglass",
   name: "Orchard Hourglass",
-  durationMs: 6 * 60 * 60 * 1e3,
-  durationLabel: "6 hours",
+  durationMs: 8 * 60 * 60 * 1e3,
+  durationLabel: "8 hours",
   group: "Hourglass"
 }, {
   id: "lt_blossom_hourglass",
   name: "Blossom Hourglass",
-  durationMs: 4 * 60 * 60 * 1e3,
-  durationLabel: "4 hours",
+  durationMs: 12 * 60 * 60 * 1e3,
+  durationLabel: "12 hours",
   group: "Hourglass"
 }, {
   id: "lt_fishers_hourglass",
@@ -47395,6 +47892,7 @@ function getShrineAffectedItemCount(shrineName) {
       b.fruits.forEach((f) => items.add(f));
     } else if (b.category === "fruits" && b.scope === "global") {
       FRUIT_TREE_NAMES.forEach((n) => items.add(n));
+      if (GRAPE_FRUIT_GLOBAL_BOOSTS.has(b.id)) items.add("Grape");
     } else if (b.category === "greenhouse" && b.scope === "greenhouse" && b.target) {
       items.add(b.target);
     } else if (b.category === "greenhouse" && b.scope === "global") {
@@ -47495,9 +47993,9 @@ function getActiveDestructiveWeatherEvent(calendar) {
   return null;
 }
 function computeDestroyedCropPlotIds(g) {
-  const asObj = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : null;
-  const cropsBag = asObj(farmPanelField(g, "crops")) || {};
-  const calendar = asObj(g && g.calendar);
+  const asObj2 = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : null;
+  const cropsBag = asObj2(farmPanelField(g, "crops")) || {};
+  const calendar = asObj2(g && g.calendar);
   const activeEvent = getActiveDestructiveWeatherEvent(calendar);
   if (!activeEvent) return {
     activeEvent: null,
@@ -47515,8 +48013,8 @@ function computeDestroyedCropPlotIds(g) {
   };
 }
 function syncWeatherDestructionFromFarmData(g) {
-  const asObj = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : null;
-  const cropsBag = asObj(farmPanelField(g, "crops")) || {};
+  const asObj2 = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : null;
+  const cropsBag = asObj2(farmPanelField(g, "crops")) || {};
   const { activeEvent, destroyedIds } = computeDestroyedCropPlotIds(g);
   const byCrop = {};
   Object.entries(cropsBag).forEach(([plotId, plot]) => {
@@ -47607,31 +48105,15 @@ function blendCyclesPerDayForExpiry(cyclesForMultFn, limitedFactors, windowSec) 
     remainingSec: Math.min(f.remainingSec, windowSec)
   }));
   if (!active.length) return cyclesForMultFn(1);
-  let t = 0;
+  const points = [.../* @__PURE__ */ new Set([0, windowSec, ...active.map((f) => f.remainingSec)])].sort((a, b) => a - b);
   let cycles = 0;
-  let guard = 0;
-  while (t < windowSec && guard < 1e4) {
-    guard++;
-    const mult = active.filter((f) => f.remainingSec > t).reduce((m, f) => m * f.timeMult, 1);
+  for (let i = 0; i < points.length - 1; i++) {
+    const from = points[i];
+    const to = points[i + 1];
+    if (to <= from) continue;
+    const mult = active.filter((f) => f.remainingSec > from).reduce((m, f) => m * f.timeMult, 1);
     const rate = cyclesForMultFn(mult);
-    const cycleTime = rate > 0 ? 86400 / rate : Infinity;
-    if (!isFinite(cycleTime) || cycleTime <= 0) break;
-    const nextExpiry = active.reduce((min, f) => f.remainingSec > t && f.remainingSec < min ? f.remainingSec : min, windowSec);
-    const stretch = Math.max(0, nextExpiry - t);
-    const fullCyclesInStretch = Math.floor(stretch / cycleTime);
-    if (fullCyclesInStretch > 0) {
-      cycles += fullCyclesInStretch;
-      t += fullCyclesInStretch * cycleTime;
-    }
-    const remainingWindow = windowSec - t;
-    if (remainingWindow <= 0) break;
-    if (cycleTime <= remainingWindow) {
-      cycles += 1;
-      t += cycleTime;
-    } else {
-      cycles += remainingWindow / cycleTime;
-      t = windowSec;
-    }
+    if (rate > 0 && isFinite(rate)) cycles += (to - from) / 86400 * rate;
   }
   return cycles * (86400 / windowSec);
 }
@@ -47658,6 +48140,7 @@ function getShrineAffectedItemsDetailed(shrineName) {
       b.fruits.forEach((f) => add(f, "fruit"));
     } else if (b.category === "fruits" && b.scope === "global") {
       FRUIT_TREE_NAMES.forEach((n) => add(n, "fruit"));
+      if (GRAPE_FRUIT_GLOBAL_BOOSTS.has(b.id)) add("Grape", "greenhouse");
     } else if (b.category === "greenhouse" && b.scope === "greenhouse" && b.target) {
       add(b.target, "greenhouse");
     } else if (b.category === "greenhouse" && b.scope === "global") {
@@ -49695,9 +50178,9 @@ function applyFarmSkillsOnly(json, fallbackJson) {
     const fallbackAsc = farmSyncGetAscensionLevel(fallbackJson, gFallback);
     if (fallbackAsc > primaryAsc) g = gFallback;
   }
-  const asObj = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : null;
-  const skillsFallback = gFallback && gFallback.bumpkin && asObj(gFallback.bumpkin.skills) || null;
-  const skillsPrimary = g.bumpkin && asObj(g.bumpkin.skills);
+  const asObj2 = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : null;
+  const skillsFallback = gFallback && gFallback.bumpkin && asObj2(gFallback.bumpkin.skills) || null;
+  const skillsPrimary = g.bumpkin && asObj2(g.bumpkin.skills);
   const skills = skillsPrimary || skillsFallback ? {
     ...skillsFallback || {},
     ...skillsPrimary || {}
@@ -49759,17 +50242,17 @@ function applyFarmSkillsOnly(json, fallbackJson) {
   };
 }
 function farmSyncGetInteriorBagSources(g) {
-  const asObj = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : null;
-  const home = asObj(g && g.home);
-  const interior = asObj(g && g.interior);
-  const levels = interior ? Object.keys(interior).map((k) => asObj(interior[k])) : [];
+  const asObj2 = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : null;
+  const home = asObj2(g && g.home);
+  const interior = asObj2(g && g.interior);
+  const levels = interior ? Object.keys(interior).map((k) => asObj2(interior[k])) : [];
   return [home].concat(levels).filter(Boolean);
 }
 function farmSyncGetInteriorCollectiblesMerged(g) {
-  const asObj = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : null;
+  const asObj2 = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : null;
   const merged = {};
   farmSyncGetInteriorBagSources(g).forEach((bagSource) => {
-    const bag = asObj(bagSource.collectibles != null ? bagSource.collectibles : bagSource.land && bagSource.land.collectibles);
+    const bag = asObj2(bagSource.collectibles != null ? bagSource.collectibles : bagSource.land && bagSource.land.collectibles);
     if (!bag) return;
     Object.entries(bag).forEach(([name, arr]) => {
       if (!Array.isArray(arr)) return;
@@ -49781,9 +50264,9 @@ function farmSyncGetInteriorCollectiblesMerged(g) {
 var INVENTORY_OWNED_BOOST_NAMES = ["Green Amulet", "Coder", "Gold Rush", "Prospector", "Wrangler", "Barn Manager", "Seed Specialist", "Lumberjack", "Logger", "Discord Mod", "Artist"];
 function farmSyncCollectEquippedAndPlacedNames(g) {
   const names = /* @__PURE__ */ new Set();
-  const asObj = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : null;
+  const asObj2 = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : null;
   const addEquippedFrom = (bumpkin) => {
-    const equipped = bumpkin && asObj(bumpkin.equipped);
+    const equipped = bumpkin && asObj2(bumpkin.equipped);
     if (!equipped) return;
     Object.values(equipped).forEach((v) => {
       if (typeof v === "string" && v.trim()) names.add(v.trim());
@@ -49791,20 +50274,20 @@ function farmSyncCollectEquippedAndPlacedNames(g) {
   };
   addEquippedFrom(g && g.bumpkin);
   const farmHands = g && g.farmHands;
-  const farmHandsBumpkins = farmHands && (asObj(farmHands.bumpkins) || (Array.isArray(farmHands.bumpkins) ? farmHands.bumpkins : null));
+  const farmHandsBumpkins = farmHands && (asObj2(farmHands.bumpkins) || (Array.isArray(farmHands.bumpkins) ? farmHands.bumpkins : null));
   if (farmHandsBumpkins) {
     const list = Array.isArray(farmHandsBumpkins) ? farmHandsBumpkins : Object.values(farmHandsBumpkins);
     list.forEach(addEquippedFrom);
   } else if (Array.isArray(farmHands)) {
     farmHands.forEach(addEquippedFrom);
-  } else if (asObj(farmHands) && !("bumpkins" in farmHands)) {
+  } else if (asObj2(farmHands) && !("bumpkins" in farmHands)) {
     Object.values(farmHands).forEach(addEquippedFrom);
   }
-  const home = g && asObj(g.home);
+  const home = g && asObj2(g.home);
   [g, home].concat(farmSyncGetInteriorBagSources(g)).forEach((bagSource) => {
     if (!bagSource) return;
     ["collectibles", "buildings"].forEach((key) => {
-      const bag = asObj(bagSource[key] != null ? bagSource[key] : bagSource.land && bagSource.land[key]);
+      const bag = asObj2(bagSource[key] != null ? bagSource[key] : bagSource.land && bagSource.land[key]);
       if (!bag) return;
       Object.entries(bag).forEach(([name, arr]) => {
         if (!Array.isArray(arr) || !arr.length) return;
@@ -49817,7 +50300,7 @@ function farmSyncCollectEquippedAndPlacedNames(g) {
       });
     });
   });
-  const inv = asObj(g && g.inventory);
+  const inv = asObj2(g && g.inventory);
   if (inv) {
     INVENTORY_OWNED_BOOST_NAMES.forEach((name) => {
       const raw = inv[name];
@@ -49828,11 +50311,11 @@ function farmSyncCollectEquippedAndPlacedNames(g) {
   return names;
 }
 function farmSyncHasLifetimeFarmerBanner(g) {
-  const asObj = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : null;
-  const home = g && asObj(g.home);
+  const asObj2 = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : null;
+  const home = g && asObj2(g.home);
   for (const bagSource of [g, home].concat(farmSyncGetInteriorBagSources(g))) {
     if (!bagSource) continue;
-    const bag = asObj(bagSource.collectibles != null ? bagSource.collectibles : bagSource.land && bagSource.land.collectibles);
+    const bag = asObj2(bagSource.collectibles != null ? bagSource.collectibles : bagSource.land && bagSource.land.collectibles);
     const arr = bag && bag["Lifetime Farmer Banner"];
     if (!Array.isArray(arr)) continue;
     if (arr.some((inst) => !inst || typeof inst !== "object" || !inst.removedAt)) return true;
@@ -49855,12 +50338,12 @@ function farmSyncGetVipStatus(g) {
 }
 var TRADING_SHRINE_COOLDOWN_MS = 30 * 24 * 60 * 60 * 1e3;
 function farmSyncIsTradingShrineActive(g) {
-  const asObj = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : null;
-  const home = g && asObj(g.home);
+  const asObj2 = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : null;
+  const home = g && asObj2(g.home);
   const now = Date.now();
   for (const bagSource of [g, home].concat(farmSyncGetInteriorBagSources(g))) {
     if (!bagSource) continue;
-    const bag = asObj(bagSource.collectibles != null ? bagSource.collectibles : bagSource.land && bagSource.land.collectibles);
+    const bag = asObj2(bagSource.collectibles != null ? bagSource.collectibles : bagSource.land && bagSource.land.collectibles);
     const arr = bag && bag["Trading Shrine"];
     if (!Array.isArray(arr)) continue;
     for (const inst of arr) {
@@ -49872,7 +50355,7 @@ function farmSyncIsTradingShrineActive(g) {
   return false;
 }
 function farmSyncGetLimitedTimeBoostStatus(g, name, durationMs) {
-  const asObj = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : null;
+  const asObj2 = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : null;
   const status = {
     quantity: 0,
     activeCount: 0,
@@ -49880,8 +50363,8 @@ function farmSyncGetLimitedTimeBoostStatus(g, name, durationMs) {
   };
   if (!g) return status;
   const now = Date.now();
-  const buffsBag = asObj(farmPanelField(g, "buffs"));
-  const buffEntry = buffsBag ? asObj(buffsBag[name]) : null;
+  const buffsBag = asObj2(farmPanelField(g, "buffs"));
+  const buffEntry = buffsBag ? asObj2(buffsBag[name]) : null;
   if (buffEntry && typeof buffEntry.startedAt === "number") {
     const buffDuration = typeof buffEntry.durationMS === "number" ? buffEntry.durationMS : durationMs;
     const buffRemaining = buffEntry.startedAt + buffDuration - now;
@@ -49893,21 +50376,21 @@ function farmSyncGetLimitedTimeBoostStatus(g, name, durationMs) {
     }
     return status;
   }
-  const inv = asObj(farmPanelField(g, "inventory"));
+  const inv = asObj2(farmPanelField(g, "inventory"));
   if (inv && inv[name] != null) {
     const q = typeof inv[name] === "string" ? parseFloat(inv[name]) : Number(inv[name]);
     if (!isNaN(q)) status.quantity = q;
   }
-  const home = asObj(g.home);
+  const home = asObj2(g.home);
   for (const bagSource of [g, home].concat(farmSyncGetInteriorBagSources(g))) {
     if (!bagSource) continue;
-    const bag = asObj(bagSource.collectibles != null ? bagSource.collectibles : bagSource.land && bagSource.land.collectibles);
+    const bag = asObj2(bagSource.collectibles != null ? bagSource.collectibles : bagSource.land && bagSource.land.collectibles);
     const arr = bag && bag[name];
     if (!Array.isArray(arr)) continue;
     for (const inst of arr) {
       if (!inst || typeof inst !== "object" || inst.removedAt) continue;
       const createdAt = typeof inst.createdAt === "number" ? inst.createdAt : 0;
-      const remaining = createdAt + durationMs - now;
+      const remaining = createdAt + durationMs + (typeof inst.extendedMs === "number" ? inst.extendedMs : 0) - now;
       if (remaining > 0) {
         status.activeCount++;
         if (remaining > status.remainingMs) status.remainingMs = remaining;
@@ -50060,9 +50543,9 @@ var FACTION_QUIVER_BOOST_IDS = ["faction_wings", "faction_quiver", "faction_quiv
 var FACTION_SHIELD_BOOST_IDS = ["faction_shield_res"];
 var FACTION_MEDALLION_BOOST_IDS = ["faction_medallion_cook"];
 function applyFarmAnimalAffectionToolsOnly(json) {
-  const asObj = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : null;
+  const asObj2 = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : null;
   const g = farmSyncExtractGameState(json);
-  const inv = asObj(g && g.inventory) || {};
+  const inv = asObj2(g && g.inventory) || {};
   let changed = false;
   Object.keys(ANIMAL_LOVE_TOOL_LABELS).forEach((key) => {
     const label = ANIMAL_LOVE_TOOL_LABELS[key];
@@ -50079,9 +50562,9 @@ function applyFarmAnimalAffectionToolsOnly(json) {
   };
 }
 function applyFarmGreenThumbLegacyOnly(json) {
-  const asObj = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : null;
+  const asObj2 = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : null;
   const g = farmSyncExtractGameState(json);
-  const inv = asObj(g && g.inventory) || {};
+  const inv = asObj2(g && g.inventory) || {};
   const raw = inv["Green Thumb"];
   const qty = typeof raw === "string" ? parseFloat(raw) : Number(raw);
   const owned = !isNaN(qty) && qty > 0;
@@ -50196,10 +50679,10 @@ function applyFarmPlotsNodesOnly(json, hasFullData) {
     touched: false
   };
   const g = farmSyncExtractGameState(json);
-  const asObj = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : null;
+  const asObj2 = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : null;
   const plotsBags = [g.crops, g.trees, g.stones, g.iron, g.gold, g.crimstones, g.oilReserves, g.lavaPits, g.saltFarm, g.sculptures, g.stock, g.flowers, g.fruitPatches, g.greenhouse, farmPanelField(g, "henHouse"), farmPanelField(g, "barn")];
-  const basicLandVal = asObj(g.inventory) ? g.inventory["Basic Land"] : void 0;
-  const plotsLenSig = plotsBags.map((v) => asObj(v) ? Object.keys(v).length : 0).join(",") + "|" + basicLandVal;
+  const basicLandVal = asObj2(g.inventory) ? g.inventory["Basic Land"] : void 0;
+  const plotsLenSig = plotsBags.map((v) => asObj2(v) ? Object.keys(v).length : 0).join(",") + "|" + basicLandVal;
   let plotsSig;
   if (plotsLenSig === __lastPlotsLenSig) {
     plotsSig = JSON.stringify({
@@ -50231,7 +50714,7 @@ function applyFarmPlotsNodesOnly(json, hasFullData) {
   __lastPlotsSig = plotsSig;
   __saveSyncSigs();
   let touched = false;
-  globalPlotCount = Object.keys(asObj(g.crops) || {}).length;
+  globalPlotCount = Object.keys(asObj2(g.crops) || {}).length;
   saveGlobalPlotCount();
   globalPlotCountTouched = true;
   saveGlobalPlotCountTouched();
@@ -50251,7 +50734,7 @@ function applyFarmPlotsNodesOnly(json, hasFullData) {
     }
   }
   {
-    const inv = asObj(g.inventory) || {};
+    const inv = asObj2(g.inventory) || {};
     const basicLandRaw = inv["Basic Land"];
     const basicLand = typeof basicLandRaw === "string" ? parseFloat(basicLandRaw) : Number(basicLandRaw);
     if (!isNaN(basicLand)) {
@@ -50267,7 +50750,7 @@ function applyFarmPlotsNodesOnly(json, hasFullData) {
     Crimstone: "crimstones"
   };
   Object.entries(resourceBagKeys).forEach(([resName, bagKey]) => {
-    const bag = asObj(g[bagKey]) || {};
+    const bag = asObj2(g[bagKey]) || {};
     if (isTieredResource(resName)) {
       const t = getNodeTierCounts(resName);
       t.base = 0;
@@ -50285,10 +50768,10 @@ function applyFarmPlotsNodesOnly(json, hasFullData) {
       setNodeCount(resName, Object.keys(bag).length);
     }
   });
-  setNodeCount("Oil", Object.keys(asObj(g.oilReserves) || {}).length);
-  setNodeCount("Lava Pit", Object.keys(asObj(g.lavaPits) || {}).length);
+  setNodeCount("Oil", Object.keys(asObj2(g.oilReserves) || {}).length);
+  setNodeCount("Lava Pit", Object.keys(asObj2(g.lavaPits) || {}).length);
   {
-    const saltFarmObj = asObj(g.saltFarm);
+    const saltFarmObj = asObj2(g.saltFarm);
     const level = saltFarmObj && (typeof saltFarmObj.level === "number" ? saltFarmObj.level : typeof saltFarmObj.level === "string" && saltFarmObj.level.trim() && !isNaN(Number(saltFarmObj.level)) ? Number(saltFarmObj.level) : null);
     if (level != null && typeof setSaltFarmLevel === "function") {
       setSaltFarmLevel(level);
@@ -50302,8 +50785,8 @@ function applyFarmPlotsNodesOnly(json, hasFullData) {
     }
   }
   {
-    const sculpturesObj = asObj(g.sculptures);
-    const saltSculptureObj = sculpturesObj && asObj(sculpturesObj["Salt Sculpture"]);
+    const sculpturesObj = asObj2(g.sculptures);
+    const saltSculptureObj = sculpturesObj && asObj2(sculpturesObj["Salt Sculpture"]);
     const sculptLevelRaw = saltSculptureObj && saltSculptureObj.level;
     const sculptLevel = typeof sculptLevelRaw === "number" ? sculptLevelRaw : typeof sculptLevelRaw === "string" && sculptLevelRaw.trim() && !isNaN(Number(sculptLevelRaw)) ? Number(sculptLevelRaw) : null;
     if (sculptLevel != null && typeof setSculptureLevel === "function") {
@@ -50311,7 +50794,7 @@ function applyFarmPlotsNodesOnly(json, hasFullData) {
     }
   }
   {
-    const stockObj = asObj(g.stock);
+    const stockObj = asObj2(g.stock);
     if (stockObj) {
       const parsed = {};
       Object.keys(stockObj).forEach((k) => {
@@ -50326,12 +50809,12 @@ function applyFarmPlotsNodesOnly(json, hasFullData) {
     }
   }
   {
-    const flowers = asObj(g.flowers);
-    const bedsBag = flowers && asObj(flowers.flowerBeds) || {};
+    const flowers = asObj2(g.flowers);
+    const bedsBag = flowers && asObj2(flowers.flowerBeds) || {};
     setHiveCount(Object.keys(bedsBag).length);
   }
   {
-    const fruitBag = asObj(g.fruitPatches) || {};
+    const fruitBag = asObj2(g.fruitPatches) || {};
     const patchTotal = Object.keys(fruitBag).length;
     const freshFruitCounts = {};
     Object.keys(BASE_FRUITS).forEach((n) => {
@@ -50341,8 +50824,8 @@ function applyFarmPlotsNodesOnly(json, hasFullData) {
     saveFruitCounts();
   }
   {
-    const greenhouse = asObj(g.greenhouse);
-    const potsBag = greenhouse && asObj(greenhouse.pots) || {};
+    const greenhouse = asObj2(g.greenhouse);
+    const potsBag = greenhouse && asObj2(greenhouse.pots) || {};
     const freshGreenhouseCounts = {};
     Object.keys(BASE_GREENHOUSE).forEach((n) => {
       freshGreenhouseCounts[n] = 0;
@@ -50363,7 +50846,7 @@ function applyFarmPlotsNodesOnly(json, hasFullData) {
   }
   const ANIMAL_TYPES_TO_SYNC = ["chicken", "sheep", "cow", "pig"];
   ANIMAL_TYPES_TO_SYNC.forEach((type) => {
-    const bag = asObj(farmSyncGetAnimalRecords(g, type)) || {};
+    const bag = asObj2(farmSyncGetAnimalRecords(g, type)) || {};
     if (!animalCounts[type]) animalCounts[type] = {
       level: 1,
       qty: 0
@@ -50761,7 +51244,7 @@ var MUTANT_FISH_CATCH_DATA = {
   Manatee: {
     triggers: [{
       fish: "Whale Shark",
-      odds: 4e-3
+      odds: 0.01
     }, {
       fish: "Sea Bass",
       odds: 2e-3
@@ -51745,9 +52228,9 @@ $("farmPanelDebugFertBtn").onclick = () => {
     return;
   }
   const g = farmSyncExtractGameState(farmPanelGameState);
-  const asObj = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : null;
+  const asObj2 = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : null;
   const firstOf = (bag) => {
-    const obj = asObj(bag);
+    const obj = asObj2(bag);
     if (!obj) return "(bag missing)";
     const entries = Object.values(obj);
     return entries.length ? entries[0] : "(bag empty)";
@@ -51814,12 +52297,12 @@ $("farmPanelDebugCrowBtn").onclick = () => {
     return;
   }
   const g = farmSyncExtractGameState(farmPanelGameState);
-  const asObj = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : null;
-  const mainCollectibles = asObj(farmPanelField(g, "collectibles")) || {};
-  const home = asObj(g && g.home);
+  const asObj2 = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : null;
+  const mainCollectibles = asObj2(farmPanelField(g, "collectibles")) || {};
+  const home = asObj2(g && g.home);
   const homeCollectibles = farmSyncGetInteriorCollectiblesMerged(g);
-  const cropsBag = asObj(farmPanelField(g, "crops")) || {};
-  const skills = asObj(g && g.bumpkin && g.bumpkin.skills) || {};
+  const cropsBag = asObj2(farmPanelField(g, "crops")) || {};
+  const skills = asObj2(g && g.bumpkin && g.bumpkin.skills) || {};
   const hasSkill = (name) => Object.keys(skills).some((sn) => sn.trim().toLowerCase() === name.trim().toLowerCase());
   const lines = [];
   Object.entries(CROW_AOE_DEFS).forEach(([boostId, def]) => {
@@ -51944,7 +52427,7 @@ $("farmPanelDebugCrowCooldownBtn").onclick = () => {
       const baseMs = (typeof baseSec === "number" ? baseSec : 0) * 1e3;
       const rawBaseDurationMs = job && typeof job.baseDurationMs === "number" ? job.baseDurationMs : null;
       const boostedTimeMs = job && typeof job.boostedTime === "number" ? job.boostedTime : null;
-      const newCooldownMs = farmPanelGetCropGrowDurationMsFromSync(job, cropName);
+      const newCooldownMs = farmPanelGetCropGrowDurationMsFromSync(job, cropName, g, plot.fertiliser);
       const passesNow = idleMs >= newCooldownMs;
       lines.push(`  plot #${plotId}: crop=${cropName}, x=${px}, y=${py}, dx=${dx}, dy=${dy}`);
       lines.push(`    job.baseDurationMs = ${rawBaseDurationMs}  |  job.boostedTime = ${boostedTimeMs}  |  base crop time (ms) = ${baseMs}`);
@@ -51968,8 +52451,8 @@ $("farmPanelDebugGnomeBtn").onclick = () => {
   }
   const g = farmSyncExtractGameState(farmPanelGameState);
   const lines = [];
-  const asObj = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : null;
-  const mainCollectibles = asObj(farmPanelField(g, "collectibles")) || {};
+  const asObj2 = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : null;
+  const mainCollectibles = asObj2(farmPanelField(g, "collectibles")) || {};
   ["Gnome", "Cobalt", "Clementine"].forEach((name) => {
     lines.push(`
 ===== ${name} =====`);
@@ -51999,7 +52482,7 @@ $("farmPanelDebugGnomeBtn").onclick = () => {
   if (gnomePos) {
     lines.push("\n===== Plot directly above Gnome (the only plot the boost can ever apply to) =====");
     lines.push(`Expected plot coordinates: x:${gnomePos.x}, y:${gnomePos.y - 1}`);
-    const cropsBag = asObj(farmPanelField(g, "crops")) || {};
+    const cropsBag = asObj2(farmPanelField(g, "crops")) || {};
     const match = Object.entries(cropsBag).find(([, plot]) => plot && plot.x === gnomePos.x && plot.y === gnomePos.y - 1);
     if (!match) {
       lines.push("No crop plot found at that exact coordinate \u2014 either nothing is planted there, or the plot's own x/y in your sync data doesn't match the Gnome's x/y-1.");
@@ -52010,10 +52493,10 @@ $("farmPanelDebugGnomeBtn").onclick = () => {
       if (cropName) {
         const tierLabel = farmPanelCropTierLabel(cropName);
         lines.push(`Tier of "${cropName}" = ${tierLabel} (Gnome only boosts Medium/Advanced tier crops)`);
-        const cropAoeCooldownSec = farmPanelGetCropGrowDurationMsFromSync(plot.crop, cropName) / 1e3;
+        const cropAoeCooldownSec = farmPanelGetCropGrowDurationMsFromSync(plot.crop, cropName, g, plot.fertiliser) / 1e3;
         const bonus = farmPanelGnomeAOEBonus(g, plot, cropAoeCooldownSec, Date.now());
         lines.push(`farmPanelGnomeAOEBonus(g, plot, ${cropAoeCooldownSec}, now) = ${bonus}`);
-        const aoeState = asObj(farmPanelField(g, "aoe")) || {};
+        const aoeState = asObj2(farmPanelField(g, "aoe")) || {};
         lines.push(`g.aoe["Gnome"] raw = ${JSON.stringify(aoeState["Gnome"])}`);
       }
     }
@@ -52083,9 +52566,9 @@ $("farmPanelDebugFactionBtn").onclick = () => {
     return;
   }
   const g = farmSyncExtractGameState(farmPanelGameState);
-  const asObj = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : null;
+  const asObj2 = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : null;
   const lines = [];
-  const equipped = g && g.bumpkin && asObj(g.bumpkin.equipped);
+  const equipped = g && g.bumpkin && asObj2(g.bumpkin.equipped);
   lines.push("===== g.bumpkin.equipped (raw) =====");
   lines.push(equipped ? JSON.stringify(equipped, null, 2) : "(missing \u2014 g.bumpkin.equipped is not an object)");
   lines.push("\n===== g.farmHands (raw shape check) =====");
@@ -52093,7 +52576,7 @@ $("farmPanelDebugFactionBtn").onclick = () => {
   if (!farmHandsRaw) {
     lines.push("(missing \u2014 g.farmHands is not present on this payload)");
   } else {
-    const fhBumpkinsObj = asObj(farmHandsRaw.bumpkins);
+    const fhBumpkinsObj = asObj2(farmHandsRaw.bumpkins);
     const fhBumpkinsArr = Array.isArray(farmHandsRaw.bumpkins) ? farmHandsRaw.bumpkins : null;
     let fhList = [];
     if (fhBumpkinsObj) {
@@ -52105,18 +52588,18 @@ $("farmPanelDebugFactionBtn").onclick = () => {
     } else if (Array.isArray(farmHandsRaw)) {
       fhList = farmHandsRaw.map((b, i) => [String(i), b]);
       lines.push(`g.farmHands itself is an ARRAY with ${fhList.length} entr${fhList.length === 1 ? "y" : "ies"}.`);
-    } else if (asObj(farmHandsRaw)) {
+    } else if (asObj2(farmHandsRaw)) {
       fhList = Object.entries(farmHandsRaw);
       lines.push(`g.farmHands itself is an OBJECT (no .bumpkins key) with ${fhList.length} entr${fhList.length === 1 ? "y" : "ies"}.`);
     } else {
       lines.push("g.farmHands is present but not an object/array this tool recognizes: " + typeof farmHandsRaw);
     }
     fhList.forEach(([id, bumpkin]) => {
-      const eq = bumpkin && asObj(bumpkin.equipped);
+      const eq = bumpkin && asObj2(bumpkin.equipped);
       lines.push(`  farm hand [${id}] equipped: ${eq ? JSON.stringify(eq) : "(no .equipped object)"}`);
     });
   }
-  const inv = asObj(g && g.inventory);
+  const inv = asObj2(g && g.inventory);
   lines.push('\n===== g.inventory["Green Amulet"] (raw) =====');
   if (!inv) {
     lines.push("(missing \u2014 g.inventory is not an object)");
@@ -52512,8 +52995,8 @@ function clearManualBudsAndPets() {
   }
 }
 function syncBudsFromFarmData(g) {
-  const asObj = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : null;
-  const budsBag = asObj(farmPanelField(g, "buds")) || {};
+  const asObj2 = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : null;
+  const budsBag = asObj2(farmPanelField(g, "buds")) || {};
   const realBudIds = Object.keys(budsBag);
   const touched = {
     greenhouse: false,
@@ -52647,10 +53130,10 @@ function farmSyncGetPlotFertName(plot, subKey) {
   return null;
 }
 function syncFertilizersFromFarmData(g) {
-  const asObj = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : null;
+  const asObj2 = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : null;
   const foundIds = /* @__PURE__ */ new Set();
   const scanBag = (bag, subKey) => {
-    const obj = asObj(bag);
+    const obj = asObj2(bag);
     if (!obj) return;
     Object.values(obj).forEach((plot) => {
       const fertName = farmSyncGetPlotFertName(plot, subKey);
@@ -52784,12 +53267,12 @@ function farmSyncGetCoords(obj) {
   };
 }
 function syncCrowAoeOverrides(g) {
-  const asObj = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : null;
-  const mainCollectibles = asObj(farmPanelField(g, "collectibles")) || {};
-  const home = asObj(g && g.home);
+  const asObj2 = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : null;
+  const mainCollectibles = asObj2(farmPanelField(g, "collectibles")) || {};
+  const home = asObj2(g && g.home);
   const homeCollectibles = farmSyncGetInteriorCollectiblesMerged(g);
-  const cropsBag = asObj(farmPanelField(g, "crops")) || {};
-  const skills = asObj(g && g.bumpkin && g.bumpkin.skills) || {};
+  const cropsBag = asObj2(farmPanelField(g, "crops")) || {};
+  const skills = asObj2(g && g.bumpkin && g.bumpkin.skills) || {};
   const hasSkill = (name) => Object.keys(skills).some((sn) => sn.trim().toLowerCase() === name.trim().toLowerCase());
   let anyChange = false;
   Object.entries(CROW_AOE_DEFS).forEach(([boostId, def]) => {
@@ -59914,8 +60397,8 @@ function esClampSection(which) {
 function esDetectCollectiblePlaced(name) {
   if (!farmPanelGameState || typeof farmSyncExtractGameState !== "function") return false;
   const g = farmSyncExtractGameState(farmPanelGameState);
-  const asObj = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : null;
-  const main = asObj(typeof farmPanelField === "function" ? farmPanelField(g, "collectibles") : g && g.collectibles) || {};
+  const asObj2 = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : null;
+  const main = asObj2(typeof farmPanelField === "function" ? farmPanelField(g, "collectibles") : g && g.collectibles) || {};
   const homeCollectibles = farmSyncGetInteriorCollectiblesMerged(g);
   const a = main[name];
   const b = homeCollectibles[name];
@@ -59925,8 +60408,8 @@ function esDetectCollectiblePlaced(name) {
 function esDetectWearableEquipped(name) {
   if (!farmPanelGameState || typeof farmSyncExtractGameState !== "function") return false;
   const g = farmSyncExtractGameState(farmPanelGameState);
-  const asObj = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : null;
-  const equipped = g && g.bumpkin && asObj(g.bumpkin.equipped);
+  const asObj2 = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : null;
+  const equipped = g && g.bumpkin && asObj2(g.bumpkin.equipped);
   if (!equipped) return false;
   return Object.values(equipped).some((v) => typeof v === "string" && v.trim() === name);
 }
@@ -66891,11 +67374,11 @@ function farmSyncExtractPetTraits(pet) {
   };
 }
 function farmSyncFlattenPetBag(topBag, merged) {
-  const asObj = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : null;
+  const asObj2 = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : null;
   if (!topBag) return;
   Object.keys(topBag).forEach((catKey) => {
     if (catKey !== "common" && catKey !== "nfts") return;
-    const cat = asObj(topBag[catKey]);
+    const cat = asObj2(topBag[catKey]);
     if (!cat) return;
     Object.keys(cat).forEach((petKey) => {
       const id = catKey + ":" + petKey;
@@ -66904,12 +67387,12 @@ function farmSyncFlattenPetBag(topBag, merged) {
   });
 }
 function farmSyncGetPetRecords(g, allowHeuristic) {
-  const asObj = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : null;
+  const asObj2 = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : null;
   const merged = {};
-  farmSyncFlattenPetBag(asObj(farmPanelField(g, "pets")), merged);
+  farmSyncFlattenPetBag(asObj2(farmPanelField(g, "pets")), merged);
   if (!Object.keys(merged).length) {
     const found = farmSyncFindBagByNameHeuristic(g, /^pets$/i, 4);
-    if (found) farmSyncFlattenPetBag(asObj(found.value), merged);
+    if (found) farmSyncFlattenPetBag(asObj2(found.value), merged);
   }
   return merged;
 }
@@ -67009,15 +67492,15 @@ function syncPetsFromFarmData(g) {
 function isPetFoodChecked(name) {
   return petFoodChecks[name] !== false;
 }
-function petBoostSum(field) {
+function petBoostSum(field2) {
   let sum = 0;
   PET_BOOSTS.forEach((b) => {
-    if (isBoostActive(b.id) && b[field]) sum += b[field];
+    if (isBoostActive(b.id) && b[field2]) sum += b[field2];
   });
   return sum;
 }
-function petBoostActiveWithField(field) {
-  return PET_BOOSTS.some((b) => isBoostActive(b.id) && b[field]);
+function petBoostActiveWithField(field2) {
+  return PET_BOOSTS.some((b) => isBoostActive(b.id) && b[field2]);
 }
 function petFetchConfig(petType) {
   const cat = PET_CATEGORIES[petType];
@@ -75498,6 +75981,7 @@ export {
   computeBoostedCropStats,
   computeBoostedFruitStats,
   computeBoostedGreenhouseStats,
+  GRAPE_FRUIT_GLOBAL_BOOSTS,
   CROPS_GLOBAL_EXCLUDED_FROM_GREENHOUSE,
   computeCropMachineOilMult,
   computeCropMachineBatch,
