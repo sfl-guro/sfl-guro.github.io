@@ -34,8 +34,60 @@ function buildFrame(bodyHtml) {
   </div>`;
 }
 
+const MUTANT_BOOST_LABELS = {
+  "Speed Chicken": "x0.9 Chicken Sleep Time",
+  "Rich Chicken": "+0.1 {Egg}",
+  "Fat Chicken": "x0.9 Feed to Chicken",
+  "Ayam Cemani": "+0.2 {Egg}",
+  "El Pollo Veloz": "-2h Chicken Sleep Time",
+  "Banana Chicken": "+0.1 {Banana}",
+  "Crim Peckster": "+0.1 {Crimstone}",
+  "Knight Chicken": "+0.1 {Oil}",
+  "Pharaoh Chicken": "+1 daily Desert Dig attempt",
+  "Alien Chicken": "+0.1 {Feather}",
+  "Summer Chicken": "Chickens cannot get sick during summer",
+  "Janitor Chicken": "x0.95 Chicken Sleep Time",
+  "Sleepy Chicken": "Chickens cannot get sick during autumn",
+  "Squid Chicken": "+0.1 {Egg}",
+  "Flamingo Chicken": "x0.975 Chicken Sleep Time",
+  "Ascended Chicken": "+0.1 {Egg}",
+  "Mushroom Chicken": "+0.5 {Crimstone} every 5th mine",
+  "Mootant": "+0.1 {Leather}",
+  "Frozen Cow": "Cows cannot get sick during winter",
+  "Dr Cow": "x0.95 Cow Feed Cost",
+  "Baby Cow": "+10 Cow XP from Animal Affection tools",
+  "Spa Cow": "+0.1 {Milk}",
+  "Ascended Cow": "x0.975 Cow Sleep Time",
+  "Ladybug Cow": "+1 {Oil}",
+  "Toxic Tuft": "+0.1 {Merino Wool}",
+  "Frozen Sheep": "Sheep cannot get sick during winter",
+  "Nurse Sheep": "Sheep cannot get sick during summer",
+  "Astronaut Sheep": "+0.1 {Wool}",
+  "Mermaid Sheep": "x0.95 Sheep Feed",
+  "Spa Sheep": "+5 Sheep XP from Animal Affection tools",
+  "Ascended Sheep": "+0.05 {Wool}",
+  "Beetle Sheep": "x0.925 Sheep Sleep Time",
+  "Desert Rose": "10% Chance for +1 Flower",
+  "Chicory": "10% Chance for +1 Flower",
+  "Anemone Flower": "+1 Fishing minigame attempt",
+  "Salt Crystal Flower": "5% Chance for +1 Flower",
+  "Ruins Flower": "+0.05 {Honey} from full beehives",
+  "Cyclops Bloom": "x0.8 Fish Market processing time"
+};
+
+function mutantBadgeHtml(name) {
+  const known = Object.prototype.hasOwnProperty.call(MUTANT_BOOST_LABELS, name);
+  const label = known ? `Boost: ${MUTANT_BOOST_LABELS[name]}` : "Cosmetic";
+  const inner = label.split(/\{([^}]+)\}/).map((part, i) => {
+    if (i % 2 === 0) return escapeHtml(part);
+    const src = IMAGE_ICONS[part];
+    return src ? `<img class="guro-reward-boost-icon" src="${src}" alt="${escapeHtml(part)}"><span>${escapeHtml(part)}</span>` : escapeHtml(part);
+  }).join("");
+  return `<span class="hive-time-pill guro-frame guro-reward-boost">${inner}</span>`;
+}
+
 function buildMutantBanner(mutants) {
-  const rows = mutants.map(m => `<div class="guro-reward-row">${mutantIconHtml(m)}<span class="guro-reward-name">${escapeHtml(m.name)}${m.count > 1 ? ` ×${m.count}` : ""}</span></div>`).join("");
+  const rows = mutants.map(m => `<div class="guro-reward-item"><div class="guro-reward-row">${mutantIconHtml(m)}<span class="guro-reward-name">${escapeHtml(m.name)}${m.count > 1 ? ` ×${m.count}` : ""}</span></div>${mutantBadgeHtml(m.name)}</div>`).join("");
   const title = mutants.length > 1 ? "You found Mutants!" : "You found a Mutant!";
   return buildFrame(`<div class="guro-reward-title">Congratulations!<br>${title}</div><div class="guro-reward-rows">${rows}</div>`);
 }
