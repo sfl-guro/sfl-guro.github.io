@@ -18031,7 +18031,7 @@ $("farmPanelDebugCropsBtn").onclick = () => {
         const growSec = farmPanelGrowTimeSec(name);
         const plantedAt = job.plantedAt;
         const refTime = job.harvestedAt && job.harvestedAt > plantedAt ? job.harvestedAt : plantedAt;
-        const remainingSec = growSec != null && refTime ? Math.max(0, growSec - (Date.now() - refTime) / 1e3) : null;
+        const remainingSec = growSec != null && (refTime || refTime === 0 && (kind === "crop" || kind === "fruit")) ? Math.max(0, growSec - (Date.now() - refTime) / 1e3) : null;
         const ready = remainingSec != null ? remainingSec <= 0 : false;
         if (ready && typeof job.amount !== "number" && !(name in sequentialCounterBaseByName)) {
           sequentialCounterBaseByName[name] = farmActivity[`${name} Harvested`] || 0;
@@ -18046,7 +18046,7 @@ $("farmPanelDebugCropsBtn").onclick = () => {
       const growSec = farmPanelGrowTimeSec(name);
       const plantedAt = job.plantedAt;
       const refTime = job.harvestedAt && job.harvestedAt > plantedAt ? job.harvestedAt : plantedAt;
-      const remainingSec = growSec != null && refTime ? Math.max(0, growSec - (Date.now() - refTime) / 1e3) : null;
+      const remainingSec = growSec != null && (refTime || refTime === 0 && (kind === "crop" || kind === "fruit")) ? Math.max(0, growSec - (Date.now() - refTime) / 1e3) : null;
       const ready = remainingSec != null ? remainingSec <= 0 : false;
       let counter = farmActivity[`${name} Harvested`] || 0;
       if (ready && typeof job.amount !== "number" && (kind === "crop" || kind === "fruit" || kind === "greenhouse")) {

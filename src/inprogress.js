@@ -1549,6 +1549,12 @@ export function farmPanelGetCropGrowDurationMsFromSync(job, cropName, g, fertili
   return baseMs - (typeof job.boostedTime === "number" ? job.boostedTime : 0);
 }
 
+function farmPanelIsPlanted(job, kind) {
+  if (!job || !job.name) return false;
+  if (kind === "crop" || kind === "fruit") return typeof job.plantedAt === "number";
+  return !!job.plantedAt;
+}
+
 function farmPanelWindowedRemainingSec(g, kind, job, plot, refTime, now) {
   if (!g || !job || typeof job.baseDurationMs !== "number") return null;
   let windows;
@@ -2316,7 +2322,7 @@ function farmPanelComputeInProgressRaw(json, opts) {
         const job = plot && plot[subKey];
         const name = job && job.name;
         const plantedAt = job && job.plantedAt;
-        if (!name || !plantedAt) return;
+        if (!name || !farmPanelIsPlanted(job, kind)) return;
         const refTime = job.harvestedAt && job.harvestedAt > plantedAt ? job.harvestedAt : plantedAt;
         const growSec = farmPanelGrowTimeSec(name);
         const elapsedSec = (now - refTime) / 1e3;
@@ -2336,7 +2342,7 @@ function farmPanelComputeInProgressRaw(json, opts) {
         const job = plot && plot[subKey];
         const name = job && job.name;
         const plantedAt = job && job.plantedAt;
-        if (!name || !plantedAt) return;
+        if (!name || !farmPanelIsPlanted(job, kind)) return;
         if (kind === "crop" && cropWeatherDestruction.activeEvent && cropWeatherDestruction.destroyedIds.has(plotId)) return;
         const refTime = job.harvestedAt && job.harvestedAt > plantedAt ? job.harvestedAt : plantedAt;
         const growSec = farmPanelGrowTimeSec(name);
@@ -2355,7 +2361,7 @@ function farmPanelComputeInProgressRaw(json, opts) {
       const job = plot && plot[subKey];
       const name = job && job.name;
       const plantedAt = job && job.plantedAt;
-      if (!name || !plantedAt) return;
+      if (!name || !farmPanelIsPlanted(job, kind)) return;
       const isWeatherDestroyedPlot = kind === "crop" && !!cropWeatherDestruction.activeEvent && cropWeatherDestruction.destroyedIds.has(plotId);
       const refTime = job.harvestedAt && job.harvestedAt > plantedAt ? job.harvestedAt : plantedAt;
       const growSec = farmPanelGrowTimeSec(name);

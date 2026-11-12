@@ -30375,6 +30375,11 @@ function farmPanelGetCropGrowDurationMsFromSync(job, cropName, g, fertiliser) {
   if (typeof job.baseDurationMs === "number") return job.baseDurationMs;
   return baseMs - (typeof job.boostedTime === "number" ? job.boostedTime : 0);
 }
+function farmPanelIsPlanted(job, kind) {
+  if (!job || !job.name) return false;
+  if (kind === "crop" || kind === "fruit") return typeof job.plantedAt === "number";
+  return !!job.plantedAt;
+}
 function farmPanelWindowedRemainingSec(g, kind, job, plot, refTime, now) {
   if (!g || !job || typeof job.baseDurationMs !== "number") return null;
   let windows;
@@ -31130,7 +31135,7 @@ function farmPanelComputeInProgressRaw(json, opts) {
         const job = plot && plot[subKey];
         const name = job && job.name;
         const plantedAt = job && job.plantedAt;
-        if (!name || !plantedAt) return;
+        if (!name || !farmPanelIsPlanted(job, kind)) return;
         const refTime = job.harvestedAt && job.harvestedAt > plantedAt ? job.harvestedAt : plantedAt;
         const growSec = farmPanelGrowTimeSec(name);
         const elapsedSec = (now - refTime) / 1e3;
@@ -31150,7 +31155,7 @@ function farmPanelComputeInProgressRaw(json, opts) {
         const job = plot && plot[subKey];
         const name = job && job.name;
         const plantedAt = job && job.plantedAt;
-        if (!name || !plantedAt) return;
+        if (!name || !farmPanelIsPlanted(job, kind)) return;
         if (kind === "crop" && cropWeatherDestruction.activeEvent && cropWeatherDestruction.destroyedIds.has(plotId)) return;
         const refTime = job.harvestedAt && job.harvestedAt > plantedAt ? job.harvestedAt : plantedAt;
         const growSec = farmPanelGrowTimeSec(name);
@@ -31169,7 +31174,7 @@ function farmPanelComputeInProgressRaw(json, opts) {
       const job = plot && plot[subKey];
       const name = job && job.name;
       const plantedAt = job && job.plantedAt;
-      if (!name || !plantedAt) return;
+      if (!name || !farmPanelIsPlanted(job, kind)) return;
       const isWeatherDestroyedPlot = kind === "crop" && !!cropWeatherDestruction.activeEvent && cropWeatherDestruction.destroyedIds.has(plotId);
       const refTime = job.harvestedAt && job.harvestedAt > plantedAt ? job.harvestedAt : plantedAt;
       const growSec = farmPanelGrowTimeSec(name);
@@ -52693,7 +52698,7 @@ $("farmPanelDebugCropsBtn").onclick = () => {
         const growSec = farmPanelGrowTimeSec(name);
         const plantedAt = job.plantedAt;
         const refTime = job.harvestedAt && job.harvestedAt > plantedAt ? job.harvestedAt : plantedAt;
-        const remainingSec = growSec != null && refTime ? Math.max(0, growSec - (Date.now() - refTime) / 1e3) : null;
+        const remainingSec = growSec != null && (refTime || refTime === 0 && (kind === "crop" || kind === "fruit")) ? Math.max(0, growSec - (Date.now() - refTime) / 1e3) : null;
         const ready = remainingSec != null ? remainingSec <= 0 : false;
         if (ready && typeof job.amount !== "number" && !(name in sequentialCounterBaseByName)) {
           sequentialCounterBaseByName[name] = farmActivity[`${name} Harvested`] || 0;
@@ -52708,7 +52713,7 @@ $("farmPanelDebugCropsBtn").onclick = () => {
       const growSec = farmPanelGrowTimeSec(name);
       const plantedAt = job.plantedAt;
       const refTime = job.harvestedAt && job.harvestedAt > plantedAt ? job.harvestedAt : plantedAt;
-      const remainingSec = growSec != null && refTime ? Math.max(0, growSec - (Date.now() - refTime) / 1e3) : null;
+      const remainingSec = growSec != null && (refTime || refTime === 0 && (kind === "crop" || kind === "fruit")) ? Math.max(0, growSec - (Date.now() - refTime) / 1e3) : null;
       const ready = remainingSec != null ? remainingSec <= 0 : false;
       let counter = farmActivity[`${name} Harvested`] || 0;
       if (ready && typeof job.amount !== "number" && (kind === "crop" || kind === "fruit" || kind === "greenhouse")) {
