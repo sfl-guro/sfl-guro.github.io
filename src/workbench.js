@@ -5,7 +5,7 @@ import { farmPanelGameState, farmPanelField } from "./inprogress.js";
 
 import { $, getIcon } from "./ui.js";
 
-const WB_UPGRADE_ICON = "data:image/webp;base64,UklGRsgAAABXRUJQVlA4TLsAAAAvEYAEEEegkI0kaLEWdpGeO5cDOA2zAYj4yAWON1OdlKJGUhjCDzH4T9DRmxbmPwDw/+2zST11FQMkEZLBbWzbqnLQ/Fwk/1oAX2JtwUJ/nwo+NCC3b6yFiP5PAICiKPBekCwAJEJDawu47G8+MyRiLTqLtU3Yv/Tuc3u0FlWdJT1aT1W9vlUPbaY/+qdefUlj2ovONodYrKqcxBpah1U58bJvA+nM2Qr2iAOSwQC0wfsegAmCwODdGAMAAA==";
+export const WB_UPGRADE_ICON = "data:image/webp;base64,UklGRsgAAABXRUJQVlA4TLsAAAAvEYAEEEegkI0kaLEWdpGeO5cDOA2zAYj4yAWON1OdlKJGUhjCDzH4T9DRmxbmPwDw/+2zST11FQMkEZLBbWzbqnLQ/Fwk/1oAX2JtwUJ/nwo+NCC3b6yFiP5PAICiKPBekCwAJEJDawu47G8+MyRiLTqLtU3Yv/Tuc3u0FlWdJT1aT1W9vlUPbaY/+qdefUlj2ovONodYrKqcxBpah1U58bJvA+nM2Qr2iAOSwQC0wfsegAmCwODdGAMAAA==";
 
 export const WB_TOOLS = {
   land: [

@@ -75825,6 +75825,7 @@ craftedToolsInit({
 });
 
 export {
+  WB_UPGRADE_ICON,
   renderBeginnerPanel,
   renderSeasonToggle,
   renderAscensionBar,
@@ -75863,6 +75864,7 @@ export {
   getPigSlopOptions,
   resolvePigSlopIngredient,
   findLivePriceForName,
+  cookingIngredientUnitCostCoins,
   prices_exports,
   CAVE_WIDTH,
   solveCaveBatch,
@@ -76057,6 +76059,7 @@ export {
   computeSpiceFigures,
   runDeferredInitialRender,
   __deferredInitialRenderCallbacks,
+  cookingFindRecipeForFood,
   digSolveBoard,
   setAppDarkMode,
   caveToolUnitCoins,

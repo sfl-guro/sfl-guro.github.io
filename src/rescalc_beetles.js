@@ -414,9 +414,9 @@ function activeRecipe() {
   return state.recipeManual ? state.recipe : cheapestRecipe();
 }
 
-function compute() {
+function compute(forceRecipe) {
   refreshAutoModes();
-  const recipeId = activeRecipe();
+  const recipeId = forceRecipe || activeRecipe();
   const rec = RECIPES[recipeId];
   const bins = effectiveBins();
   const lean = skillValue(SKILLS.lean, 1);
@@ -635,6 +635,40 @@ function beetleCollectUnitCost() {
 }
 
 calc.setBeetleCollectCostProvider(beetleCollectUnitCost);
+
+const itemCostMemo = {};
+
+export function mycoItemUnitCostFlower(name) {
+  const mud = name === "Mud";
+  const mushroom = name === "Wild Mushroom" || name === "Magic Mushroom";
+  if (!mud && !mushroom) return 0;
+  const recipe = mud ? "Mud" : "Mushroom";
+  const now = Date.now();
+  const memo = itemCostMemo[recipe];
+  if (memo && now - memo.at < 400) return memo.value;
+  let value = 0;
+  const loaded = !!state;
+  try {
+    if (!loaded) {
+      loadBaseCropsIfNeeded();
+      state = loadState();
+    }
+    const out = compute(recipe);
+    const qty = mud ? out.items.filter(it => it.name === "Mud").reduce((a, it) => a + it.qty, 0) : out.items.filter(it => it.kind === "mushroom").reduce((a, it) => a + it.qty, 0);
+    value = qty > 0 ? out.binCost / qty : 0;
+    if (!host) {
+      calc.setAutoMaterialModes({});
+      prices.invalidateCostCache();
+    }
+  } catch (e) {
+    value = 0;
+  }
+  itemCostMemo[recipe] = {
+    at: Date.now(),
+    value: value
+  };
+  return value;
+}
 
 function costLineHtml(coins) {
   return `<span class="rc-bc-cost">${flowerHtml(calc.coinsToFlower(coins * skillValue(SKILLS.lean, 1)))}</span>`;

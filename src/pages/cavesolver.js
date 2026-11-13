@@ -4,6 +4,8 @@ import { GOBLIN_MERCHANT_ICON } from "../goblin_merchant_icon.js";
 
 import { caveDataHtml, caveDataClick, caveDataChange } from "../cave_data.js";
 
+import { merchantCalcHtml } from "../cave_merchant_calc.js";
+
 import { caveTrackFromState, caveDayTotals } from "../cave_track.js";
 
 const COLS = [ "A", "B", "C", "D", "E" ];
@@ -373,6 +375,13 @@ function render() {
   const tabs = ids.length > 1 ? tabsHtml(ids) : "";
   const boards = boardHtml(selectedBin, cave.machines[selectedBin] && cave.machines[selectedBin].batch, game, now);
   const merchant = merchantHtml(cave, game, now);
+  const merchantCalc = merchantCalcHtml({
+    cave: cave,
+    game: game,
+    icon: merchantItemIcon,
+    flower: apiRef.calc.FLOWER_ICON,
+    merchantIcon: `<img src="${GOBLIN_MERCHANT_ICON}" alt="Goblin Merchant">`
+  });
   const farmKey = String(info && info.id ? info.id : "0");
   try {
     caveTrackFromState(game, farmKey);
@@ -385,7 +394,7 @@ function render() {
     now: now
   });
   const legend = legendHtml();
-  card.innerHTML = `<div class="dig-panel-divider-solid cave-hide-on-data"></div><div class="cave-top-row cave-hide-on-data">${guideHtml()}${statusHtml(cave, ids, now)}</div><div class="cave-hide-on-data">${viewTabsHtml()}${legend}${tabs}</div><div class="cave-main"><div class="cave-boards cave-hide-on-data">${dugToday}${boards}</div><div class="cave-merchant-wrap">${dataCard}<div class="cave-hide-on-data">${merchant}</div></div></div>`;
+  card.innerHTML = `<div class="dig-panel-divider-solid cave-hide-on-data"></div><div class="cave-top-row cave-hide-on-data">${guideHtml()}${statusHtml(cave, ids, now)}</div><div class="cave-hide-on-data">${viewTabsHtml()}${legend}${tabs}</div><div class="cave-main"><div class="cave-boards cave-hide-on-data">${dugToday}${boards}</div><div class="cave-merchant-wrap">${dataCard}<div class="cave-hide-on-data cave-merchant-stack">${merchantCalc}${merchant}</div></div></div>`;
   const growing = ids.some(id => {
     const b = cave.machines[id] && cave.machines[id].batch;
     return b && b.readyAt > now;

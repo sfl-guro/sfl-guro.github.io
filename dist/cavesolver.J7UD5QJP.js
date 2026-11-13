@@ -2,9 +2,13 @@ import {
   CONFIRM_ICON
 } from "./chunk.XKJMJZUJ.js";
 import {
+  mycoItemUnitCostFlower
+} from "./chunk.CDFS77MN.js";
+import {
   CAVE_SKILL_RANKS,
   CAVE_WIDTH,
   FLOWER_ICON,
+  WB_UPGRADE_ICON,
   caveDayTotals,
   caveMycoToggleHtml,
   caveMycoUnitCoins,
@@ -16,10 +20,15 @@ import {
   caveToolUnitCoins,
   caveTrackFromState,
   coinsToFlower,
+  cookingFindRecipeForFood,
+  cookingIngredientUnitCostCoins,
+  farmPanelGetMarketPriceFlower,
   farmSyncCollectEquippedAndPlacedNames,
   feePercent,
+  findLivePriceForName,
+  getMaterialUnitCostCoins,
   solveCaveBatch
-} from "./chunk.HK4W6HXK.js";
+} from "./chunk.P5GGFQYY.js";
 import "./chunk.LPEVZJ4B.js";
 import "./chunk.ZJUAGS4L.js";
 import "./chunk.VR6FV3KR.js";
@@ -468,6 +477,117 @@ function caveDataChange(e) {
   return true;
 }
 
+// src/cave_merchant_calc.js
+var TRADABLE = /* @__PURE__ */ new Set(["Sunflower", "Potato", "Rhubarb", "Pumpkin", "Zucchini", "Carrot", "Yam", "Cabbage", "Broccoli", "Soybean", "Beetroot", "Pepper", "Cauliflower", "Parsnip", "Eggplant", "Corn", "Onion", "Radish", "Wheat", "Turnip", "Kale", "Artichoke", "Barley", "Saltwort", "Crystal Leaf", "Tomato", "Lemon", "Blueberry", "Orange", "Apple", "Banana", "Celestine", "Lunara", "Duskberry", "Grape", "Rice", "Olive", "Wood", "Stone", "Iron", "Gold", "Crimstone", "Salt", "Egg", "Feather", "Honey", "Milk", "Leather", "Wool", "Merino Wool", "Ruffroot", "Chewed Bone", "Heart leaf", "Frost Pebble", "Wild Grass", "Ribbon", "Dewberry", "Moonfur", "Capsule Bait", "Umbrella Bait", "Crimson Baitfish", "Green Beetle", "Blue Beetle", "Pink Beetle", "Amber Beetle", "Pig Bristles", "Truffle", "Goblin Emblem", "Sunflorian Emblem", "Bumpkin Emblem", "Nightshade Emblem"]);
+var COST_OWNER = "Cave_Merchant";
+function esc2(s) {
+  return String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+function fmt2(n) {
+  if (!isFinite(n)) return "\u2014";
+  return (Math.round(n * 100) / 100).toLocaleString(void 0, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2
+  });
+}
+function fl2(n) {
+  if (!isFinite(n)) return "\u2014";
+  const a = Math.abs(n);
+  const max = a >= 1e3 ? 0 : a >= 1 ? 3 : 4;
+  return n.toLocaleString(void 0, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: max
+  });
+}
+function marketPrice(name) {
+  const m = farmPanelGetMarketPriceFlower ? Number(farmPanelGetMarketPriceFlower(name)) : 0;
+  if (m > 0) return m;
+  const live = findLivePriceForName ? Number(findLivePriceForName(name)) : 0;
+  return live > 0 ? live : 0;
+}
+function costPerUnit(name) {
+  let flower = 0;
+  try {
+    if (name === "Mud" || name === "Wild Mushroom" || name === "Magic Mushroom") {
+      flower = mycoItemUnitCostFlower(name);
+    } else if (name === "Oil") {
+      flower = coinsToFlower(caveMycoUnitCoins(COST_OWNER, name));
+    } else if (cookingFindRecipeForFood(name)) {
+      flower = coinsToFlower(cookingIngredientUnitCostCoins(name, "buy"));
+    } else {
+      flower = coinsToFlower(getMaterialUnitCostCoins(name, "collect"));
+    }
+  } catch (e) {
+    flower = 0;
+  }
+  return isFinite(flower) && flower > 0 ? flower : 0;
+}
+function side(name, qty) {
+  const tradable = TRADABLE.has(name);
+  const unit = tradable ? marketPrice(name) : costPerUnit(name);
+  return {
+    name,
+    qty,
+    tradable,
+    unit,
+    total: unit * qty,
+    priced: unit > 0
+  };
+}
+function signed(n, flower) {
+  const r = fl2(Math.abs(n));
+  const sign = n > 0 && r !== "0" ? "+" : n < 0 && r !== "0" ? "-" : "";
+  return sign + r + flower;
+}
+function sideHtml(s, kind, ctx, have) {
+  const tag = s.tradable ? "Market" : "Cost";
+  const flower = ctx.flower;
+  const value = s.priced ? `<span class="cmc-value ${kind === "cost" ? "is-loss" : "is-gain"}">${kind === "cost" ? "-" : "+"}${fl2(s.total)}${flower}</span>` : `<span class="cmc-value is-none">No price</span>`;
+  const unit = s.priced ? `<span class="cmc-unit"><b>${tag}</b> ${fl2(s.unit)}${flower}/unit</span>` : `<span class="cmc-unit"><b>${tag}</b> \u2014</span>`;
+  const owned = kind === "cost" ? `<span class="cmc-owned ${have >= s.qty ? "is-enough" : "is-short"}">Owned ${fmt2(have)}/${fmt2(s.qty)}</span>` : "";
+  return `<div class="cmc-side"><div class="cmc-name"><span class="cmc-ico">${ctx.icon(s.name)}</span><span class="cmc-label">${fmt2(s.qty)}\xD7 ${esc2(s.name)}</span></div>${value}${unit}${owned}</div>`;
+}
+function offerHtml(offer, cave, visit, inv, ctx) {
+  const cost = offer.cost || {};
+  const reward = offer.reward || {};
+  const limit = Number(offer.limit) || 0;
+  const purchases = cave.merchant && cave.merchant.purchases;
+  const bought = purchases && purchases[String(visit.index)] && Number(purchases[String(visit.index)][offer.slot]) || 0;
+  const left = Math.max(0, limit - bought);
+  const unlocked = offer.slot <= (Number(cave.tier) || 0);
+  const trades = unlocked && left > 0 ? left : Math.max(1, limit);
+  const c = side(cost.item, Number(cost.amount) || 0);
+  const r = side(reward.item, Number(reward.amount) || 0);
+  const have = Math.floor(Number(inv[cost.item]) || 0);
+  const feePct = Number(feePercent) || 0;
+  const gross = r.total * trades;
+  const spend = c.total * trades;
+  const tax = r.tradable ? gross * feePct / 100 : 0;
+  const ready = c.priced && r.priced;
+  const net = gross - tax - spend;
+  const pct = spend > 0 ? net / spend * 100 : 0;
+  const status = !unlocked ? `Locked (Tier ${offer.slot})` : left > 0 ? `${left}/${limit} left` : "Sold out";
+  const head = `<div class="cmc-head"><span class="cmc-chip">Offer ${offer.slot}</span><span class="cmc-chip${unlocked && left > 0 ? "" : " is-off"}">${esc2(status)}</span></div>`;
+  const row = `<div class="cmc-row">${sideHtml(c, "cost", ctx, have)}<img class="cmc-arrow" src="${WB_UPGRADE_ICON}" alt="">${sideHtml(r, "reward", ctx, 0)}</div>`;
+  const qtyLine = `<div class="cmc-sum"><span class="cmc-sum-label">Quantity</span><span class="cmc-sum-val">\xD7${fmt2(r.qty * trades)} <span class="cmc-ico">${ctx.icon(r.name)}</span>${trades > 1 ? `<small>${trades} trades</small>` : ""}</span></div>`;
+  const taxLine = `<div class="cmc-sum"><span class="cmc-sum-label">Tax${r.tradable && feePct > 0 ? ` (${fmt2(feePct)}%)` : ""}</span><span class="cmc-sum-val">${r.priced ? (tax > 0 ? "-" : "") + fl2(tax) + ctx.flower : "\u2014"}</span></div>`;
+  const netCls = !ready ? "" : net > 0 ? " is-gain" : net < 0 ? " is-loss" : "";
+  const netLine = `<div class="cmc-sum cmc-net${netCls}"><span class="cmc-sum-label">Net</span><span class="cmc-sum-val">${ready ? signed(net, ctx.flower) + (spend > 0 ? `<small>${net >= 0 ? "+" : ""}${(Math.round(pct * 10) / 10).toLocaleString()}%</small>` : "") : "\u2014"}</span></div>`;
+  return `<div class="cmc-offer guro-frame${unlocked ? "" : " is-locked"}">${head}${row}<div class="cmc-sums">${qtyLine}${taxLine}${netLine}</div></div>`;
+}
+function merchantCalcHtml(ctx) {
+  const cave = ctx.cave;
+  const visit = cave && cave.merchantVisit;
+  const head = `<div class="cave-board-title"><span class="cave-myco-icon">${ctx.merchantIcon}</span> Merchant Calculator</div>`;
+  if (!visit) return `<div class="cave-board guro-frame cave-merchant-calc">${head}<div class="dig-panel-status">No merchant data yet. Sync your farm.</div></div>`;
+  const offers = Array.isArray(visit.offers) ? visit.offers.slice().sort((a, b) => a.slot - b.slot) : [];
+  if (!offers.length) return `<div class="cave-board guro-frame cave-merchant-calc">${head}<div class="dig-panel-status">No offers right now.</div></div>`;
+  const sub = `<div class="cave-board-sub">Tradable items use the market price. Others use their cost, made from bought materials.</div>`;
+  const inv = ctx.game.inventory || {};
+  const cards = offers.map((o) => offerHtml(o, cave, visit, inv, ctx)).join("");
+  return `<div class="cave-board guro-frame cave-merchant-calc">${head}${sub}<div class="cmc-list">${cards}</div></div>`;
+}
+
 // src/pages/cavesolver.js
 var COLS = ["A", "B", "C", "D", "E"];
 var RECIPE_LABELS2 = {
@@ -484,7 +604,7 @@ var guideOpen = false;
 var syncing = false;
 var selectedBin = null;
 var viewMode = "items";
-function esc2(s) {
+function esc3(s) {
   return String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 function getGame() {
@@ -579,21 +699,21 @@ function infoHtml(res, machineId) {
     const t = c.tile;
     const name = t.type === "Beetle" ? t.beetle : t.type === "Mushroom" ? t.mushroom : "Mud";
     const clue = c.clue !== void 0 ? ` \xB7 clue ${c.clue}` : " \xB7 no clue";
-    return `<div class="dig-panel-status cave-info"><b>${cellLabel(c)}</b> dug: ${itemIcon(name)} ${esc2(name)}${clue}</div>`;
+    return `<div class="dig-panel-status cave-info"><b>${cellLabel(c)}</b> dug: ${itemIcon(name)} ${esc3(name)}${clue}</div>`;
   }
   const parts = [];
   parts.push(`<b>${cellLabel(c)}</b> holds something: <b>${pctText(c.p)}</b>`);
   const isBeetleName = (k) => k === "Beetle" || /Beetle$/.test(k);
   const kinds = Object.keys(c.kinds).filter((k) => k !== "Mud" && c.kinds[k] > 0).sort((a, b) => Number(isBeetleName(b)) - Number(isBeetleName(a)));
-  const lines = kinds.map((k) => `<span class="cave-kind">${itemIcon(k)} ${esc2(k)} ${pctText(c.kinds[k])}</span>`);
+  const lines = kinds.map((k) => `<span class="cave-kind">${itemIcon(k)} ${esc3(k)} ${pctText(c.kinds[k])}</span>`);
   lines.push(`<span class="cave-kind">${itemIcon("Mud")} Mud ${pctText(c.kinds.Mud)}</span>`);
   return `<div class="dig-panel-status cave-info">${parts.join("")}<div class="cave-kinds">${lines.join("")}</div>${touchingCluesHtml(res, c)}</div>`;
 }
 function boardHtml(machineId, batch, game, now) {
-  const head = `<div class="cave-board-title"><span class="cave-myco-icon">${apiRef.ui.getIcon("Myco Bin")}</span> Myco Bin ${esc2(machineId)}</div>`;
+  const head = `<div class="cave-board-title"><span class="cave-myco-icon">${apiRef.ui.getIcon("Myco Bin")}</span> Myco Bin ${esc3(machineId)}</div>`;
   if (!batch) return `<div class="cave-board guro-frame">${head}<div class="dig-panel-status">Empty. Start a batch in this Myco Bin.</div></div>`;
   const recipe = RECIPE_LABELS2[batch.recipe] || batch.recipe;
-  const sub = `<div class="cave-board-sub">${esc2(recipe)}</div>`;
+  const sub = `<div class="cave-board-sub">${esc3(recipe)}</div>`;
   if (batch.readyAt > now) {
     return `<div class="cave-board guro-frame">${head}${sub}<div class="dig-panel-status">Growing. Ready in ${formatWait(batch.readyAt - now)}.</div></div>`;
   }
@@ -657,12 +777,12 @@ function guideHtml() {
     "Feed the bin again once the patch is fully dug or every Beetle is found. There is no limit and the cost stays the same.",
     "Every Cave upgrade adds one more Myco Bin, so more patches can grow at the same time."
   ];
-  const list = steps.map((t, i) => `<div class="cave-guide-step"><span class="cave-guide-num">${i + 1}</span><span>${esc2(t)}</span></div>`).join("");
+  const list = steps.map((t, i) => `<div class="cave-guide-step"><span class="cave-guide-num">${i + 1}</span><span>${esc3(t)}</span></div>`).join("");
   const open = guideOpen ? " is-open" : "";
   return `<div class="cave-info-box guro-frame cave-guide${open}"><button type="button" class="cave-guide-toggle" data-cave-guide aria-expanded="${guideOpen}">Info</button><div class="cave-board-title cave-guide-title">How Myco Bins work</div><div class="cave-guide-body">${list}</div></div>`;
 }
 function statusHtml(cave, ids, now) {
-  const tier = esc2(cave.tier || ids.length);
+  const tier = esc3(cave.tier || ids.length);
   const rows = [];
   const counts = { growing: 0, ready: 0, idle: 0 };
   let soon = null;
@@ -677,7 +797,7 @@ function statusHtml(cave, ids, now) {
     } else if (batch && st === "ready") {
       detail = (RECIPE_LABELS2[batch.recipe] || batch.recipe) + " \xB7 dig it now";
     }
-    rows.push(`<div class="cave-bin-row"><span class="cave-bin-name">Bin ${esc2(id)}</span><span class="cave-bin-state is-${st}">${STATE_LABELS[st]}</span><span class="cave-bin-detail">${esc2(detail)}</span></div>`);
+    rows.push(`<div class="cave-bin-row"><span class="cave-bin-name">Bin ${esc3(id)}</span><span class="cave-bin-state is-${st}">${STATE_LABELS[st]}</span><span class="cave-bin-detail">${esc3(detail)}</span></div>`);
   });
   const total = ids.length;
   const next = soon !== null ? `<div class="cave-bin-next">Next bin ready in ${formatWait(soon - now)}</div>` : "";
@@ -685,7 +805,7 @@ function statusHtml(cave, ids, now) {
   return `<div class="cave-info-box guro-frame"><div class="cave-board-title cave-running-title"><span><span class="cave-myco-icon">${apiRef.ui.getIcon("Myco Bin")}</span> Myco Bins running</span><span class="cave-tier-tag">Cave Tier ${tier}</span></div>${summary}<div class="cave-bin-list">${rows.join("")}</div></div>`;
 }
 function tabsHtml(ids) {
-  const buttons = ids.map((id) => `<button type="button" class="cave-tab${id === selectedBin ? " active" : ""}" data-cave-tab="${esc2(id)}">Bin ${esc2(id)}</button>`).join("");
+  const buttons = ids.map((id) => `<button type="button" class="cave-tab${id === selectedBin ? " active" : ""}" data-cave-tab="${esc3(id)}">Bin ${esc3(id)}</button>`).join("");
   return `<div class="cave-tabs">${buttons}</div>`;
 }
 function merchantTimerText(visit, now) {
@@ -724,7 +844,7 @@ function merchantProfitHtml(cost, reward, trades) {
     maximumFractionDigits: 2
   })} ${flower})</span>`;
 }
-function offerHtml(offer, cave, visit, inv) {
+function offerHtml2(offer, cave, visit, inv) {
   const getIcon = apiRef.ui.getIcon;
   const cost = offer.cost || {};
   const reward = offer.reward || {};
@@ -740,17 +860,17 @@ function offerHtml(offer, cave, visit, inv) {
   const total = trades * (Number(reward.amount) || 0);
   const edge = unlocked ? `<span class="cave-offer-total${total ? "" : " is-zero"}">\xD7${total} ${merchantItemIcon(reward.item)}${merchantProfitHtml(cost, reward, trades)}</span>` : `<span class="cave-offer-total is-zero">Tier ${offer.slot}</span>`;
   const meta = unlocked ? `${left}/${limit} left` : `Unlocks at Cave tier ${offer.slot}`;
-  return `<div class="cave-offer guro-frame${unlocked ? "" : " is-locked"}"><div class="cave-offer-main"><span class="cave-offer-have ${enough ? "is-enough" : "is-short"}">${have}</span><span class="cave-offer-need">/${need}</span><span class="cave-offer-item">${merchantItemIcon(cost.item)} ${esc2(cost.item)}</span><span class="cave-offer-arrow">\u2192</span><span class="cave-offer-item">${merchantItemIcon(reward.item)} ${esc2(reward.item)} \xD7${Number(reward.amount) || 0}</span>${edge}</div><div class="cave-offer-meta">${esc2(meta)}</div></div>`;
+  return `<div class="cave-offer guro-frame${unlocked ? "" : " is-locked"}"><div class="cave-offer-main"><span class="cave-offer-have ${enough ? "is-enough" : "is-short"}">${have}</span><span class="cave-offer-need">/${need}</span><span class="cave-offer-item">${merchantItemIcon(cost.item)} ${esc3(cost.item)}</span><span class="cave-offer-arrow">\u2192</span><span class="cave-offer-item">${merchantItemIcon(reward.item)} ${esc3(reward.item)} \xD7${Number(reward.amount) || 0}</span>${edge}</div><div class="cave-offer-meta">${esc3(meta)}</div></div>`;
 }
 function merchantHtml(cave, game, now) {
   const head = `<div class="cave-board-title"><span class="cave-myco-icon"><img src="${GOBLIN_MERCHANT_ICON}" alt="Goblin Merchant"></span> Goblin Merchant</div>`;
   const visit = cave.merchantVisit;
   if (!visit) return `<div class="cave-board guro-frame cave-merchant">${head}<div class="dig-panel-status">No merchant data yet. Sync your farm.</div></div>`;
-  const timer2 = `<div class="cave-board-sub">${esc2(merchantTimerText(visit, now))}</div>`;
+  const timer2 = `<div class="cave-board-sub">${esc3(merchantTimerText(visit, now))}</div>`;
   const offers = Array.isArray(visit.offers) ? visit.offers.slice().sort((a, b) => a.slot - b.slot) : [];
   if (!offers.length) return `<div class="cave-board guro-frame cave-merchant">${head}${timer2}<div class="dig-panel-status">No offers right now.</div></div>`;
   const inv = game.inventory || {};
-  const rows = offers.map((o) => offerHtml(o, cave, visit, inv)).join("");
+  const rows = offers.map((o) => offerHtml2(o, cave, visit, inv)).join("");
   return `<div class="cave-board guro-frame cave-merchant">${head}${timer2}<div class="cave-offers">${rows}</div></div>`;
 }
 function dugTodayCounts(farmKey, now) {
@@ -784,11 +904,11 @@ function render() {
   const farmLabel = info && info.id ? `Farm #${info.id}` : "No farm synced";
   const cave = game && game.cave;
   if (!game) {
-    card.innerHTML = `<div class="dig-panel-chapter">${esc2(farmLabel)} \xB7 Sync your farm to load your Cave</div>`;
+    card.innerHTML = `<div class="dig-panel-chapter">${esc3(farmLabel)} \xB7 Sync your farm to load your Cave</div>`;
     return;
   }
   if (!cave || !cave.machines || !Object.keys(cave.machines).length) {
-    card.innerHTML = `<div class="dig-panel-chapter">${esc2(farmLabel)} \xB7 No Cave found. Build the Cave in game, then sync.</div>`;
+    card.innerHTML = `<div class="dig-panel-chapter">${esc3(farmLabel)} \xB7 No Cave found. Build the Cave in game, then sync.</div>`;
     return;
   }
   const inv = game.inventory || {};
@@ -798,6 +918,13 @@ function render() {
   const tabs = ids.length > 1 ? tabsHtml(ids) : "";
   const boards = boardHtml(selectedBin, cave.machines[selectedBin] && cave.machines[selectedBin].batch, game, now);
   const merchant = merchantHtml(cave, game, now);
+  const merchantCalc = merchantCalcHtml({
+    cave,
+    game,
+    icon: merchantItemIcon,
+    flower: apiRef.calc.FLOWER_ICON,
+    merchantIcon: `<img src="${GOBLIN_MERCHANT_ICON}" alt="Goblin Merchant">`
+  });
   const farmKey = String(info && info.id ? info.id : "0");
   try {
     caveTrackFromState(game, farmKey);
@@ -811,7 +938,7 @@ function render() {
     now
   });
   const legend = legendHtml();
-  card.innerHTML = `<div class="dig-panel-divider-solid cave-hide-on-data"></div><div class="cave-top-row cave-hide-on-data">${guideHtml()}${statusHtml(cave, ids, now)}</div><div class="cave-hide-on-data">${viewTabsHtml()}${legend}${tabs}</div><div class="cave-main"><div class="cave-boards cave-hide-on-data">${dugToday}${boards}</div><div class="cave-merchant-wrap">${dataCard}<div class="cave-hide-on-data">${merchant}</div></div></div>`;
+  card.innerHTML = `<div class="dig-panel-divider-solid cave-hide-on-data"></div><div class="cave-top-row cave-hide-on-data">${guideHtml()}${statusHtml(cave, ids, now)}</div><div class="cave-hide-on-data">${viewTabsHtml()}${legend}${tabs}</div><div class="cave-main"><div class="cave-boards cave-hide-on-data">${dugToday}${boards}</div><div class="cave-merchant-wrap">${dataCard}<div class="cave-hide-on-data cave-merchant-stack">${merchantCalc}${merchant}</div></div></div>`;
   const growing = ids.some((id) => {
     const b = cave.machines[id] && cave.machines[id].batch;
     return b && b.readyAt > now;
