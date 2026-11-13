@@ -15747,6 +15747,41 @@ body.app-dark:not(.sfl-theme) .cave-offer{ background:#2a2d36; }
 body.sfl-theme .cave-offer{ background:var(--sfl-outer) !important; }
 body.sfl-theme .cave-offer .cave-offer-have.is-enough{ color:var(--sfl-profit) !important; }
 body.sfl-theme .cave-offer .cave-offer-have.is-short{ color:var(--sfl-loss) !important; }
+.cave-merchant-stack{ display:flex; flex-direction:column; gap:12px; min-width:0; }
+.cmc-list{ display:flex; flex-direction:column; gap:8px; margin-top:4px; }
+.cmc-offer{ display:flex; flex-direction:column; gap:6px; padding:8px; min-width:0; box-sizing:border-box; background:var(--wheat-dim); font-family:'Inter',sans-serif; color:var(--ink); }
+.cmc-offer.is-locked{ opacity:.6; }
+.cmc-head{ display:flex; align-items:center; justify-content:space-between; gap:6px; }
+.cmc-chip{ padding:1px 6px; font-size:10px; font-weight:800; color:#2a1f2d; background:#f0c75a; }
+.cmc-chip.is-off{ background:#d9cfae; }
+.cmc-row{ display:grid; grid-template-columns:minmax(0, 1fr) 22px minmax(0, 1fr); gap:6px; align-items:center; }
+.cmc-side{ display:flex; flex-direction:column; gap:2px; min-width:0; padding:6px; background:color-mix(in srgb, var(--ink) 8%, transparent); }
+.cmc-name{ display:flex; align-items:center; gap:4px; min-width:0; font-size:12px; font-weight:800; }
+.cmc-label{ min-width:0; overflow-wrap:anywhere; }
+.cmc-ico{ display:inline-flex; align-items:center; flex:0 0 auto; }
+.cmc-ico img, .cmc-sum-val img, .cmc-value img, .cmc-unit img{ width:16px; height:16px; image-rendering:pixelated; vertical-align:middle; }
+.cmc-unit img{ width:12px; height:12px; }
+.cmc-value{ display:inline-flex; align-items:center; gap:2px; font-size:13px; font-weight:800; }
+.cmc-value.is-gain{ color:var(--profit); }
+.cmc-value.is-loss{ color:var(--loss); }
+.cmc-value.is-none{ color:var(--ink-soft); font-size:11px; }
+.cmc-unit, .cmc-owned{ display:inline-flex; align-items:center; flex-wrap:wrap; gap:2px; font-size:10px; font-weight:700; color:var(--ink-soft); }
+.cmc-unit b{ margin-right:2px; color:var(--ink); }
+.cmc-owned.is-enough{ color:var(--profit); }
+.cmc-owned.is-short{ color:var(--loss); }
+.cmc-arrow{ width:22px; height:22px; image-rendering:pixelated; transform:rotate(90deg); justify-self:center; }
+.cmc-sums{ display:flex; flex-direction:column; gap:2px; padding-top:6px; background-image:repeating-linear-gradient(90deg, var(--ink-soft) 0 4px, transparent 4px 8px); background-size:100% 2px; background-repeat:no-repeat; background-position:top; }
+.cmc-sum{ display:flex; align-items:center; justify-content:space-between; gap:6px; font-size:12px; }
+.cmc-sum-label{ font-weight:700; color:var(--ink-soft); }
+.cmc-sum-val{ display:inline-flex; align-items:center; gap:3px; font-weight:800; text-align:right; }
+.cmc-sum-val small{ margin-left:4px; font-size:10px; font-weight:800; }
+.cmc-net .cmc-sum-label{ color:var(--ink); }
+.cmc-net.is-gain .cmc-sum-val{ color:var(--profit); }
+.cmc-net.is-loss .cmc-sum-val{ color:var(--loss); }
+body.app-dark:not(.sfl-theme) .cmc-offer{ background:#2a2d36; }
+body.sfl-theme .cmc-offer{ background:var(--sfl-outer) !important; }
+body.sfl-theme .cmc-value.is-gain, body.sfl-theme .cmc-net.is-gain .cmc-sum-val, body.sfl-theme .cmc-owned.is-enough{ color:var(--sfl-profit) !important; }
+body.sfl-theme .cmc-value.is-loss, body.sfl-theme .cmc-net.is-loss .cmc-sum-val, body.sfl-theme .cmc-owned.is-short{ color:var(--sfl-loss) !important; }
 .cave-myco-icon{ display:inline-flex; align-items:center; vertical-align:middle; margin-right:4px; }
 .cave-myco-icon img{ width:auto !important; height:18px !important; image-rendering:pixelated; }
 img[alt="Myco Bin"]{ width:auto !important; height:22px !important; max-width:none; image-rendering:pixelated; vertical-align:middle; }
