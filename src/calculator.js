@@ -37149,11 +37149,12 @@ export function profileComputeWithdrawTax(g) {
   const islandType = g && g.island && g.island.type;
   const lp = profileGetInventoryAmount(g, "Liquidity Provider");
   const taxable = balance - taxFree;
-  const percent = profileTaxBracketPercent(balance, islandType, lp);
+  let percent = 0;
   let taxAmount = 0;
   let afterWithdrawal = balance;
   if (taxable > 0) {
     const taxablePercent = profileTaxBracketPercent(taxable, islandType, lp);
+    percent = taxablePercent;
     taxAmount = taxable * (taxablePercent / 100);
     afterWithdrawal = balance - taxAmount;
   }
