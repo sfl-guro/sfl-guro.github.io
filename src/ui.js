@@ -2316,12 +2316,19 @@ function renderGuroProfileStats(id, level, experience) {
   const vipLineEl = document.getElementById("guroProfileVip");
   const taxFreeEl = document.getElementById("guroProfileTaxFree");
   const afterEl = document.getElementById("guroProfileAfter");
-  if (!levelEl || !expEl || !balEl || !vipLineEl || !taxFreeEl || !afterEl) return;
+  const resTaxEl = document.getElementById("guroProfileResourceTax");
+  const wdTaxEl = document.getElementById("guroProfileWithdrawTax");
+  const taxAmtEl = document.getElementById("guroProfileTaxAmount");
+  if (!taxAmtEl) return;
+  if (!levelEl || !expEl || !balEl || !vipLineEl || !taxFreeEl || !afterEl || !resTaxEl || !wdTaxEl) return;
   const g = id ? profileGetG() : null;
   const empty = label => guroProfileLineHtml(label, "—");
   if (!id) {
     levelEl.innerHTML = empty("Bumpkin Level");
     expEl.innerHTML = empty("Land Type");
+    resTaxEl.innerHTML = empty("Resource Tax");
+    wdTaxEl.innerHTML = empty("Withdrawal Tax");
+    taxAmtEl.innerHTML = empty("Tax Amount");
     balEl.innerHTML = empty("FLOWER Balance");
     vipLineEl.innerHTML = empty("VIP");
     taxFreeEl.innerHTML = empty("TAX Free");
@@ -2336,11 +2343,17 @@ function renderGuroProfileStats(id, level, experience) {
     const iconHtml = g.island && g.island.type ? `<img src="${esIslandIcon(g.island.type)}" class="profile-inline-icon" alt="">` : "";
     const taxInfo = profileComputeWithdrawTax(g);
     expEl.innerHTML = guroProfileLineHtml("Land Type", `${iconHtml}${escapeHtml(exp.islandLabel)} Expansion ${fmtInt(exp.expansionLevel)}`);
+    resTaxEl.innerHTML = guroProfileLineHtml("Resource Tax", `${fmt(feePercent)}%`);
+    wdTaxEl.innerHTML = guroProfileLineHtml("Withdrawal Tax", `${fmt(taxInfo.percent)}%`);
+    taxAmtEl.innerHTML = guroProfileLineHtml("Tax Amount", `${fmt(taxInfo.taxAmount)}${FLOWER_ICON}`);
     balEl.innerHTML = guroProfileLineHtml("FLOWER Balance", `${fmt(Number(g.balance) || 0)}${FLOWER_ICON}`);
     taxFreeEl.innerHTML = guroProfileLineHtml("TAX Free", `${fmt(taxInfo.taxFree)}${FLOWER_ICON}`);
     afterEl.innerHTML = guroProfileLineHtml("After Withdrawal", `${fmt(taxInfo.afterWithdrawal)}${FLOWER_ICON}`);
   } else {
     expEl.innerHTML = empty("Land Type");
+    resTaxEl.innerHTML = empty("Resource Tax");
+    wdTaxEl.innerHTML = empty("Withdrawal Tax");
+    taxAmtEl.innerHTML = empty("Tax Amount");
     balEl.innerHTML = empty("FLOWER Balance");
     taxFreeEl.innerHTML = empty("TAX Free");
     afterEl.innerHTML = empty("After Withdrawal");
