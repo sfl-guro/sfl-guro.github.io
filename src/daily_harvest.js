@@ -934,6 +934,14 @@ export function dailyHarvestTrack(g, farmId) {
     cook: carryCook(old && old.cook),
     bris: carryBris(old && old.bris)
   };
+  if (fresh) {
+    rec.cf = 1;
+  } else if (!rec.cf) {
+    Object.keys(rec.stats || {}).forEach(k => {
+      if (rec.stats[k] && rec.stats[k].kind === "crop") delete rec.stats[k];
+    });
+    rec.cf = 1;
+  }
   const prevSyncAt = rec.syncAt || 0;
   woodShiftMs = treePermanentShiftMs(g);
   woodLowerBound = Math.max(prevSyncAt, start);
@@ -998,12 +1006,13 @@ export function dailyHarvestTrack(g, farmId) {
       ids.forEach(id => {
         if (!honeyMoved) return;
         const node = grp.nodes[id];
-        if (node.ts >= start) {
+        const was = carried && carried.mode === grp.mode && carried.nodes[id] ? carried.nodes[id] : null;
+        if (!was) return;
+        if (node.ts >= start && node.ts !== was.ts && grp.kind !== "crop") {
           events.push(id);
           return;
         }
-        const was = carried && carried.mode === "ts" && carried.nodes[id] ? carried.nodes[id] : null;
-        if (grp.mode === "ts" && was && node.ts > was.ts && (!(node.shift > 0) || realStamp(groupKey, node, now) >= start)) events.push(id);
+        if (grp.mode === "ts" && node.ts > was.ts && (!(node.shift > 0) || realStamp(groupKey, node, now) >= start)) events.push(id);
       });
       if (carried && grp.mode === "key" && carried.mode === "key") {
         Object.keys(carried.nodes).forEach(id => {

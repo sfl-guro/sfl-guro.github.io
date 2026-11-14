@@ -168,7 +168,7 @@ export function caveTrackFromState(g, farmId) {
   const counterNow = isFinite(rawCounter) && rawCounter >= 0 ? rawCounter : null;
   const skills = g.bumpkin && g.bumpkin.skills || {};
   const placed = farmSyncCollectEquippedAndPlacedNames(g);
-  if (fresh.length) {
+  if (fresh.length && store.started) {
     let counters = null;
     let exact = false;
     let missed = 0;
