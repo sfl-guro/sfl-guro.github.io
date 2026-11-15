@@ -5,6 +5,7 @@ import { mountResourcesCalculator, unmountResourcesCalculator, resourcesCalculat
 import { mountSaltCalculator, unmountSaltCalculator, saltCalculatorCanLeave } from "../rescalc_salt.js";
 import { mountObsidianCalculator, unmountObsidianCalculator, obsidianCalculatorCanLeave } from "../rescalc_obsidian.js";
 import { mountAnimalsCalculator, unmountAnimalsCalculator, animalsCalculatorCanLeave } from "../rescalc_animals.js";
+import { mountPetsCalculator, unmountPetsCalculator, petsCalculatorCanLeave } from "../rescalc_pets.js";
 import { mountCropMachineCalculator, unmountCropMachineCalculator, cropMachineCalculatorCanLeave } from "../rescalc_cropmachine.js";
 import { mountComposterCalculator, unmountComposterCalculator, composterCalculatorCanLeave } from "../rescalc_composters.js";
 import { mountBeetlesCalculator, unmountBeetlesCalculator, beetlesCalculatorCanLeave } from "../rescalc_beetles.js";
@@ -70,6 +71,12 @@ const CALCULATORS = [ {
   mount: mountAnimalsCalculator,
   unmount: unmountAnimalsCalculator,
   canLeave: animalsCalculatorCanLeave
+}, {
+  id: "pets",
+  label: "Pet Calculator",
+  mount: mountPetsCalculator,
+  unmount: unmountPetsCalculator,
+  canLeave: petsCalculatorCanLeave
 }, {
   id: "cropmachine",
   label: "Crop Machine Calculator",

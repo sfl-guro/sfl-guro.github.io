@@ -69,6 +69,7 @@ const AUTUMN_GUARDIAN_ICON = "data:image/webp;base64,UklGRpABAABXRUJQVlA4TIQBAAA
 const SPRING_GUARDIAN_ICON = "data:image/webp;base64,UklGRrYBAABXRUJQVlA4TKoBAAAvIoALEJ+gJpKt5pODgT94wARy8YKDnDpqWnQojSQp2rtDUedI4PUoUiYNQkGi0a/SSLaa/1WmBWpPZSGRDD7PCASSFBedMQAAAOXdvhi26cL/OqrfHPSlKzrjiHZ688NKXHboTVqBL5FwxGpikBjbVtg4BJFgELLZ7/6bFR9LOFvAfRH9d+C2bSTJEjD37jvCxQz/3NJsA8RiXbFrY7EUWdKS1OMW+yZsBSluuk+XpaEL67pzlKKRzEEyYro8OI9EPxWgM/9HrqPLfhw/1pWcl6FTPymmKxUHEn0e/o/oDrMsIObpisoxXZY+h0SvODLubxj6NEgS1MwjVMjF2T8K3VVyBURpqua9yGpTqRkK9cmhZk6ihIt26Ekt1FBHbW99kqne9jYkQBvHUuiWJhWT9dA0DlsYHNLeQN0SQ6WzFtB+SA3v7qjHUKOjOjQFkmCWOZDE1VQOp0mlhZtTHjLKt6nKr+MJeuVW71LC6clZKIH7hy8Af7xwOHqUsLYmPfSGsLy//LvNGybeWv/T0gJvheVJ4tfs6z/xiz/2Z94XjgC+Efw3uOjLjwA=";
 
 export const IMAGE_ICONS = {
+  "Fossil Shell": "data:image/webp;base64,UklGRrgAAABXRUJQVlA4TKsAAAAvDQADEFegpo0k5zKCoxgf8GO4/qtnohgA0KhDJ5sbLJP+gTSKGSiJZIV67/WvQQG6/BQKi8TPfwDAyrciYfdV4o2d9badM97n/gAntrWn0e+iy5rBNqqauwCyQ54nsIBpbLldwuw4ov8Bd0IIQeDLR/rnd+tI5oMbI56qmRlhFCfze7PGCFfvzQytCT/awbJC+dEv5mhJ33snDdKJQl/Xtx+CuxCCAgAhBAEA",
   "Truffle Seasoning": "data:image/webp;base64,UklGRqAAAABXRUJQVlA4TJMAAAAvCwADEFegJpIk5cycezZxMb0UCt+GokaSlPWviV9rhCwcn6JGUpijfNFA0IMI9OOhzX8AwP/fwcVQyw2ukNh2jNOLND0rYBTbdpNHZxscREMQ0IuBxAFVQF31YgEDoDNREdH/CQCSBEDwvibgS7HCmFJIB5Y6SXp3LKtK3I3gvLyaj3jdNX5UusefkvleBtXFowIA",
   "Lean Compost": "data:image/webp;base64,UklGRswAAABXRUJQVlA4TL8AAAAvDgAEEI+gJgCQhgtecKbYAQxrA+NtayitbbVBITlIUmy2zj5Zosu6QVMbACyTRO9cYDLa3eE7N9kc4oXMfwAAI6On7qrvf8bKIcswTIobjFcQrTmlejTOc/oWcen7mC2Bw0hW6wYH8pQHEhH9l6uPW4jo/wTI68rbEqTdJm4iLOHu1kc3CzIIRvjAMHq4E6CHj+4z/5MJJMmvkzOnJVB5W1Dcq9a9avvdNhVFnaEipThriRSez/7Boa2HwrlKAAA=",
   "Rapid Mycelium": "data:image/webp;base64,UklGRrwAAABXRUJQVlA4TK8AAAAvDYADEGegJpLVCgG0f2hRjhdq1CRVJjYURZLioIA/PwrdOEJCdIABLqgJAKShyYYEdKaLCUwxL72c/wAA//9EQRA9GnJTsUA9Zprj1+2npax1YFptW5XPS6IZjVqJLmC2ugCJRNcROEwgpvvtNxk9TuBxLBgiov8TMBBc0zBP61kodsoKAxGEgtGaCTV01h5Cbh//T6Guh78n5JZm+QkMT3KfAHprGYCBCG4ReeoIAA==",
@@ -33179,11 +33180,17 @@ function farmSyncMapPetBib(raw) {
   return "No Bib";
 }
 
-function petLevelFromXp(xp) {
+export const PET_MAX_LEVEL = 300;
+
+export function petXpForLevel(level) {
+  const l = Math.max(1, Math.floor(Number(level) || 1));
+  return 50 * (l - 1) * l;
+}
+
+export function petLevelFromXp(xp) {
   const n = Number(xp);
   if (!(n > 0)) return 1;
-  if (n < 120) return 1;
-  return 1 + Math.floor(Math.sqrt((n - 60) / 60));
+  return Math.max(1, Math.floor((1 + Math.sqrt(1 + .08 * n)) / 2));
 }
 
 export function farmSyncExtractPetTraits(pet) {
@@ -33216,11 +33223,13 @@ export function farmSyncExtractPetTraits(pet) {
   }
   const levelRaw = farmSyncPickField(pet, [ "level", "lvl" ]);
   const xpRaw = farmSyncPickField(pet, [ "experience", "xp", "exp" ]);
-  const level = levelRaw != null ? Math.max(1, parseInt(levelRaw, 10) || 1) : petLevelFromXp(typeof xpRaw === "number" ? xpRaw : parseInt(xpRaw, 10) || 0);
+  const xpNum = xpRaw != null ? Number(xpRaw) || 0 : null;
+  const level = levelRaw != null ? Math.max(1, parseInt(levelRaw, 10) || 1) : petLevelFromXp(xpNum || 0);
   return {
     type: String(type).trim(),
     name: name != null ? String(name).trim() : null,
     level: level,
+    experience: xpNum,
     aura: aura,
     bib: bib
   };
@@ -33294,6 +33303,7 @@ function syncPetsFromFarmData(g) {
         petType: traits.type,
         name: name,
         level: traits.level,
+        experience: traits.experience,
         categories: cat,
         aura: aura,
         bib: bib,
@@ -33301,6 +33311,10 @@ function syncPetsFromFarmData(g) {
       });
       changed = true;
     } else {
+      if (existing.experience !== traits.experience) {
+        existing.experience = traits.experience;
+        changed = true;
+      }
       if (existing.level !== traits.level) {
         existing.level = traits.level;
         changed = true;
@@ -33351,7 +33365,7 @@ export function isPetFoodChecked(name) {
   return petFoodChecks[name] !== false;
 }
 
-function petBoostSum(field) {
+export function petBoostSum(field) {
   let sum = 0;
   PET_BOOSTS.forEach(b => {
     if (isBoostActive(b.id) && b[field]) sum += b[field];
@@ -33363,7 +33377,7 @@ export function petBoostActiveWithField(field) {
   return PET_BOOSTS.some(b => isBoostActive(b.id) && b[field]);
 }
 
-function petFetchConfig(petType) {
+export function petFetchConfig(petType) {
   const cat = PET_CATEGORIES[petType];
   if (!cat) return [];
   const list = [ {
@@ -33372,6 +33386,9 @@ function petFetchConfig(petType) {
   }, {
     name: FETCHES_BY_CATEGORY[cat.primary],
     level: 3
+  }, {
+    name: "Fossil Shell",
+    level: 20
   } ];
   if (cat.secondary) list.push({
     name: FETCHES_BY_CATEGORY[cat.secondary],
@@ -33390,19 +33407,19 @@ function petFetchConfig(petType) {
   return list;
 }
 
-function petEnergyPerFeed(pet, difficulty) {
+export function petEnergyPerFeed(pet, difficulty) {
   const base = PET_BASE_XP_ENERGY[difficulty];
   let boostEnergy = 0;
   if (pet.level >= 5) boostEnergy += 5;
   if (pet.level >= 35) boostEnergy += 5;
   if (pet.level >= 75) boostEnergy += 5;
-  boostEnergy += petBoostSum("petEnergyAdd");
   let energy = base + boostEnergy;
   if (pet.isNFT) energy *= PET_AURA_MULT[pet.aura] || 1;
-  return energy;
+  energy += petBoostSum("petEnergyAdd");
+  return Math.round(energy * 100) / 100;
 }
 
-function petXpPerFeed(pet, difficulty) {
+export function petXpPerFeed(pet, difficulty) {
   const base = PET_BASE_XP_ENERGY[difficulty];
   let mult = 1;
   if (pet.level >= 27) mult += .1;
@@ -33413,10 +33430,10 @@ function petXpPerFeed(pet, difficulty) {
   if (difficulty === "medium") xp += petBoostSum("petXpAddMedium");
   if (difficulty === "hard") xp += petBoostSum("petXpAddHard");
   if (pet.isNFT) xp += PET_BIB_XP[pet.bib] || 0;
-  return xp;
+  return Math.round(xp * 100) / 100;
 }
 
-function petFetchYieldPerFetch(pet, resource) {
+export function petFetchYieldPerFetch(pet, resource) {
   let amount = 1;
   if (resource !== "Fossil Shell") {
     if (pet.level >= 15) amount += .1;
@@ -33432,22 +33449,40 @@ function petFetchYieldPerFetch(pet, resource) {
   return amount;
 }
 
-function petUnlockedFetches(pet) {
+export function petUnlockedFetches(pet) {
   return petFetchConfig(pet.petType).filter(f => pet.level >= f.level);
 }
 
+export function petFeedCounts(pet) {
+  const level = pet && pet.level > 0 ? pet.level : 1;
+  if (pet && pet.isNFT) {
+    return {
+      easy: 1,
+      medium: level >= 30 ? 2 : 1,
+      hard: level >= 200 ? 2 : 1
+    };
+  }
+  return {
+    easy: 1,
+    medium: 1,
+    hard: level >= 10 ? 1 : 0
+  };
+}
+
 function petDailyEnergy(pet) {
+  const counts = petFeedCounts(pet);
   let total = 0;
   [ "easy", "medium", "hard" ].forEach(d => {
-    total += petEnergyPerFeed(pet, d);
+    total += petEnergyPerFeed(pet, d) * counts[d];
   });
   return total;
 }
 
 function petDailyXp(pet) {
+  const counts = petFeedCounts(pet);
   let total = 0;
   [ "easy", "medium", "hard" ].forEach(d => {
-    total += petXpPerFeed(pet, d);
+    total += petXpPerFeed(pet, d) * counts[d];
   });
   return total;
 }
