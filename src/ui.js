@@ -7406,7 +7406,7 @@ export function renderFishingPanel() {
   renderGuaranteedCatchList();
 }
 
-function getPetIcon(pet) {
+export function getPetIcon(pet) {
   const name = pet && pet.name;
   if (name && (IMAGE_ICONS[name] || Object.keys(IMAGE_ICONS).some(k => k.toLowerCase() === String(name).trim().toLowerCase()))) {
     return getIcon(name);
