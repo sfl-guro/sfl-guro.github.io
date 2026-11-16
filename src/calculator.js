@@ -17377,7 +17377,7 @@ export const CROP_AOE_RANKS = [ {
 
 export const CROP_PRNG_EXCLUDE = new Set([ "green_amulet", "stellar_sunflower", "potent_potato", "peeled_potato", "radical_radish", "skill_golden_sunflower", "basic_scarecrow", "skill_chonky_scarecrow", "scary_mike", "skill_horror_mike", "laurie_chuckle_crow", "skill_lauries_gains", "queen_cornelia", "skill_acre_farm", "skill_hectare_farm", "scarecrow", "kuebiko", "coder", "sunflower_amulet", "victoria_sisters", "easter_bunny", "beetroot_amulet", "golden_cauliflower", "sir_goldensnout", "gnome", "hoot", "blossom_ward", "frozen_heart", "bee_swarm", "skill_pollen_power_up", "apply_sprout_mix", "apply_rapid_root", "apply_sproutroot_surprise", "bountiful_harvest" ]);
 
-export const FRUIT_PRNG_EXCLUDE = new Set([ "skill_generous_orchard", "apply_fruitful_blend", "apply_turbofruit_mix" ]);
+export const FRUIT_PRNG_EXCLUDE = new Set([ "skill_generous_orchard", "apply_fruitful_blend", "apply_turbofruit_mix", "bountiful_harvest_fruit" ]);
 
 export const PATCH_FRUIT_ONLY_GLOBAL_BOOSTS_EXCLUDED_FROM_GREENHOUSE = new Set([ "camel_onesie", "macaw", "skill_fruitful_fumble", "faction_quiver" ]);
 
