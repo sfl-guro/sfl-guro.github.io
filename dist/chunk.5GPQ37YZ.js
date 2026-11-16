@@ -41493,8 +41493,7 @@ var SKILL_CROPS = [{
   skillTier: 2,
   scope: "crop",
   target: "Sunflower",
-  yieldAdd: 0.05,
-  note: "1/7 chance for 0.35 gold when harvesting Sunflowers (excl. Crop Machine) \u2014 expected value shown"
+  note: "1/700 chance for 0.35 gold when harvesting Sunflowers (excl. Crop Machine). Gold is tracked exactly in the Sunflower Daily Harvest log"
 }, {
   id: "skill_coin_swindler",
   name: "Coin Swindler",
@@ -43220,9 +43219,9 @@ var ASCENSION_RANK_DATA = {
     values: [1.1, 1.2, 1.3]
   },
   skill_golden_sunflower: {
-    field: "yieldAdd",
-    values: [0.05, 0.0636364, 0.0875],
-    note: "1-in-7 / 5.5 / 4 gold odds (EV shown)"
+    field: null,
+    values: [700, 550, 400],
+    note: "0.35 gold per proc, excl. Crop Machine"
   },
   skill_horror_mike: {
     field: "extraYieldAdd",
@@ -44113,6 +44112,9 @@ var ASCENSION_ROCK_LABELS = {
   "resourceEffects.Iron": "Iron yield"
 };
 var ASCENSION_PART_META = {
+  skill_golden_sunflower: {
+    template: (v) => `1/${v} chance for 0.35 gold when harvesting Sunflowers (excl. Crop Machine)`
+  },
   skill_tool_hoarder: {
     labels: {
       shovel: "Sand Shovel stock",
@@ -73385,7 +73387,7 @@ function pruneStore(store) {
     }
     if (rec.day === today) return;
     if (k === active) {
-      if (Object.keys(rec.stats || {}).length || Object.keys(rec.prev || {}).length || rec.cook && rec.cook.prev && Object.keys(rec.cook.prev).length || rec.bris && rec.bris.known) {
+      if (Object.keys(rec.stats || {}).length || Object.keys(rec.prev || {}).length || rec.cook && rec.cook.prev && Object.keys(rec.cook.prev).length || rec.bris && rec.bris.known || rec.gs && rec.gs.known) {
         store[k] = {
           day: rec.day,
           prev: rec.prev || {},
@@ -73399,7 +73401,8 @@ function pruneStore(store) {
           cc: rec.cc || {},
           syncAt: rec.syncAt || 0,
           cook: carryCook(rec.cook),
-          bris: carryBris(rec.bris)
+          bris: carryBris(rec.bris),
+          gs: carryGs(rec.gs)
         };
         changed = true;
       }
@@ -73580,6 +73583,127 @@ function trackBristles(g, rec, fresh, now, prevSyncAt, start) {
   bris.inv = invNow;
   if (pigsNow) bris.pigs = pigsNow;
   bris.known = true;
+}
+var GS_NAME = "Golden Sunflower";
+var GS_COUNTER_KEY = "Sunflower Harvested";
+var GS_GOLD_PER_PROC = 0.35;
+var GS_CHANCES = [1 / 7, 1 / 5.5, 1 / 4];
+var GS_REPLAY_CAP = 2e7;
+function carryGs(x) {
+  return {
+    ctr: x && typeof x.ctr === "number" ? x.ctr : 0,
+    rank: x && typeof x.rank === "number" ? x.rank : 0,
+    q: x && x.q && typeof x.q === "object" ? x.q : {},
+    known: !!(x && x.known),
+    a: 0,
+    c: 0,
+    x: 0,
+    est: false,
+    log: []
+  };
+}
+function goldenSunflowerLevel(g) {
+  const skills = g.bumpkin && g.bumpkin.skills && typeof g.bumpkin.skills === "object" ? g.bumpkin.skills : null;
+  const v = skills ? Number(skills[GS_NAME]) : 0;
+  return Number.isFinite(v) && v > 0 ? Math.min(3, Math.floor(v)) : 0;
+}
+function sunflowerPackCounts(g) {
+  const out = {};
+  const machines = g.buildings && g.buildings["Crop Machine"];
+  if (!Array.isArray(machines)) return out;
+  machines.forEach((m) => {
+    const queue = m && Array.isArray(m.queue) ? m.queue : [];
+    queue.forEach((pack) => {
+      if (!pack || pack.crop !== "Sunflower") return;
+      const seeds = Number(pack.seeds) || 0;
+      if (!(seeds > 0)) return;
+      const key = `${seeds}|${Math.round(Number(pack.totalGrowTime) || 0)}`;
+      out[key] = (out[key] || 0) + 1;
+    });
+  });
+  return out;
+}
+function packSeedsOf(key) {
+  return Number(String(key).split("|")[0]) || 0;
+}
+function trackGoldenSunflower(g, rec, fid, fresh, now, prevSyncAt, start) {
+  const gs = rec.gs || (rec.gs = carryGs(null));
+  if (!Array.isArray(gs.log)) gs.log = [];
+  if (typeof gs.x !== "number") gs.x = 0;
+  const activity = g.farmActivity && typeof g.farmActivity === "object" ? g.farmActivity : null;
+  if (!activity) return;
+  const raw = activity[GS_COUNTER_KEY];
+  const ctrNow = raw === void 0 ? 0 : Number(raw);
+  if (!Number.isFinite(ctrNow)) return;
+  const farmNum = Number(fid);
+  const level = goldenSunflowerLevel(g);
+  const packsNow = sunflowerPackCounts(g);
+  if (gs.known) {
+    const delta = Math.floor(ctrNow - gs.ctr);
+    if (delta > 0 && delta <= GS_REPLAY_CAP && Number.isFinite(farmNum) && farmNum > 0) {
+      let machineSeeds = 0;
+      Object.keys(gs.q || {}).forEach((key) => {
+        const gone = (gs.q[key] || 0) - (packsNow[key] || 0);
+        if (gone > 0) machineSeeds += gone * packSeedsOf(key);
+      });
+      const rank = gs.rank > 0 ? gs.rank : level;
+      if (rank > 0) {
+        const chance = GS_CHANCES[rank - 1];
+        const itemId = CROP_KNOWN_IDS.Sunflower;
+        const hits = new Uint8Array(delta);
+        let total = 0;
+        for (let i = 0; i < delta; i++) {
+          if (sflPrngChance({
+            farmId: farmNum,
+            itemId,
+            counter: gs.ctr + i,
+            chance,
+            criticalHitName: GS_NAME
+          })) {
+            hits[i] = 1;
+            total += 1;
+          }
+        }
+        let lo = total;
+        let hi = total;
+        if (machineSeeds > 0) {
+          const block = Math.min(machineSeeds, delta);
+          let win = 0;
+          for (let i = 0; i < block; i++) win += hits[i];
+          let minWin = win;
+          let maxWin = win;
+          for (let i = block; i < delta; i++) {
+            win += hits[i] - hits[i - block];
+            if (win < minWin) minWin = win;
+            if (win > maxWin) maxWin = win;
+          }
+          lo = total - maxWin;
+          hi = total - minWin;
+        }
+        const estimated = lo !== hi || gs.rank !== level;
+        const gold = lo * GS_GOLD_PER_PROC;
+        const extra = (hi - lo) * GS_GOLD_PER_PROC;
+        if (gold > 1e-9 || extra > 1e-9) {
+          gs.a += gold;
+          gs.c += lo;
+          gs.x += extra;
+          gs.log.push({
+            t: now,
+            a: gold,
+            n: lo,
+            x: extra,
+            e: estimated ? 1 : 0
+          });
+          if (gs.log.length > COOK_LOG_CAP) gs.log.splice(0, gs.log.length - COOK_LOG_CAP);
+        }
+        if (estimated) gs.est = true;
+      }
+    }
+  }
+  gs.ctr = ctrNow;
+  gs.rank = level;
+  gs.q = packsNow;
+  gs.known = true;
 }
 var CAVE_BEETLE_RE = /^(?:(?:Green|Blue|Pink|Amber) )?Beetle$/;
 function cookCounterNow(activity, key) {
@@ -74205,7 +74329,8 @@ function dailyHarvestTrack(g, farmId) {
     },
     syncAt: old && old.syncAt ? old.syncAt : 0,
     cook: carryCook(old && old.cook),
-    bris: carryBris(old && old.bris)
+    bris: carryBris(old && old.bris),
+    gs: carryGs(old && old.gs)
   };
   if (fresh) {
     rec.cf = 1;
@@ -74510,6 +74635,7 @@ function dailyHarvestTrack(g, farmId) {
   });
   trackCooking(g, rec, fresh, now);
   trackBristles(g, rec, fresh, now, prevSyncAt, start);
+  trackGoldenSunflower(g, rec, fid, fresh, now, prevSyncAt, start);
   rec.prev = groups;
   const amtsNow = {};
   Object.keys(g.oilReserves || {}).forEach((id) => {
@@ -74533,10 +74659,19 @@ function dailyHarvestInfo(groupKey, farmId) {
   const store = freshStore();
   const rec = store[farmId ? String(farmId) : store.__last];
   if (!rec || rec.day !== utcDay2(Date.now())) return null;
-  const st = rec.stats[groupKey];
+  const hasGold = groupKey === "Sunflower" && rec.gs && (rec.gs.a > 0 || rec.gs.x > 0);
+  const st = rec.stats[groupKey] || (hasGold ? {
+    total: 0,
+    lastAt: rec.gs.log.length ? rec.gs.log[rec.gs.log.length - 1].t : 0,
+    log: []
+  } : null);
   if (!st) return null;
-  const r = roundsFromStats(st);
-  if (r.rounds < 1) return null;
+  const r = rec.stats[groupKey] ? roundsFromStats(st) : {
+    rounds: 0,
+    need: 0,
+    nextProgress: 0
+  };
+  if (r.rounds < 1 && !hasGold) return null;
   return {
     rounds: r.rounds,
     need: r.need,
@@ -74546,7 +74681,14 @@ function dailyHarvestInfo(groupKey, farmId) {
     estimated: !!st.est,
     dropped: typeof st.dropped === "number" ? st.dropped : 0,
     droppedTl: typeof st.droppedTl === "number" ? st.droppedTl : 0,
-    log: Array.isArray(st.log) ? st.log : []
+    log: Array.isArray(st.log) ? st.log : [],
+    gold: hasGold ? {
+      a: rec.gs.a,
+      c: rec.gs.c,
+      x: rec.gs.x || 0,
+      est: !!rec.gs.est,
+      log: Array.isArray(rec.gs.log) ? rec.gs.log : []
+    } : null
   };
 }
 function dailyCookingInfo(building, farmId) {
@@ -74791,6 +74933,11 @@ function dailyHarvestTotals(farmId) {
     const toolsUsed = logKind === "node" ? (typeof st.droppedTl === "number" ? st.droppedTl : 0) + st.log.reduce((sum, e) => sum + (typeof e.tl === "number" ? e.tl : 0), 0) : 0;
     addLogTotal(totals, groupKey, logKind, amount, roundsFromStats(st).rounds, gm && gm.price, gm && gm.feeRate, logKind === "beehive" ? 0 : LOG_VERSION, toolsUsed);
   });
+  const gsRec = rec.gs;
+  if (gsRec && gsRec.a > 0) {
+    const gp = lookupPrice("Gold");
+    addLogTotal(totals, GS_NAME, "crop", gsRec.a, 0, gp.price, gp.fee);
+  }
   const bris = rec.bris;
   if (bris && bris.a > 0) {
     const bp = lookupPrice("Pig Bristles");
@@ -75073,6 +75220,34 @@ function logHtml(groupKey, info) {
   const sumHtml = `<div class="dh-log-sum"><div class="dh-log-row dh-log-total"><span>Total</span><span class="dh-log-yield">+${formatLogYield(total)}<span class="dh-log-ico">${meta.icon}</span></span></div>${toolRow}${valueRows}</div>`;
   return `<div class="dh-pop-log guro-frame">${headHtml}<div class="dh-log-list">${rows}</div>${sumHtml}</div>`;
 }
+function goldenLogHtml(gold) {
+  if (!gold || !(gold.a > 0 || gold.x > 0)) return "";
+  const icon = iconProvider ? iconProvider("Gold") : "";
+  const sorted = gold.log.slice().sort((a, b) => b.t - a.t);
+  const merged = [];
+  sorted.forEach((e) => {
+    const last = merged[merged.length - 1];
+    if (last && last.t - e.t <= LOG_MERGE_GAP) {
+      last.a += e.a;
+      if (e.e) last.e = 1;
+      return;
+    }
+    merged.push({
+      t: e.t,
+      a: e.a,
+      e: e.e ? 1 : 0
+    });
+  });
+  const rows = merged.map((e) => `<div class="dh-log-row"><span>${formatLogClock(e.t)}</span><span class="dh-log-yield">${e.e ? "~" : ""}+${formatLogYield(e.a)}<span class="dh-log-ico">${icon}</span></span></div>`).join("");
+  const gp = lookupPrice("Gold");
+  const gross = gold.a * gp.price;
+  const net = gross - gross * gp.fee;
+  const valueRows = gross > 0 ? `<div class="dh-log-row"><span>Gross</span><span class="dh-log-yield">${formatLogYield(gross)}<span class="dh-log-ico">${FLOWER_ICON}</span></span></div><div class="dh-log-row"><span>Net</span><span class="dh-log-yield">${formatLogYield(net)}<span class="dh-log-ico">${FLOWER_ICON}</span></span></div>` : "";
+  const head = `<div class="dh-log-head"><span class="dh-log-yield"><span class="dh-log-ico">${icon}</span>Golden Sunflower</span><span>${gold.c} procs</span></div>`;
+  const sumHtml = `<div class="dh-log-sum"><div class="dh-log-row dh-log-total"><span>Total</span><span class="dh-log-yield">${gold.est ? "~" : ""}+${formatLogYield(gold.a)}<span class="dh-log-ico">${icon}</span></span></div>${valueRows}</div>`;
+  const note = gold.x > 0 ? `<p class="dh-pop-text dh-pop-note">Crop Machine sunflowers were harvested between syncs, so the exact proc position is unknown. The gold shown is guaranteed; up to +${formatLogYield(gold.x)} more may have dropped.</p>` : "";
+  return `<div class="dh-pop-log guro-frame">${head}<div class="dh-log-list">${rows}</div>${sumHtml}</div>${note}`;
+}
 function closeDailyPop() {
   const el = document.getElementById("dailyHarvestPop");
   if (el) el.remove();
@@ -75140,7 +75315,7 @@ function openDailyPop(badgeEl) {
   const safeNoun = escapeAttr(noun);
   const bodyText = kind === "animal" ? `Your ${safeNoun} produce has been ${meta.action} ${times} today. A round is counted once all of your ${safeNoun} animals (${info.need} of ${info.total}) have been ${meta.action}.` : `Your ${safeNoun} ${meta.unit} have been ${meta.action} ${times} today. A round is counted once all of them (${info.need} of ${info.total}) have been ${meta.action}.`;
   const now = Date.now();
-  const html = `<div class="dh-pop-back" id="dailyHarvestPop"><div class="dh-pop guro-frame dh-${kind}" role="dialog" aria-modal="true"><div class="dh-pop-top"><span class="dh-pop-top-title">Daily Harvest \xB7 UTC</span><span class="dh-pop-top-acts"><button type="button" class="dh-pop-log-btn" data-dh-log="${escapeAttr(badgeEl.getAttribute("data-dh-farm") || store0Last())}">Log</button><button type="button" class="dh-pop-x" data-dh-close="1" aria-label="Close"></button></span></div><div class="dh-pop-head"><span class="dh-pop-icon guro-frame dh-icon">${iconHtml2}</span><div class="dh-pop-headtext guro-frame"><div class="dh-pop-title dh-pop-title-solo">${escapeAttr(noun)}</div></div><span class="dh-pop-ord guro-frame">${info.estimated ? "~" : ""}${info.rounds}x</span></div><div class="dh-pop-main guro-frame">${meta.verb} <b>${times}</b> today</div><p class="dh-pop-text">${bodyText}</p><div class="dh-pop-stats guro-frame"><div class="dh-stat"><span>Accuracy</span><b>${info.estimated ? "Estimated" : "Exact"}</b></div><div class="dh-stat"><span>Next round</span><b>${info.nextProgress} / ${info.need}</b></div><div class="dh-stat"><span>Last completed</span><b>${formatClock(info.lastAt)}</b></div><div class="dh-stat"><span>Resets in</span><b>${formatResetIn(now)}</b></div></div>${logHtml(groupKey, info)}${info.estimated ? `<p class="dh-pop-text dh-pop-note">Includes harvests made between syncs, estimated from your lifetime activity counters.</p>` : ""}</div></div>`;
+  const html = `<div class="dh-pop-back" id="dailyHarvestPop"><div class="dh-pop guro-frame dh-${kind}" role="dialog" aria-modal="true"><div class="dh-pop-top"><span class="dh-pop-top-title">Daily Harvest \xB7 UTC</span><span class="dh-pop-top-acts"><button type="button" class="dh-pop-log-btn" data-dh-log="${escapeAttr(badgeEl.getAttribute("data-dh-farm") || store0Last())}">Log</button><button type="button" class="dh-pop-x" data-dh-close="1" aria-label="Close"></button></span></div><div class="dh-pop-head"><span class="dh-pop-icon guro-frame dh-icon">${iconHtml2}</span><div class="dh-pop-headtext guro-frame"><div class="dh-pop-title dh-pop-title-solo">${escapeAttr(noun)}</div></div><span class="dh-pop-ord guro-frame">${info.estimated ? "~" : ""}${info.rounds}x</span></div><div class="dh-pop-main guro-frame">${meta.verb} <b>${times}</b> today</div><p class="dh-pop-text">${bodyText}</p><div class="dh-pop-stats guro-frame"><div class="dh-stat"><span>Accuracy</span><b>${info.estimated ? "Estimated" : "Exact"}</b></div><div class="dh-stat"><span>Next round</span><b>${info.nextProgress} / ${info.need}</b></div><div class="dh-stat"><span>Last completed</span><b>${formatClock(info.lastAt)}</b></div><div class="dh-stat"><span>Resets in</span><b>${formatResetIn(now)}</b></div></div>${logHtml(groupKey, info)}${goldenLogHtml(info.gold)}${info.estimated ? `<p class="dh-pop-text dh-pop-note">Includes harvests made between syncs, estimated from your lifetime activity counters.</p>` : ""}</div></div>`;
   document.body.insertAdjacentHTML("beforeend", html);
   document.documentElement.classList.add("dh-pop-lock");
 }
@@ -75471,6 +75646,7 @@ function netOf(e) {
   return round4(round4(e.a * e.p) * (1 - fee));
 }
 function itemIcon2(name, kind) {
+  if (kind === "crop" && name === "Golden Sunflower") return getIcon("Gold");
   if (kind === "cave" && name === "Beetle") return getIcon("Green Beetle");
   if (kind === "cooking" && COOKING_FOOD_IMAGES[name]) return cookFoodIcon(name);
   return getIcon(name);
