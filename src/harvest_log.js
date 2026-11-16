@@ -325,6 +325,7 @@ function netOf(e) {
 }
 
 function itemIcon(name, kind) {
+  if (kind === "crop" && name === "Golden Sunflower") return getIcon("Gold");
   if (kind === "cave" && name === "Beetle") return getIcon("Green Beetle");
   if (kind === "cooking" && COOKING_FOOD_IMAGES[name]) return cookFoodIcon(name);
   return getIcon(name);

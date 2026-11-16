@@ -6245,8 +6245,7 @@ const SKILL_CROPS = [ {
   skillTier: 2,
   scope: "crop",
   target: "Sunflower",
-  yieldAdd: .05,
-  note: "1/7 chance for 0.35 gold when harvesting Sunflowers (excl. Crop Machine) — expected value shown"
+  note: "1/700 chance for 0.35 gold when harvesting Sunflowers (excl. Crop Machine). Gold is tracked exactly in the Sunflower Daily Harvest log"
 }, {
   id: "skill_coin_swindler",
   name: "Coin Swindler",
@@ -8002,9 +8001,9 @@ export const ASCENSION_RANK_DATA = {
     values: [ 1.1, 1.2, 1.3 ]
   },
   skill_golden_sunflower: {
-    field: "yieldAdd",
-    values: [ .05, .0636364, .0875 ],
-    note: "1-in-7 / 5.5 / 4 gold odds (EV shown)"
+    field: null,
+    values: [ 700, 550, 400 ],
+    note: "0.35 gold per proc, excl. Crop Machine"
   },
   skill_horror_mike: {
     field: "extraYieldAdd",
@@ -8932,6 +8931,9 @@ const ASCENSION_ROCK_LABELS = {
 };
 
 const ASCENSION_PART_META = {
+  skill_golden_sunflower: {
+    template: v => `1/${v} chance for 0.35 gold when harvesting Sunflowers (excl. Crop Machine)`
+  },
   skill_tool_hoarder: {
     labels: {
       shovel: "Sand Shovel stock",
