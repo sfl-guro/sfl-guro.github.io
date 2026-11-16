@@ -1884,18 +1884,12 @@ export function farmPanelComputeExactCropYield(json, g, cropName, plot, counter,
     });
   }
   if (isBoostActive("bountiful_harvest")) {
-    amount += 1;
+    const bountifulDoubled = !!getActiveSeasonGuardianName();
+    amount += bountifulDoubled ? 2 : 1;
     boosts.push({
       name: "Bountiful Harvest",
-      valueText: "+1 yield"
+      valueText: bountifulDoubled ? "+2 yield" : "+1 yield"
     });
-    if (getActiveSeasonGuardianName()) {
-      amount += 1;
-      boosts.push({
-        name: currentSeason + " Guardian",
-        valueText: "+1 yield (doubles Bountiful Harvest)"
-      });
-    }
   }
   let seedReward = null;
   if (!isGreenhouse && Number.isFinite(farmId) && farmId > 0 && itemId) {
@@ -1992,18 +1986,12 @@ export function farmPanelComputeExactFruitYield(json, g, fruitName, counter, isG
     });
   }
   if (isBoostActive("bountiful_harvest")) {
-    amount += 1;
+    const bountifulDoubled = !!getActiveSeasonGuardianName();
+    amount += bountifulDoubled ? 2 : 1;
     boosts.push({
       name: "Bountiful Harvest",
-      valueText: "+1 yield"
+      valueText: bountifulDoubled ? "+2 yield" : "+1 yield"
     });
-    if (getActiveSeasonGuardianName()) {
-      amount += 1;
-      boosts.push({
-        name: currentSeason + " Guardian",
-        valueText: "+1 yield (doubles Bountiful Harvest)"
-      });
-    }
   }
   return {
     amount: Math.round(amount * 1e4) / 1e4,
@@ -5098,7 +5086,12 @@ function farmPanelComputeNodeYieldBoostSummary(row) {
 }
 
 function farmPanelRenderNodeYieldBoostList(row, summary, produceIcon) {
-  const yieldHtmlParts = (summary || []).map(b => `<div class="boost-applied-row is-yield">${getBoostIcon(b.name)}<b>${escapeHtml(b.name)}</b> <span class="boost-total-value">+${fmt(b.total)}</span>${produceIcon}</div>`);
+  const guardianId = getActiveSeasonGuardianName();
+  const guardianName = guardianId ? guardianId.split("_").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ") : "";
+  const yieldHtmlParts = (summary || []).map(b => {
+    const guardianNote = b.name === "Bountiful Harvest" && guardianName ? ` <span class="boost-mult-note">(doubled by ${getBoostIcon(guardianName)}${escapeHtml(guardianName)})</span>` : "";
+    return `<div class="boost-applied-row is-yield">${getBoostIcon(b.name)}<b>${escapeHtml(b.name)}</b>${guardianNote} <span class="boost-total-value">+${fmt(b.total)}</span>${produceIcon}</div>`;
+  });
   const seenTime = new Set;
   const timeBoostSources = (row.activeBoosts || []).concat(row.exactTimeBoosts || []);
   const timeHtmlParts = timeBoostSources.filter(b => b.timeMult && b.timeMult !== 1 && !seenTime.has(b.name) && seenTime.add(b.name)).map(b => {

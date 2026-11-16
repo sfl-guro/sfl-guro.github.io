@@ -376,7 +376,10 @@ function yieldBoostsFor(name) {
 }
 
 function boostRowHtml(b, text) {
-  return `<div class="rc-boost-row">${ui.getBoostIconAnyFallback(b.name)}<span class="rc-boost-name">${esc(b.name)}</span><span class="rc-boost-eff">${esc(text)}</span></div>`;
+  const guardianId = b.limitedBoostName === "Bountiful Harvest" ? calc.getActiveSeasonGuardianName() : null;
+  const guardianName = guardianId ? guardianId.split("_").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ") : "";
+  const guardianNote = guardianName ? ` <span class="rc-boost-eff">(doubled by ${ui.getBoostIconAnyFallback(guardianName)}${esc(guardianName)})</span>` : "";
+  return `<div class="rc-boost-row">${ui.getBoostIconAnyFallback(b.name)}<span class="rc-boost-name">${esc(b.name)}</span>${guardianNote}<span class="rc-boost-eff">${esc(text)}</span></div>`;
 }
 
 function machineCardHtml() {
@@ -406,7 +409,7 @@ function cropCardHtml(g) {
   const ratio = ratioInfo();
   const ratioLine = ratio.free ? `Free gems` : `1${calc.FLOWER_ICON} : ${n2(ratio.gemsPerFlower)}${calc.GEM_ICON}`;
   const yieldBoosts = yieldBoostsFor(g.name).map(x => {
-    const add = x.resourceEffects ? x.resourceEffects[g.name] || 0 : x.yieldAdd || 0;
+    const add = x.limitedBoostName === "Bountiful Harvest" ? calc.getEffectiveYieldAdd(x, null, g.name) : x.resourceEffects ? x.resourceEffects[g.name] || 0 : x.yieldAdd || 0;
     const parts = [];
     if (add) parts.push(`${add > 0 ? "+" : ""}${n2(add)} yield`);
     if (x.yieldMult) parts.push(`×${x.yieldMult} yield`);

@@ -11,7 +11,7 @@ import {
   toolRestockIconsHtml,
   toolRestockShareCount,
   unmountBeetlesCalculator
-} from "./chunk.VWO2Q4UH.js";
+} from "./chunk.NNNCN3L5.js";
 import {
   ANIMAL_DATA,
   ANIMAL_LOVE_ITEM_XP,
@@ -108,6 +108,7 @@ import {
   formatDuration,
   gemsToFlower,
   getActiveBoostsForCrop,
+  getActiveSeasonGuardianName,
   getActiveShrineDailyCost,
   getActiveShrineDailyCostStable,
   getAnimalCount,
@@ -245,7 +246,7 @@ import {
   toast,
   updateCalcSummary,
   updateSkillSaveBarState
-} from "./chunk.LC46JVT5.js";
+} from "./chunk.46G2ZZ6B.js";
 import "./chunk.LPEVZJ4B.js";
 import "./chunk.ZJUAGS4L.js";
 import "./chunk.VR6FV3KR.js";
@@ -8320,7 +8321,10 @@ function yieldBoostsFor(name) {
   return getActiveBoostsForCrop(name).filter((b) => !b.plotCap && b.id !== "hoot" && !b.composterFertilizer && !b.beeSwarmStack && !b.debuffStack);
 }
 function boostRowHtml(b, text) {
-  return `<div class="rc-boost-row">${getBoostIconAnyFallback(b.name)}<span class="rc-boost-name">${esc10(b.name)}</span><span class="rc-boost-eff">${esc10(text)}</span></div>`;
+  const guardianId = b.limitedBoostName === "Bountiful Harvest" ? getActiveSeasonGuardianName() : null;
+  const guardianName = guardianId ? guardianId.split("_").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ") : "";
+  const guardianNote = guardianName ? ` <span class="rc-boost-eff">(doubled by ${getBoostIconAnyFallback(guardianName)}${esc10(guardianName)})</span>` : "";
+  return `<div class="rc-boost-row">${getBoostIconAnyFallback(b.name)}<span class="rc-boost-name">${esc10(b.name)}</span>${guardianNote}<span class="rc-boost-eff">${esc10(text)}</span></div>`;
 }
 function machineCardHtml() {
   const boosts = BOOSTS.filter((b) => b.category === "cropmachine" && isBoostActive(b.id) && machineEffectParts(b).length);
@@ -8348,7 +8352,7 @@ function cropCardHtml(g) {
   const ratio = ratioInfo6();
   const ratioLine = ratio.free ? `Free gems` : `1${FLOWER_ICON} : ${n210(ratio.gemsPerFlower)}${GEM_ICON}`;
   const yieldBoosts = yieldBoostsFor(g.name).map((x) => {
-    const add = x.resourceEffects ? x.resourceEffects[g.name] || 0 : x.yieldAdd || 0;
+    const add = x.limitedBoostName === "Bountiful Harvest" ? getEffectiveYieldAdd(x, null, g.name) : x.resourceEffects ? x.resourceEffects[g.name] || 0 : x.yieldAdd || 0;
     const parts = [];
     if (add) parts.push(`${add > 0 ? "+" : ""}${n210(add)} yield`);
     if (x.yieldMult) parts.push(`\xD7${x.yieldMult} yield`);

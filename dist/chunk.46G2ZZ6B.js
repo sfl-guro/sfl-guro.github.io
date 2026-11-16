@@ -30735,18 +30735,12 @@ function farmPanelComputeExactCropYield(json, g, cropName, plot, counter, isGree
     });
   }
   if (isBoostActive("bountiful_harvest")) {
-    amount += 1;
+    const bountifulDoubled = !!getActiveSeasonGuardianName();
+    amount += bountifulDoubled ? 2 : 1;
     boosts.push({
       name: "Bountiful Harvest",
-      valueText: "+1 yield"
+      valueText: bountifulDoubled ? "+2 yield" : "+1 yield"
     });
-    if (getActiveSeasonGuardianName()) {
-      amount += 1;
-      boosts.push({
-        name: currentSeason + " Guardian",
-        valueText: "+1 yield (doubles Bountiful Harvest)"
-      });
-    }
   }
   let seedReward = null;
   if (!isGreenhouse && Number.isFinite(farmId) && farmId > 0 && itemId) {
@@ -30842,18 +30836,12 @@ function farmPanelComputeExactFruitYield(json, g, fruitName, counter, isGreenhou
     });
   }
   if (isBoostActive("bountiful_harvest")) {
-    amount += 1;
+    const bountifulDoubled = !!getActiveSeasonGuardianName();
+    amount += bountifulDoubled ? 2 : 1;
     boosts.push({
       name: "Bountiful Harvest",
-      valueText: "+1 yield"
+      valueText: bountifulDoubled ? "+2 yield" : "+1 yield"
     });
-    if (getActiveSeasonGuardianName()) {
-      amount += 1;
-      boosts.push({
-        name: currentSeason + " Guardian",
-        valueText: "+1 yield (doubles Bountiful Harvest)"
-      });
-    }
   }
   return {
     amount: Math.round(amount * 1e4) / 1e4,
@@ -33894,7 +33882,12 @@ function farmPanelComputeNodeYieldBoostSummary(row3) {
   }));
 }
 function farmPanelRenderNodeYieldBoostList(row3, summary, produceIcon) {
-  const yieldHtmlParts = (summary || []).map((b) => `<div class="boost-applied-row is-yield">${getBoostIcon(b.name)}<b>${escapeHtml(b.name)}</b> <span class="boost-total-value">+${fmt(b.total)}</span>${produceIcon}</div>`);
+  const guardianId = getActiveSeasonGuardianName();
+  const guardianName = guardianId ? guardianId.split("_").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ") : "";
+  const yieldHtmlParts = (summary || []).map((b) => {
+    const guardianNote = b.name === "Bountiful Harvest" && guardianName ? ` <span class="boost-mult-note">(doubled by ${getBoostIcon(guardianName)}${escapeHtml(guardianName)})</span>` : "";
+    return `<div class="boost-applied-row is-yield">${getBoostIcon(b.name)}<b>${escapeHtml(b.name)}</b>${guardianNote} <span class="boost-total-value">+${fmt(b.total)}</span>${produceIcon}</div>`;
+  });
   const seenTime = /* @__PURE__ */ new Set();
   const timeBoostSources = (row3.activeBoosts || []).concat(row3.exactTimeBoosts || []);
   const timeHtmlParts = timeBoostSources.filter((b) => b.timeMult && b.timeMult !== 1 && !seenTime.has(b.name) && seenTime.add(b.name)).map((b) => {
@@ -52072,7 +52065,7 @@ var CROP_AOE_RANKS = [{
   depth: 9
 }];
 var CROP_PRNG_EXCLUDE = /* @__PURE__ */ new Set(["green_amulet", "stellar_sunflower", "potent_potato", "peeled_potato", "radical_radish", "skill_golden_sunflower", "basic_scarecrow", "skill_chonky_scarecrow", "scary_mike", "skill_horror_mike", "laurie_chuckle_crow", "skill_lauries_gains", "queen_cornelia", "skill_acre_farm", "skill_hectare_farm", "scarecrow", "kuebiko", "coder", "sunflower_amulet", "victoria_sisters", "easter_bunny", "beetroot_amulet", "golden_cauliflower", "sir_goldensnout", "gnome", "hoot", "blossom_ward", "frozen_heart", "bee_swarm", "skill_pollen_power_up", "apply_sprout_mix", "apply_rapid_root", "apply_sproutroot_surprise", "bountiful_harvest"]);
-var FRUIT_PRNG_EXCLUDE = /* @__PURE__ */ new Set(["skill_generous_orchard", "apply_fruitful_blend", "apply_turbofruit_mix"]);
+var FRUIT_PRNG_EXCLUDE = /* @__PURE__ */ new Set(["skill_generous_orchard", "apply_fruitful_blend", "apply_turbofruit_mix", "bountiful_harvest_fruit"]);
 var PATCH_FRUIT_ONLY_GLOBAL_BOOSTS_EXCLUDED_FROM_GREENHOUSE = /* @__PURE__ */ new Set(["camel_onesie", "macaw", "skill_fruitful_fumble", "faction_quiver"]);
 function parseYieldBoostAmount(valueText) {
   const m = /-?[\d.]+/.exec(valueText || "");
@@ -76099,6 +76092,7 @@ export {
   isBoostActive,
   isBoostDraftActive,
   isBoostDraftDirty,
+  getActiveSeasonGuardianName,
   getActiveBoostsForCrop,
   getEffectiveYieldAdd,
   formatDuration,
