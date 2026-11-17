@@ -9,11 +9,11 @@ import { $, hiveClockText, cookFoodIcon, getBoostIcon, getIcon, renderAnimalCard
 import { potionTrackFromState, digStreakTrackFromState } from "./calculator.js";
 
 import { caveTrackFromState } from "./cave_track.js";
-import { dailyHarvestTrack, dailyHarvestBadgeHtml, dailyHarvestSetYield, dailyHarvestSetResolver, dailyHarvestSetAnimalYieldProvider, dailyHarvestSetCookingProvider, dailyHarvestSetIconProvider, dailyHarvestSetToolProvider, dailyHarvestSetPriceProvider, dailyHarvestNodeToolMult } from "./daily_harvest.js";
+import { dailyHarvestTrack, dailyHarvestBadgeHtml, dailyHarvestSetYield, dailyHarvestSetResolver, dailyHarvestSetAnimalYieldProvider, dailyHarvestSetCookingProvider, dailyHarvestSetMachineProvider, dailyHarvestSetIconProvider, dailyHarvestSetToolProvider, dailyHarvestSetPriceProvider, dailyHarvestNodeToolMult } from "./daily_harvest.js";
 
 import { harvestLogArm } from "./harvest_log.js";
 
-import { cropPlotWindows, cropFertiliserWindows, fruitWindows, turbofruitWindows, greenhouseWindows, greenhouseGlowWindows, flowerWindows, treeWindows, mineWindows, oilWindows, animalWindows, cookingWindows, computeReadyAt, growDurationMsFor, resolveCookingQueue } from "./speed_windows.js";
+import { resolveCropMachine, cropMachineFuelAt, cropMachineWindows, effectiveSpeedAt, cropPlotWindows, cropFertiliserWindows, fruitWindows, turbofruitWindows, greenhouseWindows, greenhouseGlowWindows, flowerWindows, treeWindows, mineWindows, oilWindows, animalWindows, cookingWindows, computeReadyAt, growDurationMsFor, resolveCookingQueue } from "./speed_windows.js";
 
 import { craftedToolsTrack } from "./crafted_tools.js";
 
@@ -198,7 +198,11 @@ export function farmPanelCardCatalog() {
       id: n,
       label: n,
       icon: getIcon(n)
-    }));
+    })).concat([ {
+      id: "Crop Machine",
+      label: "Crop Machine",
+      icon: getIcon("Crop Machine")
+    } ]);
     if (id === "fruits") return Object.keys(BASE_FRUITS).map(n => ({
       id: n,
       label: n,
@@ -274,7 +278,7 @@ export function farmPanelCategoryVisible(id) {
 export function farmPanelRowCardKey(row) {
   const cat = farmPanelRowFilterCategory(row);
   let id = row.name;
-  if (row.isAnimalMerged) id = row.typeKey; else if (row.isComposterCard) id = row.composterName; else if (row.isCookingCard) id = row.cookingBuilding; else if (row.isMycoCard) id = "myco"; else if (row.isPeteQuestCard) id = "pete";
+  if (row.isAnimalMerged) id = row.typeKey; else if (row.isComposterCard) id = row.composterName; else if (row.isCookingCard) id = row.cookingBuilding; else if (row.isCropMachineCard) id = "Crop Machine"; else if (row.isMycoCard) id = "myco"; else if (row.isPeteQuestCard) id = "pete";
   return `${cat}:${id}`;
 }
 
@@ -1583,15 +1587,33 @@ function farmPanelPowerHourYieldAt(atTime, isGreenhouse) {
   return t >= win.startedAt && t < win.expiresAt;
 }
 
-export function farmPanelComputeExactCropYield(json, g, cropName, plot, counter, isGreenhouse, atTime) {
+function farmPanelTruncate4(x) {
+  const str = String(x);
+  if (/e/i.test(str)) return Math.floor(x * 1e4) / 1e4;
+  const dot = str.indexOf(".");
+  if (dot < 0) return x;
+  return Number(str.slice(0, dot + 5));
+}
+
+const FARM_PANEL_GAME_YIELD_ORDER = [ "Power hour", "Peeled Potato", "Potent Potato", "Stellar Sunflower", "Radical Radish", "Cabbage Boy", "Cabbage Girl", "Karkinos", "Pablo The Bunny", "Foliant", "Purple Trail", "Maximus", "Eggplant Onesie", "Giant Artichoke", "Giant Yam", "Tofu Mask", "Corn Onesie", "Corn Silk Hair", "Sickle", "Sheaf of Plenty", "Giant Kale", "Blossom Ward", "Frozen Heart", "Infernal Pitchfork", "Legendary Shrine", "Faction Wings", "Bud", "Resource BUD", "Hoot", "Poppy", "Freya Fox", "Lab Grown Carrot", "Lab Grown Pumpkin", "Lab Grown Radish", "Soybliss", "Young Farmer", "Experienced Farmer", "Old Farmer", "Acre Farm", "Hectare Farm", "Giant Onion" ];
+
+export function farmPanelComputeExactCropYield(json, g, cropName, plot, counter, isGreenhouse, atTime, opts) {
+  const critRoll = args => opts && opts.crits ? !!opts.crits[args.criticalHitName] : sflPrngChance(args);
   const lastInfo = farmPanelGetLastInfo();
-  const farmId = Number(lastInfo.id);
+  const farmId = opts && opts.farmId ? Number(opts.farmId) : Number(lastInfo.id);
   const tierLabel = farmPanelCropTierLabel(cropName);
   const itemId = CROP_KNOWN_IDS[cropName];
   let amount = 1;
   const boosts = [];
+  const steps = opts && opts.machine ? [] : null;
+  const stepAdd = v => {
+    if (steps) steps.push({
+      v: v,
+      idx: boosts.length
+    }); else amount += v;
+  };
   if (Number.isFinite(farmId) && farmId > 0 && itemId) {
-    if (isBoostActive("green_amulet") && sflPrngChance({
+    if (isBoostActive("green_amulet") && critRoll({
       farmId: farmId,
       itemId: itemId,
       counter: counter,
@@ -1666,53 +1688,53 @@ export function farmPanelComputeExactCropYield(json, g, cropName, plot, counter,
     });
   });
   if (Number.isFinite(farmId) && farmId > 0 && itemId) {
-    if (cropName === "Potato" && isBoostActive("peeled_potato") && sflPrngChance({
+    if (cropName === "Potato" && isBoostActive("peeled_potato") && critRoll({
       farmId: farmId,
       itemId: itemId,
       counter: counter,
       chance: 20,
       criticalHitName: "Peeled Potato"
     })) {
-      amount += 1;
+      stepAdd(1);
       boosts.push({
         name: "Peeled Potato",
         valueText: "+1 yield (crit)"
       });
     }
-    if (cropName === "Potato" && isBoostActive("potent_potato") && sflPrngChance({
+    if (cropName === "Potato" && isBoostActive("potent_potato") && critRoll({
       farmId: farmId,
       itemId: itemId,
       counter: counter,
       chance: 10 / 3,
       criticalHitName: "Potent Potato"
     })) {
-      amount += 10;
+      stepAdd(10);
       boosts.push({
         name: "Potent Potato",
         valueText: "+10 yield (crit)"
       });
     }
-    if (cropName === "Sunflower" && isBoostActive("stellar_sunflower") && sflPrngChance({
+    if (cropName === "Sunflower" && isBoostActive("stellar_sunflower") && critRoll({
       farmId: farmId,
       itemId: itemId,
       counter: counter,
       chance: 10 / 3,
       criticalHitName: "Stellar Sunflower"
     })) {
-      amount += 10;
+      stepAdd(10);
       boosts.push({
         name: "Stellar Sunflower",
         valueText: "+10 yield (crit)"
       });
     }
-    if (cropName === "Radish" && isBoostActive("radical_radish") && sflPrngChance({
+    if (cropName === "Radish" && isBoostActive("radical_radish") && critRoll({
       farmId: farmId,
       itemId: itemId,
       counter: counter,
       chance: 10 / 3,
       criticalHitName: "Radical Radish"
     })) {
-      amount += 10;
+      stepAdd(10);
       boosts.push({
         name: "Radical Radish",
         valueText: "+10 yield (crit)"
@@ -1727,7 +1749,7 @@ export function farmPanelComputeExactCropYield(json, g, cropName, plot, counter,
     const rank = getAscensionRank("skill_chonky_scarecrow");
     const bonuses = ASCENSION_RANK_DATA.skill_chonky_scarecrow && ASCENSION_RANK_DATA.skill_chonky_scarecrow.values || [ 0, .05, .1 ];
     const v = bonuses[Math.min(Math.max(rank, 1), 3) - 1];
-    amount += v;
+    stepAdd(v);
     boosts.push({
       name: "Basic Scarecrow",
       valueText: `+${fmt(v)} yield (AOE)`
@@ -1738,7 +1760,7 @@ export function farmPanelComputeExactCropYield(json, g, cropName, plot, counter,
     height: 1
   }, "skill_horror_mike", cropAoeCooldownSec, atTime)) {
     const v = isSkillActive("skill_horror_mike") ? .2 + (ASCENSION_RANK_DATA.skill_horror_mike && ASCENSION_RANK_DATA.skill_horror_mike.values || [ .1, .15, .2 ])[Math.min(Math.max(getAscensionRank("skill_horror_mike"), 1), 3) - 1] : .2;
-    amount += v;
+    stepAdd(v);
     boosts.push({
       name: "Scary Mike",
       valueText: `+${fmt(v)} yield (AOE)`
@@ -1748,7 +1770,7 @@ export function farmPanelComputeExactCropYield(json, g, cropName, plot, counter,
     width: 2,
     height: 2
   }, null, cropAoeCooldownSec, atTime)) {
-    amount += .5;
+    stepAdd(.5);
     boosts.push({
       name: "Sir Goldensnout",
       valueText: "+0.5 yield (AOE)"
@@ -1759,7 +1781,7 @@ export function farmPanelComputeExactCropYield(json, g, cropName, plot, counter,
     height: 1
   }, "skill_lauries_gains", cropAoeCooldownSec, atTime)) {
     const v = isSkillActive("skill_lauries_gains") ? .2 + (ASCENSION_RANK_DATA.skill_lauries_gains && ASCENSION_RANK_DATA.skill_lauries_gains.values || [ .1, .15, .2 ])[Math.min(Math.max(getAscensionRank("skill_lauries_gains"), 1), 3) - 1] : .2;
-    amount += v;
+    stepAdd(v);
     boosts.push({
       name: "Laurie the Chuckle Crow",
       valueText: `+${fmt(v)} yield (AOE)`
@@ -1769,22 +1791,35 @@ export function farmPanelComputeExactCropYield(json, g, cropName, plot, counter,
     width: 1,
     height: 2
   }, null, cropAoeCooldownSec, atTime)) {
-    amount += 1;
+    stepAdd(1);
     boosts.push({
       name: "Queen Cornelia",
       valueText: "+1 yield (AOE)"
     });
   }
   if ((tierLabel === "Medium" || tierLabel === "Advanced") && farmPanelGnomeAOEBonus(g, plot, cropAoeCooldownSec, atTime)) {
-    amount += 10;
+    stepAdd(10);
     boosts.push({
       name: "Gnome",
       valueText: "+10 yield (AOE combo)"
     });
   }
-  amount += generic.add;
+  if (steps) {
+    let budSum = 0;
+    generic.boosts.forEach(gb => {
+      if (typeof gb.yieldAdd !== "number" || !gb.yieldAdd) return;
+      if (gb.isBud) budSum += gb.yieldAdd; else steps.push({
+        v: gb.yieldAdd,
+        name: gb.name
+      });
+    });
+    if (budSum) steps.push({
+      v: budSum,
+      name: "Bud"
+    });
+  } else amount += generic.add;
   if (farmPanelPowerHourYieldAt(atTime, isGreenhouse)) {
-    amount += .2;
+    stepAdd(.2);
     boosts.push({
       name: "Power hour",
       valueText: "+0.2 yield"
@@ -1794,14 +1829,14 @@ export function farmPanelComputeExactCropYield(json, g, cropName, plot, counter,
   const cropFertBoostDef = plotFertiliserName ? BOOSTS.find(b => b.fertilizer === plotFertiliserName && b.composterFertilizer) : null;
   const cropFertTimeMult = cropFertBoostDef && typeof cropFertBoostDef.timeMult === "number" ? cropFertBoostDef.timeMult : 1;
   if (plotFertiliserName === "Sprout Mix" || plotFertiliserName === "Sproutroot Surprise") {
-    amount += .2;
+    stepAdd(.2);
     boosts.push({
       name: plotFertiliserName,
       valueText: "+0.2 yield (fertiliser)",
       timeMult: cropFertTimeMult !== 1 ? cropFertTimeMult : undefined
     });
     if (isBoostActive("knowledge_crab")) {
-      amount += .2;
+      stepAdd(.2);
       boosts.push({
         name: "Knowledge Crab",
         valueText: "+0.2 yield (doubles fertiliser)"
@@ -1817,7 +1852,7 @@ export function farmPanelComputeExactCropYield(json, g, cropName, plot, counter,
   if (plot && plot.beeSwarm && typeof plot.beeSwarm.count === "number" && plot.beeSwarm.count > 0) {
     const perSwarm = getBeeSwarmPerSwarmYield();
     const total = perSwarm * plot.beeSwarm.count;
-    amount += total;
+    stepAdd(total);
     boosts.push({
       name: "Bee Swarm",
       valueText: `+${fmt(total)} yield (${plot.beeSwarm.count} swarm${plot.beeSwarm.count === 1 ? "" : "s"} on this plot${isSkillActive("skill_pollen_power_up") ? " · incl. Pollen Power Up" : ""})`
@@ -1829,7 +1864,7 @@ export function farmPanelComputeExactCropYield(json, g, cropName, plot, counter,
       const data = ASCENSION_RANK_DATA.skill_acre_farm.values;
       const idx = Math.min(Math.max(rank, 1), 3) - 1;
       const v = tierLabel === "Advanced" ? data["tierEffects.Advanced"][idx] : data["tierEffects." + tierLabel][idx];
-      amount += v;
+      stepAdd(v);
       boosts.push({
         name: "Acre Farm",
         valueText: `${v > 0 ? "+" : ""}${fmt(v)} yield`
@@ -1840,7 +1875,7 @@ export function farmPanelComputeExactCropYield(json, g, cropName, plot, counter,
       const data = ASCENSION_RANK_DATA.skill_hectare_farm.values;
       const idx = Math.min(Math.max(rank, 1), 3) - 1;
       const v = tierLabel === "Advanced" ? data["tierEffects.Advanced"][idx] : data["tierEffects." + tierLabel][idx];
-      amount += v;
+      stepAdd(v);
       boosts.push({
         name: "Hectare Farm",
         valueText: `${v > 0 ? "+" : ""}${fmt(v)} yield`
@@ -1848,21 +1883,21 @@ export function farmPanelComputeExactCropYield(json, g, cropName, plot, counter,
     }
   }
   if (isOvernightGroundCrop(cropName) && isBoostActive("hoot")) {
-    amount += .5;
+    stepAdd(.5);
     boosts.push({
       name: "Hoot",
       valueText: "+0.5 yield"
     });
   }
   if (!isGreenhouse && currentSeason === "Spring" && isCropInSeason(cropName, "Spring") && isBoostActive("blossom_ward")) {
-    amount += 1;
+    stepAdd(1);
     boosts.push({
       name: "Blossom Ward",
       valueText: "+1 yield"
     });
   }
   if (!isGreenhouse && currentSeason === "Winter" && isCropInSeason(cropName, "Winter") && isBoostActive("frozen_heart")) {
-    amount += 1;
+    stepAdd(1);
     boosts.push({
       name: "Frozen Heart",
       valueText: "+1 yield"
@@ -1870,10 +1905,24 @@ export function farmPanelComputeExactCropYield(json, g, cropName, plot, counter,
   }
   const budAdd = farmPanelGetBudYieldForResource(cropName) || 0;
   if (budAdd) {
-    amount += budAdd;
+    stepAdd(budAdd);
     boosts.push({
       name: "Resource BUD",
       valueText: `+${fmt(budAdd)} yield`
+    });
+  }
+  if (steps) {
+    const rank = st => {
+      const nm = st.name || boosts[st.idx] && boosts[st.idx].name;
+      const i = FARM_PANEL_GAME_YIELD_ORDER.indexOf(nm);
+      return i < 0 ? FARM_PANEL_GAME_YIELD_ORDER.length : i;
+    };
+    steps.map((st, i) => ({
+      st: st,
+      i: i,
+      r: rank(st)
+    })).sort((x, y) => x.r - y.r || x.i - y.i).forEach(x => {
+      amount += x.st.v;
     });
   }
   if (isBoostActive("insect_plague")) {
@@ -1885,14 +1934,17 @@ export function farmPanelComputeExactCropYield(json, g, cropName, plot, counter,
   }
   if (isBoostActive("bountiful_harvest")) {
     const bountifulDoubled = !!getActiveSeasonGuardianName();
-    amount += bountifulDoubled ? 2 : 1;
+    if (steps) {
+      amount += 1;
+      if (bountifulDoubled) amount += 1;
+    } else amount += bountifulDoubled ? 2 : 1;
     boosts.push({
       name: "Bountiful Harvest",
       valueText: bountifulDoubled ? "+2 yield" : "+1 yield"
     });
   }
   let seedReward = null;
-  if (!isGreenhouse && Number.isFinite(farmId) && farmId > 0 && itemId) {
+  if (!isGreenhouse && !(opts && opts.noSeedDrop) && Number.isFinite(farmId) && farmId > 0 && itemId) {
     const gotSeedDrop = sflPrngChance({
       farmId: farmId,
       itemId: itemId,
@@ -1916,7 +1968,7 @@ export function farmPanelComputeExactCropYield(json, g, cropName, plot, counter,
     }
   }
   return {
-    amount: Math.round(amount * 1e4) / 1e4,
+    amount: opts && opts.machine ? farmPanelTruncate4(amount) : Math.round(amount * 1e4) / 1e4,
     boosts: boosts,
     seedReward: seedReward
   };
@@ -4774,6 +4826,7 @@ export function farmPanelComputeInProgress(json) {
   const composterCards = farmPanelComputeComposterCards(json);
   const allCards = cards.concat(animalCards).concat(composterCards).concat(cookingCards);
   allCards.sort((a, b) => b.profit - a.profit);
+  farmPanelComputeCropMachineCards(json).forEach(card => allCards.push(card));
   farmPanelComputeMycoCard(json).forEach(card => allCards.push(card));
   const peteQuestCard = farmPanelComputePeteQuestCard(json);
   if (peteQuestCard) allCards.push(peteQuestCard);
@@ -4909,6 +4962,377 @@ function farmPanelComputeMycoCard(json) {
   } catch (e) {
     return [];
   }
+}
+
+function farmPanelMachineList(g) {
+  const buildings = farmPanelField(g, "buildings");
+  const list = buildings && typeof buildings === "object" && Array.isArray(buildings["Crop Machine"]) ? buildings["Crop Machine"] : [];
+  return list.filter(m => m && typeof m === "object" && m.coordinates);
+}
+
+function farmPanelMachineResolvePacks(m, windows, now) {
+  const queue = Array.isArray(m.queue) ? m.queue.filter(p => p && typeof p === "object") : [];
+  const windowed = typeof m.oilSettledAt === "number";
+  const timing = windowed ? resolveCropMachine({
+    machine: Object.assign({}, m, {
+      queue: queue
+    }),
+    windows: windows
+  }) : null;
+  const packs = queue.map((pack, index) => {
+    const t = timing ? timing.packs[index] : null;
+    let readyAt, startsAt, growsUntil;
+    if (t) {
+      readyAt = t.readyAt;
+      startsAt = t.startsAt;
+      growsUntil = t.growsUntil;
+    } else {
+      readyAt = typeof pack.readyAt === "number" ? pack.readyAt : undefined;
+      startsAt = typeof pack.startTime === "number" ? pack.startTime : undefined;
+      growsUntil = typeof pack.growsUntil === "number" ? pack.growsUntil : undefined;
+    }
+    let status;
+    if (readyAt !== undefined && readyAt <= now) status = "ready"; else if (readyAt !== undefined) status = startsAt !== undefined && startsAt <= now ? "growing" : "queued"; else if (growsUntil !== undefined) status = growsUntil <= now ? "stalled" : "growing"; else status = "idle";
+    const seeds = Math.max(0, Math.floor(Number(pack.seeds) || 0));
+    return {
+      index: index,
+      crop: pack.crop,
+      seeds: seeds,
+      pack: pack,
+      status: status,
+      readyAt: readyAt,
+      growsUntil: growsUntil,
+      remainingSec: readyAt !== undefined ? Math.max(0, (readyAt - now) / 1e3) : null,
+      key: `${m.id}|${pack.crop}|${seeds}|${Math.round(Number(pack.totalGrowTime) || 0)}`
+    };
+  });
+  const fuelMs = windowed ? cropMachineFuelAt({
+    machine: Object.assign({}, m, {
+      queue: queue
+    }),
+    windows: windows,
+    at: now
+  }) : Math.max(0, Number(m.unallocatedOilTime) || 0);
+  return {
+    packs: packs,
+    windowed: windowed,
+    fuelMs: fuelMs,
+    fuelOutAt: timing && typeof timing.fuelRunsOutAt === "number" ? timing.fuelRunsOutAt : null
+  };
+}
+
+function farmPanelMachineCritInfo(cropName, farmId) {
+  const itemId = CROP_KNOWN_IDS[cropName];
+  const list = [];
+  if (isBoostActive("green_amulet")) list.push({
+    name: "Green Amulet",
+    chance: 10
+  });
+  if (cropName === "Potato" && isBoostActive("peeled_potato")) list.push({
+    name: "Peeled Potato",
+    chance: 20
+  });
+  if (cropName === "Potato" && isBoostActive("potent_potato")) list.push({
+    name: "Potent Potato",
+    chance: 10 / 3
+  });
+  if (cropName === "Sunflower" && isBoostActive("stellar_sunflower")) list.push({
+    name: "Stellar Sunflower",
+    chance: 10 / 3
+  });
+  if (cropName === "Radish" && isBoostActive("radical_radish")) list.push({
+    name: "Radical Radish",
+    chance: 10 / 3
+  });
+  const resolvable = !!(farmId && itemId);
+  return {
+    list: resolvable ? list : [],
+    itemId: itemId,
+    unresolved: !resolvable && list.length > 0
+  };
+}
+
+export function farmPanelCropMachinePackYield(g, pack, startCounter, atTime, farmId) {
+  const seeds = Math.max(0, Math.floor(Number(pack.seeds) || 0));
+  if (typeof pack.amount === "number" && isFinite(pack.amount)) return {
+    amount: pack.amount,
+    seeds: seeds,
+    crits: {},
+    exact: true
+  };
+  const fid = Number.isFinite(Number(farmId)) && Number(farmId) > 0 ? Number(farmId) : null;
+  const info = farmPanelMachineCritInfo(pack.crop, fid);
+  const crits = {};
+  const cache = {};
+  let total = 0;
+  for (let i = 0; i < seeds; i++) {
+    const fired = {};
+    let key = "";
+    info.list.forEach(c => {
+      const hit = !!sflPrngChance({
+        farmId: fid,
+        itemId: info.itemId,
+        counter: startCounter + i,
+        chance: c.chance,
+        criticalHitName: c.name
+      });
+      fired[c.name] = hit;
+      key += hit ? "1" : "0";
+      if (hit) crits[c.name] = (crits[c.name] || 0) + 1;
+    });
+    let v = cache[key];
+    if (v === undefined) {
+      v = farmPanelComputeExactCropYield(null, g, pack.crop, null, startCounter + i, false, atTime, {
+        noSeedDrop: true,
+        machine: true,
+        crits: fired,
+        farmId: fid
+      }).amount;
+      cache[key] = v;
+    }
+    total += v;
+  }
+  return {
+    amount: Math.round(total * 1e8) / 1e8,
+    seeds: seeds,
+    crits: crits,
+    exact: !info.unresolved
+  };
+}
+
+function farmPanelCropMachineLogProvider(g, fid) {
+  const machines = farmPanelMachineList(g);
+  if (!machines.length) return null;
+  const now = Date.now();
+  const windows = cropMachineWindows(g);
+  const packs = [];
+  machines.forEach(m => {
+    farmPanelMachineResolvePacks(m, windows, now).packs.forEach(p => {
+      if (!p.crop) return;
+      const e = {
+        key: p.key,
+        crop: p.crop,
+        seeds: p.seeds,
+        readyAt: p.readyAt
+      };
+      if (typeof p.pack.amount === "number") e.amount = p.pack.amount;
+      packs.push(e);
+    });
+  });
+  return {
+    packs: packs,
+    yieldOf: (crop, seeds, counter, atTime, amt) => typeof amt === "number" ? {
+      amount: amt,
+      exact: true
+    } : farmPanelCropMachinePackYield(g, {
+      crop: crop,
+      seeds: seeds
+    }, counter, atTime, fid)
+  };
+}
+
+export function farmPanelComputeCropMachineCards(json) {
+  try {
+    const g = farmSyncExtractGameState(json);
+    const machines = farmPanelMachineList(g).filter(m => Array.isArray(m.queue) && m.queue.length);
+    if (!machines.length) return [];
+    const now = Date.now();
+    const windows = cropMachineWindows(g);
+    const farmId = Number(farmPanelGetLastInfo().id);
+    const farmIdOk = Number.isFinite(farmId) && farmId > 0;
+    const activity = farmPanelField(g, "farmActivity") || {};
+    const resolved = machines.map(m => Object.assign({
+      m: m
+    }, farmPanelMachineResolvePacks(m, windows, now)));
+    const order = [];
+    resolved.forEach(r => r.packs.forEach(p => order.push(p)));
+    order.sort((a, b) => (a.status === "ready" ? 0 : 1) - (b.status === "ready" ? 0 : 1));
+    const counters = {};
+    order.forEach(p => {
+      if (!p.crop) return;
+      if (counters[p.crop] === undefined) {
+        const raw = Number(activity[`${p.crop} Harvested`]);
+        counters[p.crop] = Number.isFinite(raw) && raw > 0 ? raw : 0;
+      }
+      p.startCounter = counters[p.crop];
+      const at = p.status === "ready" || p.readyAt === undefined ? now : Math.max(now, p.readyAt);
+      p.yield = farmPanelCropMachinePackYield(g, p.pack, p.startCounter, at, farmIdOk ? farmId : null);
+      counters[p.crop] = p.startCounter + p.seeds;
+    });
+    const feeRate = (feePercent || 0) / 100;
+    return resolved.map((r, mi) => {
+      const groups = {};
+      r.packs.forEach(p => {
+        if (!p.crop || !p.yield) return;
+        const grp = groups[p.crop] || (groups[p.crop] = {
+          name: p.crop,
+          seeds: 0,
+          packs: 0,
+          amount: 0,
+          readyAmount: 0,
+          readyPacks: 0,
+          crits: {},
+          exact: true,
+          startCounter: p.startCounter
+        });
+        grp.seeds += p.seeds;
+        grp.packs += 1;
+        grp.amount += p.yield.amount;
+        if (p.status === "ready") {
+          grp.readyAmount += p.yield.amount;
+          grp.readyPacks += 1;
+        }
+        Object.keys(p.yield.crits || {}).forEach(k => {
+          grp.crits[k] = (grp.crits[k] || 0) + p.yield.crits[k];
+        });
+        if (!p.yield.exact) grp.exact = false;
+        grp.startCounter = Math.min(grp.startCounter, p.startCounter);
+      });
+      const cropRows = Object.keys(groups).map(name => {
+        const grp = groups[name];
+        const price = farmPanelGetMarketPriceFlower(name);
+        const gross = grp.amount * price;
+        let boosts = [];
+        try {
+          boosts = farmPanelComputeExactCropYield(null, g, name, null, grp.startCounter, false, now, {
+            noSeedDrop: true,
+            crits: {},
+            farmId: farmIdOk ? farmId : null
+          }).boosts;
+        } catch (e) {
+          boosts = [];
+        }
+        return Object.assign(grp, {
+          amount: Math.round(grp.amount * 1e4) / 1e4,
+          price: price,
+          gross: gross,
+          fee: gross * feeRate,
+          boosts: boosts
+        });
+      });
+      cropRows.sort((a, b) => b.gross - a.gross || a.name.localeCompare(b.name));
+      const readyCount = r.packs.filter(p => p.status === "ready").length;
+      const waiting = r.packs.filter(p => p.status !== "ready" && p.remainingSec != null);
+      const soonestSec = waiting.length ? Math.min(...waiting.map(p => p.remainingSec)) : null;
+      const label = resolved.length > 1 ? `Crop Machine ${mi + 1}` : "Crop Machine";
+      const gross = cropRows.reduce((s, c) => s + c.gross, 0);
+      const fee = cropRows.reduce((s, c) => s + c.fee, 0);
+      const growingNow = r.packs.some(p => p.status === "growing");
+      const speed = r.windowed && growingNow ? effectiveSpeedAt(now, windows) : 1;
+      return {
+        isCropMachineCard: true,
+        name: label,
+        searchKey: label.toLowerCase().replace(/\s+/g, "-"),
+        profit: 0,
+        count: r.packs.length,
+        readyCount: readyCount,
+        growingCount: r.packs.length - readyCount,
+        soonestSec: soonestSec,
+        packs: r.packs,
+        crops: cropRows,
+        gross: gross,
+        fee: fee,
+        fuelMs: r.fuelMs,
+        fuelOutAt: r.fuelOutAt,
+        windowed: r.windowed,
+        speed: speed,
+        farmIdOk: farmIdOk,
+        isReady: readyCount > 0
+      };
+    });
+  } catch (e) {
+    return [];
+  }
+}
+
+function farmPanelCropMachineStatusText(p) {
+  if (p.status === "ready") return "✅ Ready";
+  if (p.status === "growing" && p.remainingSec == null) {
+    const stallSec = p.growsUntil !== undefined ? Math.max(0, (p.growsUntil - Date.now()) / 1e3) : 0;
+    return `⛽ Oil runs out in <span class="farm-countdown" data-base="${stallSec}">${guroCountdownText(stallSec)}</span>`;
+  }
+  if (p.status === "growing") return `⏳ <span class="farm-countdown" data-base="${p.remainingSec}">${guroCountdownText(p.remainingSec)}</span>`;
+  if (p.status === "queued") return `🕒 Queued${p.remainingSec != null ? ` · <span class="farm-countdown" data-base="${p.remainingSec}">${guroCountdownText(p.remainingSec)}</span>` : ""}`;
+  if (p.status === "stalled") return "⛽ Out of oil";
+  return "⛽ Waiting for oil";
+}
+
+function farmPanelCropMachineBoostHtml(row) {
+  const blocks = row.crops.map(c => {
+    const rows = [];
+    (c.boosts || []).forEach(b => {
+      rows.push(`<div class="boost-applied-row is-yield">${getBoostIcon(b.name)}<b>${escapeHtml(b.name)}</b> <span class="boost-total-value">${escapeHtml(b.valueText || "")}</span></div>`);
+    });
+    Object.keys(c.crits || {}).forEach(name => {
+      rows.push(`<div class="boost-applied-row is-yield">${getBoostIcon(name)}<b>${escapeHtml(name)}</b> <span class="boost-total-value">${c.crits[name]}× crit procs</span></div>`);
+    });
+    if (!rows.length) return "";
+    return `<div class="lib-section-title" style="margin-top:10px;">${escapeHtml(c.name.toUpperCase())}</div>${rows.join("")}`;
+  }).join("");
+  if (!blocks) return "";
+  return `<div class="section-badge is-boost-label">⚡ Applied Boost</div>${blocks}`;
+}
+
+export function farmPanelRenderCropMachineCard(row) {
+  const expandedCls = farmPanelExpandedNames.has(row.searchKey) ? " expanded" : "";
+  const statusBadgeHtml = farmPanelStatusBadgeHtml(row.readyCount, row.growingCount, "Growing");
+  const statusFoldHtml = guroStatusFoldHtml("Ready", row.readyCount < row.count ? row.soonestSec : null);
+  const machineIcon = getIcon("Crop Machine");
+  const dailyBadgeHtml = dailyHarvestBadgeHtml("Crop Machine", "cropmachine", machineIcon, farmPanelDailyFarmId());
+  const chipsHtml = row.crops.map(c => `\n      <span class="animal-produce-chip">\n        <span class="produce-yield">${c.exact ? "+" : "~+"}${fmtCompost(c.amount)}</span>\n        <span class="produce-icon">${getIcon(c.name)}</span>\n      </span>`).join("");
+  const valueBlockHtml = row.gross > 0 ? guroValueBlockHtml(row.gross, row.fee, fmt) : "";
+  const cropRowsHtml = row.crops.map(c => {
+    const counterRow = `<div class="animal-detail-stat"><span class="label">${escapeHtml(c.name)} Harvested</span><span class="value">${c.startCounter}</span></div>`;
+    const seedRow = `<div class="animal-detail-stat"><span class="label">${escapeHtml(c.name)} Seeds</span><span class="value">${fmtCompost(c.seeds)} in ${c.packs} pack${c.packs === 1 ? "" : "s"}</span></div>`;
+    const readyRow = c.readyPacks > 0 && c.readyPacks < c.packs ? `<div class="animal-detail-stat"><span class="label">${escapeHtml(c.name)} Ready now</span><span class="value">${fmtCompost(c.readyAmount)} ${getIcon(c.name)}</span></div>` : "";
+    return renderAnimalCardProductDetailRow(getIcon(c.name), c.name, c.amount, c.gross, c.fee) + seedRow + readyRow + counterRow;
+  }).join("");
+  const packRowsHtml = row.packs.map(p => `<div class="animal-detail-stat"><span class="label">Pack ${p.index + 1} · ${fmtCompost(p.seeds)} ${getIcon(p.crop)}</span><span class="value">${p.yield ? `${p.yield.exact ? "+" : "~+"}${fmtCompost(p.yield.amount)} · ` : ""}${farmPanelCropMachineStatusText(p)}</span></div>`).join("");
+  let fuelText;
+  if (row.fuelMs > 0) {
+    fuelText = `⛽ ${farmPanelFormatSpiceDuration(row.fuelMs / 1e3)} of oil`;
+    if (row.fuelOutAt != null && row.fuelOutAt > Date.now()) fuelText += ` · runs dry in ${farmPanelFormatSpiceDuration((row.fuelOutAt - Date.now()) / 1e3)}`;
+  } else {
+    fuelText = "⛽ Out of oil";
+  }
+  const speedText = row.speed > 1 ? ` · ⚡ ×${Math.round(row.speed * 1e3) / 1e3} speed` : "";
+  const fuelRow = `<div class="animal-detail-stat"><span class="label">Oil</span><span class="value">${fuelText}${speedText}</span></div>`;
+  const totalsHtml = row.gross > 0 ? `\n        <div class="animal-detail-stat"><span class="label">Market Value</span><span class="value">${fmt(row.gross)} ${FLOWER_ICON}</span></div>\n        <div class="animal-detail-stat"><span class="label">Tax</span><span class="value">${row.fee > 0 ? `-${fmt(row.fee)}` : "0"} ${FLOWER_ICON}</span></div>` : "";
+  const netHtml = row.gross > 0 ? `<div class="animal-net-row2"><span class="label">Net</span><span class="value is-profit">${fmt(row.gross - row.fee)} ${FLOWER_ICON}</span></div>` : "";
+  const inexact = row.crops.some(c => !c.exact);
+  const noteText = inexact ? "Enter your Farm ID and sync to resolve crit procs; amounts marked ~ exclude them." : "Yields are exact for the current harvest counter: ready packs are harvested first, in queue order, and each seed uses its own counter position. Harvesting the same crop from plots first shifts the counter.";
+  const boostHtml = farmPanelCropMachineBoostHtml(row);
+  return `
+  <div class="card animal-merged-card${row.readyCount > 0 ? " is-profit" : ""}${expandedCls}" data-search="${row.searchKey}" data-fp-category="crops">
+    <div class="card-toggle">
+      <div class="card-name-row">
+        <span class="card-icon">${machineIcon}</span>
+        <div>
+          <div class="card-name">${escapeHtml(row.name)}</div>
+          <div class="card-type-row">
+            <span class="card-type">${row.count} pack${row.count === 1 ? "" : "s"} · ${row.crops.length} crop${row.crops.length === 1 ? "" : "s"}</span>
+          </div>
+          <div class="animal-fold-row">${chipsHtml}</div>${valueBlockHtml}
+        </div>
+      </div>
+      <div class="card-collapsed-profit">
+        <span class="harvest-stack">${dailyBadgeHtml}${statusBadgeHtml}</span>
+        <span class="chev">▾</span>
+      </div>
+      ${statusFoldHtml}
+    </div>
+    <div class="card-details">
+      <div class="animal-detail-grid">
+        ${fuelRow}
+        ${packRowsHtml}
+        ${cropRowsHtml}
+        ${totalsHtml}
+      </div>
+      ${netHtml}
+      ${boostHtml}
+      <div class="boost-mult-note" style="margin-top:8px;">${noteText}</div>
+    </div>
+  </div>`;
 }
 
 function farmPanelComputePeteQuestCard(json) {
@@ -5108,6 +5532,7 @@ function farmPanelRenderNodeYieldBoostList(row, summary, produceIcon) {
 }
 
 function farmPanelCardCategory(row) {
+  if (row.isCropMachineCard) return "crops";
   if (row.isMycoCard) return "myco";
   if (row.isPeteQuestCard) return "pete";
   if (row.isAnimalMerged) return "animals";
@@ -5732,6 +6157,8 @@ dailyHarvestSetAnimalYieldProvider(farmPanelClaimedAnimalYield);
 
 dailyHarvestSetCookingProvider(farmPanelCookingLogSlots);
 
+dailyHarvestSetMachineProvider(farmPanelCropMachineLogProvider);
+
 dailyHarvestSetIconProvider(cookingFoodOrFishIcon);
 
 dailyHarvestSetPriceProvider(name => ({
@@ -5758,6 +6185,7 @@ export function farmPanelRenderInProgressRow(row) {
   if (row.isComposterCard) return farmPanelRenderComposterCard(row);
   if (row.isHoneyCard) return farmPanelRenderHoneyCard(row);
   if (row.isCookingCard) return farmPanelRenderCookingCard(row);
+  if (row.isCropMachineCard) return farmPanelRenderCropMachineCard(row);
   if (row.isMycoCard) return farmPanelRenderMycoCard(row);
   if (row.isPeteQuestCard) return farmPanelRenderPeteQuestCard(row);
   const baseStatus = row.readyCount > 0 ? row.readyCount === row.count ? "✅ All ready" : `✅ ${row.readyCount} ready · ⏳ ${row.count - row.readyCount} growing` : "⏳ Growing";
