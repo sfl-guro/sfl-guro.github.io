@@ -2562,7 +2562,7 @@ export function renderAnimalYieldGroupsList(card) {
     if (feedsOf(a) > 0) {
       needHtml = `<div class="ay-need"><span class="ay-k">XP needed</span><b class="ay-v">${num(a.xpGap)}</b><span class="ay-sep"></span><span class="ay-k">Feed</span><span class="ay-feed"><b>×${num(feedsOf(a))}</b>${feedIcon} ${escapeHtml(a.feedToNextName || "")}</span><span class="ay-xpe">+${num(a.xpPerFeed)} XP each</span></div>${a.loveXp > 0 ? `<div class="ay-why">Love XP from ${escapeHtml(a.loveItem || "petting")} (about ${num(a.loveXp)} XP) may cover this instead of a feed.</div>` : ""}`;
     } else if (a.isReadyState) {
-      needHtml = `<div class="ay-need is-done"><span class="ay-k">Ready to collect</span></div>`;
+      needHtml = `<div class="ay-need is-done"><span class="ay-k">${a.pendingClaims > 1 ? "Ready to collect · " + a.pendingClaims + " claims banked" : "Ready to collect"}</span></div>`;
     } else if (a.fedThisCycle) {
       needHtml = `<div class="ay-need is-done"><span class="ay-k">Fully fed for this cycle</span></div>`;
     } else {
