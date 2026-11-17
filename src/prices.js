@@ -3557,6 +3557,10 @@ export const SFL_COMMUNITY_PROXY_BASE = "https://sfl-community-proxy.bossweki.wo
 
 export const SFL_COMMUNITY_API_BASE = SFL_COMMUNITY_PROXY_BASE + "community/farms/";
 
+export const SFL_DIG_PROXY_BASE = "https://sfl-dig-proxy.bossweki.workers.dev/";
+
+export const SFL_DIG_API_BASE = SFL_DIG_PROXY_BASE + "community/farms/";
+
 export function computeResourceBaseCostCoins(name) {
   const data = RESOURCE_DATA[name];
   if (!data) return 0;

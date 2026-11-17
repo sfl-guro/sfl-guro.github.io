@@ -1,7 +1,7 @@
 import { DIG_CHAPTER_STORE } from "./dig_chapter_store.js";
 import { ICON_DATA } from "./icon_data.js";
 import { digDeduce } from "./dig_solver.js";
-import { __set_farmPanelInProgressCategoryFilter, __set_farmPanelSyncInFlight, farmPanelAOEExtent, farmPanelCheckTurtleAOEBonus, farmPanelComputeEconomics, farmPanelComputeExactCrimstoneYield, farmPanelComputeExactCropYield, farmPanelComputeExactFlowerYield, farmPanelComputeExactFruitYield, farmPanelComputeExactGreenhouseYield, farmPanelCropTierLabel, farmPanelDebugFindShapes, farmPanelDetectNodeTier, farmPanelField, farmPanelGameState, farmPanelGetCollectiblePosition, farmPanelGetCropGrowDurationMsFromSync, farmPanelGetCostPerUnitFlower, farmPanelGetLastInfo, farmPanelGetMarketId, farmPanelGetMarketPriceFlower, farmPanelGnomeAOEBonus, farmPanelGnomeComboPresent, farmPanelGrowTimeSec, farmPanelIsWithinTurtleAOE, farmPanelLoadCachedGameState, farmPanelMarkScrollActivity, farmPanelMergeAuthoritativeResourceData, farmPanelSaveGameState, farmPanelSaveLastInfo, farmPanelSyncInFlight } from "./inprogress.js";
+import { __set_farmPanelInProgressCategoryFilter, __set_farmPanelSyncInFlight, farmPanelAOEExtent, farmPanelCheckTurtleAOEBonus, farmPanelComputeEconomics, farmPanelComputeExactCrimstoneYield, farmPanelComputeExactCropYield, farmPanelComputeExactFlowerYield, farmPanelComputeExactFruitYield, farmPanelComputeExactGreenhouseYield, farmPanelCropTierLabel, farmPanelDebugFindShapes, farmPanelDetectNodeTier, farmPanelField, farmPanelGameState, farmPanelGetCollectiblePosition, farmPanelGetCostPerUnitFlower, farmPanelGetLastInfo, farmPanelGetMarketId, farmPanelGetMarketPriceFlower, farmPanelGnomeAOEBonus, farmPanelGnomeComboPresent, farmPanelGrowTimeSec, farmPanelIsWithinTurtleAOE, farmPanelLoadCachedGameState, farmPanelMarkScrollActivity, farmPanelMergeAuthoritativeResourceData, farmPanelSaveGameState, farmPanelSaveLastInfo, farmPanelSyncInFlight } from "./inprogress.js";
 import { harvestLogSetFarm } from "./harvest_log.js";
 
 import { POTION_ROOM_ICON } from "./potion_icon.js";
@@ -18,7 +18,7 @@ import { renderBeginnerPanel, syncBeginnerPanel } from "./beginner.js";
 
 import { sflbRefreshMyBuildIfOpen } from "./sfl_bubbles.js";
 
-import { getFlowerSeedTypeCost, getFlowerSeedEffectiveCost, SFL_COMMUNITY_API_BASE, SFL_COMMUNITY_PROXY_BASE, SFL_EXCHANGE_API, SFL_LAND_API_BASE, SFL_LAND_INFO_BASE, __set_animalFlowerCost, __set_bountyFlowerCost, __set_budFloorPrice, __set_choresFlowerCost, __set_marketActiveTab, __set_marketItems, __set_petFloorPrice, _priceIndexCache, animalFlowerCost, applyLivePricesToMarket, applyMarketSearchFilter, bettyMarketPrice, bountyFlowerCost, budFloorPrice, choresFlowerCost, computeCalcShrineCost, computeMedicineCostFlower, computeRestockCost24h, computeRestockCost24hDetailed, computeRestockCost24hDetailedIndividual, computeSaltUnitCostCoins, cookingCostMode, cookingIngredientUnitCostCoins, crustaceanOptionCosts, crustaceanTrapCostCoins, esComputeAscensionUpgradeCostGeneric, esGetIslandUpgradeCost, esResourceFlowerCost, esSwampCostBase, ensureCosmeticPricesLoaded, fetchLivePrices, findCosmeticPriceForName, findLiveNftPriceForName, findLivePriceForItem, findLivePriceForName, fishCatchStageCostCoins, fishChumUnitCostCoins, fishEffectiveBasicCostCoins, fishRodCostCoins, fishSaltCostFlower, isFishingBuyMode, getActiveAgingSaltCostMult, getAgingSaltCostLocal, getActiveShrineDailyCost, getArtistCoinCostMult, getCropCostCoins, getFeedUnitCost, getFlowerVarietyCostCoins, getFruitCostCoins, getGreenhouseCostCoins, getItemCostByName, getMaterialUnitCostCoins, getOmnifeedUnitCostCoins, getPetResourceMarket, getRestockGemCost, getRestockGemCostIndividual, getSpiceCostPerUseFlower, getToolCostCoins, gunterBuyCost, gunterBuyTotalCost, gunterRenderFlowerCost, hasFreeCostBoost, hasFreeSaltRakeCost, honeyCostFlowerForSpiceRack, truffleCostFlowerForSpiceRack, wildMushroomCostFlowerForSpiceRack, initLivePricesOnLoad, invalidateCostCache, isSflThemeOn, liveNftPrices, livePriceSource, livePrices, livePricesUpdatedAt, marketplaceFlowerUsdPrice, marketItems, marketPriceEditId, npcFlowerCost, openMarketPriceEdit, petDailyFoodCostFlower, petFloorPrice, petResourceCostOverride, pickledVegCost, priceEditTargetId, priceSourceBadgeHtml, refinedSaltUnitCostFlower, refreshSflThemeClass, removeToolMarketEntry, renderFishMarketCardsList, renderMarketList, renderMedicineCostDisplay, restockCostMode, restocksForMode, wholeRestocks, saltCostFlowerForSpiceRack, setLivePrices, setRestockCostMode, setSflTheme, syncToolMarketEntry, tradeMarketPrice } from "./prices.js";
+import { getFlowerSeedTypeCost, getFlowerSeedEffectiveCost, SFL_COMMUNITY_API_BASE, SFL_COMMUNITY_PROXY_BASE, SFL_DIG_API_BASE, SFL_EXCHANGE_API, SFL_LAND_API_BASE, SFL_LAND_INFO_BASE, __set_animalFlowerCost, __set_bountyFlowerCost, __set_budFloorPrice, __set_choresFlowerCost, __set_marketActiveTab, __set_marketItems, __set_petFloorPrice, _priceIndexCache, animalFlowerCost, applyLivePricesToMarket, applyMarketSearchFilter, bettyMarketPrice, bountyFlowerCost, budFloorPrice, choresFlowerCost, computeCalcShrineCost, computeMedicineCostFlower, computeRestockCost24h, computeRestockCost24hDetailed, computeRestockCost24hDetailedIndividual, computeSaltUnitCostCoins, cookingCostMode, cookingIngredientUnitCostCoins, crustaceanOptionCosts, crustaceanTrapCostCoins, esComputeAscensionUpgradeCostGeneric, esGetIslandUpgradeCost, esResourceFlowerCost, esSwampCostBase, ensureCosmeticPricesLoaded, fetchLivePrices, findCosmeticPriceForName, findLiveNftPriceForName, findLivePriceForItem, findLivePriceForName, fishCatchStageCostCoins, fishChumUnitCostCoins, fishEffectiveBasicCostCoins, fishRodCostCoins, fishSaltCostFlower, isFishingBuyMode, getActiveAgingSaltCostMult, getAgingSaltCostLocal, getActiveShrineDailyCost, getArtistCoinCostMult, getCropCostCoins, getFeedUnitCost, getFlowerVarietyCostCoins, getFruitCostCoins, getGreenhouseCostCoins, getItemCostByName, getMaterialUnitCostCoins, getOmnifeedUnitCostCoins, getPetResourceMarket, getRestockGemCost, getRestockGemCostIndividual, getSpiceCostPerUseFlower, getToolCostCoins, gunterBuyCost, gunterBuyTotalCost, gunterRenderFlowerCost, hasFreeCostBoost, hasFreeSaltRakeCost, honeyCostFlowerForSpiceRack, truffleCostFlowerForSpiceRack, wildMushroomCostFlowerForSpiceRack, initLivePricesOnLoad, invalidateCostCache, isSflThemeOn, liveNftPrices, livePriceSource, livePrices, livePricesUpdatedAt, marketplaceFlowerUsdPrice, marketItems, marketPriceEditId, npcFlowerCost, openMarketPriceEdit, petDailyFoodCostFlower, petFloorPrice, petResourceCostOverride, pickledVegCost, priceEditTargetId, priceSourceBadgeHtml, refinedSaltUnitCostFlower, refreshSflThemeClass, removeToolMarketEntry, renderFishMarketCardsList, renderMarketList, renderMedicineCostDisplay, restockCostMode, restocksForMode, wholeRestocks, saltCostFlowerForSpiceRack, setLivePrices, setRestockCostMode, setSflTheme, syncToolMarketEntry, tradeMarketPrice } from "./prices.js";
 
 import { loadBaseHoneyIfNeeded, profileBumpkinCachePersist, safeLSJSON, saveAnimalAffectionCounts, saveAnimalAffectionTools, saveAnimalBuds, saveAnimalCounts, saveAnimalSicknessEstimate, saveAoeSyncOverrides, saveAscensionState, saveBeeSwarmState, saveBoostState, saveBoosts, saveBudFloorPrice, saveCmOilTank, saveCmQueue, saveCookingCounts, saveCropBuds, saveCrustaceanChumSelection, saveFishBuds, saveFlowerVarietyOverrides, saveFruitBuds, saveFruitCounts, saveGlobalPlotCount, saveGlobalPlotCountTouched, saveGreenhouseBuds, saveGreenhouseCounts, saveHiveCount, saveManualCycleOverrides, saveMarketState, saveNodeCounts, saveNodeCountsTouched, savePetFloorPrice, savePetResourceCostOverride, savePetsData, saveResourceBuds, saveSaltFarmLevel, saveSaltUi, saveSculptureLevel, saveSelectedHoneyFlower, saveSelectedSwarmCrop, saveSkillState, saveSpiceUsage, saveState, saveSyncedSkillLevels, saveToolRecipes, saveTradeState, saveWeatherDestructionSync } from "./storage.js";
 
@@ -1647,6 +1647,47 @@ export function getAnimalLevelFromXp(type, xp, allowZero) {
   return allowZero ? level : Math.max(1, level);
 }
 
+function animalMaxCycleXp(type) {
+  const t = ANIMAL_XP_THRESHOLDS[type];
+  return t[15] - t[14];
+}
+
+export function animalProduceMarkCount(type, experience) {
+  const t = ANIMAL_XP_THRESHOLDS[type];
+  if (!t || typeof experience !== "number" || isNaN(experience)) return 0;
+  if (experience < t[15]) return getAnimalLevelFromXp(type, experience, true);
+  return 15 + Math.floor((experience - t[15]) / animalMaxCycleXp(type) + 1e-9);
+}
+
+export function animalProduceMarkExperience(type, count) {
+  const t = ANIMAL_XP_THRESHOLDS[type];
+  if (count <= 15) return t[count];
+  return t[15] + (count - 15) * animalMaxCycleXp(type);
+}
+
+export function animalClaimedExperience(type, animal) {
+  if (typeof animal.claimedExperience === "number") return animal.claimedExperience;
+  const marks = animalProduceMarkCount(type, animal.xp);
+  const owed = animal.state === "ready" ? 1 : 0;
+  return animalProduceMarkExperience(type, Math.max(marks - owed, 0));
+}
+
+export function animalPendingClaims(type, animal) {
+  if (typeof animal.xp !== "number" || isNaN(animal.xp)) return 0;
+  return Math.max(animalProduceMarkCount(type, animal.xp) - animalProduceMarkCount(type, animalClaimedExperience(type, animal)), 0);
+}
+
+export function animalNextClaimLevel(type, animal) {
+  if (animalPendingClaims(type, animal) === 0) return getAnimalLevelFromXp(type, animal.xp, true);
+  const next = animalProduceMarkCount(type, animalClaimedExperience(type, animal)) + 1;
+  return Math.min(next, 15);
+}
+
+export function animalShownLevel(type, animal) {
+  const next = animalNextClaimLevel(type, animal);
+  return animalPendingClaims(type, animal) > 0 && next < 15 ? next - 1 : next;
+}
+
 export const REQUIRED_FOOD_QTY_MAP = {
   chicken: 1,
   sheep: 3,
@@ -2253,7 +2294,9 @@ export function computeAnimalRealProgress(type, animal, now, readyAt) {
   const hasXp = typeof animal.xp === "number" && !isNaN(animal.xp);
   const level = hasXp ? getAnimalLevelFromXp(type, animal.xp, true) : 1;
   const xp = hasXp ? animal.xp : thresholds[level];
-  const isReadyState = animal.state === "ready";
+  const pendingClaims = hasXp ? animalPendingClaims(type, animal) : animal.state === "ready" ? 1 : 0;
+  const shownLevel = hasXp ? animalShownLevel(type, animal) : level;
+  const isReadyState = animal.state === "ready" || pendingClaims > 0;
   const isMax = level >= 15;
   let xpGap, nextThreshold, nextLevelLabel, isMaxCycle;
   if (!isMax) {
@@ -2289,7 +2332,7 @@ export function computeAnimalRealProgress(type, animal, now, readyAt) {
   const noOfFeeds = Math.ceil(Math.max(0, xpGap - love.xp) / boostedFoodXp);
   let claimLevel;
   if (isReadyState) {
-    claimLevel = Math.max(1, level);
+    claimLevel = hasXp && pendingClaims > 0 ? Math.max(1, animalNextClaimLevel(type, animal)) : Math.max(1, level);
   } else if (isMax) {
     claimLevel = 15;
   } else {
@@ -2308,6 +2351,8 @@ export function computeAnimalRealProgress(type, animal, now, readyAt) {
   }
   return {
     level: level,
+    shownLevel: shownLevel,
+    pendingClaims: pendingClaims,
     xp: xp,
     isReadyState: isReadyState,
     costFeeds: costFeeds,
@@ -15330,8 +15375,8 @@ async function fetchFarmSnapshotRaw(farmId) {
   return await res.json();
 }
 
-async function fetchCommunityFarmDataOnce(farmId) {
-  const res = await fetchWithTimeout(SFL_COMMUNITY_API_BASE + encodeURIComponent(farmId), {
+async function fetchCommunityFarmDataOnce(farmId, apiBase) {
+  const res = await fetchWithTimeout((apiBase || SFL_COMMUNITY_API_BASE) + encodeURIComponent(farmId), {
     cache: "no-store"
   });
   let json = null;
@@ -15362,6 +15407,23 @@ export async function fetchCommunityFarmData(farmId) {
       const permanent = status && status >= 400 && status < 500 && status !== 429 && status !== 408;
       if (permanent) break;
       if (attempt < maxAttempts) await new Promise(r => setTimeout(r, status === 429 ? 2500 * attempt : 700 * attempt));
+    }
+  }
+  throw lastErr;
+}
+
+export async function fetchDigFarmData(farmId) {
+  const maxAttempts = 3;
+  let lastErr = null;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await fetchCommunityFarmDataOnce(farmId, SFL_DIG_API_BASE);
+    } catch (e) {
+      lastErr = e;
+      const status = e && e.status;
+      const permanent = status && status >= 400 && status < 500 && status !== 429 && status !== 408;
+      if (permanent) break;
+      if (attempt < maxAttempts) await new Promise(r => setTimeout(r, status === 429 ? 4000 : 700 * attempt));
     }
   }
   throw lastErr;
@@ -17763,20 +17825,14 @@ $("farmPanelDebugCrowCooldownBtn").onclick = () => {
       const within = px >= pos.x - e.xLeft && px <= pos.x + e.xRight && py <= pos.y - dims.height && py >= pos.y - dims.height - (e.depth - 1);
       if (!within) return;
       const dx = px - pos.x, dy = py - pos.y;
-      const lastUsed = aoeState[def.collectibleName] && aoeState[def.collectibleName][dx] && typeof aoeState[def.collectibleName][dx][dy] === "number" ? aoeState[def.collectibleName][dx][dy] : 0;
-      const idleMs = now - lastUsed;
-      const baseSec = farmPanelGrowTimeSec(cropName);
-      const baseMs = (typeof baseSec === "number" ? baseSec : 0) * 1e3;
-      const rawBaseDurationMs = job && typeof job.baseDurationMs === "number" ? job.baseDurationMs : null;
-      const boostedTimeMs = job && typeof job.boostedTime === "number" ? job.boostedTime : null;
-      const newCooldownMs = farmPanelGetCropGrowDurationMsFromSync(job, cropName, g, plot.fertiliser);
-      const passesNow = idleMs >= newCooldownMs;
+      const aoeKey = boostId === "basic_scarecrow" ? "Chonky Scarecrow" : def.collectibleName;
+      const lastUsed = aoeState[aoeKey] && aoeState[aoeKey][dx] && typeof aoeState[aoeKey][dx][dy] === "number" ? aoeState[aoeKey][dx][dy] : 0;
+      const cycleStartedAt = job && typeof job.cycleStartedAt === "number" ? job.cycleStartedAt : job && typeof job.plantedAt === "number" ? job.plantedAt : 0;
+      const passesNow = lastUsed <= cycleStartedAt;
       lines.push(`  plot #${plotId}: crop=${cropName}, x=${px}, y=${py}, dx=${dx}, dy=${dy}`);
-      lines.push(`    job.baseDurationMs = ${rawBaseDurationMs}  |  job.boostedTime = ${boostedTimeMs}  |  base crop time (ms) = ${baseMs}`);
-      lines.push(`    computed cooldownMs (current logic) = ${newCooldownMs}  (${(newCooldownMs / 1e3 / 3600).toFixed(2)}h)`);
-      lines.push(`    aoe last used at = ${lastUsed} (${lastUsed ? new Date(lastUsed).toISOString() : "never"})`);
-      lines.push(`    idleMs since last use = ${idleMs}  (${(idleMs / 1e3 / 3600).toFixed(2)}h)`);
-      lines.push(`    idleMs >= cooldownMs → bonus applies now = ${passesNow}`);
+      lines.push(`    aoe key = ${aoeKey}  |  aoe last used at = ${lastUsed} (${lastUsed ? new Date(lastUsed).toISOString() : "never"})`);
+      lines.push(`    job.cycleStartedAt = ${job && typeof job.cycleStartedAt === "number" ? job.cycleStartedAt : "missing"}  |  job.plantedAt = ${job && job.plantedAt}  |  cycle started at = ${cycleStartedAt} (${cycleStartedAt ? new Date(cycleStartedAt).toISOString() : "none"})`);
+      lines.push(`    last used <= cycle started → bonus applies = ${passesNow}`);
     });
   });
   box.style.display = "block";
@@ -17835,9 +17891,8 @@ $("farmPanelDebugGnomeBtn").onclick = () => {
       if (cropName) {
         const tierLabel = farmPanelCropTierLabel(cropName);
         lines.push(`Tier of "${cropName}" = ${tierLabel} (Gnome only boosts Medium/Advanced tier crops)`);
-        const cropAoeCooldownSec = farmPanelGetCropGrowDurationMsFromSync(plot.crop, cropName, g, plot.fertiliser) / 1e3;
-        const bonus = farmPanelGnomeAOEBonus(g, plot, cropAoeCooldownSec, Date.now());
-        lines.push(`farmPanelGnomeAOEBonus(g, plot, ${cropAoeCooldownSec}, now) = ${bonus}`);
+        const bonus = farmPanelGnomeAOEBonus(g, plot);
+        lines.push(`farmPanelGnomeAOEBonus(g, plot) = ${bonus}`);
         const aoeState = asObj(farmPanelField(g, "aoe")) || {};
         lines.push(`g.aoe["Gnome"] raw = ${JSON.stringify(aoeState["Gnome"])}`);
       }
@@ -17885,7 +17940,7 @@ $("farmPanelDebugTurtleBtn").onclick = () => {
         y: node.y
       });
       if (inRangeNow) inRange++;
-      const bonus = farmPanelCheckTurtleAOEBonus(g, turtleName, node, 14400, now, resourceLabel);
+      const bonus = farmPanelCheckTurtleAOEBonus(g, turtleName, node);
       if (bonus) bonusActiveNow++;
       lines.push(`  node #${nodeId}: x=${hasCoords ? node.x : "MISSING"}, y=${hasCoords ? node.y : "MISSING"} → inRange=${inRangeNow} → bonusAppliesRightNow=${bonus}`);
     });
@@ -18138,8 +18193,7 @@ $("farmPanelDebugCropsBtn").onclick = () => {
     "Clementine position found": farmPanelGetCollectiblePosition(g, "Clementine"),
     "Manually-entered Bud yield boosts (resourceBuds panel)": {
       resourceBudsConfigured: resourceBuds
-    },
-    "Known approximation": "AOE yield-boost cooldowns (Scary Mike/Sir Goldensnout/Laurie's Gains/Queen Cornelia/Chonky Scarecrow) use each specific plot's own synced boosted grow duration (baseDurationMs / boostedTime), same as the Turtle mining AOE fix — not a re-derivation of every active game-wide speed window, so a boost placed/removed mid-grow after the plot's last sync could shift the exact cooldown edge slightly."
+    }
   };
   box.style.display = "block";
   box.value = JSON.stringify(out, null, 2);
@@ -34898,7 +34952,7 @@ async function performDigOnlySync() {
   const btn = $("digPanelSyncBtn");
   if (btn) btn.classList.add("is-syncing");
   try {
-    const communityData = await fetchCommunityFarmData(farmId);
+    const communityData = await fetchDigFarmData(farmId);
     const g = farmSyncExtractGameState(communityData);
     const desert = g && g.desert;
     if (!desert) {
@@ -36645,7 +36699,7 @@ async function performPotionOnlySync() {
   const btn = $("potionPanelSyncBtn");
   if (btn) btn.classList.add("is-syncing");
   try {
-    const communityData = await fetchCommunityFarmData(farmId);
+    const communityData = await fetchDigFarmData(farmId);
     const g = farmSyncExtractGameState(communityData);
     const potionHouse = g && g.potionHouse;
     if (!potionHouse) {

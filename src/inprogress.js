@@ -888,22 +888,21 @@ export function farmPanelIsWithinTurtleAOE(turtlePos, rockPos) {
   return Math.abs(dx) <= 1 && Math.abs(dy) <= 1 && (dx !== 0 || dy !== 0);
 }
 
-function farmPanelGetRockRecoveryDurationMsFromSync(g, node, baseRecoverySec, resourceName) {
-  const jobData = node && node.stone;
-  const baseMs = baseRecoverySec * 1e3;
-  if (!jobData) return baseMs;
-  if (typeof jobData.baseDurationMs === "number" && typeof jobData.minedAt === "number") {
-    const family = String(resourceName || "").toLowerCase();
-    return growDurationMsFor({
-      startedAt: jobData.minedAt,
-      baseDurationMs: jobData.baseDurationMs,
-      windows: mineWindows(g, family)
-    });
-  }
-  return baseMs - (typeof jobData.boostedTime === "number" ? jobData.boostedTime : 0);
+function farmPanelCropCycleStartedAt(crop) {
+  if (!crop) return 0;
+  if (typeof crop.cycleStartedAt === "number") return crop.cycleStartedAt;
+  return typeof crop.plantedAt === "number" ? crop.plantedAt : 0;
 }
 
-export function farmPanelCheckTurtleAOEBonus(g, turtleName, node, baseRecoverySec, atTime, resourceName) {
+function farmPanelRockCycleStartedAt(node) {
+  const stone = node && node.stone;
+  if (stone && typeof stone.cycleStartedAt === "number") return stone.cycleStartedAt;
+  const minedAt = stone && typeof stone.minedAt === "number" ? stone.minedAt : 0;
+  if (minedAt) return minedAt;
+  return node && typeof node.createdAt === "number" ? node.createdAt : 0;
+}
+
+export function farmPanelCheckTurtleAOEBonus(g, turtleName, node) {
   if (!node || typeof node.x !== "number" || typeof node.y !== "number") return false;
   const turtlePos = farmPanelGetCollectiblePosition(g, turtleName);
   if (!turtlePos) return false;
@@ -915,10 +914,7 @@ export function farmPanelCheckTurtleAOEBonus(g, turtleName, node, baseRecoverySe
   const dx = node.x - turtlePos.x;
   const dy = node.y - turtlePos.y;
   const lastUsed = aoeState[turtleName] && aoeState[turtleName][dx] && typeof aoeState[turtleName][dx][dy] === "number" ? aoeState[turtleName][dx][dy] : 0;
-  const cooldownMs = farmPanelGetRockRecoveryDurationMsFromSync(g, node, baseRecoverySec, resourceName);
-  const referenceTime = typeof atTime === "number" ? atTime : Date.now();
-  const idleMs = referenceTime - lastUsed;
-  return idleMs >= cooldownMs;
+  return lastUsed <= farmPanelRockCycleStartedAt(node);
 }
 
 function farmPanelBuildSequentialStoneRolls(json, rockName, count) {
@@ -981,8 +977,8 @@ function farmPanelComputeExactStoneYieldForNode(json, node, rockName, critRolls,
     amount += values[Math.min(Math.max(rank, 1), values.length) - 1];
   }
   if (critRolls.nativeHit) amount += 1;
-  if (isBoostActive("emerald_turtle") && farmPanelCheckTurtleAOEBonus(g, "Emerald Turtle", node, 14400, atTime, "Stone")) amount += .5;
-  if (isBoostActive("tin_turtle") && farmPanelCheckTurtleAOEBonus(g, "Tin Turtle", node, 14400, atTime, "Stone")) amount += .1;
+  if (isBoostActive("emerald_turtle") && farmPanelCheckTurtleAOEBonus(g, "Emerald Turtle", node)) amount += .5;
+  if (isBoostActive("tin_turtle") && farmPanelCheckTurtleAOEBonus(g, "Tin Turtle", node)) amount += .1;
   if (isBoostActive("faction_shield_res")) amount += .25;
   if (isBoostActive("legendary_shrine_res")) amount += 1;
   amount += farmPanelGetBudYieldForResource("Stone");
@@ -1046,7 +1042,7 @@ function farmPanelComputeExactIronYieldForNode(json, node, rockName, critRolls, 
     amount += values[Math.min(Math.max(rank, 1), values.length) - 1];
   }
   if (critRolls.nativeHit) amount += 1;
-  if (isBoostActive("emerald_turtle") && farmPanelCheckTurtleAOEBonus(g, "Emerald Turtle", node, 28800, atTime, "Iron")) amount += .5;
+  if (isBoostActive("emerald_turtle") && farmPanelCheckTurtleAOEBonus(g, "Emerald Turtle", node)) amount += .5;
   if (isBoostActive("faction_shield_res")) amount += .25;
   amount += farmPanelGetBudYieldForResource("Iron");
   if (isBoostActive("volcano_gnome")) amount += .1;
@@ -1167,7 +1163,7 @@ function farmPanelComputeExactGoldYieldForNode(json, node, rockName, critRolls, 
   if (isBoostActive("nugget")) amount += .25;
   if (isBoostActive("gilded_swordfish")) amount += .1;
   if (isBoostActive("gold_beetle")) amount += .1;
-  if (isBoostActive("emerald_turtle") && farmPanelCheckTurtleAOEBonus(g, "Emerald Turtle", node, 86400, atTime, "Gold")) amount += .5;
+  if (isBoostActive("emerald_turtle") && farmPanelCheckTurtleAOEBonus(g, "Emerald Turtle", node)) amount += .5;
   if (isBoostActive("faction_shield_res")) amount += .25;
   amount += farmPanelGetBudYieldForResource("Gold");
   if (isBoostActive("volcano_gnome")) amount += .1;
@@ -1493,7 +1489,7 @@ export function farmPanelAOEExtent(rankSkillId) {
   };
 }
 
-export function farmPanelGnomeAOEBonus(g, plot, cooldownSec, atTime) {
+export function farmPanelGnomeAOEBonus(g, plot) {
   const plotCoords = farmSyncGetCoords(plot);
   if (!plotCoords) return false;
   const gnomePos = farmPanelGetCollectiblePosition(g, "Gnome");
@@ -1507,12 +1503,10 @@ export function farmPanelGnomeAOEBonus(g, plot, cooldownSec, atTime) {
   if (!isPlotDirectlyAboveGnome) return false;
   const aoeState = farmPanelField(g, "aoe") || {};
   const lastUsed = aoeState["Gnome"] && aoeState["Gnome"][0] && typeof aoeState["Gnome"][0][1] === "number" ? aoeState["Gnome"][0][1] : 0;
-  const referenceTime = typeof atTime === "number" ? atTime : Date.now();
-  const idleMs = referenceTime - lastUsed;
-  return idleMs >= cooldownSec * 1e3;
+  return lastUsed <= farmPanelCropCycleStartedAt(plot && plot.crop);
 }
 
-function farmPanelCropAOEBonus(g, collectibleName, plot, dims, rankSkillId, cooldownSec, atTime) {
+function farmPanelCropAOEBonus(g, collectibleName, plot, dims, rankSkillId, aoeKey) {
   const plotCoords = farmSyncGetCoords(plot);
   if (!plotCoords) return false;
   const pos = farmPanelGetCollectiblePosition(g, collectibleName);
@@ -1532,25 +1526,9 @@ function farmPanelCropAOEBonus(g, collectibleName, plot, dims, rankSkillId, cool
   if (!within) return false;
   const dx = px - pos.x, dy = py - pos.y;
   const aoeState = farmPanelField(g, "aoe") || {};
-  const lastUsed = aoeState[collectibleName] && aoeState[collectibleName][dx] && typeof aoeState[collectibleName][dx][dy] === "number" ? aoeState[collectibleName][dx][dy] : 0;
-  const referenceTime = typeof atTime === "number" ? atTime : Date.now();
-  const idleMs = referenceTime - lastUsed;
-  return idleMs >= cooldownSec * 1e3;
-}
-
-export function farmPanelGetCropGrowDurationMsFromSync(job, cropName, g, fertiliser) {
-  const baseSec = farmPanelGrowTimeSec(cropName);
-  const baseMs = (typeof baseSec === "number" ? baseSec : 0) * 1e3;
-  if (!job) return baseMs;
-  if (typeof job.baseDurationMs === "number" && typeof job.plantedAt === "number" && g) {
-    return growDurationMsFor({
-      startedAt: job.plantedAt,
-      baseDurationMs: job.baseDurationMs,
-      windows: cropPlotWindows(g).concat(cropFertiliserWindows(fertiliser))
-    });
-  }
-  if (typeof job.baseDurationMs === "number") return job.baseDurationMs;
-  return baseMs - (typeof job.boostedTime === "number" ? job.boostedTime : 0);
+  const key = aoeKey || collectibleName;
+  const lastUsed = aoeState[key] && aoeState[key][dx] && typeof aoeState[key][dx][dy] === "number" ? aoeState[key][dx][dy] : 0;
+  return lastUsed <= farmPanelCropCycleStartedAt(plot && plot.crop);
 }
 
 function farmPanelIsPlanted(job, kind) {
@@ -1741,11 +1719,10 @@ export function farmPanelComputeExactCropYield(json, g, cropName, plot, counter,
       });
     }
   }
-  const cropAoeCooldownSec = farmPanelGetCropGrowDurationMsFromSync(plot && plot.crop, cropName, g, plot && plot.fertiliser) / 1e3;
   if (isSkillActive("skill_chonky_scarecrow") && tierLabel === "Basic" && farmPanelCropAOEBonus(g, "Basic Scarecrow", plot, {
     width: 1,
     height: 1
-  }, "skill_chonky_scarecrow", cropAoeCooldownSec, atTime)) {
+  }, "skill_chonky_scarecrow", "Chonky Scarecrow")) {
     const rank = getAscensionRank("skill_chonky_scarecrow");
     const bonuses = ASCENSION_RANK_DATA.skill_chonky_scarecrow && ASCENSION_RANK_DATA.skill_chonky_scarecrow.values || [ 0, .05, .1 ];
     const v = bonuses[Math.min(Math.max(rank, 1), 3) - 1];
@@ -1758,7 +1735,7 @@ export function farmPanelComputeExactCropYield(json, g, cropName, plot, counter,
   if (tierLabel === "Medium" && isBoostActive("scary_mike") && farmPanelCropAOEBonus(g, "Scary Mike", plot, {
     width: 1,
     height: 1
-  }, "skill_horror_mike", cropAoeCooldownSec, atTime)) {
+  }, "skill_horror_mike")) {
     const v = isSkillActive("skill_horror_mike") ? .2 + (ASCENSION_RANK_DATA.skill_horror_mike && ASCENSION_RANK_DATA.skill_horror_mike.values || [ .1, .15, .2 ])[Math.min(Math.max(getAscensionRank("skill_horror_mike"), 1), 3) - 1] : .2;
     stepAdd(v);
     boosts.push({
@@ -1769,7 +1746,7 @@ export function farmPanelComputeExactCropYield(json, g, cropName, plot, counter,
   if (isBoostActive("sir_goldensnout") && farmPanelCropAOEBonus(g, "Sir Goldensnout", plot, {
     width: 2,
     height: 2
-  }, null, cropAoeCooldownSec, atTime)) {
+  }, null)) {
     stepAdd(.5);
     boosts.push({
       name: "Sir Goldensnout",
@@ -1779,7 +1756,7 @@ export function farmPanelComputeExactCropYield(json, g, cropName, plot, counter,
   if (tierLabel === "Advanced" && isBoostActive("laurie_chuckle_crow") && farmPanelCropAOEBonus(g, "Laurie the Chuckle Crow", plot, {
     width: 1,
     height: 1
-  }, "skill_lauries_gains", cropAoeCooldownSec, atTime)) {
+  }, "skill_lauries_gains")) {
     const v = isSkillActive("skill_lauries_gains") ? .2 + (ASCENSION_RANK_DATA.skill_lauries_gains && ASCENSION_RANK_DATA.skill_lauries_gains.values || [ .1, .15, .2 ])[Math.min(Math.max(getAscensionRank("skill_lauries_gains"), 1), 3) - 1] : .2;
     stepAdd(v);
     boosts.push({
@@ -1790,14 +1767,14 @@ export function farmPanelComputeExactCropYield(json, g, cropName, plot, counter,
   if (cropName === "Corn" && isBoostActive("queen_cornelia") && farmPanelCropAOEBonus(g, "Queen Cornelia", plot, {
     width: 1,
     height: 2
-  }, null, cropAoeCooldownSec, atTime)) {
+  }, null)) {
     stepAdd(1);
     boosts.push({
       name: "Queen Cornelia",
       valueText: "+1 yield (AOE)"
     });
   }
-  if ((tierLabel === "Medium" || tierLabel === "Advanced") && farmPanelGnomeAOEBonus(g, plot, cropAoeCooldownSec, atTime)) {
+  if ((tierLabel === "Medium" || tierLabel === "Advanced") && farmPanelGnomeAOEBonus(g, plot)) {
     stepAdd(10);
     boosts.push({
       name: "Gnome",
@@ -3023,15 +3000,18 @@ function farmPanelComputeInProgressRaw(json, opts) {
         const xp = typeof xpRaw === "number" ? xpRaw : typeof xpRaw === "string" && xpRaw.trim() && !isNaN(Number(xpRaw)) ? Number(xpRaw) : null;
         const lovedAt = toTs(animal.lovedAt);
         const readyAtMs = awakeAt != null ? awakeAt : asleepAt != null ? asleepAt + cycleSec * 1e3 : null;
+        const claimedXpRaw = animal.claimedExperience;
+        const claimedXp = typeof claimedXpRaw === "number" ? claimedXpRaw : typeof claimedXpRaw === "string" && claimedXpRaw.trim() && !isNaN(Number(claimedXpRaw)) ? Number(claimedXpRaw) : undefined;
         const progress = computeAnimalRealProgress(type, {
           xp: xp,
+          claimedExperience: claimedXp,
           state: stateStr,
           item: animal.item,
           asleepAt: asleepAt,
           lovedAt: lovedAt,
           muddy: type === "pig" ? !!(animal.mud && animal.mud.harvestsRemaining > 0) : undefined
         }, now, readyAtMs);
-        const level = progress.level;
+        const level = progress.shownLevel;
         const realFeedBuffName = animal.feedBuff && typeof animal.feedBuff === "object" && animal.feedBuff.name && (typeof animal.feedBuff.harvestsRemaining !== "number" || animal.feedBuff.harvestsRemaining > 0) ? animal.feedBuff.name : null;
         const feedProjection = farmPanelProjectAnimalXp(type, progress.xp, progress);
         const yieldLevel = feedProjection && !progress.isReadyState ? Math.min(15, Math.max(progress.claimLevel, feedProjection.level)) : progress.claimLevel;
@@ -3062,7 +3042,8 @@ function farmPanelComputeInProgressRaw(json, opts) {
           const isSeasoningBuff = realFeedBuffName === "Truffle Seasoning";
           const harvestsRemaining = typeof animal.feedBuff.harvestsRemaining === "number" ? animal.feedBuff.harvestsRemaining : isSeasoningBuff ? getTruffleSeasoningSleeps() : getSpiceLickDurationHarvests();
           const buffCycleSec = isSeasoningBuff ? cycleSec / getSpiceEffectForAnimalType(type).timeMultAll * .5 : cycleSec;
-          const buffRemainingSec = remainingSec != null ? Math.max(0, harvestsRemaining - 1) * buffCycleSec + remainingSec : null;
+          const bankedExtraClaims = realFeedBuffName === "Honey Treat" ? Math.max(0, progress.pendingClaims - 1) : 0;
+          const buffRemainingSec = remainingSec != null ? Math.max(0, harvestsRemaining + bankedExtraClaims - 1) * buffCycleSec + remainingSec : null;
           if (!farmPanelAnimalBuffTrackingByType[type]) farmPanelAnimalBuffTrackingByType[type] = {
             saltLick: [],
             honeyTreat: [],
@@ -3098,6 +3079,7 @@ function farmPanelComputeInProgressRaw(json, opts) {
           level: level,
           xp: typeof xp === "number" ? xp : 0,
           isReadyState: progress.isReadyState,
+          pendingClaims: progress.pendingClaims,
           products: fig.products,
           yields: fig.yields,
           feedQty: animalFeedQty,

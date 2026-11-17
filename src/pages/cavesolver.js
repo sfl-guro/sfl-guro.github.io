@@ -483,7 +483,7 @@ async function performCaveOnlySync() {
   const btn = document.getElementById("cavePanelSyncBtn");
   if (btn) btn.classList.add("is-syncing");
   try {
-    const communityData = await calc.fetchCommunityFarmData(farmId);
+    const communityData = await calc.fetchDigFarmData(farmId);
     const g = calc.farmSyncExtractGameState(communityData);
     if (!g || !g.cave) {
       calc.toast("No cave data found for this farm.");

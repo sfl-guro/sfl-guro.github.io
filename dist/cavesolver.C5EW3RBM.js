@@ -3,7 +3,7 @@ import {
 } from "./chunk.XKJMJZUJ.js";
 import {
   mycoItemUnitCostFlower
-} from "./chunk.GA3BXXOW.js";
+} from "./chunk.FTY6JWYA.js";
 import {
   CAVE_SKILL_RANKS,
   CAVE_WIDTH,
@@ -28,7 +28,7 @@ import {
   findLivePriceForName,
   getMaterialUnitCostCoins,
   solveCaveBatch
-} from "./chunk.VARG42UN.js";
+} from "./chunk.ALMCBBXJ.js";
 import "./chunk.LPEVZJ4B.js";
 import "./chunk.ZJUAGS4L.js";
 import "./chunk.VR6FV3KR.js";
@@ -1023,7 +1023,7 @@ async function performCaveOnlySync() {
   const btn = document.getElementById("cavePanelSyncBtn");
   if (btn) btn.classList.add("is-syncing");
   try {
-    const communityData = await calc.fetchCommunityFarmData(farmId);
+    const communityData = await calc.fetchDigFarmData(farmId);
     const g = calc.farmSyncExtractGameState(communityData);
     if (!g || !g.cave) {
       calc.toast("No cave data found for this farm.");
