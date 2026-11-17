@@ -20,6 +20,10 @@ const REQUEST_TIMEOUT_MS = 8000;
 
 const NODE_ORDER = [ "Wood", "Stone", "Iron", "Gold", "Crimstone", "Oil" ];
 
+const MACHINE_LABEL = "Crop Machine";
+
+const MACHINE_PREFIX = "Crop Machine ";
+
 const KIND_ORDER = {
   node: 0,
   crop: 1,
@@ -403,14 +407,21 @@ function dayHtml(entry, number) {
   const crafted = craftedToolsViewFor(entry.day);
   const showCrafted = applyTools && !!crafted;
   const view = showCrafted ? totalsAfterTools(entry.totals, crafted.own) : entry.totals;
-  const rows = sortedNames(view).map(name => {
+  const isMachineName = name => view[name].k === "crop" && name.startsWith(MACHINE_PREFIX);
+  const rowFor = name => {
     const e = view[name];
+    const shown = isMachineName(name) ? name.slice(MACHINE_PREFIX.length) : name;
     const net = netOf(e);
     if (net !== null) totalNet += net;
     const value = net !== null ? `<span class="dh-hlog-val"><span class="dh-hlog-price">(${fmtPrice(e.p)}${flowerHtml()}/U)</span><span class="dh-hlog-net">(${signed(net, fmtFlower)}${flowerHtml()})</span></span>` : "";
     const count = e.c > 0 ? `<span class="dh-hlog-count"><span class="dh-hlog-h" role="button" tabindex="0" data-dh-h="1" aria-label="${e.k === "cooking" || e.k === "composter" ? "Collected" : "Harvested"}">${e.k === "cooking" || e.k === "composter" ? "C" : "H"}<span class="dh-hlog-tip">${e.k === "cooking" || e.k === "composter" ? "Collected" : "Harvested"}</span></span>${e.c}x</span>` : "";
-    return `<div class="dh-hlog-row"><span class="dh-hlog-amt">${signed(e.a, fmtAmount)}</span><span class="dh-hlog-ico">${itemIcon(name, e.k)}</span><span class="dh-hlog-name">${esc(name)}</span>${value}${count}</div>`;
-  }).join("");
+    return `<div class="dh-hlog-row"><span class="dh-hlog-amt">${signed(e.a, fmtAmount)}</span><span class="dh-hlog-ico">${itemIcon(shown, e.k)}</span><span class="dh-hlog-name">${esc(shown)}</span>${value}${count}</div>`;
+  };
+  const orderedNames = sortedNames(view);
+  const plainNames = orderedNames.filter(name => !isMachineName(name));
+  const machineNames = orderedNames.filter(isMachineName);
+  const machineBlock = machineNames.length ? `<div class="dh-hlog-crafted-label">${MACHINE_LABEL}</div>${machineNames.map(rowFor).join("")}` : "";
+  const rows = plainNames.map(rowFor).join("") + machineBlock;
   const toolBtn = crafted ? `<button type="button" class="fd-lb-tab dh-hlog-craftbtn guro-frame${applyTools ? " active" : ""}" data-dh-tools="1" aria-pressed="${applyTools ? "true" : "false"}">Crafted Tools</button>` : "";
   const craftedBlock = showCrafted ? craftedRowsHtml(crafted) : "";
   const total = totalNet > 0 || crafted ? `<div class="dh-hlog-gain${toolBtn ? " dh-hlog-gain-tools" : ""}">${toolBtn}<span class="dh-hlog-gain-sum"><span>Total Gained:</span><span class="dh-hlog-gain-val">${signed(totalNet, n => n.toLocaleString("en-US", {

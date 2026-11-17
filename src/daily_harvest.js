@@ -31,7 +31,7 @@ function pruneStore(store) {
     }
     if (rec.day === today) return;
     if (k === active) {
-      if (Object.keys(rec.stats || {}).length || Object.keys(rec.prev || {}).length || rec.cook && rec.cook.prev && Object.keys(rec.cook.prev).length || rec.bris && rec.bris.known || rec.gs && rec.gs.known) {
+      if (Object.keys(rec.stats || {}).length || Object.keys(rec.prev || {}).length || rec.cook && rec.cook.prev && Object.keys(rec.cook.prev).length || rec.bris && rec.bris.known || rec.gs && rec.gs.known || rec.mach && rec.mach.known) {
         store[k] = {
           day: rec.day,
           prev: rec.prev || {},
@@ -46,7 +46,8 @@ function pruneStore(store) {
           syncAt: rec.syncAt || 0,
           cook: carryCook(rec.cook),
           bris: carryBris(rec.bris),
-          gs: carryGs(rec.gs)
+          gs: carryGs(rec.gs),
+          mach: carryMach(rec.mach)
         };
         changed = true;
       }
@@ -113,6 +114,26 @@ const LOG_NAME_RE = /^[A-Za-z0-9 '&.\-]{1,40}$/;
 
 export function dailyHarvestSetCookingProvider(fn) {
   cookProvider = typeof fn === "function" ? fn : null;
+}
+
+let machineProvider = null;
+
+export function dailyHarvestSetMachineProvider(fn) {
+  machineProvider = typeof fn === "function" ? fn : null;
+}
+
+const MACH_LABEL = "Crop Machine";
+
+const MACH_PREFIX = "Crop Machine ";
+
+function carryMach(m) {
+  return {
+    prev: m && Array.isArray(m.prev) ? m.prev : [],
+    ctr: m && m.ctr && typeof m.ctr === "object" ? m.ctr : {},
+    known: !!(m && m.known),
+    items: {},
+    est: false
+  };
 }
 
 function carryCook(c) {
@@ -513,6 +534,149 @@ function addCookEntry(cook, building, name, amount, count, price, fee, at, estim
   it.log.push(entry);
   if (it.log.length > COOK_LOG_CAP) it.log.splice(0, it.log.length - COOK_LOG_CAP);
   if (estimated) bld.est = true;
+}
+
+function addMachEntry(mach, crop, amount, count, price, fee, at, estimated) {
+  const value = Math.round(amount * 1e4) / 1e4;
+  if (!(value > 0) || !isFinite(value)) return;
+  const it = mach.items[crop] || (mach.items[crop] = {
+    a: 0,
+    c: 0,
+    p: 0,
+    f: 0,
+    log: []
+  });
+  it.a = Math.round((it.a + value) * 1e4) / 1e4;
+  it.c += count;
+  if (price > 0) {
+    it.p = price;
+    it.f = fee || 0;
+  }
+  const entry = {
+    t: at,
+    a: value,
+    n: count
+  };
+  if (estimated) entry.e = 1;
+  it.log.push(entry);
+  if (it.log.length > COOK_LOG_CAP) it.log.splice(0, it.log.length - COOK_LOG_CAP);
+  if (estimated) mach.est = true;
+}
+
+function trackCropMachine(g, rec, fid, fresh, now, start) {
+  if (!machineProvider) return;
+  let res;
+  try {
+    res = machineProvider(g, fid);
+  } catch (e) {
+    return;
+  }
+  if (!res || !Array.isArray(res.packs) || typeof res.yieldOf !== "function") return;
+  const activity = g.farmActivity && typeof g.farmActivity === "object" ? g.farmActivity : null;
+  if (!activity) return;
+  const mach = rec.mach || (rec.mach = carryMach(null));
+  if (!mach.items || typeof mach.items !== "object") mach.items = {};
+  if (!Array.isArray(mach.prev)) mach.prev = [];
+  if (!mach.ctr || typeof mach.ctr !== "object") mach.ctr = {};
+  const crops = {};
+  res.packs.forEach(p => {
+    crops[p.crop] = 1;
+  });
+  mach.prev.forEach(p => {
+    if (p && p.crop) crops[p.crop] = 1;
+  });
+  const ctrNow = {};
+  Object.keys(crops).forEach(crop => {
+    ctrNow[crop] = cookCounterNow(activity, `${crop} Harvested`);
+  });
+  if (mach.known) {
+    Object.keys(crops).forEach(crop => {
+      const prevCtr = mach.ctr[crop];
+      if (typeof prevCtr !== "number") return;
+      const delta = Math.floor(ctrNow[crop] - prevCtr);
+      if (!(delta > 0)) return;
+      const cands = mach.prev.filter(p => p && p.crop === crop && typeof p.r === "number" && p.r <= now);
+      if (!cands.length) return;
+      const curReady = {};
+      res.packs.forEach(p => {
+        if (p.crop === crop && typeof p.readyAt === "number" && p.readyAt <= now) curReady[p.key] = (curReady[p.key] || 0) + 1;
+      });
+      const candCount = {};
+      cands.forEach(p => {
+        candCount[p.k] = (candCount[p.k] || 0) + 1;
+      });
+      const goneLeft = {};
+      Object.keys(candCount).forEach(k => {
+        goneLeft[k] = Math.max(0, candCount[k] - (curReady[k] || 0));
+      });
+      const harvested = [];
+      cands.slice().sort((a, b) => a.r - b.r).forEach(p => {
+        if (goneLeft[p.k] > 0) {
+          goneLeft[p.k] -= 1;
+          harvested.push(p);
+        }
+      });
+      if (!harvested.length) return;
+      const price = lookupPrice(crop);
+      let budget = delta;
+      let offset = 0;
+      let skipped = false;
+      const taken = [];
+      harvested.forEach(p => {
+        const seeds = Math.max(0, Math.floor(Number(p.seeds) || 0));
+        if (seeds > budget) {
+          skipped = true;
+          return;
+        }
+        taken.push({
+          p: p,
+          seeds: seeds
+        });
+        budget -= seeds;
+      });
+      const exact = !skipped && budget === 0;
+      taken.forEach(t => {
+        const y = res.yieldOf(crop, t.seeds, prevCtr + offset, now, typeof t.p.amt === "number" ? t.p.amt : undefined);
+        offset += t.seeds;
+        if (!y || !(y.amount > 0)) return;
+        const carried = fresh && t.p.r < start;
+        addMachEntry(mach, crop, y.amount, 1, price.price, price.fee, now, !exact || carried || y.exact === false);
+      });
+    });
+  }
+  mach.ctr = {};
+  Object.keys(ctrNow).forEach(crop => {
+    mach.ctr[crop] = ctrNow[crop];
+  });
+  mach.prev = res.packs.map(p => {
+    const e = {
+      k: p.key,
+      crop: p.crop,
+      seeds: p.seeds
+    };
+    if (typeof p.readyAt === "number") e.r = p.readyAt;
+    if (typeof p.amount === "number") e.amt = p.amount;
+    return e;
+  });
+  mach.known = true;
+}
+
+function dailyMachineInfo(rec) {
+  const mach = rec.mach;
+  if (!mach || !mach.items) return null;
+  const items = Object.keys(mach.items).filter(name => mach.items[name] && mach.items[name].c > 0).map(name => ({
+    name: name,
+    item: mach.items[name]
+  }));
+  if (!items.length) return null;
+  items.sort((a, b) => b.item.c - a.item.c || a.name.localeCompare(b.name));
+  const lastAt = items.reduce((max, e) => e.item.log.reduce((m, l) => Math.max(m, l.t || 0), max), 0);
+  return {
+    rounds: items.reduce((sum, e) => sum + e.item.c, 0),
+    estimated: !!mach.est,
+    lastAt: lastAt,
+    items: items
+  };
 }
 
 function trackCooking(g, rec, fresh, now) {
@@ -1065,7 +1229,8 @@ export function dailyHarvestTrack(g, farmId) {
     syncAt: old && old.syncAt ? old.syncAt : 0,
     cook: carryCook(old && old.cook),
     bris: carryBris(old && old.bris),
-    gs: carryGs(old && old.gs)
+    gs: carryGs(old && old.gs),
+    mach: carryMach(old && old.mach)
   };
   if (fresh) {
     rec.cf = 1;
@@ -1369,6 +1534,7 @@ export function dailyHarvestTrack(g, farmId) {
   trackCooking(g, rec, fresh, now);
   trackBristles(g, rec, fresh, now, prevSyncAt, start);
   trackGoldenSunflower(g, rec, fid, fresh, now, prevSyncAt, start);
+  trackCropMachine(g, rec, fid, fresh, now, start);
   rec.prev = groups;
   const amtsNow = {};
   Object.keys(g.oilReserves || {}).forEach(id => {
@@ -1430,6 +1596,7 @@ export function dailyCookingInfo(building, farmId) {
   const store = freshStore();
   const rec = store[farmId ? String(farmId) : store.__last];
   if (!rec || rec.day !== utcDay(Date.now())) return null;
+  if (building === MACH_LABEL) return dailyMachineInfo(rec);
   const bld = rec.cook && rec.cook.bld ? rec.cook.bld[building] : null;
   if (!bld || !bld.items) return null;
   const items = Object.keys(bld.items).filter(name => bld.items[name] && bld.items[name].c > 0).map(name => ({
@@ -1699,6 +1866,17 @@ export function dailyHarvestTotals(farmId) {
     if (!t || !LOG_NAME_RE.test(name)) return;
     addLogTotal(totals, name, t.k === "composter" ? "composter" : "cooking", t.a, t.c, t.p, t.f);
   });
+  const machItems = rec.mach && rec.mach.items ? rec.mach.items : {};
+  Object.keys(machItems).forEach(crop => {
+    const it = machItems[crop];
+    const name = MACH_PREFIX + crop;
+    if (!it || !(it.c > 0) || !LOG_NAME_RE.test(name)) return;
+    const mp = it.p > 0 ? {
+      price: it.p,
+      fee: it.f
+    } : lookupPrice(crop);
+    addLogTotal(totals, name, "crop", it.a, it.c, mp.price, mp.fee);
+  });
   const coin = rec.coin;
   const round2 = v => Math.round(v * 100) / 100;
   const coins = coin && (coin.s > 0 || coin.e > 0) ? {
@@ -1814,6 +1992,12 @@ const KIND_META = {
     action: "collected",
     unit: "batches",
     palette: [ "#8a5a2b", "#5fcf4a", "#c9f07a" ]
+  },
+  cropmachine: {
+    verb: "Harvested",
+    action: "harvested",
+    unit: "packs",
+    palette: [ "#5fcf4a", "#c9f07a", "#ffe14a" ]
   }
 };
 
@@ -1842,7 +2026,7 @@ function escapeAttr(s) {
 
 export function dailyHarvestBadgeHtml(groupKey, kind, iconHtml, farmId) {
   if (!KIND_META[kind]) return "";
-  const info = kind === "cooking" || kind === "composter" ? dailyCookingInfo(groupKey, farmId) : dailyHarvestInfo(groupKey, farmId);
+  const info = kind === "cooking" || kind === "composter" || kind === "cropmachine" ? dailyCookingInfo(groupKey, farmId) : dailyHarvestInfo(groupKey, farmId);
   if (!info) return "";
   return `<span class="daily-harvest-badge guro-frame dh-${kind}" role="button" tabindex="0" data-dh-key="${escapeAttr(groupKey)}" data-dh-kind="${kind}" data-dh-farm="${escapeAttr(farmId || "")}"><span class="dh-ord">${info.estimated ? "~" : ""}${info.rounds}x</span><span class="dh-icon">${iconHtml || ""}${effectSvg(kind)}</span></span>`;
 }
@@ -2060,7 +2244,7 @@ function openCookingPop(badgeEl, kind) {
   const iconHtml = iconEl ? iconEl.innerHTML : "";
   const times = `${info.estimated ? "~" : ""}${info.rounds}x`;
   const safeName = escapeAttr(building);
-  const bodyText = kind === "composter" ? `Your ${safeName} has finished and handed over ${times} today. Each finished batch that is collected counts as one harvest, and the fertiliser and worms below keep their own records.` : `Your ${safeName} has finished and handed over ${times} today. Each finished cook that is collected counts as one harvest, and every item below keeps its own record.`;
+  const bodyText = kind === "cropmachine" ? `Your ${safeName} has finished and handed over ${times} today. Each pack that is harvested counts as one harvest, and every crop below keeps its own record.` : kind === "composter" ? `Your ${safeName} has finished and handed over ${times} today. Each finished batch that is collected counts as one harvest, and the fertiliser and worms below keep their own records.` : `Your ${safeName} has finished and handed over ${times} today. Each finished cook that is collected counts as one harvest, and every item below keeps its own record.`;
   const now = Date.now();
   const itemsHtml = info.items.map(cookingItemLogHtml).join("");
   const farm = badgeEl.getAttribute("data-dh-farm") || store0Last();
@@ -2072,7 +2256,7 @@ function openCookingPop(badgeEl, kind) {
 function openDailyPop(badgeEl) {
   const groupKey = badgeEl.getAttribute("data-dh-key");
   const kind = badgeEl.getAttribute("data-dh-kind");
-  if (kind === "cooking" || kind === "composter") {
+  if (kind === "cooking" || kind === "composter" || kind === "cropmachine") {
     openCookingPop(badgeEl, kind);
     return;
   }

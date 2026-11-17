@@ -536,3 +536,80 @@ export function resolveCookingQueue({crafting, windows, oil, buildingName}) {
     };
   });
 }
+
+export function resolveCropMachine({machine, windows}) {
+  const queue = Array.isArray(machine.queue) ? machine.queue : [];
+  let t = typeof machine.oilSettledAt === "number" ? machine.oilSettledAt : 0;
+  let fuel = typeof machine.unallocatedOilTime === "number" ? machine.unallocatedOilTime : 0;
+  const pauseAt = typeof machine.removedAt === "number" ? machine.removedAt : undefined;
+  let fuelRunsOutAt;
+  const packs = queue.map(pack => {
+    if (pack.baseDurationMs === undefined) {
+      return {
+        readyAt: pack.readyAt,
+        workRemainingMs: 0
+      };
+    }
+    const work = pack.baseDurationMs;
+    if (fuel <= 0 || pauseAt !== undefined && t >= pauseAt) {
+      return {
+        workRemainingMs: work
+      };
+    }
+    const startsAt = t;
+    const finishAt = computeReadyAt({
+      startedAt: t,
+      baseDurationMs: work,
+      windows: windows
+    });
+    const fuelOutAt = t + fuel;
+    const runsUntil = Math.min(finishAt, fuelOutAt, pauseAt === undefined ? Number.POSITIVE_INFINITY : pauseAt);
+    if (finishAt === runsUntil) {
+      fuel -= finishAt - t;
+      t = finishAt;
+      return {
+        startsAt: startsAt,
+        readyAt: finishAt,
+        workRemainingMs: 0
+      };
+    }
+    const done = workAccruedAt({
+      startedAt: t,
+      at: runsUntil,
+      windows: windows
+    });
+    fuel -= runsUntil - t;
+    const stalled = runsUntil === fuelOutAt;
+    if (stalled) fuelRunsOutAt = fuelOutAt;
+    t = runsUntil;
+    const out = {
+      startsAt: startsAt,
+      workRemainingMs: Math.max(work - done, 0)
+    };
+    if (stalled) out.growsUntil = fuelOutAt;
+    return out;
+  });
+  return {
+    packs: packs,
+    fuelRunsOutAt: fuelRunsOutAt,
+    fuelRemainingMs: Math.max(fuel, 0)
+  };
+}
+
+export function cropMachineFuelAt({machine, windows, at}) {
+  const {packs} = resolveCropMachine({
+    machine: machine,
+    windows: windows
+  });
+  const burned = packs.reduce((total, pack) => {
+    if (pack.startsAt === undefined) return total;
+    const end = pack.readyAt !== undefined ? pack.readyAt : pack.growsUntil;
+    if (end === undefined) return total;
+    return total + Math.max(0, Math.min(end, at) - pack.startsAt);
+  }, 0);
+  return Math.max((typeof machine.unallocatedOilTime === "number" ? machine.unallocatedOilTime : 0) - burned, 0);
+}
+
+export function cropMachineWindows(g) {
+  return boostWindowsFor(g, "Tortoise Shrine", CROP_MACHINE_SPEED["Tortoise Shrine"]);
+}
