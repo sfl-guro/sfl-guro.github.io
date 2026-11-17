@@ -116,7 +116,7 @@ export function dailyHarvestSetCookingProvider(fn) {
   cookProvider = typeof fn === "function" ? fn : null;
 }
 
-let machineProvider = null;
+var machineProvider;
 
 export function dailyHarvestSetMachineProvider(fn) {
   machineProvider = typeof fn === "function" ? fn : null;

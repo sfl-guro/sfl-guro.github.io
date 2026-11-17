@@ -11774,7 +11774,8 @@ function getTruffleSeasoningCostGuarded() {
 export function getSpiceEffectForAnimalType(type) {
   let yieldMultAll = 1, feedMultAll = 1, timeMultAll = 1, costFlowerPerCyclePerAnimal = 0, activeKey = null;
   const durationHarvests = getSpiceLickDurationHarvests();
-  if (spiceUsage.truffleSeasoning.active && spiceUsage.truffleSeasoning[type] && !(spiceUsage.saltLick.active && spiceUsage.saltLick[type]) && !(spiceUsage.honeyTreat.active && spiceUsage.honeyTreat[type])) {
+  const honeyTreatUsable = spiceUsage.honeyTreat.active && spiceUsage.honeyTreat[type] && !getActiveAnimalBoosts(type).some(b => b.freeFeed);
+  if (spiceUsage.truffleSeasoning.active && spiceUsage.truffleSeasoning[type] && !(spiceUsage.saltLick.active && spiceUsage.saltLick[type]) && !honeyTreatUsable) {
     timeMultAll = TRUFFLE_SEASONING_TIME_MULT;
     costFlowerPerCyclePerAnimal = getTruffleSeasoningCostGuarded() / getTruffleSeasoningSleeps();
     activeKey = "truffleSeasoning";
@@ -11782,7 +11783,7 @@ export function getSpiceEffectForAnimalType(type) {
     yieldMultAll = 1.05;
     costFlowerPerCyclePerAnimal = getSpiceCostPerUseFlower("saltLick") / durationHarvests;
     activeKey = "saltLick";
-  } else if (spiceUsage.honeyTreat.active && spiceUsage.honeyTreat[type]) {
+  } else if (honeyTreatUsable) {
     feedMultAll = .75;
     costFlowerPerCyclePerAnimal = getSpiceCostPerUseFlower("honeyTreat") / durationHarvests;
     activeKey = "honeyTreat";
