@@ -15376,10 +15376,10 @@ async function fetchFarmSnapshotRaw(farmId) {
   return await res.json();
 }
 
-async function fetchCommunityFarmDataOnce(farmId, apiBase) {
+async function fetchCommunityFarmDataOnce(farmId, apiBase, timeoutMs) {
   const res = await fetchWithTimeout((apiBase || SFL_COMMUNITY_API_BASE) + encodeURIComponent(farmId), {
     cache: "no-store"
-  });
+  }, timeoutMs);
   let json = null;
   try {
     json = await res.json();
@@ -15388,8 +15388,12 @@ async function fetchCommunityFarmDataOnce(farmId, apiBase) {
     const raw = json && (json.error || json.message);
     const err = new Error(res.status === 429 ? "Too many requests — wait a few seconds and try again" : res.status === 404 ? "Farm not found — check the Farm ID" : raw ? String(raw) : `Bad response ${res.status}`);
     err.status = res.status;
+    const headerRetry = Number(res.headers.get("retry-after"));
+    const bodyRetry = json && Number(json.retryAfter);
+    err.retryAfter = headerRetry > 0 ? headerRetry : bodyRetry > 0 ? bodyRetry : 0;
     throw err;
   }
+  if (!json || typeof json !== "object") throw new Error("Server sent an unreadable response — try again");
   return json;
 }
 
@@ -15413,21 +15417,36 @@ export async function fetchCommunityFarmData(farmId) {
   throw lastErr;
 }
 
-export async function fetchDigFarmData(farmId) {
-  const maxAttempts = 3;
+const DIG_FETCH_TIMEOUT_MS = 10e3;
+
+const DIG_FETCH_MAX_ATTEMPTS = 2;
+
+function digRetryDelayMs(e, attempt) {
+  return 300 * attempt + Math.random() * 250;
+}
+
+async function digFetchWithRetry(farmId) {
   let lastErr = null;
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+  for (let attempt = 1; attempt <= DIG_FETCH_MAX_ATTEMPTS; attempt++) {
     try {
-      return await fetchCommunityFarmDataOnce(farmId, SFL_DIG_API_BASE);
+      return await fetchCommunityFarmDataOnce(farmId, SFL_DIG_API_BASE, DIG_FETCH_TIMEOUT_MS);
     } catch (e) {
       lastErr = e;
       const status = e && e.status;
       const permanent = status && status >= 400 && status < 500 && status !== 429 && status !== 408;
-      if (permanent) break;
-      if (attempt < maxAttempts) await new Promise(r => setTimeout(r, status === 429 ? 4000 : 700 * attempt));
+      if (permanent || status === 429 || attempt >= DIG_FETCH_MAX_ATTEMPTS) break;
+      await new Promise(r => setTimeout(r, digRetryDelayMs(e, attempt)));
     }
   }
+  if (lastErr && lastErr.status === 429) lastErr = Object.assign(new Error("Server is busy — try again in " + Math.max(5, Math.ceil(lastErr.retryAfter || 5)) + " seconds"), {
+    status: 429
+  });
+  if (lastErr && !lastErr.status && lastErr instanceof TypeError) lastErr = new Error("Network problem — check your connection and try again");
   throw lastErr;
+}
+
+export function fetchDigFarmData(farmId) {
+  return digFetchWithRetry(String(farmId));
 }
 
 export function farmSyncExtractGameState(json) {
