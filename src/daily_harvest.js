@@ -1145,11 +1145,12 @@ function counterFor(g, groupKey, noCounter) {
 function roundsFromStats(st) {
   const need = Math.max(1, Math.ceil(st.total * ROUND_THRESHOLD));
   const counts = Object.values(st.counts).sort((a, b) => b - a);
-  const rounds = counts.length >= need ? counts[need - 1] : 0;
-  const nextProgress = counts.filter(c => c > rounds).length;
+  const base = counts.length >= need ? counts[need - 1] : 0;
+  const nextProgress = counts.filter(c => c > base).length;
   return {
     need: need,
-    rounds: rounds,
+    rounds: (st.banked || 0) + base,
+    base: base,
     nextProgress: nextProgress
   };
 }
@@ -1294,7 +1295,20 @@ export function dailyHarvestTrack(g, farmId) {
       est: false
     };
     if (grp.kind) st.kind = grp.kind;
-    st.total = Math.max(st.total, ids.length);
+    if (TOOL_BAG_KEYS[groupKey] && ids.length > 0 && ids.length < st.total) {
+      // Nodes can disappear mid-day (e.g. trees merged into Ancient Trees).
+      // Keep the rounds already earned and count the remaining nodes from here on.
+      const earned = roundsFromStats(st).base;
+      const kept = {};
+      ids.forEach(id => {
+        if (st.counts[id]) kept[id] = Math.max(0, st.counts[id] - earned);
+      });
+      st.banked = (st.banked || 0) + earned;
+      st.counts = kept;
+      st.total = ids.length;
+    } else {
+      st.total = Math.max(st.total, ids.length);
+    }
     const cNow = counterFor(g, groupKey, grp.noCounter);
     const cPrev = typeof rec.counters[groupKey] === "number" ? rec.counters[groupKey] : null;
     if (cNow !== null) rec.counters[groupKey] = cNow;

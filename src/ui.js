@@ -2519,12 +2519,17 @@ export function renderAnimalYieldGroupsList(card) {
   const num = n => String(Math.round(n * 100) / 100);
   const feedsOf = a => a.isReadyState || !(a.xpGap > 0) || !(a.xpPerFeed > 0) ? 0 : Math.ceil(a.xpGap / a.xpPerFeed - 1e-9);
   const needsFeed = a => feedsOf(a) > 0;
+  const isFree = !!card.freeFeed;
+  const foodOf = a => isFree ? 0 : typeof a.feedQtyToNext === "number" && isFinite(a.feedQtyToNext) ? a.feedQtyToNext : feedsOf(a);
+  const foodText = n => isFree ? "Free" : num(n);
+  const feedsWord = n => n === 1 ? "1 feed" : num(n) + " feeds";
   const feedMap = new Map;
   animals.filter(needsFeed).forEach(a => {
     if (!feedMap.has(a.feedToNextName)) feedMap.set(a.feedToNextName, {
       name: a.feedToNextName,
       ids: [],
       qty: 0,
+      food: 0,
       feeds: 0,
       xpTotal: 0,
       xpMin: Infinity,
@@ -2533,6 +2538,7 @@ export function renderAnimalYieldGroupsList(card) {
     const f = feedMap.get(a.feedToNextName);
     f.ids.push("#" + a.number);
     f.qty += feedsOf(a);
+    f.food += foodOf(a);
     f.feeds += feedsOf(a);
     f.xpTotal += feedsOf(a) * a.xpPerFeed;
     f.xpMin = Math.min(f.xpMin, a.xpPerFeed);
@@ -2540,14 +2546,15 @@ export function renderAnimalYieldGroupsList(card) {
   });
   const feedRows = Array.from(feedMap.values());
   const totalFeeds = feedRows.reduce((sum, f) => sum + f.feeds, 0);
+  const totalFood = feedRows.reduce((sum, f) => sum + f.food, 0);
   let summaryHtml = "";
   if (feedRows.length) {
     const rowsHtml = feedRows.map(f => {
       const perFeed = f.xpMin === f.xpMax ? `+${num(f.xpMin)}` : `+${num(f.xpMin)}–${num(f.xpMax)}`;
-      return `<div class="ay-sum-row"><span class="ay-sum-name">${getIcon(f.name)} <b>${escapeHtml(f.name)}</b></span><span class="ay-sum-for">${f.ids.join(" ")}</span><span class="ay-sum-qty">× ${num(f.qty)}</span></div><div class="ay-sum-xp">${perFeed} XP per feed</div>`;
+      return `<div class="ay-sum-row"><span class="ay-sum-name">${getIcon(f.name)} <b>${escapeHtml(f.name)}</b></span><span class="ay-sum-for">${f.ids.join(" ")}</span><span class="ay-sum-qty">× ${foodText(f.food)}</span></div><div class="ay-sum-xp">${feedsWord(f.feeds)} · ${perFeed} XP per feed</div>`;
     }).join("");
     const freeNote = card.freeFeed ? `<div class="ay-sum-xp">Free feed active · feeding costs nothing</div>` : "";
-    summaryHtml = `<div class="lib-section-title" style="margin-top:10px;">Feeds Needed · All Animals</div><div class="ay-summary guro-frame">${rowsHtml}<div class="ay-sum-total"><span>Total feeds</span><b>${num(totalFeeds)}</b></div>${freeNote}</div>`;
+    summaryHtml = `<div class="lib-section-title" style="margin-top:10px;">Feeds Needed · All Animals</div><div class="ay-summary guro-frame">${rowsHtml}<div class="ay-sum-total"><span>Total ${isFree ? "feeds" : "feed needed"}</span><b>${isFree ? num(totalFeeds) : num(totalFood)}</b></div>${isFree ? "" : `<div class="ay-sum-xp" style="margin:3px 0 0;">${feedsWord(totalFeeds)} in total</div>`}${freeNote}</div>`;
   } else {
     summaryHtml = `<div class="lib-section-title" style="margin-top:10px;">Feeds Needed · All Animals</div><div class="ay-summary guro-frame"><div class="ay-sum-row"><span class="ay-sum-name">No feed needed right now</span></div></div>`;
   }
@@ -2560,7 +2567,7 @@ export function renderAnimalYieldGroupsList(card) {
     const projHtml = proj ? `<div class="ay-proj"><span class="tier-tag ay-proj-tag">Projected LVL ${proj.level} XP ${num(proj.xp)}/${num(proj.threshold)}</span></div>` : "";
     let needHtml;
     if (feedsOf(a) > 0) {
-      needHtml = `<div class="ay-need"><span class="ay-k">XP needed</span><b class="ay-v">${num(a.xpGap)}</b><span class="ay-sep"></span><span class="ay-k">Feed</span><span class="ay-feed"><b>×${num(feedsOf(a))}</b>${feedIcon} ${escapeHtml(a.feedToNextName || "")}</span><span class="ay-xpe">+${num(a.xpPerFeed)} XP each</span></div>${a.loveXp > 0 ? `<div class="ay-why">Love XP from ${escapeHtml(a.loveItem || "petting")} (about ${num(a.loveXp)} XP) may cover this instead of a feed.</div>` : ""}`;
+      needHtml = `<div class="ay-need"><span class="ay-k">XP needed</span><b class="ay-v">${num(a.xpGap)}</b><span class="ay-sep"></span><span class="ay-k">Feed</span><span class="ay-feed"><b>×${foodText(foodOf(a))}</b>${feedIcon} ${escapeHtml(a.feedToNextName || "")}</span><span class="ay-xpe">${feedsWord(feedsOf(a))} · +${num(a.xpPerFeed)} XP each</span></div>${a.loveXp > 0 ? `<div class="ay-why">Love XP from ${escapeHtml(a.loveItem || "petting")} (about ${num(a.loveXp)} XP) may cover this instead of a feed.</div>` : ""}`;
     } else if (a.isReadyState) {
       needHtml = `<div class="ay-need is-done"><span class="ay-k">${a.pendingClaims > 1 ? "Ready to collect · " + a.pendingClaims + " claims banked" : "Ready to collect"}</span></div>`;
     } else if (a.fedThisCycle) {
