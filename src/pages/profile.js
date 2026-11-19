@@ -139,6 +139,7 @@ function renderMenuOnly() {
 
 function render() {
   if (!rootEl) return;
+  rootEl.classList.toggle("pf-harvest-active", tab === "harvest");
   if (tab === "harvest") {
     renderHarvest();
     return;
@@ -354,6 +355,7 @@ export async function mount(root, api) {
 export function unmount() {
   if (!rootEl) return;
   tab = "info";
+  rootEl.classList.remove("pf-harvest-active");
   if (harvestMod) harvestMod.harvestLogInlineClose();
   if (craftedMod) craftedMod.craftedToolsClose();
   rootEl.removeEventListener("click", onClick);

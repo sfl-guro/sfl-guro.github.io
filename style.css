@@ -15400,7 +15400,7 @@ html body.sfl-theme .dh-pop-log-btn, html body.sfl-theme .dh-hlog-h{
   background:var(--card, #fff7e6); color:var(--ink);
 }
 body.sfl-theme .dh-log-outer.guro-frame{ background:var(--sfl-outer) !important; color:var(--sfl-text); }
-body.app-dark:not(.sfl-theme) .dh-log-outer.guro-frame{ background:#16151c !important; color:#e8e5dc; }
+body.app-dark:not(.sfl-theme) .dh-log-outer.guro-frame{ background:#1b1a24 !important; color:#e8e5dc; }
 .dh-hlog-title{ font-family:var(--pixel-font); font-size:11px; line-height:1.4; letter-spacing:.5px; padding:2px 40px 0 6px; }
 .dh-hlog-body{
   flex:1 1 auto; min-height:0; overflow-y:auto; overflow-x:hidden; display:flex; flex-direction:column; gap:10px;
@@ -15450,6 +15450,10 @@ body.sfl-theme .dh-hlog-day .dh-hlog-net, body.sfl-theme .dh-hlog-day .dh-hlog-n
 
 .dh-hlog-sub{ font-family:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace; font-size:10.5px; line-height:1.5; opacity:.75; padding:2px 8px 4px 6px; }
 .dh-hlog-more{ text-align:center; padding:6px 0 10px; }
+body.app-dark:not(.sfl-theme) #pageProfile.pf-harvest-active{ background:#1b1a24 !important; }
+.dh-hlog-fold{ cursor:pointer; -webkit-tap-highlight-color:transparent; user-select:none; }
+.dh-hlog-chev{ margin-left:auto; }
+.dh-hlog-chev.open{ transform:rotate(180deg); }
 .dh-hlog-periods{ display:flex; flex:0 0 auto; gap:6px; padding:2px 6px 4px; }
 .dh-hlog-periods .dh-hlog-craftbtn.fd-lb-tab.guro-frame{ min-width:56px; padding:8px 10px; }
 .dh-hlog-span{ flex:0 0 auto; font-family:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace; font-size:9px; font-weight:700; opacity:.75; }
@@ -15835,6 +15839,17 @@ body.sfl-theme .rc-slop-head .rc-tool-mat-item{ background-color:transparent !im
 
 .dh-hlog-coins{ margin-top:6px; padding-top:6px; background:linear-gradient(90deg, rgba(24,20,37,.55) 50%, transparent 50%) 0 0/6px 1px repeat-x; }
 body.app-dark:not(.sfl-theme) .dh-hlog-coins{ background:linear-gradient(90deg, rgba(232,229,220,.5) 50%, transparent 50%) 0 0/6px 1px repeat-x; }
+.dh-hlog-crafted + .dh-hlog-rows{ margin-top:6px; }
+.dh-hlog-sumbox{ margin:2px 0 6px; padding:6px 8px; background:var(--card, #fff7e6); }
+body.sfl-theme .dh-hlog-day .dh-hlog-sumbox{ background:var(--sfl-outer) !important; }
+body.app-dark:not(.sfl-theme) .dh-hlog-day .dh-hlog-sumbox{ background:#1b1a24; }
+.dh-hlog-sumbox .dh-hlog-gain{ background:none; margin-top:0; padding:2px 0; }
+.dh-hlog-sumbox .dh-hlog-coins{ margin-top:4px; padding-top:6px; }
+.dh-hlog-sumbox .dh-hlog-gain-tools{ flex-direction:column; align-items:flex-start; justify-content:flex-start; gap:6px; }
+.dh-hlog-sumbox .dh-hlog-gain-tools .dh-hlog-gain-sum{ width:100%; margin-left:0; justify-content:space-between; }
+.dh-hlog-sumbox > .dh-hlog-coins:first-child{ background:none; margin-top:0; padding-top:0; }
+body.app-dark:not(.sfl-theme) .dh-hlog-sumbox .dh-hlog-gain{ background:none; }
+body.app-dark:not(.sfl-theme) .dh-hlog-sumbox > .dh-hlog-coins:first-child{ background:none; }
 .dh-hlog-coin-row{ display:flex; align-items:center; justify-content:space-between; gap:8px; padding:3px 0; font-size:12px; font-weight:700; }
 .dh-hlog-coin-val{ display:inline-flex; align-items:center; gap:4px; font-variant-numeric:tabular-nums; }
 .dh-hlog-coin-val.pos{ color:#1f8f46; }
