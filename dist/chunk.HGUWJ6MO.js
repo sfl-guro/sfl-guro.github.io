@@ -718,6 +718,8 @@ __export(calculator_exports, {
   limitedTimeBoostRefreshTimer: () => limitedTimeBoostRefreshTimer,
   manualCycleOverrides: () => manualCycleOverrides,
   megastoreTickets: () => megastoreTickets,
+  miniSyncCooldown: () => miniSyncCooldown,
+  miniSyncCooldownSeconds: () => miniSyncCooldownSeconds,
   nodeCounts: () => nodeCounts,
   nodeCountsTouched: () => nodeCountsTouched,
   normalizeItemName: () => normalizeItemName,
@@ -50718,10 +50720,51 @@ async function digFetchWithRetry(farmId) {
     }
   }
   if (lastErr && lastErr.status === 429) lastErr = Object.assign(new Error("Server is busy \u2014 try again in " + Math.max(5, Math.ceil(lastErr.retryAfter || 5)) + " seconds"), {
-    status: 429
+    status: 429,
+    retryAfter: Math.max(5, Math.ceil(lastErr.retryAfter || 5))
   });
   if (lastErr && !lastErr.status && lastErr instanceof TypeError) lastErr = new Error("Network problem \u2014 check your connection and try again");
   throw lastErr;
+}
+var miniSyncTimers = /* @__PURE__ */ new WeakMap();
+function miniSyncCooldownSeconds(err) {
+  if (err && err.status === 429) return Math.max(5, Math.ceil(err.retryAfter || 5));
+  return 5;
+}
+function miniSyncCooldown(btn, seconds) {
+  if (!btn) return;
+  const prev = miniSyncTimers.get(btn);
+  if (prev) clearInterval(prev);
+  let left = Math.max(1, Math.ceil(seconds));
+  let label = btn.querySelector(".mini-sync-count");
+  if (!label) {
+    label = document.createElement("span");
+    label.className = "mini-sync-count";
+    btn.appendChild(label);
+  }
+  const base = btn.getAttribute("data-title") || btn.getAttribute("title") || "";
+  if (!btn.hasAttribute("data-title")) btn.setAttribute("data-title", base);
+  btn.disabled = true;
+  btn.setAttribute("aria-disabled", "true");
+  btn.classList.add("is-cooldown");
+  label.textContent = String(left);
+  btn.title = "Try again in " + left + "s";
+  const timer = setInterval(() => {
+    left -= 1;
+    if (left <= 0) {
+      clearInterval(timer);
+      miniSyncTimers.delete(btn);
+      btn.disabled = false;
+      btn.removeAttribute("aria-disabled");
+      btn.classList.remove("is-cooldown");
+      btn.title = btn.getAttribute("data-title") || "";
+      label.textContent = "";
+      return;
+    }
+    label.textContent = String(left);
+    btn.title = "Try again in " + left + "s";
+  }, 1e3);
+  miniSyncTimers.set(btn, timer);
 }
 function fetchDigFarmData(farmId) {
   return digFetchWithRetry(String(farmId));
@@ -69594,6 +69637,7 @@ async function performDigOnlySync() {
   } catch (e) {
     console.error("Dig-only sync failed:", e);
     toast("\u26A0\uFE0F Dig sync failed \u2014 " + (e && e.message ? e.message : "try again") + ".");
+    miniSyncCooldown(btn, miniSyncCooldownSeconds(e));
   } finally {
     digMiniSyncInFlight = false;
     if (btn) btn.classList.remove("is-syncing");
@@ -71217,6 +71261,7 @@ async function performPotionOnlySync() {
   } catch (e) {
     console.error("Potion-only sync failed:", e);
     toast("\u26A0\uFE0F Potion room sync failed \u2014 " + (e && e.message ? e.message : "try again") + ".");
+    miniSyncCooldown(btn, miniSyncCooldownSeconds(e));
   } finally {
     potionMiniSyncInFlight = false;
     if (btn) btn.classList.remove("is-syncing");

@@ -5096,6 +5096,9 @@ body.app-dark .dig-treasure-fab-label{ color:#c7c4bc; text-shadow:none; }
 }
 .dig-panel-mini-sync:active{ transform:translate(2px,2px); box-shadow:0 0 0 rgba(0,0,0,.4); }
 .dig-panel-mini-sync.is-syncing{ animation:digMiniSyncSpin .7s linear infinite; }
+.dig-panel-mini-sync.is-cooldown, .potion-panel-mini-sync.is-cooldown{ filter:grayscale(1); opacity:.65; cursor:not-allowed; pointer-events:none; animation:none; }
+.dig-panel-mini-sync.is-cooldown .sync-icon-img, .potion-panel-mini-sync.is-cooldown .sync-icon-img{ display:none; }
+.mini-sync-count{ font-family:var(--pixel-font); font-size:14px; line-height:1; color:inherit; }
 @keyframes digMiniSyncSpin{ from{ transform:rotate(0); } to{ transform:rotate(360deg); } }
 
 @media (max-width:420px){

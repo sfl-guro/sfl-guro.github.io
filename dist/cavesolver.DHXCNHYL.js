@@ -3,7 +3,7 @@ import {
 } from "./chunk.XKJMJZUJ.js";
 import {
   mycoItemUnitCostFlower
-} from "./chunk.XNQHJKV4.js";
+} from "./chunk.AQLGMLTC.js";
 import {
   CAVE_SKILL_RANKS,
   CAVE_WIDTH,
@@ -28,7 +28,7 @@ import {
   findLivePriceForName,
   getMaterialUnitCostCoins,
   solveCaveBatch
-} from "./chunk.6WI4E2D3.js";
+} from "./chunk.HGUWJ6MO.js";
 import "./chunk.LPEVZJ4B.js";
 import "./chunk.ZJUAGS4L.js";
 import "./chunk.VR6FV3KR.js";
@@ -1049,6 +1049,7 @@ async function performCaveOnlySync() {
   } catch (e) {
     console.error("Cave-only sync failed:", e);
     calc.toast("\u26A0\uFE0F Cave sync failed \u2014 " + (e && e.message ? e.message : "try again") + ".");
+    calc.miniSyncCooldown(btn, calc.miniSyncCooldownSeconds(e));
   } finally {
     syncing = false;
     if (btn) btn.classList.remove("is-syncing");
