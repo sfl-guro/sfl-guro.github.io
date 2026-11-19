@@ -402,8 +402,22 @@ function coinsHtml(c) {
   return `<div class="dh-hlog-coins">${balance}${row("Earned Coins", `${mark}+${fmtAmount(c.e)}`, "pos")}${row("Spend Coins", `${mark}-${fmtAmount(c.s)}`, "neg")}${row("Net", `${mark}${signed(net, fmtAmount)}`, net < 0 ? "neg" : "pos")}</div>`;
 }
 
-function dayHtml(entry, number) {
-  return cardHtml(entry, number, dateLabel(entry.day), craftedToolsViewFor(entry.day), false);
+const foldState = {
+  popup: {},
+  inline: {}
+};
+
+function foldOpen(fold) {
+  const v = foldState[fold.ctx][fold.key];
+  return v === undefined ? fold.def : v;
+}
+
+function dayHtml(entry, number, ctx) {
+  return cardHtml(entry, number, dateLabel(entry.day), craftedToolsViewFor(entry.day), false, {
+    ctx: ctx,
+    key: "day:" + entry.day,
+    def: entry.day === utcToday()
+  });
 }
 
 function round2(n) {
@@ -537,6 +551,8 @@ function buildPeriod(group, mode, today) {
   } : null;
   return {
     sortKey: range.start,
+    mode: mode,
+    current: range.start <= today && range.end >= today,
     head: esc(periodLabel(range, mode)) + note,
     totals: totals,
     coins: hasCoins ? (coins.est ? coins : {
@@ -565,11 +581,16 @@ function utcToday() {
   return new Date().toISOString().slice(0, 10);
 }
 
-function periodHtml(entry, number) {
-  return cardHtml(entry, number, entry.head, entry.crafted, true);
+function periodHtml(entry, number, ctx) {
+  return cardHtml(entry, number, entry.head, entry.crafted, true, {
+    ctx: ctx,
+    key: entry.mode + ":" + entry.sortKey,
+    def: entry.current
+  });
 }
 
-function cardHtml(entry, number, head, crafted, preApplied) {
+function cardHtml(entry, number, head, crafted, preApplied, fold) {
+  const open = foldOpen(fold);
   let totalNet = 0;
   const showCrafted = applyTools && !!crafted;
   const view = showCrafted && !preApplied ? totalsAfterTools(entry.totals, crafted.own) : entry.totals;
@@ -594,7 +615,9 @@ function cardHtml(entry, number, head, crafted, preApplied) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   }))}${flowerHtml()}</span></span></div>` : "";
-  return `<div class="dh-hlog-day guro-frame"><div class="dh-hlog-dayhead"><span class="dh-hlog-no">#${number}</span><span class="dh-hlog-date">${head}</span></div>${rows}${craftedBlock}${total}${coinsHtml(entry.coins)}</div>`;
+  const coinsBlock = coinsHtml(entry.coins);
+  const sumBox = total || coinsBlock ? `<div class="dh-hlog-sumbox">${total}${coinsBlock}</div>` : "";
+  return `<div class="dh-hlog-day guro-frame"><div class="dh-hlog-dayhead dh-hlog-fold" role="button" tabindex="0" data-dh-fold="${esc(fold.key)}" data-dh-fold-ctx="${fold.ctx}" aria-expanded="${open ? "true" : "false"}"><span class="dh-hlog-no">#${number}</span><span class="dh-hlog-date">${head}</span><img class="ct-chev dh-hlog-chev${open ? " open" : ""}" src="${ICON_DATA["chevron_down.png"]}" alt=""></div>${sumBox}${open ? `${craftedBlock}<div class="dh-hlog-rows">${rows}</div>` : ""}</div>`;
 }
 
 function mergeLocalToday(days, farmId) {
@@ -813,12 +836,12 @@ function renderList(body, list, notice) {
   lastNotice = notice;
   if (!list.length) return false;
   const craftedSig = craftedToolsPrepare(list, currentFarmId());
-  const sig = JSON.stringify([ notice, showCount, applyTools, craftedSig, period, list ]);
+  const sig = JSON.stringify([ notice, showCount, applyTools, craftedSig, period, foldState.popup, list ]);
   const taxEl = document.getElementById("dhLogTax");
   if (taxEl) taxEl.textContent = taxNoteHtml(list);
   if (sig === renderedSig && body.childElementCount) return true;
   const asc = list.slice().sort((a, b) => a.day < b.day ? -1 : a.day > b.day ? 1 : 0);
-  const cards = period === "day" ? asc.map((entry, i) => dayHtml(entry, i + 1)).reverse() : aggregateEntries(asc, period).map((entry, i) => periodHtml(entry, i + 1)).reverse();
+  const cards = period === "day" ? asc.map((entry, i) => dayHtml(entry, i + 1, "popup")).reverse() : aggregateEntries(asc, period).map((entry, i) => periodHtml(entry, i + 1, "popup")).reverse();
   const more = cards.length > showCount ? `<div class="dh-hlog-more"><button type="button" class="dh-pop-log-btn" data-dh-more="1">Show more (${cards.length - showCount} older)</button></div>` : "";
   body.innerHTML = (notice ? `<div class="dh-hlog-msg">${notice}</div>` : "") + cards.slice(0, showCount).join("") + more;
   renderedSig = sig;
@@ -838,6 +861,8 @@ async function openLog(trackKey) {
   const layer = ensureLayer();
   const body = document.getElementById("dhLogBody");
   period = "day";
+  foldState.popup = {};
+  renderedSig = "";
   syncPeriodUi();
   layer.setAttribute("data-farm", trackKey || "");
   layer.classList.add("show");
@@ -900,7 +925,7 @@ function inlineRender() {
   craftedToolsPrepare(list, currentFarmId());
   const asc = list.slice().sort((a, b) => a.day < b.day ? -1 : a.day > b.day ? 1 : 0);
   const mode = inlineState.period;
-  const cards = mode === "day" ? asc.map((entry, i) => dayHtml(entry, i + 1)).reverse() : aggregateEntries(asc, mode).map((entry, i) => periodHtml(entry, i + 1)).reverse();
+  const cards = mode === "day" ? asc.map((entry, i) => dayHtml(entry, i + 1, "inline")).reverse() : aggregateEntries(asc, mode).map((entry, i) => periodHtml(entry, i + 1, "inline")).reverse();
   const periodBtns = `<div class="dh-hlog-periods">${PERIODS.map(p => `<button type="button" class="fd-lb-tab dh-hlog-craftbtn guro-frame${p.id === mode ? " active" : ""}" data-pf-hperiod="${p.id}" aria-pressed="${p.id === mode ? "true" : "false"}">${p.label}</button>`).join("")}</div>`;
   const more = cards.length > inlineState.showCount ? `<div class="dh-hlog-more"><button type="button" class="dh-pop-log-btn" data-pf-hmore="1">Show more (${cards.length - inlineState.showCount} older)</button></div>` : "";
   host.innerHTML = `<div class="dh-hlog-tax">${taxNoteHtml(list)}</div>` + periodBtns + (inlineState.notice ? `<div class="dh-hlog-msg">${inlineState.notice}</div>` : "") + `<div class="pf-hlog-grid">${cards.slice(0, inlineState.showCount).join("")}</div>` + more;
@@ -931,6 +956,7 @@ export function harvestLogInlineClose() {
 export async function harvestLogInlineOpen(host) {
   inlineState.host = host;
   inlineState.period = "day";
+  foldState.inline = {};
   inlineState.showCount = PAGE_SIZE;
   const token = ++inlineState.token;
   const farmId = currentFarmId();
@@ -984,6 +1010,31 @@ document.addEventListener("click", ev => {
   setApplyTools(!applyTools);
   rerender();
   inlineRender();
+}, true);
+
+function toggleFold(head) {
+  const ctx = head.getAttribute("data-dh-fold-ctx");
+  const key = head.getAttribute("data-dh-fold");
+  if (!foldState[ctx]) return;
+  const cur = head.getAttribute("aria-expanded") === "true";
+  foldState[ctx][key] = !cur;
+  if (ctx === "popup") rerender();
+  else inlineRender();
+}
+
+document.addEventListener("click", ev => {
+  const head = ev.target && ev.target.closest ? ev.target.closest("[data-dh-fold]") : null;
+  if (!head) return;
+  ev.stopPropagation();
+  toggleFold(head);
+}, true);
+
+document.addEventListener("keydown", ev => {
+  if (ev.key !== "Enter" && ev.key !== " ") return;
+  const head = ev.target && ev.target.closest ? ev.target.closest("[data-dh-fold]") : null;
+  if (!head) return;
+  ev.preventDefault();
+  toggleFold(head);
 }, true);
 
 document.addEventListener("dh-open-log", ev => {

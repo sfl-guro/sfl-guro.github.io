@@ -46,7 +46,7 @@ async function renderHarvest() {
   rootEl.innerHTML = `${tabsHtml()}<div class="pf-hlog-host" id="pfHarvestHost"></div>`;
   const host = rootEl.querySelector("#pfHarvestHost");
   try {
-    if (!harvestMod) harvestMod = await import("./harvest_log.3JJD5EW3.js");
+    if (!harvestMod) harvestMod = await import("./harvest_log.TUCEZZC4.js");
   } catch (e) {
     if (host) host.innerHTML = `<div class="dh-hlog-msg">Couldn't load history. Check your connection.</div>`;
     return;
@@ -117,6 +117,7 @@ function renderMenuOnly() {
 }
 function render() {
   if (!rootEl) return;
+  rootEl.classList.toggle("pf-harvest-active", tab === "harvest");
   if (tab === "harvest") {
     renderHarvest();
     return;
@@ -325,6 +326,7 @@ async function mount(root, api) {
 function unmount() {
   if (!rootEl) return;
   tab = "info";
+  rootEl.classList.remove("pf-harvest-active");
   if (harvestMod) harvestMod.harvestLogInlineClose();
   if (craftedMod) craftedMod.craftedToolsClose();
   rootEl.removeEventListener("click", onClick);
