@@ -508,6 +508,7 @@ async function performCaveOnlySync() {
   } catch (e) {
     console.error("Cave-only sync failed:", e);
     calc.toast("⚠️ Cave sync failed — " + (e && e.message ? e.message : "try again") + ".");
+    calc.miniSyncCooldown(btn, calc.miniSyncCooldownSeconds(e));
   } finally {
     syncing = false;
     if (btn) btn.classList.remove("is-syncing");
