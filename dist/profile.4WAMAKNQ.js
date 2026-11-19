@@ -46,7 +46,7 @@ async function renderHarvest() {
   rootEl.innerHTML = `${tabsHtml()}<div class="pf-hlog-host" id="pfHarvestHost"></div>`;
   const host = rootEl.querySelector("#pfHarvestHost");
   try {
-    if (!harvestMod) harvestMod = await import("./harvest_log.DPNQP6LF.js");
+    if (!harvestMod) harvestMod = await import("./harvest_log.3JJD5EW3.js");
   } catch (e) {
     if (host) host.innerHTML = `<div class="dh-hlog-msg">Couldn't load history. Check your connection.</div>`;
     return;
@@ -216,6 +216,11 @@ function onClick(e) {
     });
     if (hBadge) {
       hBadge.classList.toggle("open");
+      return;
+    }
+    const hPeriod = e.target.closest("[data-pf-hperiod]");
+    if (hPeriod) {
+      if (harvestMod) harvestMod.harvestLogInlinePeriod(hPeriod.getAttribute("data-pf-hperiod"));
       return;
     }
     if (e.target.closest("[data-pf-hmore]")) {
