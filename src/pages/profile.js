@@ -241,6 +241,11 @@ function onClick(e) {
       hBadge.classList.toggle("open");
       return;
     }
+    const hPeriod = e.target.closest("[data-pf-hperiod]");
+    if (hPeriod) {
+      if (harvestMod) harvestMod.harvestLogInlinePeriod(hPeriod.getAttribute("data-pf-hperiod"));
+      return;
+    }
     if (e.target.closest("[data-pf-hmore]")) {
       if (harvestMod) harvestMod.harvestLogInlineMore();
       return;

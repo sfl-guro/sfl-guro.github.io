@@ -75703,13 +75703,13 @@ function dailyHarvestTotals(farmId) {
     addLogTotal(totals, name, "crop", it.a, it.c, mp.price, mp.fee);
   });
   const coin = rec.coin;
-  const round2 = (v) => Math.round(v * 100) / 100;
+  const round22 = (v) => Math.round(v * 100) / 100;
   const coins = coin && (coin.s > 0 || coin.e > 0) ? {
-    e: round2(coin.e),
-    s: round2(coin.s)
+    e: round22(coin.e),
+    s: round22(coin.s)
   } : null;
   if (coins) {
-    if (typeof coin.b === "number" && isFinite(coin.b)) coins.b = round2(coin.b);
+    if (typeof coin.b === "number" && isFinite(coin.b)) coins.b = round22(coin.b);
     if (coin.est) coins.est = 1;
   }
   return {
@@ -76463,10 +76463,164 @@ function coinsHtml(c) {
   return `<div class="dh-hlog-coins">${balance}${row3("Earned Coins", `${mark}+${fmtAmount(c.e)}`, "pos")}${row3("Spend Coins", `${mark}-${fmtAmount(c.s)}`, "neg")}${row3("Net", `${mark}${signed(net, fmtAmount)}`, net < 0 ? "neg" : "pos")}</div>`;
 }
 function dayHtml(entry, number) {
+  return cardHtml2(entry, number, dateLabel(entry.day), craftedToolsViewFor(entry.day), false);
+}
+function round2(n) {
+  return Math.round(n * 100) / 100;
+}
+function pad2(n) {
+  return n < 10 ? "0" + n : String(n);
+}
+function daysInMonth(y, m) {
+  return new Date(Date.UTC(y, m, 0)).getUTCDate();
+}
+function periodKey(day, mode) {
+  const ym = day.slice(0, 7);
+  if (mode === "month") return ym;
+  return ym + "-" + Math.floor((Number(day.slice(8, 10)) - 1) / 7);
+}
+function periodRange(key, mode) {
+  const y = Number(key.slice(0, 4));
+  const m = Number(key.slice(5, 7));
+  const dim = daysInMonth(y, m);
+  const prefix = key.slice(0, 7) + "-";
+  if (mode === "month") return {
+    start: prefix + "01",
+    end: prefix + pad2(dim)
+  };
+  const w = Number(key.slice(8));
+  return {
+    start: prefix + pad2(w * 7 + 1),
+    end: prefix + pad2(Math.min(w * 7 + 7, dim))
+  };
+}
+function periodLabel(range, mode) {
+  const start = /* @__PURE__ */ new Date(range.start + "T00:00:00Z");
+  const month = start.toLocaleDateString("en-US", {
+    month: "long",
+    timeZone: "UTC"
+  });
+  const year = range.start.slice(0, 4);
+  if (mode === "month") return `${month} ${year}`;
+  return `${month} ${Number(range.start.slice(8))} \u2013 ${Number(range.end.slice(8))}, ${year}`;
+}
+function daySpan(from, to) {
+  return Math.round((Date.parse(to + "T00:00:00Z") - Date.parse(from + "T00:00:00Z")) / 864e5) + 1;
+}
+function buildPeriod(group, mode, today) {
+  const range = periodRange(group.key, mode);
+  const acc = {};
+  const toolQty = {};
+  const own = {};
+  const coins = {
+    e: 0,
+    s: 0,
+    est: false
+  };
+  let hasCoins = false;
+  let hasCrafted = false;
+  let logged = 0;
+  group.days.forEach((d) => {
+    if (Object.keys(d.totals).length) logged++;
+    const ct = craftedToolsViewFor(d.day);
+    const dayView = applyTools && ct ? totalsAfterTools(d.totals, ct.own) : d.totals;
+    if (ct) {
+      hasCrafted = true;
+      ct.tools.forEach((t) => {
+        toolQty[t.name] = round2((toolQty[t.name] || 0) + t.c);
+      });
+      Object.keys(ct.own).forEach((res) => {
+        own[res] = round2((own[res] || 0) + ct.own[res]);
+      });
+    }
+    Object.keys(dayView).forEach((name) => {
+      const e = dayView[name];
+      const a = acc[name] || (acc[name] = {
+        k: e.k,
+        a: 0,
+        c: 0,
+        tl: 0,
+        pa: 0,
+        gross: 0,
+        net: 0
+      });
+      a.k = e.k;
+      a.a += e.a;
+      a.c += e.c || 0;
+      a.tl += e.tl || 0;
+      const n = netOf(e);
+      if (n !== null) {
+        a.pa += e.a;
+        a.gross += e.a * e.p;
+        a.net += n;
+      }
+    });
+    if (d.coins && (d.coins.e > 0 || d.coins.s > 0)) {
+      hasCoins = true;
+      coins.e += d.coins.e || 0;
+      coins.s += d.coins.s || 0;
+      if (d.coins.est) coins.est = true;
+    }
+  });
+  const totals = {};
+  Object.keys(acc).forEach((name) => {
+    const a = acc[name];
+    const entry = {
+      k: a.k,
+      a: round2(a.a)
+    };
+    if (a.c > 0) entry.c = a.c;
+    if (a.tl > 0) entry.tl = round2(a.tl);
+    if (a.pa > 0 && a.gross > 0) {
+      entry.p = Math.round(a.gross / a.pa * 1e6) / 1e6;
+      entry.f = 0;
+      entry.n = round4(a.net);
+    }
+    totals[name] = entry;
+  });
+  const expected = daySpan(range.start, range.end < today ? range.end : today);
+  const note = logged < expected ? `<span class="dh-hlog-span">${logged} of ${expected} days</span>` : "";
+  const crafted = hasCrafted ? {
+    tools: Object.keys(toolQty).map((name) => ({
+      name,
+      c: toolQty[name]
+    })),
+    own
+  } : null;
+  return {
+    sortKey: range.start,
+    head: esc(periodLabel(range, mode)) + note,
+    totals,
+    coins: hasCoins ? coins.est ? coins : {
+      e: coins.e,
+      s: coins.s
+    } : null,
+    crafted
+  };
+}
+function aggregateEntries(list, mode) {
+  const today = utcToday();
+  const groups = {};
+  list.forEach((d) => {
+    if (!d || !d.day || !d.totals) return;
+    const key = periodKey(d.day, mode);
+    (groups[key] || (groups[key] = {
+      key,
+      days: []
+    })).days.push(d);
+  });
+  return Object.keys(groups).map((key) => buildPeriod(groups[key], mode, today)).sort((a, b) => a.sortKey < b.sortKey ? -1 : a.sortKey > b.sortKey ? 1 : 0);
+}
+function utcToday() {
+  return (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
+}
+function periodHtml(entry, number) {
+  return cardHtml2(entry, number, entry.head, entry.crafted, true);
+}
+function cardHtml2(entry, number, head, crafted, preApplied) {
   let totalNet = 0;
-  const crafted = craftedToolsViewFor(entry.day);
   const showCrafted = applyTools && !!crafted;
-  const view = showCrafted ? totalsAfterTools(entry.totals, crafted.own) : entry.totals;
+  const view = showCrafted && !preApplied ? totalsAfterTools(entry.totals, crafted.own) : entry.totals;
   const isMachineName = (name) => view[name].k === "crop" && name.startsWith(MACHINE_PREFIX);
   const rowFor = (name) => {
     const e = view[name];
@@ -76488,7 +76642,7 @@ function dayHtml(entry, number) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   }))}${flowerHtml()}</span></span></div>` : "";
-  return `<div class="dh-hlog-day guro-frame"><div class="dh-hlog-dayhead"><span class="dh-hlog-no">#${number}</span><span class="dh-hlog-date">${dateLabel(entry.day)}</span></div>${rows}${craftedBlock}${total}${coinsHtml(entry.coins)}</div>`;
+  return `<div class="dh-hlog-day guro-frame"><div class="dh-hlog-dayhead"><span class="dh-hlog-no">#${number}</span><span class="dh-hlog-date">${head}</span></div>${rows}${craftedBlock}${total}${coinsHtml(entry.coins)}</div>`;
 }
 function mergeLocalToday(days, farmId) {
   return withLocalTools(mergeToday(days, farmId));
@@ -76611,12 +76765,48 @@ function cacheToList(cache) {
     coins: cache.coins && cache.coins[day] ? cache.coins[day] : null
   }));
 }
+var PERIODS = [{
+  id: "day",
+  label: "Day",
+  sub: "Total harvested per UTC day, newest first. Saved from your Farm ID syncs."
+}, {
+  id: "week",
+  label: "Week",
+  sub: "Total harvested per UTC week (days 1-7, 8-14, 15-21, 22-28, 29-end of each month), newest first. Built from your daily logs."
+}, {
+  id: "month",
+  label: "Month",
+  sub: "Total harvested per UTC month, newest first. Built from your daily logs."
+}];
+var period = "day";
+function syncPeriodUi() {
+  const layer = document.getElementById("dhLogLayer");
+  if (!layer) return;
+  layer.querySelectorAll("[data-dh-period]").forEach((btn) => {
+    const on = btn.getAttribute("data-dh-period") === period;
+    btn.classList.toggle("active", on);
+    btn.setAttribute("aria-pressed", on ? "true" : "false");
+  });
+  const sub = document.getElementById("dhLogSub");
+  const cur = PERIODS.find((p) => p.id === period);
+  if (sub && cur) sub.textContent = cur.sub;
+}
+function setPeriod(next) {
+  if (next === period || !PERIODS.some((p) => p.id === next)) return;
+  period = next;
+  showCount = PAGE_SIZE;
+  syncPeriodUi();
+  renderedSig = "";
+  rerender();
+  const body = document.getElementById("dhLogBody");
+  if (body) body.scrollTop = 0;
+}
 function ensureLayer() {
   let layer = document.getElementById("dhLogLayer");
   if (layer) return layer;
   layer = document.createElement("div");
   layer.id = "dhLogLayer";
-  layer.innerHTML = `<div class="dh-log-outer guro-frame" role="dialog" aria-modal="true"><button type="button" class="guro-reward-close" id="dhLogClose" aria-label="Close"><img src="${ICON_DATA["close.png"]}" alt="Close"></button><div class="dh-hlog-title">Daily Harvest History Log</div><div class="dh-hlog-sub">Total harvested per UTC day, newest first. Saved from your Farm ID syncs.</div><div class="dh-hlog-tax" id="dhLogTax"></div><div class="dh-hlog-body" id="dhLogBody"></div></div>`;
+  layer.innerHTML = `<div class="dh-log-outer guro-frame" role="dialog" aria-modal="true"><button type="button" class="guro-reward-close" id="dhLogClose" aria-label="Close"><img src="${ICON_DATA["close.png"]}" alt="Close"></button><div class="dh-hlog-title">Daily Harvest History Log</div><div class="dh-hlog-sub" id="dhLogSub"></div><div class="dh-hlog-tax" id="dhLogTax"></div><div class="dh-hlog-periods" id="dhLogPeriods">${PERIODS.map((p) => `<button type="button" class="fd-lb-tab dh-hlog-craftbtn guro-frame" data-dh-period="${p.id}" aria-pressed="false">${p.label}</button>`).join("")}</div><div class="dh-hlog-body" id="dhLogBody"></div></div>`;
   document.body.appendChild(layer);
   layer.addEventListener("click", (ev) => {
     const hBadge = ev.target.closest("[data-dh-h]");
@@ -76625,6 +76815,11 @@ function ensureLayer() {
     });
     if (hBadge) {
       hBadge.classList.toggle("open");
+      return;
+    }
+    const pBtn = ev.target.closest("[data-dh-period]");
+    if (pBtn) {
+      setPeriod(pBtn.getAttribute("data-dh-period"));
       return;
     }
     if (ev.target === layer || ev.target.closest("#dhLogClose")) closeLog();
@@ -76652,12 +76847,12 @@ function renderList(body, list, notice) {
   lastNotice = notice;
   if (!list.length) return false;
   const craftedSig = craftedToolsPrepare(list, currentFarmId());
-  const sig = JSON.stringify([notice, showCount, applyTools, craftedSig, list]);
+  const sig = JSON.stringify([notice, showCount, applyTools, craftedSig, period, list]);
   const taxEl = document.getElementById("dhLogTax");
   if (taxEl) taxEl.textContent = taxNoteHtml(list);
   if (sig === renderedSig && body.childElementCount) return true;
   const asc = list.slice().sort((a, b) => a.day < b.day ? -1 : a.day > b.day ? 1 : 0);
-  const cards = asc.map((entry, i) => dayHtml(entry, i + 1)).reverse();
+  const cards = period === "day" ? asc.map((entry, i) => dayHtml(entry, i + 1)).reverse() : aggregateEntries(asc, period).map((entry, i) => periodHtml(entry, i + 1)).reverse();
   const more = cards.length > showCount ? `<div class="dh-hlog-more"><button type="button" class="dh-pop-log-btn" data-dh-more="1">Show more (${cards.length - showCount} older)</button></div>` : "";
   body.innerHTML = (notice ? `<div class="dh-hlog-msg">${notice}</div>` : "") + cards.slice(0, showCount).join("") + more;
   renderedSig = sig;
@@ -76674,6 +76869,8 @@ async function openLog(trackKey) {
   const farmId = currentFarmId();
   const layer = ensureLayer();
   const body = document.getElementById("dhLogBody");
+  period = "day";
+  syncPeriodUi();
   layer.setAttribute("data-farm", trackKey || "");
   layer.classList.add("show");
   if (!farmId) {
@@ -76719,6 +76916,7 @@ async function openLog(trackKey) {
   }
 }
 var inlineState = {
+  period: "day",
   host: null,
   token: 0,
   showCount: PAGE_SIZE,
@@ -76731,9 +76929,11 @@ function inlineRender() {
   const list = inlineState.list;
   craftedToolsPrepare(list, currentFarmId());
   const asc = list.slice().sort((a, b) => a.day < b.day ? -1 : a.day > b.day ? 1 : 0);
-  const cards = asc.map((entry, i) => dayHtml(entry, i + 1)).reverse();
+  const mode = inlineState.period;
+  const cards = mode === "day" ? asc.map((entry, i) => dayHtml(entry, i + 1)).reverse() : aggregateEntries(asc, mode).map((entry, i) => periodHtml(entry, i + 1)).reverse();
+  const periodBtns = `<div class="dh-hlog-periods">${PERIODS.map((p) => `<button type="button" class="fd-lb-tab dh-hlog-craftbtn guro-frame${p.id === mode ? " active" : ""}" data-pf-hperiod="${p.id}" aria-pressed="${p.id === mode ? "true" : "false"}">${p.label}</button>`).join("")}</div>`;
   const more = cards.length > inlineState.showCount ? `<div class="dh-hlog-more"><button type="button" class="dh-pop-log-btn" data-pf-hmore="1">Show more (${cards.length - inlineState.showCount} older)</button></div>` : "";
-  host.innerHTML = `<div class="dh-hlog-tax">${taxNoteHtml(list)}</div>` + (inlineState.notice ? `<div class="dh-hlog-msg">${inlineState.notice}</div>` : "") + `<div class="pf-hlog-grid">${cards.slice(0, inlineState.showCount).join("")}</div>` + more;
+  host.innerHTML = `<div class="dh-hlog-tax">${taxNoteHtml(list)}</div>` + periodBtns + (inlineState.notice ? `<div class="dh-hlog-msg">${inlineState.notice}</div>` : "") + `<div class="pf-hlog-grid">${cards.slice(0, inlineState.showCount).join("")}</div>` + more;
 }
 function inlineMessage(html) {
   const host = inlineState.host;
@@ -76743,12 +76943,19 @@ function harvestLogInlineMore() {
   inlineState.showCount += PAGE_SIZE;
   inlineRender();
 }
+function harvestLogInlinePeriod(next) {
+  if (next === inlineState.period || !PERIODS.some((p) => p.id === next)) return;
+  inlineState.period = next;
+  inlineState.showCount = PAGE_SIZE;
+  inlineRender();
+}
 function harvestLogInlineClose() {
   inlineState.token++;
   inlineState.host = null;
 }
 async function harvestLogInlineOpen(host) {
   inlineState.host = host;
+  inlineState.period = "day";
   inlineState.showCount = PAGE_SIZE;
   const token = ++inlineState.token;
   const farmId = currentFarmId();
@@ -76888,6 +77095,7 @@ export {
   harvestLogLoadDays,
   harvestLogArm,
   harvestLogInlineMore,
+  harvestLogInlinePeriod,
   harvestLogInlineClose,
   harvestLogInlineOpen,
   farmPanelGameState,
