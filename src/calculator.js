@@ -1,5 +1,6 @@
 import { DIG_CHAPTER_STORE } from "./dig_chapter_store.js";
 import { ICON_DATA } from "./icon_data.js";
+import { GAME_ICON_DATA, GAME_ICON_ALIASES } from "./game_icons.js";
 import { digDeduce } from "./dig_solver.js";
 import { __set_farmPanelInProgressCategoryFilter, __set_farmPanelSyncInFlight, farmPanelAOEExtent, farmPanelCheckTurtleAOEBonus, farmPanelComputeEconomics, farmPanelComputeExactCrimstoneYield, farmPanelComputeExactCropYield, farmPanelComputeExactFlowerYield, farmPanelComputeExactFruitYield, farmPanelComputeExactGreenhouseYield, farmPanelCropTierLabel, farmPanelDebugFindShapes, farmPanelDetectNodeTier, farmPanelField, farmPanelGameState, farmPanelGetCollectiblePosition, farmPanelGetCostPerUnitFlower, farmPanelGetLastInfo, farmPanelGetMarketId, farmPanelGetMarketPriceFlower, farmPanelGnomeAOEBonus, farmPanelGnomeComboPresent, farmPanelGrowTimeSec, farmPanelIsWithinTurtleAOE, farmPanelLoadCachedGameState, farmPanelMarkScrollActivity, farmPanelMergeAuthoritativeResourceData, farmPanelSaveGameState, farmPanelSaveLastInfo, farmPanelSyncInFlight } from "./inprogress.js";
 import { harvestLogSetFarm } from "./harvest_log.js";
@@ -835,6 +836,17 @@ export const BOOST_ICON_OVERRIDES = {
 };
 
 export const COIN_ICON = '<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAQBAMAAADUulMJAAAAIGNIUk0AAHomAACAhAAA+gAAAIDoAAB1MAAA6mAAADqYAAAXcJy6UTwAAAAVUExURQAAAAAAAK9IMf6uNP7nYfd2Iv///8kLUD8AAAACdFJOUwAzyUOsLgAAAAFiS0dEBmFmuH0AAAAHdElNRQfoBAMBCyeWyjz2AAAAW0lEQVQI103N0RGAIAwD0OgE4ASSygIWFrBMgPvvYuuP9if3LncpAKwk4mTYHmzazkhTvT6T3k/XOLUTYmrkxKHa5OfaRpdewFsnmVDJWjKwuZOvLWR5v+UcfADJng8ZS5A75AAAACV0RVh0ZGF0ZTpjcmVhdGUAMjAyNC0wNC0wM1QwMToxMTozOCswMDowMN4naB0AAAAldEVYdGRhdGU6bW9kaWZ5ADIwMjQtMDQtMDNUMDE6MTE6MzgrMDA6MDCvetChAAAAKHRFWHRkYXRlOnRpbWVzdGFtcAAyMDI0LTA0LTAzVDAxOjExOjM5KzAwOjAwXhj6ygAAAABJRU5ErkJggg==" alt="Coins" style="width:14px;height:14px;vertical-align:-2px;image-rendering:pixelated;">';
+
+Object.keys(GAME_ICON_DATA).forEach(name => {
+  if (!BOOST_ICON_OVERRIDES[name] && !IMAGE_ICONS[name]) BOOST_ICON_OVERRIDES[name] = GAME_ICON_DATA[name];
+});
+
+Object.keys(GAME_ICON_ALIASES).forEach(name => {
+  if (BOOST_ICON_OVERRIDES[name] || IMAGE_ICONS[name]) return;
+  const target = GAME_ICON_ALIASES[name];
+  const src = target === "@coin" ? (COIN_ICON.match(/src="([^"]+)"/) || [])[1] : IMAGE_ICONS[target] || BOOST_ICON_OVERRIDES[target];
+  if (src) BOOST_ICON_OVERRIDES[name] = src;
+});
 
 export const FLOWER_ICON = '<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAkAAAAJBAMAAAASvxsjAAAAIGNIUk0AAHomAACAhAAA+gAAAIDoAAB1MAAA6mAAADqYAAAXcJy6UTwAAAAYUExURQAAAGg4bPZ1ev/H2LVQiP////6uNP7nYfFKA4kAAAABdFJOUwBA5thmAAAAAWJLR0QF+G/pxwAAAAd0SU1FB+kEAQAJOT5kEg4AAAA1SURBVAjXY2AQZBRgYGBUEjJkYBBSclIWYBBSCVESYGB0K3UEiqikANlAcZCIkpAiAwNYPQCDpgTXwPXucgAAACV0RVh0ZGF0ZTpjcmVhdGUAMjAyNS0wNC0wMVQwMDowOTo1NyswMDowMHFHFmEAAAAldEVYdGRhdGU6bW9kaWZ5ADIwMjUtMDQtMDFUMDA6MDk6NTcrMDA6MDAAGq7dAAAAKHRFWHRkYXRlOnRpbWVzdGFtcAAyMDI1LTA0LTAxVDAwOjA5OjU3KzAwOjAwVw+PAgAAAABJRU5ErkJggg==" alt="FLOWER" style="width:13px;height:13px;vertical-align:-2px;image-rendering:pixelated;">';
 
