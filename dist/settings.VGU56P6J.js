@@ -3,9 +3,9 @@ import {
   farmPanelHiddenCards,
   farmPanelSetHiddenCards,
   renderFarmPanelTabContent
-} from "./chunk.VG2WNSR4.js";
+} from "./chunk.IP7SDC7F.js";
 import "./chunk.LPEVZJ4B.js";
-import "./chunk.ZJUAGS4L.js";
+import "./chunk.D3PHX6VZ.js";
 import "./chunk.VR6FV3KR.js";
 import "./chunk.AS3VMXOQ.js";
 

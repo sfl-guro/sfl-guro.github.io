@@ -11,7 +11,7 @@ import {
   toolRestockIconsHtml,
   toolRestockShareCount,
   unmountBeetlesCalculator
-} from "./chunk.GLWIHNMX.js";
+} from "./chunk.TFTQMDGC.js";
 import {
   ANIMAL_DATA,
   ANIMAL_LOVE_ITEM_XP,
@@ -246,9 +246,9 @@ import {
   toast,
   updateCalcSummary,
   updateSkillSaveBarState
-} from "./chunk.VG2WNSR4.js";
+} from "./chunk.IP7SDC7F.js";
 import "./chunk.LPEVZJ4B.js";
-import "./chunk.ZJUAGS4L.js";
+import "./chunk.D3PHX6VZ.js";
 import "./chunk.VR6FV3KR.js";
 import "./chunk.AS3VMXOQ.js";
 
@@ -5982,6 +5982,8 @@ function appliedBoostHtml7(r) {
   })).filter((x) => x.parts.length).map((x) => `<div class="rc-boost-row">${getBoostIconAnyFallback(x.b.name)}<span class="rc-boost-name">${esc8(x.b.name)}</span><span class="rc-boost-eff">${esc8(x.parts.join(", "))}</span></div>`);
   const spiceKey = r.fig.spiceActiveKey;
   if (spiceKey) rows.push(`<div class="rc-boost-row">${getIcon(SPICE_LABELS[spiceKey])}<span class="rc-boost-name">${SPICE_LABELS[spiceKey]}</span><span class="rc-boost-eff">${SPICE_EFFECTS[spiceKey]}</span></div>`);
+  const kale = getKaleMixKaleQty();
+  if (kale != null && r.fig.feedKeyUsed === "mixedGrain" && !isOmnifeedEnabled()) rows.push(`<div class="rc-boost-row">${getBoostIconAnyFallback("Kale Mix")}<span class="rc-boost-name">Kale Mix</span><span class="rc-boost-eff">${n28(kale)} Kale / Mixed Grain</span></div>`);
   return `<div class="rc-group"><div class="rc-comp-sub">Applied Boost</div>${rows.join("") || `<div class="rc-boost-none">No boost applied</div>`}</div>`;
 }
 function kv7(label, html, cls) {
@@ -6144,6 +6146,14 @@ function materialsHtml3(r) {
     rows.push(matRowHtml3(getIcon(feedName), feedName, week.feedQtyWeek, r.feed, "24hr"));
     const slopBd = r.type === "pig" && fig.feedInfo && fig.feedInfo.breakdown && fig.feedInfo.breakdown[0];
     if (slopBd) rows.push(matRowHtml3(getIcon(slopBd.name), slopBd.name, fig.effectiveFeedQty * r.qty * slopBd.qty, r.cycleFeed, "1 cycle"));
+    const fi = fig.feedInfo;
+    if (r.type !== "pig" && fi && fi.cost > 0 && Array.isArray(fi.breakdown)) {
+      fi.breakdown.filter((b) => b.name !== feedName && b.mode !== "gem" && b.qty > 0).forEach((b) => {
+        const share = b.qty * b.unitCost / fi.cost;
+        rows.push(matRowHtml3(getIcon(b.name), b.name, fig.effectiveFeedQty * r.qty * b.qty, r.cycleFeed * share, "1 cycle"));
+        rows.push(matRowHtml3(getIcon(b.name), b.name, week.feedQtyWeek * b.qty, r.feed * share, "24hr"));
+      });
+    }
   }
   if (week && r.medicine > 0) {
     const recipe = getBoostedMedicineRecipe();

@@ -876,6 +876,17 @@ export function craftedToolsPrepare(list, farmId) {
   return view.sig;
 }
 
+function fittedUsed(res, day) {
+  const farmId = String(harvestLogFarmId() || "");
+  if (day !== utcDay(Date.now()) || !FARM_RE.test(farmId)) return 0;
+  const snap = loadLocal(farmId).snap;
+  const balance = snap && isObj(snap.res) ? snap.res[res] : undefined;
+  const lots = view.resView[res];
+  if (typeof balance !== "number" || !Array.isArray(lots) || !lots.length) return 0;
+  const current = fitLots(lots, balance, day).find(l => l.key === day);
+  return current ? current.used : 0;
+}
+
 export function craftedToolsViewFor(day) {
   const rec = view.final[day];
   if (!rec || !rec.t) return null;
@@ -891,6 +902,10 @@ export function craftedToolsViewFor(day) {
       const amount = isObj(source[res]) ? Number(source[res][day]) : 0;
       if (amount > 0) own[res] = r2((own[res] || 0) + amount);
     });
+  });
+  RES.forEach(res => {
+    const fitted = fittedUsed(res, day);
+    if (fitted > (own[res] || 0)) own[res] = r2(fitted);
   });
   return {
     tools: tools,
