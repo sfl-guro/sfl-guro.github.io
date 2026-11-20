@@ -13180,6 +13180,9 @@ function renderBoostPanel() {
       label: "\u{1F310} Global \u2014 all food EXP",
       items: inCategory.filter((b) => b.scope === "foodGlobal")
     }, {
+      label: "\u{1F344} Giant Truffle \u2014 non-fish food EXP (\xD71.6 Smoothie Shack &amp; Deli)",
+      items: inCategory.filter((b) => b.scope === "foodGiantTruffle")
+    }, {
       label: "\u{1F41F} Fish dishes EXP",
       items: inCategory.filter((b) => b.scope === "foodFish")
     }, {
