@@ -600,6 +600,8 @@ function appliedBoostHtml(r) {
   })).filter(x => x.parts.length).map(x => `<div class="rc-boost-row">${ui.getBoostIconAnyFallback(x.b.name)}<span class="rc-boost-name">${esc(x.b.name)}</span><span class="rc-boost-eff">${esc(x.parts.join(", "))}</span></div>`);
   const spiceKey = r.fig.spiceActiveKey;
   if (spiceKey) rows.push(`<div class="rc-boost-row">${ui.getIcon(SPICE_LABELS[spiceKey])}<span class="rc-boost-name">${SPICE_LABELS[spiceKey]}</span><span class="rc-boost-eff">${SPICE_EFFECTS[spiceKey]}</span></div>`);
+  const kale = calc.getKaleMixKaleQty();
+  if (kale != null && r.fig.feedKeyUsed === "mixedGrain" && !calc.isOmnifeedEnabled()) rows.push(`<div class="rc-boost-row">${ui.getBoostIconAnyFallback("Kale Mix")}<span class="rc-boost-name">Kale Mix</span><span class="rc-boost-eff">${n2(kale)} Kale / Mixed Grain</span></div>`);
   return `<div class="rc-group"><div class="rc-comp-sub">Applied Boost</div>${rows.join("") || `<div class="rc-boost-none">No boost applied</div>`}</div>`;
 }
 
@@ -778,6 +780,14 @@ function materialsHtml(r) {
     rows.push(matRowHtml(ui.getIcon(feedName), feedName, week.feedQtyWeek, r.feed, "24hr"));
     const slopBd = r.type === "pig" && fig.feedInfo && fig.feedInfo.breakdown && fig.feedInfo.breakdown[0];
     if (slopBd) rows.push(matRowHtml(ui.getIcon(slopBd.name), slopBd.name, fig.effectiveFeedQty * r.qty * slopBd.qty, r.cycleFeed, "1 cycle"));
+    const fi = fig.feedInfo;
+    if (r.type !== "pig" && fi && fi.cost > 0 && Array.isArray(fi.breakdown)) {
+      fi.breakdown.filter(b => b.name !== feedName && b.mode !== "gem" && b.qty > 0).forEach(b => {
+        const share = b.qty * b.unitCost / fi.cost;
+        rows.push(matRowHtml(ui.getIcon(b.name), b.name, fig.effectiveFeedQty * r.qty * b.qty, r.cycleFeed * share, "1 cycle"));
+        rows.push(matRowHtml(ui.getIcon(b.name), b.name, week.feedQtyWeek * b.qty, r.feed * share, "24hr"));
+      });
+    }
   }
   if (week && r.medicine > 0) {
     const recipe = calc.getBoostedMedicineRecipe();
