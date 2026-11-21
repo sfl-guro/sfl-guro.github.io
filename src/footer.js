@@ -1,11 +1,10 @@
 import { toast } from "./calculator.js";
 
 export function initFooter() {
-  const root = document.getElementById("guroFooter");
-  if (!root) return;
-  root.addEventListener("click", e => {
-    const btn = e.target.closest("[data-gf-copy]");
+  document.addEventListener("click", e => {
+    const btn = e.target.closest ? e.target.closest("[data-gf-copy]") : null;
     if (!btn) return;
+    e.stopPropagation();
     const text = btn.getAttribute("data-gf-copy");
     const done = () => {
       btn.classList.add("is-done");

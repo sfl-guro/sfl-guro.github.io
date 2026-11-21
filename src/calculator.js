@@ -1,6 +1,8 @@
 import { DIG_CHAPTER_STORE } from "./dig_chapter_store.js";
 import { ICON_DATA } from "./icon_data.js";
 import { GAME_ICON_DATA, GAME_ICON_ALIASES } from "./game_icons.js";
+
+import { FLOATING_ISLAND_ICON_DATA } from "./floating_island_icons.js";
 import { digDeduce } from "./dig_solver.js";
 import { __set_farmPanelInProgressCategoryFilter, __set_farmPanelSyncInFlight, farmPanelAOEExtent, farmPanelCheckTurtleAOEBonus, farmPanelComputeEconomics, farmPanelComputeExactCrimstoneYield, farmPanelComputeExactCropYield, farmPanelComputeExactFlowerYield, farmPanelComputeExactFruitYield, farmPanelComputeExactGreenhouseYield, farmPanelCropTierLabel, farmPanelDebugFindShapes, farmPanelDetectNodeTier, farmPanelField, farmPanelGameState, farmPanelGetCollectiblePosition, farmPanelGetCostPerUnitFlower, farmPanelGetLastInfo, farmPanelGetMarketId, farmPanelGetMarketPriceFlower, farmPanelGnomeAOEBonus, farmPanelGnomeComboPresent, farmPanelGrowTimeSec, farmPanelIsWithinTurtleAOE, farmPanelLoadCachedGameState, farmPanelMarkScrollActivity, farmPanelMergeAuthoritativeResourceData, farmPanelSaveGameState, farmPanelSaveLastInfo, farmPanelSyncInFlight } from "./inprogress.js";
 import { harvestLogSetFarm } from "./harvest_log.js";
@@ -839,6 +841,10 @@ export const COIN_ICON = '<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUg
 
 Object.keys(GAME_ICON_DATA).forEach(name => {
   if (!BOOST_ICON_OVERRIDES[name] && !IMAGE_ICONS[name]) BOOST_ICON_OVERRIDES[name] = GAME_ICON_DATA[name];
+});
+
+Object.keys(FLOATING_ISLAND_ICON_DATA).forEach(name => {
+  if (!IMAGE_ICONS[name]) IMAGE_ICONS[name] = FLOATING_ISLAND_ICON_DATA[name];
 });
 
 Object.keys(GAME_ICON_ALIASES).forEach(name => {
@@ -6613,19 +6619,16 @@ const SKILL_FISHING = [ {
   id: "skill_fishy_chance",
   name: "Fishy Chance",
   skillTier: 1,
-  notModeled: true,
   note: "10% chance of +1 Basic Fish"
 }, {
   id: "skill_fishy_roll",
   name: "Fishy Roll",
   skillTier: 1,
-  notModeled: true,
   note: "10% chance of +1 Advanced Fish"
 }, {
   id: "skill_fishermans_5_rod",
   name: "Fisherman's 5 Fold",
   skillTier: 1,
-  notModeled: true,
   note: "+5 daily fishing reels"
 }, {
   id: "skill_reel_deal",
@@ -6640,13 +6643,11 @@ const SKILL_FISHING = [ {
   id: "skill_fishermans_10_fold",
   name: "Fisherman's 10 Fold",
   skillTier: 2,
-  notModeled: true,
   note: "+10 daily fishing limit"
 }, {
   id: "skill_fishy_gamble",
   name: "Fishy Gamble",
   skillTier: 2,
-  notModeled: true,
   note: "20% chance of +1 Expert Fish"
 }, {
   id: "skill_fishy_fortune",
@@ -6658,7 +6659,6 @@ const SKILL_FISHING = [ {
   id: "skill_frenzied_fish",
   name: "Frenzied Fish",
   skillTier: 3,
-  notModeled: true,
   note: "During Fish Frenzy: +1 fish, plus 50% chance of another +1"
 }, {
   id: "skill_fishy_feast",
@@ -6669,7 +6669,6 @@ const SKILL_FISHING = [ {
   id: "skill_more_with_less",
   name: "More With Less",
   skillTier: 3,
-  notModeled: true,
   note: "+10/+25/+50 daily fishing reels"
 } ];
 
@@ -6683,7 +6682,6 @@ const SKILL_COOKING = [ {
   id: "skill_fast_feasts",
   name: "Fast Feasts",
   skillTier: 1,
-  notModeled: true,
   note: "-10% Fire Pit and Kitchen cooking time"
 }, {
   id: "skill_nom_nom",
@@ -6700,7 +6698,6 @@ const SKILL_COOKING = [ {
   id: "skill_frosted_cakes",
   name: "Frosted Cakes",
   skillTier: 2,
-  notModeled: true,
   note: "-10% Cakes cooking time"
 }, {
   id: "skill_drive_through_deli",
@@ -6722,7 +6719,6 @@ const SKILL_COOKING = [ {
   id: "skill_fiery_jackpot",
   name: "Fiery Jackpot",
   skillTier: 3,
-  notModeled: true,
   note: "20% chance of +1 food from the Fire Pit"
 }, {
   id: "skill_double_nom",
@@ -6733,19 +6729,16 @@ const SKILL_COOKING = [ {
   id: "skill_swift_sizzle",
   name: "Swift Sizzle",
   skillTier: 1,
-  notModeled: true,
   note: "Desert Island — -40% Fire Pit cooking time with Oil"
 }, {
   id: "skill_turbo_fry",
   name: "Turbo Fry",
   skillTier: 2,
-  notModeled: true,
   note: "Desert Island — -50% Kitchen cooking time with Oil"
 }, {
   id: "skill_fry_frenzy",
   name: "Fry Frenzy",
   skillTier: 3,
-  notModeled: true,
   note: "Desert Island — -60% Deli cooking time with Oil"
 } ];
 
@@ -7815,67 +7808,56 @@ const SKILL_CAVE = [ {
   id: "skill_lean_compost",
   name: "Lean Compost",
   skillTier: 1,
-  notModeled: true,
   note: "×0.95 / ×0.9 / ×0.85 Myco Bin ingredient cost (rank I / II / III)"
 }, {
   id: "skill_rapid_mycelium",
   name: "Rapid Mycelium",
   skillTier: 1,
-  notModeled: true,
   note: "×0.95 / ×0.9 / ×0.85 Myco Bin growth time (rank I / II / III)"
 }, {
   id: "skill_mushroom_bloom",
   name: "Mushroom Bloom",
   skillTier: 1,
-  notModeled: true,
   note: "+1 / +2 / +3 Mushroom tiles in each Cave patch (Cave Digging reads this from the batch)"
 }, {
   id: "skill_muddy_bounty",
   name: "Muddy Bounty",
   skillTier: 1,
-  notModeled: true,
   note: "×1.1 / ×1.2 / ×1.3 Mud from Cave patches"
 }, {
   id: "skill_sturdy_shovel",
   name: "Sturdy Shovel",
   skillTier: 1,
-  notModeled: true,
   note: "10% / 20% / 30% chance a Cave dig keeps its Sand Shovel"
 }, {
   id: "skill_fungal_harvest",
   name: "Fungal Harvest",
   skillTier: 2,
-  notModeled: true,
   note: "+0.2 / +0.3 / +0.4 Mushrooms from each Cave Mushroom tile"
 }, {
   id: "skill_beetle_nest",
   name: "Beetle Nest",
   skillTier: 2,
-  notModeled: true,
   note: "+1 / +2 / +3 Beetle tiles in each Cave patch (Cave Digging reads this from the batch)"
 }, {
   id: "skill_sturdy_drill",
   name: "Sturdy Drill",
   skillTier: 2,
-  notModeled: true,
   note: "20% / 30% / 40% chance a Cave drill keeps its Sand Drill"
 }, {
   id: "skill_tool_hoarder",
   name: "Tool Hoarder",
   skillTier: 2,
-  notModeled: true,
   note: "Stock cap +25 / +50 / +100 Sand Shovel and +5 / +10 / +20 Sand Drill"
 }, {
   id: "skill_rare_breeds",
   name: "Rare Breeds",
   skillTier: 3,
-  notModeled: true,
   note: "Beetle odds shift toward rare ones: Green / Blue / Pink / Amber 35/35/15/15, 30/30/20/20, 25/25/25/25 (base 40/30/20/10)"
 }, {
   id: "skill_twin_beetles",
   name: "Twin Beetles",
   skillTier: 3,
-  notModeled: true,
   note: "5% / 10% / 15% chance of +1 Beetle when digging one up in the Cave"
 } ];
 
@@ -31362,6 +31344,19 @@ function cookingComputeFoodTimeUncached(building, name) {
       if (b.timeMult) applyMult(b.timeMult, `${b.name} ×${b.timeMult}`, getBoostIcon(b.name));
     });
   }
+  const fastFeasts = building === "Fire Pit" || building === "Kitchen" ? [ .1, .15, .2 ] : null;
+  if (fastFeasts && isSkillActive("skill_fast_feasts")) {
+    const m = 1 - fastFeasts[Math.min(Math.max(getAscensionRank("skill_fast_feasts"), 1), 3) - 1];
+    applyMult(m, `Fast Feasts ×${+m.toFixed(4)}`, getBoostIcon("Fast Feasts"));
+  }
+  if (COOKING_CAKE_DISHES.has(name) && isSkillActive("skill_frosted_cakes")) {
+    const m = 1 - [ .1, .2, .3 ][Math.min(Math.max(getAscensionRank("skill_frosted_cakes"), 1), 3) - 1];
+    applyMult(m, `Frosted Cakes ×${+m.toFixed(4)}`, getBoostIcon("Frosted Cakes"));
+  }
+  if (cookingOilOn) {
+    const m = 1 - getCookingOilBoost(building);
+    applyMult(m, `Oil ×${+m.toFixed(4)}`, getBoostIcon("Oil"));
+  }
   return {
     time: time,
     boostsUsed: boostsUsed,
@@ -32057,12 +32052,63 @@ export function computeSeaweedFigures() {
   return __seaweedFiguresMemo;
 }
 
+export let fishFrenzyOn = localStorage.getItem("hl_fish_frenzy") === "true";
+
+export function setFishFrenzyOn(val) {
+  fishFrenzyOn = !!val;
+  localStorage.setItem("hl_fish_frenzy", String(fishFrenzyOn));
+}
+
+const FRENZIED_FISH_FLAT = [ 1, 2, 3 ];
+
+const FRENZIED_FISH_CRIT = [ 50, 50, 0 ];
+
+export function getFrenziedFishInfo() {
+  if (!isSkillActive("skill_frenzied_fish")) return null;
+  const i = Math.min(Math.max(getAscensionRank("skill_frenzied_fish"), 1), 3) - 1;
+  return {
+    flat: FRENZIED_FISH_FLAT[i],
+    crit: FRENZIED_FISH_CRIT[i]
+  };
+}
+
+export function getFrenziedFishExtra() {
+  const info = getFrenziedFishInfo();
+  return info ? info.flat + info.crit / 100 : 0;
+}
+
+const FISHING_LIMIT_BOOSTS = [ [ "Angler Waders", 10 ], [ "Reelmaster's Chair", 5 ], [ "Nautilus", 5 ], [ "Deep Sea Slug", 5 ], [ "Otty the Otter", 5 ], [ "Saw Fish", 5 ] ];
+
+export function getDailyFishingLimitInfo() {
+  let limit = 20;
+  const parts = [];
+  [ [ "Fisherman's 5 Fold", "skill_fishermans_5_rod" ], [ "Fisherman's 10 Fold", "skill_fishermans_10_fold" ], [ "More With Less", "skill_more_with_less" ] ].forEach(([name, id]) => {
+    const add = caveSkillValue(id);
+    if (add > 0) {
+      limit += add;
+      parts.push({ name: name, add: add });
+    }
+  });
+  FISHING_LIMIT_BOOSTS.forEach(([name, add]) => {
+    const b = BOOSTS.find(x => x.name === name || stripBoostSuffix(x.name) === name);
+    if (b && isBoostActive(b.id)) {
+      limit += add;
+      parts.push({ name: name, add: add });
+    }
+  });
+  return {
+    limit: limit,
+    parts: parts
+  };
+}
+
 export function fishCatchYieldMult(tier) {
   let mult = 1;
   if (typeof isBoostActive !== "function") return mult;
-  if (tier === "basic" && isBoostActive("skill_fishy_chance")) mult += .1;
-  if (tier === "advanced" && isBoostActive("skill_fishy_roll")) mult += .1;
-  if (tier === "expert" && isBoostActive("skill_fishy_gamble")) mult += .2;
+  if (tier === "basic") mult += caveSkillValue("skill_fishy_chance") / 100;
+  if (tier === "advanced") mult += caveSkillValue("skill_fishy_roll") / 100;
+  if (tier === "expert") mult += caveSkillValue("skill_fishy_gamble") / 100;
+  if (fishFrenzyOn) mult += getFrenziedFishExtra();
   if (typeof fishingBoostYieldAdd === "function") mult += fishingBoostYieldAdd(tier);
   return mult;
 }
@@ -32382,6 +32428,43 @@ function fishCatchComputeXPUncached(fishName, stage) {
     boostsUsed: boostsUsed,
     baseXp: baseXp
   };
+}
+
+export let cookingOilOn = localStorage.getItem("hl_cooking_oil") === "true";
+
+export function setCookingOilOn(val) {
+  cookingOilOn = !!val;
+  localStorage.setItem("hl_cooking_oil", String(cookingOilOn));
+  __cookingFoodTimeMemo.clear();
+}
+
+const COOKING_OIL_BASE_BOOST = {
+  "Fire Pit": .2,
+  Kitchen: .25,
+  "Smoothie Shack": .3,
+  Bakery: .35,
+  Deli: .4
+};
+
+const COOKING_OIL_SKILLS = {
+  "Fire Pit": [ "skill_swift_sizzle", [ .4, .45, .5 ] ],
+  Kitchen: [ "skill_turbo_fry", [ .5, .55, .6 ] ],
+  Deli: [ "skill_fry_frenzy", [ .6, .65, .7 ] ]
+};
+
+export function getCookingOilBoost(building) {
+  const skill = COOKING_OIL_SKILLS[building];
+  if (skill && isSkillActive(skill[0])) {
+    const i = Math.min(Math.max(getAscensionRank(skill[0]), 1), 3) - 1;
+    return skill[1][i];
+  }
+  return COOKING_OIL_BASE_BOOST[building] || 0;
+}
+
+export function getFieryJackpotChance() {
+  if (!isSkillActive("skill_fiery_jackpot")) return 0;
+  const i = Math.min(Math.max(getAscensionRank("skill_fiery_jackpot"), 1), 3) - 1;
+  return [ .2, .35, .5 ][i];
 }
 
 export let cookingGuaranteedCatchOn = localStorage.getItem("hl_cooking_guaranteed_catch") === "true";
