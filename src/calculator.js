@@ -7,6 +7,8 @@ import { digDeduce } from "./dig_solver.js";
 import { __set_farmPanelInProgressCategoryFilter, __set_farmPanelSyncInFlight, farmPanelAOEExtent, farmPanelCheckTurtleAOEBonus, farmPanelComputeEconomics, farmPanelComputeExactCrimstoneYield, farmPanelComputeExactCropYield, farmPanelComputeExactFlowerYield, farmPanelComputeExactFruitYield, farmPanelComputeExactGreenhouseYield, farmPanelCropTierLabel, farmPanelDebugFindShapes, farmPanelDetectNodeTier, farmPanelField, farmPanelGameState, farmPanelGetCollectiblePosition, farmPanelGetCostPerUnitFlower, farmPanelGetLastInfo, farmPanelGetMarketId, farmPanelGetMarketPriceFlower, farmPanelGnomeAOEBonus, farmPanelGnomeComboPresent, farmPanelGrowTimeSec, farmPanelIsWithinTurtleAOE, farmPanelLoadCachedGameState, farmPanelMarkScrollActivity, farmPanelMergeAuthoritativeResourceData, farmPanelSaveGameState, farmPanelSaveLastInfo, farmPanelSyncInFlight } from "./inprogress.js";
 import { harvestLogSetFarm } from "./harvest_log.js";
 
+import { harvestStatePull } from "./hl_state_sync.js";
+
 import { POTION_ROOM_ICON } from "./potion_icon.js";
 
 import { POTION_STORE_ICONS } from "./potion_store_icons.js";
@@ -18909,6 +18911,9 @@ async function performFarmPanelSync(farmId) {
     const budFertSpiceCrowMatched = !!(budResult.matched || fertResult.matched || spiceResult.matched || crowAoeResult.changed);
     const anythingChanged = JSON.stringify(selectedBoosts) !== prevSelectedBoostsSig || JSON.stringify(selectedSkills) !== prevSelectedSkillsSig || feePercent !== prevFeePercent || plotsResult.touched || !!budResult.matched || !!fertResult.matched || !!spiceResult.matched || !!crowAoeResult.changed;
     harvestLogSetFarm(farmId);
+    try {
+      await harvestStatePull(farmId);
+    } catch (e) {}
     farmPanelSaveGameState(mergedFreshState, true, farmId);
     if (typeof invalidateCostCache === "function") invalidateCostCache();
     if (typeof syncCookingCountsFromInventory === "function") syncCookingCountsFromInventory(farmPanelGameState);

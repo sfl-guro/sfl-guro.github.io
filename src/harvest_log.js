@@ -6,6 +6,8 @@ import { ICON_DATA } from "./icon_data.js";
 
 import { FLOWER_ICON, COIN_ICON, COOKING_FOOD_IMAGES } from "./calculator.js";
 
+import { stateHeaderCode, stateNoteRejected } from "./hl_code_store.js";
+
 import { craftedToolsInit, craftedToolsPrepare, craftedToolsViewFor, craftedToolsSync, craftedToolsPush } from "./crafted_tools.js";
 
 const HARVEST_LOG_BASE = "https://sfl-harvest-log.bossweki.workers.dev";
@@ -57,12 +59,27 @@ function saveSent(obj) {
   } catch (e) {}
 }
 
-function fetchWithTimeout(url, opts) {
+function fetchWithTimeout(url, opts, ms) {
   const ctrl = typeof AbortController === "function" ? new AbortController() : null;
-  const timer = ctrl ? setTimeout(() => ctrl.abort(), REQUEST_TIMEOUT_MS) : null;
-  return fetch(url, Object.assign({}, opts, ctrl ? {
+  const timer = ctrl ? setTimeout(() => ctrl.abort(), ms || REQUEST_TIMEOUT_MS) : null;
+  const own = url.indexOf(HARVEST_LOG_BASE) === 0;
+  const farm = own ? currentFarmId() : "";
+  const code = own && farm ? stateHeaderCode(farm) : "";
+  const sendOpts = code ? Object.assign({}, opts, {
+    headers: Object.assign({}, opts && opts.headers, {
+      "X-Farm-Code": code
+    })
+  }) : opts;
+  return fetch(url, Object.assign({}, sendOpts, ctrl ? {
     signal: ctrl.signal
-  } : {})).finally(() => {
+  } : {})).then(res => {
+    if (own && (res.status === 403 || res.status === 429)) {
+      res.clone().json().then(j => {
+        if (j && typeof j.error === "string") stateNoteRejected(farm, j.error);
+      }).catch(() => {});
+    }
+    return res;
+  }).finally(() => {
     if (timer) clearTimeout(timer);
   });
 }
@@ -162,6 +179,16 @@ export function harvestLogSetFarm(id) {
 
 export function harvestLogRequest(path, opts) {
   return fetchWithTimeout(HARVEST_LOG_BASE + path, opts);
+}
+
+export function harvestLogRequestTimed(path, opts, ms) {
+  return fetchWithTimeout(HARVEST_LOG_BASE + path, opts, ms);
+}
+
+let afterPushHook = null;
+
+export function harvestLogSetAfterPush(fn) {
+  afterPushHook = typeof fn === "function" ? fn : null;
 }
 
 export function harvestLogFarmId() {
@@ -275,7 +302,7 @@ async function pushTotals(trackKey) {
       }
     }
   }
-  if (res.status < 500 && res.status !== 413) saveSent({
+  if (res.status < 500 && res.status !== 413 && res.status !== 403 && res.status !== 429) saveSent({
     sig: sig
   });
 }
@@ -290,6 +317,11 @@ function flush() {
   if (!farmId) return;
   pushTotals(farmId).catch(() => {}).finally(() => {
     craftedToolsPush(farmId).catch(() => {});
+    if (afterPushHook) {
+      try {
+        afterPushHook(farmId);
+      } catch (e) {}
+    }
   });
 }
 
