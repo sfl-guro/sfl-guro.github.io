@@ -197,6 +197,31 @@ function currentFarmId() {
   return "";
 }
 
+const CHUNK_MAX_CHARS = 20000;
+
+const CHUNK_MAX_GROUPS = 100;
+
+function chunkTotals(totals) {
+  const chunks = [];
+  let cur = {};
+  let size = 0;
+  let count = 0;
+  Object.keys(totals).forEach(name => {
+    const len = name.length + JSON.stringify(totals[name]).length + 6;
+    if (count && (size + len > CHUNK_MAX_CHARS || count >= CHUNK_MAX_GROUPS)) {
+      chunks.push(cur);
+      cur = {};
+      size = 0;
+      count = 0;
+    }
+    cur[name] = totals[name];
+    size += len;
+    count++;
+  });
+  if (count) chunks.push(cur);
+  return chunks;
+}
+
 async function pushTotals(trackKey) {
   const keyed = String(trackKey || "").trim();
   const farmId = FARM_RE.test(keyed) ? keyed : currentFarmId();
@@ -209,7 +234,7 @@ async function pushTotals(trackKey) {
   const sig = JSON.stringify([ farmId, data.day, data.totals, coinSig ]);
   const sent = loadSent();
   if (sent.sig === sig) return;
-  const post = totals => fetchWithTimeout(HARVEST_LOG_BASE + "/log", {
+  const postOne = (totals, withCoins) => fetchWithTimeout(HARVEST_LOG_BASE + "/log", {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
@@ -218,9 +243,18 @@ async function pushTotals(trackKey) {
       farmId: farmId,
       day: data.day,
       totals: totals,
-      coins: data.coins || undefined
+      coins: withCoins ? data.coins || undefined : undefined
     })
   });
+  const post = async totals => {
+    const chunks = chunkTotals(totals);
+    let last = null;
+    for (let i = 0; i < chunks.length; i++) {
+      last = await postOne(chunks[i], i === 0);
+      if (!last.ok) return last;
+    }
+    return last;
+  };
   let res = await post(data.totals);
   if (res.status === 400) {
     const plain = {};
@@ -241,7 +275,7 @@ async function pushTotals(trackKey) {
       }
     }
   }
-  if (res.status < 500) saveSent({
+  if (res.status < 500 && res.status !== 413) saveSent({
     sig: sig
   });
 }

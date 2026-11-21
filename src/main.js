@@ -12,6 +12,8 @@ import { initNav } from "./nav.js";
 
 import { initFooter } from "./footer.js";
 
+import { initHarvestBackup } from "./hl_backup.js";
+
 import { initRouter } from "./router.js";
 
 import { finishBoot, initRewardBanner } from "./reward_banner.js";
@@ -65,6 +67,8 @@ setTimeout(() => {
     try {
       initNav();
       initFooter();
+
+      initHarvestBackup();
       renderFarmPanelInfo();
       initRouter();
     } catch (e) {

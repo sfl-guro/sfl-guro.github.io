@@ -72,6 +72,10 @@ function loadStore() {
   return memStore;
 }
 
+export function dailyHarvestReloadStore() {
+  memStore = null;
+}
+
 function freshStore() {
   const store = loadStore();
   if (pruneStore(store)) saveStore();

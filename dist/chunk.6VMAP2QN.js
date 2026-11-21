@@ -455,6 +455,7 @@ __export(calculator_exports, {
   cookingFindRecipeForFood: () => cookingFindRecipeForFood,
   cookingFishCategory: () => cookingFishCategory,
   cookingGuaranteedCatchOn: () => cookingGuaranteedCatchOn,
+  cookingOilOn: () => cookingOilOn,
   copySkillTreeSelection: () => copySkillTreeSelection,
   craftMaterialRows: () => craftMaterialRows,
   cropBuds: () => cropBuds,
@@ -542,6 +543,7 @@ __export(calculator_exports, {
   fishBuds: () => fishBuds,
   fishCatchComputeXP: () => fishCatchComputeXP,
   fishCatchYieldMult: () => fishCatchYieldMult,
+  fishFrenzyOn: () => fishFrenzyOn,
   fishInventoryNameForCategory: () => fishInventoryNameForCategory,
   fishStageForCategory: () => fishStageForCategory,
   fishingBoostsActiveByScope: () => fishingBoostsActiveByScope,
@@ -605,6 +607,7 @@ __export(calculator_exports, {
   getBoostedToolRecipe: () => getBoostedToolRecipe,
   getBuildDetailActiveEntries: () => getBuildDetailActiveEntries,
   getCookingCount: () => getCookingCount,
+  getCookingOilBoost: () => getCookingOilBoost,
   getCropMachineOilCap: () => getCropMachineOilCap,
   getCropMachineOilCapHours: () => getCropMachineOilCapHours,
   getCropMachinePackMax: () => getCropMachinePackMax,
@@ -614,6 +617,7 @@ __export(calculator_exports, {
   getCropSeasons: () => getCropSeasons,
   getCurrentChapterMutantSet: () => getCurrentChapterMutantSet,
   getCurrentChapterName: () => getCurrentChapterName,
+  getDailyFishingLimitInfo: () => getDailyFishingLimitInfo,
   getDailyProfitCalcMode: () => getDailyProfitCalcMode,
   getDailyProfitPeriodMode: () => getDailyProfitPeriodMode,
   getDailyProfitSwap: () => getDailyProfitSwap,
@@ -627,7 +631,10 @@ __export(calculator_exports, {
   getEffectiveDailyReward: () => getEffectiveDailyReward,
   getEffectiveYieldAdd: () => getEffectiveYieldAdd,
   getFeedQtyPerFeed: () => getFeedQtyPerFeed,
+  getFieryJackpotChance: () => getFieryJackpotChance,
   getFishSeasons: () => getFishSeasons,
+  getFrenziedFishExtra: () => getFrenziedFishExtra,
+  getFrenziedFishInfo: () => getFrenziedFishInfo,
   getFruitCount: () => getFruitCount,
   getFruitPatchTotal: () => getFruitPatchTotal,
   getFruitSeasons: () => getFruitSeasons,
@@ -857,6 +864,7 @@ __export(calculator_exports, {
   setCookingCount: () => setCookingCount,
   setCookingFishCategory: () => setCookingFishCategory,
   setCookingGuaranteedCatchOn: () => setCookingGuaranteedCatchOn,
+  setCookingOilOn: () => setCookingOilOn,
   setCrustaceanSelectedChum: () => setCrustaceanSelectedChum,
   setCrustaceanTrapTab: () => setCrustaceanTrapTab,
   setDailyProfitCalcMode: () => setDailyProfitCalcMode,
@@ -864,6 +872,7 @@ __export(calculator_exports, {
   setDailyProfitSwap: () => setDailyProfitSwap,
   setDailyProfitTotalsMode: () => setDailyProfitTotalsMode,
   setFactionPetManualMode: () => setFactionPetManualMode,
+  setFishFrenzyOn: () => setFishFrenzyOn,
   setFishingTier: () => setFishingTier,
   setFruitCount: () => setFruitCount,
   setGemPackRatio: () => setGemPackRatio,
@@ -1274,6 +1283,57 @@ var GAME_ICON_ALIASES = {
   "Victoria's Secretary": "@coin",
   "Young Farmer": "Sunflower"
 };
+
+// src/floating_island_icons.js
+var FLOATING_ISLAND_ICON_DATA = {
+  "Floating Island": "data:image/webp;base64,UklGRvoAAABXRUJQVlA4TO4AAAAvGQAGEEegmJEkaCTmNWIruTSLcAMsjJkAZCRxumQQQVF1FmIxlLaNxBw7+hv+/rw3af4DgLP3Mx8VP7KJJEnYHuDIth2peWDLeXsHdETYVc+Dck8pMwug9LUCS8TN9PbNR2uI6P8EwCfROEhPDScpNrxJpEPyi5SeAFCSvk9SBAbdlzfpCzh5f+QzBs37UTrevr8jTnrtZqOkkvV01828eJp33vHm9aPc+K6+18O4OKnxsPiQSCe+IJG25UmKa2Bhtkv2QR52AFLepWJmJTg51VzyHgAWNVu1mhz876yW/SI4i5BqDXi8qHu0boMD",
+  "Bronze Food Box": "data:image/webp;base64,UklGRjYBAABXRUJQVlA4TCoBAAAvFUAGELfAJpJkVY8yZob01fOffUGo4de3oUaSpOTuCJ3IIbOv8f9Q2QQAmGSuAVxw7f9Qhgb8zvwHAOD/fx96UVW+cGBVo+5xshMpBLfK2hK1TLXeoXdkZcZo1hhBMbONMH/suYIMeNvGALGRJEXSTv8t40Gv/77im5AZ0f8JqG6GylM1C8QD03e+9UajRL7Nd4GMikaxsDfxTt8co2r2QtPN9pGFd5619rOds5Hl4Ml845PFdypI3CH1bWrBuCA+x3xnQW60oR/SokR7Y9b4pFpifmB8UmN+ZKjzRVPYzy6bHRonbX5ADXwBJz3btB53RzY9YVQ2GRt1ZJNRuWp8of/w2uTOcaWe3J1kpT4doF54Nacs1AOcrbz0z0ZW7mxebT6CO9Vlc8ol",
+  "Silver Food Box": "data:image/webp;base64,UklGRhwBAABXRUJQVlA4TA8BAAAvFUAGEIegKJKk5sLrnomMAkThX0SywSYAwCST011uV/rXIANBYBMAQBrc4eV1b0T/GLDNfwAA/v9PqSo8aDYxqbn0MmdmbhhBTK41NsTAfo/zXfo4cgQDxEiS4zbEAQJA60gq/3T5OYSZiP5PwPIwVN6qWSBemI4c+qDBYg5zFMhYaLC0wmwx0lHOsbRZaNvPI7Iw8mrn+Ln5M7KcvPg9WLM4UkHiCanD1IJxQ6znHFmQB3voSlqU2B+osaZa4vfCWFPj98pQfzetMNvFLbPQ6MpXBfgDWtcrlfl10vWiAnaZXZ10K+CdVrv/ULv1yflDm36d8qFeNhDslxUErj7YrXYrPOnedV/Bk+W2X3ILAA==",
+  "Gold Food Box": "data:image/webp;base64,UklGRjIBAABXRUJQVlA4TCUBAAAvFUAGEJ+gqLZ26EeDmZW9/gXsBJBAhXlWQ00kW80HypyDgOQBgUjDAA4QQE0F20i22hB5iBky70FqR/0XoNC7+Q8A4P+/yIESmnEWVQxTkhSQLQmhD9cbRIA0FuGt4hKaVfo+5Ls55+HnzOAwkiSn4Q7P/WP0+UdrQCHsRPR/AoaXDugrECb5B4I1VniRQR4rsZoUPiiDMBV8DVarfcjFxHPp9jCt0frpvvQgeVhF43qxhbEGSMjfELASYMI7t291rGFCL34OG4GB/PfiknwLwPz6IN8CXJ/kgDrZVGh0KSZIkA9JALskErQWyMVUWKBxAlrIJQHKC2cG9RKZxB/yQn5Tz6LIVMSsswlo0pmamnRmaM06EyMJzXqz0Fv4lHkzdFNTXQA=",
+  "Bronze Love Box": "data:image/webp;base64,UklGRgYBAABXRUJQVlA4TPoAAAAvFYAFEF+gKrINyv/V4B1ACtkEVsCooTQAkIYXSBuqM/r/UealKJKk5l45AF8KO9hFGgrS/AcB+P9XmU42TgM6clZAJNjtanoPcxa4jQBWVYKN4JV7aQvwjkepwVqb4MsCSI6SLkflkpKOe+OhI0T0fwJaCHEvxL2AgeA+sC3AttCKtYOSYU4yd6R93mR2zPzs3MbnTcYws3mzfOz4WRq+nIuGzWH8Rh6mJB+K5vBuSZQkGt7GQTnL61jawf2HWHtJS2qqBQ1p+GKJfrFcSw/QtrSrX7CMn6pu90UpS5OQpZWazlUFEetq3pjOpzVM4qTxj/IbAABEBAAA",
+  "Silver Love Box": "data:image/webp;base64,UklGRhgBAABXRUJQVlA4TAwBAAAvFYAFEG+gpLYVCYujBAXof0hABCxumV1PDTO1bfwEP4PRarI7ittVkOFHoDSSVYdacKl/QS84BosOP8x/AMD/38alG2WgLaH0NLzXLIDZ6AgbklBwG9m2m7xUoxLwtKCIIZUt4EfKsRWQu0/mjUwDZN4+VADDEyaWfjXYEiL6PwELhJ4EPQlQTjxlawTWaJFaJoSnqo6qHsUyCj1TVdXmMQ6i0OOqqvI3dtdUm7PtS3HIVV5Yv1G6fKZ8GPLCO5sxh7FtHCREUXldi2Xi+SG1vJLNtmizLZ1fonzwcsTqLqS4PkHvhRz65JcuL45T3Ym8qE8c54hzl4jmLnpHbEzJocb0H/gGAICIAAAA",
+  "Gold Love Box": "data:image/webp;base64,UklGRhABAABXRUJQVlA4TAMBAAAvFYAFEG+gNgDIxmrzs+N4RHovszeMRJLySV5SAU89qtHlNerUBADBKKEbr8o6OLm3+Q8QcH5CiJS+cwhdsJifUm12oTUAO/EyuK21bU0+pEsVYIHIBPkYIPLhUDptzj8BOgK9S+vuzgD0dJxMg44Q0f8JUAmWHCw5IKdHcGZ3kN2pLs0jbuPxSzweETVZ2Wbi8XgvIumysh3H4/HxG3OSiffO/pfHbRwfP2NvrMn4bH24jZ/vTMYujPkl3SM+rNeYqHmEDy7Niybzk8n8aLzIvP4SonJAQSnXoOoLEn4yit6XVqscEHkx12i1QnTvIuK9S9UQVZp4wUrzH/QGAAARAQAAAA==",
+  "Bronze Tool Box": "data:image/webp;base64,UklGRjIBAABXRUJQVlA4TCUBAAAvF8AFEIegNpKtBFJJ3TVn6D+lGyrwNtgGAFgmecB2RtT6rqeLTQCASXa53u5Df7oTgDgksPkPAID//6kdOIquvZHEIPWAEAijhimkqTGey7oPtRR927VrNuvJALG2bbCSvAk+yeP13y4jLdwT0f8JSMem8wo7mySQKkjiUtTFfEx7itW4VJegegXMx7SFTdB9EoD5mCbvwQdzGNO+dNlT3HzITuQKewoW5qYTn9hTsACTn9lTsAD8gz0F03pyBVjBYu8B2ih8GrF3EdemSz4JsqRNl2rSC/ik5RYoN5+8QGJIgpZbBZTby5BEYh3kyi3I72BNyk3a3E33pkk5iXWQuwJpWRNDErS7btVehiQS6+Cu/FHRO1iT8g++/CCfSWf/163+BwA=",
+  "Silver Tool Box": "data:image/webp;base64,UklGRjoBAABXRUJQVlA4TC0BAAAvF8AFEG+gJrLVCBOnAHoG/xrQADm6tKmxoSYAkIYCcO2Pk9dV3TCWMAJqItlqfv1N5EDyX2ADA1TYYP4DAEz/GImJKCtLFWPx07za8h33P4XXv2gaAI62z4uTiR3Aa3dXpIpMFqliw9LGU+sB0DkA9q/hBNwBqlS0+3CYbGbvENF/hWnbMOruKSAiCCLQaVrZww2EhlsDCM4SxtjtbIx+f/b7/u5vHHA25qQzJ2cJmlv0adeXVMqIzeJHr6/8/X/Xt7SkkeMYSebkrZQwckoJo6eYOfl2GXA23Dd6mJm3M7ezQaQrRLUlchYrA/1qt3jZ1iqOybz+NSXSrs1PsdLWhrVBZ1qtOIqIB5/nB4iOY5vuFtq0Kt8Dopr1PagNapa3hCh1hgIAQJfIBQAAAA==",
+  "Gold Tool Box": "data:image/webp;base64,UklGRiIBAABXRUJQVlA4TBUBAAAvF8AFEIegKJKk5kwEcuZ/hXwMgABk4OFsKI1kq/kVRLJDYmPjNEFBKNRnEwBAGgpQwN3pf1DBpccqbP4DAFD7Y3EYOeuVWZXVC9nBb5XE5sBz/+ddqDzBC7LPpgYYGEaSFEUOUHl88g9XD0hhNqL/Ctu2beSBNh2HbHMZUzVpzGFINAlQoMgn74f110qg/RSe/AA4f+Ao1HxwSpIztbDC4PeCG6y/2dhlE+58n/oiOy2vaohYjoeIY4HLDcwIhTObX0tCheCg5AMbc1CCo+I/apL8Bj4S8NNKoOgnAVvaJcHVSgWKruTfukK0igRKO67oTXLoUnM0qW+TKgQKfy3GvTppPe6VKOiL8ZRhPKdpykR+vA0CAA==",
+  "Cetus": "data:image/webp;base64,UklGRgYUAABXRUJQVlA4WAoAAAASAAAAMQAALAAAQU5JTQYAAAD/////AABBTk1GegIAAAAAAAAAADEAACwAAJYAAAJWUDhMYgIAAC8xAAsQv8A0sq1W6OiohDIoHMfg0Tmjwo9tsIltO9EPS2ESEB+xut0KQAfbcsdd2AYAkIRu+JpDOIIDuCHUiV3XbgmybSo2+oM9AAB//b8gmTWQkHkcUQkwK/GLeJcfyUous4wmuhuoqbANNP7RAweYHv5s0tESwo/NmWkdgwTbtuq28Qt6tCgf7Mhq5j9VeCCHTuDciP4zcNu2kSKj6bj5jNuvqgC3tVV2Y19qAfsrCixcpUlhp6xLt6e5jri3lHhi6ZQRWHrZ2lTMSyivLOr2wu4le/Hd9gVNxfcSnjZcwGsHdmZxqck+loFz7W5l9O45WXZopA3b7W3jFfcycq8tUpdksNkmvaWX5DajmZsG3ps3CfM8ozJ5gR48W/Ku4WC0Xpvl2XAvE4puOrtKm8KQHGPjzZwJd0+lEvqietSTYJiy/UlhsfcJ7sP/SlaobRXrNBPkENic3UMJ6oh3x5yQtFUIp8GcHGiZEHRaGoC2zvsPo7Alr3RGAaf2ZAlC9PMP3t2I784UjsEjJDQnLZt+3qXKSUuqZ2cUQtsC3TiPORE5bZUTBS4OZBhVmxJ7MhInl5wd0DAEpeF+KAupTa4c3lDdyUtM3r5v3Z8XhCuQZIBiTV/+zJ2ZT45wPiQKoIuiwSTN8AWSwWGTmifAQNBPFQi8VgOznL2zFHyVjwAznGIklQ/jIelD0kWnx/OaoPPx0KeksDWtx/c1HB5LH9K4Na3v4zkwtdLzqY9wfes+v3gIkJglMgjwPPqJ3o63bed6NzJ4UX1B8D2c4+A5zeiyus3qPwTWdwBrsnTh9qv69R5BTk1GgAEAAAAAAAAAACIAABkAAJYAAAJWUDhMaAEAAC8iQAYQh6AokqTmJBwZHGABJQjOYOEU8E1vbCiKJKm5VwKsYAI/USE6sgA0JDWRrFZPAZ+KDgcoQTK4QApJ2sx/AMD//7LP+0c9sCu4lwKEaBSy4ejUGlQI5TZdSXt5DwaIjSRJkWhumplmYQ7/3d1H4EFmRP8nYHl0DVye1anoExr+uaL3OQ0UnLc5UYLpMygojyiK3heqE1BvA9WJTxRm+J5xUzGVtKVMbilyioLKPZWNnMr3G0a2Hi1hgpsx48vky6jWQ1sCBmz4acY6fzFsJAEZ/LB+GUW26Gkjg4TAhWKByUKxMPYiG33rJIFJsIz17b0cJ3tBNjokbP89YdDXYoHCzgl7dWiQ7xvMHNVjtUAjz9qL7gZkQEIkbRQ9WJPoxQnQt7frMEiIZBSwkxScNCg24PJ4HV4ZFMuo9z05rfax2Os6XtvruBT2hfMNkmoUDSi4Dl/HpexvnFofWwENKNrl4WWxF0FOTUaAAQAAAAAAAAAAJAAAFwAAlgAAAlZQOExoAQAALyTABRCPwCYAgDT87hKFJCQlATEIoJ/uXA0FkWwlH9coRKAUcUhDCrcAhAClkWw1X5NROHyshF6pINdAKVEy/wEA/P//YKjOgIjAHsl3mflZHfgXBQiilZhUBNf0mUpiSshSTAwS20hyJGlqv+pbTK3y39xTsx5ERPR/Ao6PJnB8Oql/knwmKRMr+URWFApReV1WBllkkJWfoAiK/AxJAUldF0d+LfJrXAXk5Fs5rm9zTBRHe5VWEiMVC/oSnZWVFAn19Yqew1lJ/RxccM6xw6kFexEVt/W3s8eOjVMlYMXaXENsnQYIrJs/FN+d7RyxJ8MZqLBvfFeR9d29ncO9ttNga7A4aKWSUo9X31vncOvU9X9PDY4z6YPiMPHV3nvr0Pl1aann3GQfYG5efW9hqTNARcf07B2JCrFfrbK+vJ8EU9Ev7iCnsfvVQ9ulvn0+njiD1n2crXen/bLHt+2938/HejzV9t4LQU5NRq4BAAAAAAAAAAAlAAAZAACWAAACVlA4TJUBAAAvJUAGEJfAJgCANMjnblFIQlISEIMAsO3zczXUBADI2LuA26ucONJIsVcAIWAaAEAaiC6JRtdL+JUL/AZOscXNfwAA/P//gWl6i0IKW4g4pN/tyJ+zA/klBUTVKEpohhn+LCNxIxQtZgaJsW3HbcMvIwg+wE8t/Xe7s4N7I/o/AdupDdjOb/3PzlkN/v5hg1NaF/6ELic0w/e0EwhaKM04BzCwoSfwQgXY4kexQQMUYDuxbNlepv5Me8NsI1t2LX+i2Zug0fA5f1E5pDd8H/CDPceKkdB1TaJzmXy311ihI4EVMGPq5U33I8NhEpAB8+KbHs0Xe5kjVjokSAjWZblRSm9YurEfZQ7XdCTBSoLJZdsbtdGlGvu9DjWHawjM/yshYM9lqw1sy7qXh6scms8z6QB7rWiUQqx7HbqcpRmQEMl44QpaEpb3Utd8etwMEiKBue2lB4l6r6HlVB/crvrIoHTNjXupR3K3xsvy8HG7zqsPKA8nG9y1NHFYDrX0cfPqA+oQx9pe3ut5lDrUcjy4CeWhowYAQU5NRoYBAAAAAAAAAAAmAAAXAACWAAACVlA4TG0BAAAvJsAFEI+gJpLt5Bv46aIEbcUlCmGsUoENNZEkKVcn4EUwWXgfH71+zjg7RZEkNZcJXrDLL4pAABpQwRsBN/8BAD75A8emxcAVcSMG0JCwJW5xGLOaPn2rl9H6j5pR5UVgDSDWthq20Td8GmR/O9l/WwnlRJ0gov8M3LaNo8i92+0dbasyM9s/VPbMvu/ce73m1vZqn03fXCwrX87tgHK/XMceyMTcS2zRCkBh8yCzHOcc42ekDCaZDGljVz2zRyIyeu+/DiT27Ours6ifwgjOrAWAC72v3AxDkByYOzoOdyxB9iUaMZvSADjc7LCF/M4whgAIwI/j8NakZSLNiAHjdIQE7DDzduf6gPJu93sa5hZljwTcD9y0LEMpTR+9VSxT+p+VRcQtQ6aaMjEZmhQlpJOds26xmImlN3NJRN0ho1IkRwaSzCfnda2Sbm0oidRMREgl5/Vc10mg/nBrn8VPSRm8NeLPdZ6n9Ja7AwBBTk1GlAEAAAAAAAEAACYAABcAAJYAAAJWUDhMfAEAAC8mwAUQj6Amku3kG/jpogRtxSUKYaxSgQ01kSQpVyfgRTBZeB8fvX7OODtFkSQ1lwlesMsvikAAGlDBGwE3/wEAPvkDx6bFwBVxIwbQkLAlbnEYs5o+fauX0fqPmlHlRWANIEa2YlXyCpd9oNdP/tmOjLVmENF/hW3bNoqF7nHH8v/KrPz9sjKXT5VVVdnPfbPtbVZ+IzOfbn4ElTmN8A1kogqZ+MTSABpflJLZtlP60qtEMYPJqpLwzx4razrdLqYmqt5kxEjWXAA4iZxzMAxBcmDuKKzumMisSQ3NntAAONxstbfBGwaLIAHw6azr6stUL4oB4xOAJGCr2eDlUWlwPQlza42RgPuK5cgX8rh1qaUN6X/WJhEHLVtXStOtEZOiSTpZfOqQIVNSJthaM5dE9BUyOjIgSZieVjJ/2PZ9Duk2kK6L1GNESM1tP/d9I9A/vLRo5G62zqWhn/u2bdIlHyy3WpFDtYk+7l6DMF9G7mkipDmxjU7vKxQBQU5NRogBAAAAAAAAAAAmAAAXAACWAAACVlA4TG8BAAAvJsAFEI+gJpLt5Bv46aIEbcUlCmGsUoENNZEkKVcn4EUwWXgfH71+zjg7RZEkNZcJXrDLL4pAABpQwRsBN/8BAD75A8emxcAVcSMG0JCwJW5xGLOaPn2rl9H6j5pR5UVgDSQGYNuGjWASTEAbHv+fu1L1goj+T8CYKknjP1QDrWlS4/cXLc1RdzfQ3a0Z6s+aoW7d1K059249zkDrtTFjABQkiMCYaKAIAKwZdgtdAlSNtt+6v9hstdQtqe/0U0P9ZlaxpX4HwBd92FmBItndkYnGkomn0T2ed1cgokgyACQyYomXj7dAVJEACCCXZck/7TYLwagiQBKIJeIfnDarIqNIIEggc8EYth9sj8unbVZFFcn8CZIAauzSi+TLPh12VfGeZPO+M0IeY1gRl087Im0TAEmQ9eCAZFtCXLYdeVu3DSAJkszY7QBEIny5quy0va7bsW0rAduROXbb50n6ulyP9ul1O/LY1nW1T2cmAEFOTUaYAQAAAAAAAAAAJAAAGQAAlgAAAlZQOEx/AQAALyRABhCHoCYAkIYC8NGDj1q2nEH2vPy0hppIkqKtE3AiXj4L+CDCOBqIKbJTVds29OaHLur6G0MIIIMUvgUw/wEAP/+L7eRkcSRaqAAekRyGM2nrMa94G+1/6Q2aZJErA8RIkuM2PAMHA9RRZP7p6ikxg5mI/k/AdusM3O7Wpeg9Gi4MvcNloODydy6UYCl4BwrKTYqid4TqAlS3G1UXqtvvy5nha0b9SteUdDBZUD/RXBMFldcPiy8qh6wpn4N3K1wfjhwtRsKC1okVf/3D/HTUaKEjgRbQo+s7Fts3hsMkIAP6nx8+H2WOaOmQICFof22j9I0Kx1nmsHVHErQk6GzH9MP0uOpUc9iGQP9vCcGRbVobOG11laetHJqvPVkJR7WYlk7Jq05t9tIMSIhkvNiCmUQrr1Jbf9kfBgmRwHaUniTqVUPLru48nrpnUNo2rlLP5LLG2/J0fzz70x3K077BpaWJw3KopfvDpzvUKY7t7VWvo9ShlmPnIZSnjgIAQU5NRnoBAAAAAAAAAAAkAAAXAACWAAACVlA4TGEBAAAvJMAFEI/AJgCANPzuEoUkJCUBMQign+5cDQWRbCUf1yhEoBRxSEMKtwCEAKWRbDVfk1E4fKyEXqkg10ApUTL/AQD8//9gqM6AiMAeyXeZ+Vkd+BcFCKKVmFQE1/SZSmJKyFJMILFtJEmSKmYjL6OyYz7/va3KOkx7ENF/hW3bNo7UPf4Yt4okx90io83u+/d3FwYiyAgE70gsluAN2E8ggvfSaPd+D9oX7ShJ3DkottKdazZTlKi0fx8FiWQmMyL840jBOPZj108qc8E4CzgSceZSFlLSSs2JwGMegnHoZdVGBWBiVh3h/7PIBQDtweMxhn1M7K2VKG0ASUA9alw8HzSvcT03WbNaVxIw56ViG9osf/x0o001/1VbvFwgPUxiZ1F2NqUphaTLapA4+qppW+g7Uu40pOWK7Zo73/f7RBoL25K3mWk3v+/X+/0VYLvG+Bx8mm3w9HK+3t/v1356AgBBTk1GlgEAAAAAAAAAACUAABkAAJYAAAJWUDhMfQEAAC8lQAYQj6Amku3kG/jpogRtxSUKYaxSgQ01kSQpVyfgRTBZeB8fvX7OODtFkSQ1lwlesMsvikAAGlDBGwE3/wEAPvkDx6bFwBVxIwbQkLAlbnEYs5o+fauX0fqPmlHlRWANIEayW7fRE/iQANLTp/9uSdAjdhDRf4Vt2zaO1b37xbYUERHbekRGZPd66///cmNkRonMWAI5B2KlDQiMvsSK6iwgV6t1jbrEho/CD69Ok4JRgtJCKSOS4Qxm5seCxIyyG+qE5Cfozs6vf8KXIRfd4CS7rDUk9tYmZc6oYzZMA9DQzPYJRP6SwbwbAEdh32dF5IToMA4DJAHbzbZNmipS1zPs1qxkRgKt7dsVmreM69Wj4lJl+7PSiIsWpSiF6VW3SV4gG5kkeckQISkCLLlZk0TUHtKLZECQMI1csjZ0nOdssnVJz0Nq4O5S4Tjv8zwIlPNuxep+C6XwqNPu8zgO6dH481clyI5KQ61Xni63rfudGlya7Ucv1LJcDgBBTk1GegEAAAAAAAEAACYAABUAAJYAAAJWUDhMYgEAAC8mQAUQj6Amku3kG/jpogRtxSUKYaxSgQ01kSQpVyfgRTBZeB8fvX7OODtFkSQ1lwlesMsvikAAGlDBGwE3/wEAPvkDx6bFwBVxIwbQkLAlbnEYs5o+fauX0fqPmlHlRWANIEayQkXyCY+7h7795J+t4pZmENF/hW3bNqrVve5Y7hep9f+vlpZHRa1uqVv9KGPmx74nYJwfx/EMSOiGhEcsA2DwcCM1tvPs4za2iiLFsh+suqUuoVTdfbdjs9U/bu1u+pas4um1AOANXqxAkTyITDTWTNzQhxFnGAASGbHGhe6fBKKOACCAXNc1L0J90SwEzwAkgVgjrujK50xFxmiCBDLXY9r2GNhevv54ZAyZfzEmUctLmk9Z8tdHwq4hmWTzLC9GyMOI0UakbWKukDVwQLIt4cB25Mm279eQGS87AJEIf11V9nDb3/u+EZgfXo748yH9HY7Ox4f53rdtsz/OTEFOTUaWAQAAAAAAAQAAJgAAFwAAlgAAAlZQOEx9AQAALybABRCPoCaS7eQb+OmiBG3FJQphrFKBDTWRJClXJ+BFMFl4Hx+9fs44O0WRJDWXCV6wyy+KQAAaUMEbATf/AQA++QPHpsXAFXEjBtCQsCVucRizmj59q5fR+o+aUeVFYA0gRpIbttELfMSA9JLcf7cgmLE6iOg/A7dtGylW5+37xfZ7RWR8PpER26uKrIp+3jvbsc2Md0TEHMZLkBHLDO9ABDIRgVdsDaDxRinYjg9Cb0YZSIYzmJkSfhwxI5ez24Wpn6R7JXItAFzIXLnoBidZ2BhI7GNgEZGLKs1maAAGhtluC/E/BvMKAM7Bvu9jnfyj6DDOACQB280KScuHVfHMuA1rnZHAGDu2K2Ih4vrqUUubcvxZW4RftErX9FXFJG+Sg0zOumSoqARbbzYkEX2H9I4MCBKm2Us2Jsd5riGHbRU9D6mpu0vN47zP8yDQH3jb2qNXvs02eFSO+zyOQ3o0isr3K4kspZk+7z6FW/utywFyaY0fNehjudwBAA==",
+  "Streamer's Statue": "data:image/webp;base64,UklGRjoBAABXRUJQVlA4TC4BAAAvEkAKED+gqI0kNLYSjhTQH4k2INOaF0QTdZlCRpLY2Bk8Qe8aLxBIAtt+sQDA1HX+cvASIuudfwLk2rbqNjdSA3YqUMCfqRZ3YRdgV2DWJXMTnuf5qX+giIj+K3LbtmFmj80zAKwkhliLGQfFzGwGsFb7N4ud7P+Vu0Wq0rH7lKQzgOePmf2XqeG2bdfucSN5S4PD/XDvlmfz5QAgZct5+Fs0s0sEUDLJZDPWLUiK31csr0QylTPgonMuHCeQ58ZdOZf833xnm1Ms27a9qPnhkpll/5gexyRJXtMSk6rEIxCaLE7AQlVFD2ANSWIAUI4kfZ2x5hjIoEtD51xITWRvjI0n6btMkuyPHDs1VSRTjVhSlqTssbCamcVuuAY9dmH0jt3HeKE9sB/jDdiNAA==",
+  "Flower Coin": "data:image/webp;base64,UklGRjAFAABXRUJQVlA4WAoAAAASAAAAIQAAHgAAQU5JTQYAAAD/////AABBTk1GpgEAAAAAAAAAACEAAB4AAHgAAAJWUDhMjQEAAC8hgAcQn6AmstXoK8APElFDS03OniqXgojAhtpIVqrXAlXQfwX0wBCh6V8zI6PHNACANDSaPsEFVO7gE551q5B0SpBtU6j5E9zpAQDJ/x/DQ7HAEYX5m6RyDFFhUCFkx9cYUU19eLnFvNiLRZMT1wwOI0lqI53gH3lH/slyezIZ7Eb0n4Hbto1kGZ033tE9xCDdh8Rnjd9mnybwLxUCv/GylQaBib2i9hai+gab5RXEnWWPjKaeUiYpmWaOT1illL2VLmdV3roI3l2zjBdJ5SpJtih2KIYayR95YVmGJTYZPHX9vBeb8MoUVEmNzNqAidNsqCxhlOVbDKEzLIFiAf5oJGBCzlv+bQboltO5lSRvGwDZS00I6U9DEVdin2uukFyzrKjVQeXip/Bb3gHboauGpRgzxKhlWBVKV/s2rUNJxSBKZVinbV+g4L6RjgokOST3UFLHvu30L4YUDeS2H7FUk1LzpodItfFBDiohg/hUqiktw02WQzrvoSCLwkynBH2hFsgZ+iK6DV/n3YwAQU5NRnIAAAAGAAAEAAAJAAAJAAB4AAAAVlA4TFoAAAAvCUACEC+gIAAZRv9iRJGBnRpCAsL/h6ZICAJIYg1ykT1WeP4D4H8vUmpigFEkW40VDekODqIB+AYIu/cc0f8g5Iynie6YXOjBAHiIolQVGGfO+ruO43D8/w9BTk1GdgAAAAYAAAMAAAkAAAoAAHgAAABWUDhMXgAAAC8JgAIQL6AgABlG/2JEkYGdGkICwv+HpkgIAkhiDXKRPVZ4/gPgfy9SamKAUWxbbS5tDw6qAfgGgCT77t9MRET0P/mFnPE00R2TCz0YAA9RlKoC48hZv+e+747v+wBBTk1GcgAAAAYAAAMAAAkAAAkAAHgAAABWUDhMWgAAAC8JQAIQL6AgABlG/2JEkYGdGkICwv+HpkgIAkhiDXKRPVZ4/gPgfy9SamKAUSRbjRUN6Q4OogH4Bgi79xzR/yDkjKeJ7phc6MEAeIiiVBUYZ876u47jcPz/D0FOTUZ2AAAABgAAAgAACQAACgAAeAAAAFZQOExdAAAALwmAAhAvoCAAGUb/YkSRgZ0aQgLC/4emSAgCSGINcpE9Vnj+A+B/L1JqYoBRbFttLm0PDqoB+AaAJPvu30xERPQ/+ecMNNEdkws9GAAPUZSqAuPIWb/nvu+O7/sAAEFOTUZqAAAABgAAAgAACQAACgAAeAAAAFZQOExSAAAALwmAAhAnQJBtM3+xDeUW1xASJPx/bJIg22asU57HFT7/AfzfUmqgEJIkZz4I7BNEgCQQ/akeIqL/yS8BORthZkDTAkRocm5kiHVOs1fOwfPeA0FOTUZwAAAABgAAAwAACQAACQAAeAAAAFZQOExXAAAALwlAAhAvQJBtM3+x3eUMzzWEBAn/H5skEiDhMGv9YTM7/wH8r9lSpAKjSJIUp2tJABggA/zfAwEc0f8gpUSgd+kQZ8aeCqDAslofHco8T3FfvXvD//8AAEFOTUZ8AAAABgAAAwAACQAACgAAeAAAAFZQOExjAAAALwmAAhA3QBBAEsGuy82wyxBrEGnblN2/3KMRDVisu0f2/zOabP4DeD8ToqwvL8A0kmRV8z551pQBarr6mj1f/kH8ICL6n/zKqiBF1Qox0uKLB3BC5zvOpHB+ImaZVROX4zgAAA==",
+  "Floral Arch": "data:image/webp;base64,UklGRrABAABXRUJQVlA4TKMBAAAvKwAJEE+gJJIk50wcP5gFxFfx/unLeBtmApAhgJ8AUuu3GlMTAARjd1DAp3+gGQNBtk2h5k9wpwcA/P9jIqaPJMLmVL2dRLpXINfVtrdtXvG3UzZ3rgR1A4RIao7Az21rfFXG+gIeU6WMmoLMrrxe6v+lS4jo/wQg/KiDXc/vSW7iXbiJJX3fhfreupgyiNL5PV8nlBhAiST/v5Nq6KEu7mlmf9+Nr+snHrcobWIzs5dbs9fV08W6A9w14ve4yLdW1vBi1QFe1hOeDRy2Zmbk8RXwvJqYFfBWZmQJVI3lufNleW4sgMxysxCz3ByAvKYOfN80ZA4gM2oe0tfxpWstdeV8mS7Wg6K10NWzD/Oz1cAcUF2q+PfVly+OrfW4tOFPX7ZcqDaHjJJe4X3UpeoSOJpKKnegwybWcOh82ZJGOnyPxTLkkWzocDodGkNor+uJw+NSrEMu+bZqUboMqaWGLqlIDUOWIsuo16/JfuRL5iTn3V5pvCxSX1rVtMduWlVm3TTdlqY9s6JIk3SvEfYDJPuIACR7QDvZCd4kCMHJtgjbAQA=",
+  "Goldcrest Mosaic Rug": "data:image/webp;base64,UklGRugAAABXRUJQVlA4TNsAAAAvP8APEDdAEECSyQYT7jfKCqMoaNuG6R1/XuMxGBOZgMViuXTR1u+XZf4DYJ/F/Mwj2ZMLbhtJcpylSIEBSP+BnaNNYAcXwIsIVP45UO2cSyei/4rctm2yWgO6dfgP9qSURzOKqa7kkVw2ISsZ3FzIjeDyCKYTcyUXJzyZQa+MJTgMpUwpjqjgEriXofcUF6h8RX4E3gTKqR/OKS4+RLn3wyXFNRIqAn1QRRgS0kbo5xbqgI5o59ZA/MfvleYr70LxpTfhFNIrZd9r4JsNfJdiolPjYCGuZp1LeTAA",
+  "Sandy Mosaic Rug": "data:image/webp;base64,UklGRigBAABXRUJQVlA4TBwBAAAvP8APED9AEADhxIEeMf6kWJCiIJIN6v3o30MUPcQwZBoQYrl00dbv18Q2/wHA3ov6iZqyQ4fn4La17bahwwoeIPYC+OnawH/gAIoDpA0I76/4Hzt3Ef1n4LaRouVIPRz6g/uC6lfnQHZ2B67AMBE9AorJE32CYPgozF36CAwe4o1d4SN0UFRVCI1JB4kzqLxTV3qTTiViaVWXQmPSqaxA0q3s7iadbiC9y+5h0mWCjeRn0m2hqkJqOoMubCFYJdUWglVSZQJWAmVvJGDtBs5ueYCX8DdS1m4Cym40ZPIr3i95uyllNxpy+RV7I+H9nrMbDaRf/Yl5I09d4OrKGpi6tAIPovsIuu5lqJsZ6i7ILgXbLk7J3bnCU/3iAA==",
+  "Twilight Rug": "data:image/webp;base64,UklGRgwBAABXRUJQVlA4TP8AAAAvP8APEEdAJmChhv5hBHAuAJHINCBE01kAFcRwiWBmApCRwCWMOjKr4N+/a/5DgD2DgtI+xzBd8x04ra29bcTsCcL7AioLuCzQBlAzNdIvGKbM3f9PNCSi/4rctm3SKUC3Dv9B7IWQuRGCwCZ2tBqiLQItEWWKC9AiFdpWLdltCunJi+x6ZlNySZQ3Lb3qRqY3pSfo7jZ627M8NSV6lXfGRMfwRjW9QdcdrDsahqfUB3Q3606G4al6cDPOSpb3AnwiVKEMKZUAVSijU8EV7NzqAKT8E++V58E4qjq5gOXKOyC59AaLBNqSCM69CrlZI3fBVu5otSIXgmYh7g+otQIA",
+  "Orchard Rug": "data:image/webp;base64,UklGRo4BAABXRUJQVlA4TIEBAAAvP8APEEdAJmChhv5hBHAuAJHINCBE01kAFcRwiWBmApCRwCWMOjKr4N+/a/5DgD2DgtI+xzBd8x3Ara29bYNOmkC94wIAuEBagIcYgLFVxQ+lOnhuGfiBDw51RP8ZuG0bpzsFCLvcJX9Q9wBmf1EK5KLu7LgAx04sJ+CxT8SyI+BwVhcv43Y+edJtV7gYPZ3wh9WraYdCbzyfYNtPt81dkWfGE99j3VyzLwXeYMYI2vE2by+uwLMmgfFz3l5dgWcrQaJMRV4K69K4fSvwhhTaUsWk0JYqphIISrNIXqxEIFxoaSRPuFBAmltzmxfJS3ODkFvzOS+SF+VWBzKKjryMIl1I2skX8kJukiLmFiDkJilpbpUgp7gtpwTkLrS53IWQy82JT5DkksnNyU9gKwGrwLMXCmBzA5cbDbXmFTsv4dl5H7h5XwkK/8t/pW6wdQ2erYsBbN0FV3crQJ2+wPWVGJi+FMGkiWU6Qfe9Cn2zRt8ll/Bgx1X5AGqv1OOLWq4KAA==",
+  "Pet Egg": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAMCAYAAABbayygAAAAAXNSR0IArs4c6QAAAMZJREFUGJV9kSEOwkAQRd9uqjBNNlUEQUICAjQnKLbHQJEgEBXoioo6FIoz4Eh7gvqKNqkjKNKkJ1gMbbZlw6iZ+W/+TDICI1QQa7Nu7qHocseEptcDo9AdLP5AALz2F5p7KORYyJOIPIl+BqQKYv1ctVYxTyKeqxYVxNoZi9vT2XqCAzCZHwHYfF26ga6vyhvSq9PBKlvu1SkSQD1u1nWmJs3GrHR7YFa6AwMBsFz7+r3YWR29OqUqMtG/aLn2tQ2sikwAfADoVkFDyeZ2qwAAAABJRU5ErkJggg==",
+  "Letter A Tile": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAASCAYAAABWzo5XAAAAj0lEQVR42mNkYGBgkBBR/c9AAXjx5jYji4SI6n83K0lKzGHYdYzhPwuM09VVhSIZF5GDVdOiFVNQ+GVlbQwMDAwMLMiCTx/cIWg7sprbtxBsFnSFlRUTGBgYGBjaOwqwGoRLnomBSmDwGcSCSwIWFoPHRYRibfAH9iCPfuS8g8zGBtDlGalTjDxnYKRWwQYA+zUw79/xztEAAAAASUVORK5CYII=",
+  "Letter B Tile": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAASCAYAAABWzo5XAAAAjElEQVR42mNkYGBgkBBR/c9AAXjx5jYji4SI6n83K0lKzGHYdYzhPwuM09VVxcDAwMAQF5GDV9OiFVNQ+GVlbQwMDAwMLMiCTx/cIWg7sprbtxBsFlwa2jsKsIpXVkzAKs/EQCUw+AzCGUawsCA27GjvotFYo36soRiEnHdwAVxqGKlTjDxnYKRWwQYATK0y3e+gk/IAAAAASUVORK5CYII=",
+  "Letter C Tile": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAASCAYAAABWzo5XAAAAmUlEQVR42mNkYGBgkBBR/c9AAXjx5jYji4SI6n83K0lKzGHYdYzhPwuM09VVhSIZF5GDVdOiFVNQ+GVlbQwMDAwMLMiCTx/cIWg7sprbtxBsFnSFlRUTGBgYGBjaOwqwGoRLnomBSoCFVA24XEo1F40aRAODKismwNMSfdIRLJ1gsxVfOkIxCDnv4AK41DBSpxh5zsBIrYINAIemMt3820FTAAAAAElFTkSuQmCC",
+  "Letter D Tile": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAASCAYAAABWzo5XAAAAiElEQVR42mNkYGBgkBBR/c9AAXjx5jYji4SI6n83K0lKzGHYdYzhPwuM09VVxcDAwMAQF5GDV9OiFVNQ+GVlbQwMDAwMLMiCTx/cIWg7sprbtxBsFlwa2jsKsIpXVkzAKs/EQCUwatCoQdQAOFM2LAUTm+JRDELOO7gALjWM1ClGnjMwUqtgAwCsUitaNf0T0gAAAABJRU5ErkJggg==",
+  "Letter E Tile": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAASCAYAAABWzo5XAAAAkElEQVR42mNkYGBgkBBR/c9AAXjx5jYji4SI6n83K0lKzGHYdYzhPwuM09VVxcDAwMAQF5FDlOZFK6YwMDAwMJSVtTEwMDAwsCBLPn1wh2hXPH1wh+H2LYR6FlwK2zsKSPIeEwOVwOAzCGcYVVZMICnsaO+i0VgjP9ZwhSGKi5DzDiGArpaROsXIcwZGahVsAHdhLNvfLceYAAAAAElFTkSuQmCC",
+  "Letter F Tile": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAASCAYAAABWzo5XAAAAi0lEQVR42mNkYGBgkBBR/c9AAXjx5jYji4SI6n83K0lKzGHYdYzhPwuM09VVxcDAwMAQF5FDlOZFK6YwMDAwMJSVtTEwMDAwsCBLPn1wh2hXPH1wh+H2LYR6FlwK2zsKSPIeEwOVwOAzCGcYVVZMICnsaO+i0VijcWAj5x1kNjGAkTrFyHMGRmoVbADaoinb12McrwAAAABJRU5ErkJggg==",
+  "Letter G Tile": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAASCAYAAABWzo5XAAAAnElEQVR42mNkYGBgkBBR/c9AAXjx5jYji4SI6n83K0lKzGHYdYzhPwuM09VVhSIZF5GDVdOiFVNQ+GVlbQwMDAwMLMiCTx/cIWg7sprbtxBsFnSFlRUTGBgYGBjaOwqwGoRLnomBSoCFVA24XEo/F8HChJDL6OcidJtxuZBqLhp8BrHgChNiYwurQch5BxfApYaROsXIcwZGahVsAGeyNd8w4U7jAAAAAElFTkSuQmCC",
+  "Letter H Tile": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAASCAYAAABWzo5XAAAAi0lEQVR42mNkYGBgkBBR/c9AAXjx5jYji4SI6n83K0lKzGHYdYzhPwuM09VVxcDAwMAQF5HDwMDAwLBoxRSsmtDly8raGBgYGBhYkBU9fXAHKxsbePrgDsPtWwg1TAxUAsPYIBZcEpUVEwaZi9o7Ckhy6Wj0kxjYyHkHmY0NoMszUqcYec7ASK2CDQAJhTCOrECPJgAAAABJRU5ErkJggg==",
+  "Letter I Tile": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAASCAYAAABWzo5XAAAAkUlEQVR42mNkYGBgkBBR/c9AAXjx5jYji4SI6n83K0lKzGHYdYzhPwuM09VVxcDAwMAQF5FDlOZFK6YwMDAwMJSVtTEwMDAwsCBLPn1wh2hXPH1wh+H2LYR6FnQF7R0FKPzKiglYxdEBEwOVwKhBowZRA2CkbFhKJiSOntJRXIScdwgBdLWM1ClGnjMwUqtgAwAmJSzZ00DmZwAAAABJRU5ErkJggg==",
+  "Letter J Tile": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAASCAYAAABWzo5XAAAAmElEQVR42mNkYGBgkBBR/c9AAXjx5jYji4SI6n83K0lKzGHYdYzhPwuM09VVhVVRXEQOVvFFK6YwMDAwMJSVtTEwMDAwsCBLPn1wh2hXPH1wh+H2LYR6FkIa2jsKGBgYGBgqKyag8NEBEwOVwKhBw8KgyooJ8DQzIC5iIZSS0cWJMgg576ADfHIMDAwMjNQpRp4zMFKrYAMAJkYv277QzQIAAAAASUVORK5CYII=",
+  "Letter K Tile": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAASCAYAAABWzo5XAAAAoElEQVR42mNkYGBgkBBR/c9AAXjx5jYji4SI6n83K0lKzGHYdYzhPwuM09VVxcDAwMAQF5HDwMDAwLBoxRSsmtDly8raGBgYGBhYkBU9fXAHKxsbePrgDsPtWwg1LMQ6v7JiAgMDAwNDe0cBVnkmBioBFkpdQj8XEesS+rkI5pLBE0akuox+LiLWZSgGIecdZDY2gC7PSJ1i5DkDI7UKNgDrfkKSUZQmqAAAAABJRU5ErkJggg==",
+  "Letter L Tile": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAASCAYAAABWzo5XAAAAhElEQVR42mNkYGBgkBBR/c9AAXjx5jYji4SI6n83K0lKzGHYdYzhPwuM09VVxcDAwMAQF5HDwMDAwLBoxRSiDCkra2NgYGBgYEEWfPrgDlY2LnD7FkINEwOVwKhBowYNKoNYcElUVkzAq7G9owC3i5DzDin5jIGBgYGROsXIcwZGahVsAMLOJtfOoH9dAAAAAElFTkSuQmCC",
+  "Letter M Tile": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAASCAYAAABWzo5XAAAAn0lEQVR42mNkYGBgkBBR/c9AAXjx5jYji4SI6n83K0lKzGHYdYzhPwuM09VVxcDAwMAQF5HDwMDAwLBoxRSsmtDly8raGBgYGBhYkBU9fXAHKxsbePrgDsPtWwg1LLgUVlZMYGBgYGBo7yhA4eMCTAxUAjhdhO4SQi6jmosGn0EshBTAwmboeW2QBzZy3kFmYwPo8ozUKUaeMzBSq2ADAMhtOA8h+V3gAAAAAElFTkSuQmCC",
+  "Letter N Tile": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAASCAYAAABWzo5XAAAApElEQVR42mNkYGBgkBBR/c9AAXjx5jYji4SI6n83K0lKzGHYdYzhPwuM09VVxcDAwMAQF5HDwMDAwLBoxRSsmtDly8raGBgYGBhYkBU9fXAHKxsbePrgDsPtWwg1TLgUVlZMYKismEC095gYqARYcEm0dxTAXYbMHzgX4XIZzV1EtEHtHQV4w4n+Lhp6BqFEP3LeQWZjA+jyjNQpRp4zMFKrYAMAaE85jK8I6RoAAAAASUVORK5CYII=",
+  "Letter O Tile": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAASCAYAAABWzo5XAAAAjElEQVR42mNkYGBgkBBR/c9AAXjx5jYji4SI6n83K0lKzGHYdYzhPwuM09VVhSIZF5GDVdOiFVNQ+GVlbQwMDAwMLMiCTx/cIWg7sprbtxBsFnSFlRUTGBgYGBjaOwqwGoRLnomBSmDUoFGDqAEwUjYsxcJSMC55vAYh5x1cAJcaRuoUI88ZGKlVsAEAI5QuWm/AWCwAAAAASUVORK5CYII=",
+  "Letter P Tile": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAASCAYAAABWzo5XAAAAjUlEQVR42mNkYGBgkBBR/c9AAXjx5jYji4SI6n83K0lKzGHYdYzhPwuM09VVxcDAwMAQF5GDV9OiFVNQ+GVlbQwMDAwMLMiCTx/cIWg7sprbtxBsFlwa2jsKsIpXVkzAKs/EQCUw+AzCGUawsCA27GjvIlw2D53AHuTRj5x3kNnEAEbqFCPPGRipVbABAFdWLNtbt3R6AAAAAElFTkSuQmCC",
+  "Letter Q Tile": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAASCAYAAABWzo5XAAAAmklEQVR42mNkYGBgkBBR/c9AAXjx5jYji4SI6n83K0lKzGHYdYzhPwuM09VVhSIZF5GDVdOiFVNQ+GVlbQwMDAwMLMiCTx/cIWg7sprbtxBsFnSFlRUTGBgYGBjaOwqwGoRLnomBSmDUICoYVFkxAR5TdHERCyEFsPRCKH3RzkXoLiDWZSgGIecddIAuh85npE4x8pyBkVoFGwAUaztuSKjXSwAAAABJRU5ErkJggg==",
+  "Letter R Tile": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAASCAYAAABWzo5XAAAAmElEQVR42mNkYGBgkBBR/c9AAXjx5jYji4SI6n83K0lKzGHYdYzhPwuM09VVxcDAwMAQF5GDV9OiFVNQ+GVlbQwMDAwMLMiCTx/cIWg7sprbtxBsFlwa2jsKsIpXVkzAKs/EQCUw+AzCGUawsCA27GjvIpjNuGKJ/i4i1WX0cxGxLkMxCDnvILOxAXR5RuoUI88ZGKlVsAEAlg87brB1MiEAAAAASUVORK5CYII=",
+  "Letter S Tile": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAASCAYAAABWzo5XAAAAnElEQVR42mNkYGBgkBBR/c9AAXjx5jYji4SI6n83K0lKzGHYdYzhPwuM09VVhSIZF5GDV/OiFVMYGBgYGMrK2hgYGBgYWJAlnz64Q7Qrnj64w3D7FkI9C7qCyooJDAwMDAztHQUkeY+JgUpg8BmEEUawsIGFFS55+rmIkM24YnUkxRqu2CIUdigGIecdXACXGkbqFCPPGRipVbABAOKrMt2ZiasZAAAAAElFTkSuQmCC",
+  "Letter T Tile": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAASCAYAAABWzo5XAAAAjElEQVR42mNkYGBgkBBR/c9AAXjx5jYji4SI6n83K0lKzGHYdYzhPwuM09VVxcDAwMAQF5FDlOZFK6YwMDAwMJSVtTEwMDAwsCBLPn1wh2hXPH1wh+H2LYR6FnQF7R0FKPzKiglYxdEBEwOVwKhBowYNKoNQsghy3kEH+OQYGBgYGKlTjDxnYKRWwQYA3E0oWKZSMp4AAAAASUVORK5CYII=",
+  "Letter U Tile": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAASCAYAAABWzo5XAAAAjklEQVR42mNkYGBgkBBR/c9AAXjx5jYji4SI6n83K0lKzGHYdYzhPwuM09VVxcDAwMAQF5HDwMDAwLBoxRSsmtDly8raGBgYGBhYkBU9fXAHKxsbePrgDsPtWwg1TAxUAqMGjRo0qAxiQRdo7yhgYGBgYKismIBVA0wer0HIeQcXwKWGkTrFyHMGRmoVbAAx1S35K8YK8AAAAABJRU5ErkJggg==",
+  "Letter V Tile": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAASCAYAAABWzo5XAAAAk0lEQVR42mNkYGBgkBBR/c9AAXjx5jYji4SI6n83K0lKzGHYdYzhPwuM09VVxcDAwMAQF5HDwMDAwLBoxRSsmtDly8raGBgYGBhYkBU9fXAHKxsbePrgDsPtWwg1TAxUAqMGjWiDWNAF2jsKGBgYGBgqKybg5dPPRYRcRpRByHkHHeCTY2BgYGCkTjHynIGRWgUbABL4NXpcap6rAAAAAElFTkSuQmCC",
+  "Letter W Tile": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAASCAYAAABWzo5XAAAAmUlEQVR42mNkYGBgkBBR/c9AAXjx5jYji4SI6n83K0lKzGHYdYzhPwuM09VVxcDAwMAQF5HDwMDAwLBoxRSsmtDly8raGBgYGBhYkBU9fXAHKxsbePrgDsPtWwg1TAxUAiPZoMqKCQyVFRNGchix4AsbBgYGhvaOAhT+wLkI5hJ0Pi6XoRiEnHeQ2dgAujwjdYqR5wyM1CrYAC+rOA8GSGjbAAAAAElFTkSuQmCC",
+  "Letter X Tile": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAASCAYAAABWzo5XAAAAnElEQVR42mNkYGBgkBBR/c9AAXjx5jYji4SI6n83K0lKzGHYdYzhPwuM09VVxcDAwMAQF5HDwMDAwLBoxRSsmtDly8raGBgYGBhYkBU9fXAHKxsbePrgDsPtWwg1TAxUAlQziAVdoL2jgIGBgYGhsmICXj79XETIZfQPIxgYPGGEy2ZCLhvkCRI57yCzsQF0eUbqFCPPGRipVbABAOv9RY5zsxLpAAAAAElFTkSuQmCC",
+  "Letter Y Tile": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAASCAYAAABWzo5XAAAAlklEQVR42mNkYGBgkBBR/c9AAXjx5jYji4SI6n83K0lKzGHYdYzhPwuM09VVxcDAwMAQF5HDwMDAwLBoxRSsmtDly8raGBgYGBhYkBU9fXAHKxsbePrgDsPtWwg1TAxUAlQziAVdoL2jgIGBgYGhsmICXj79XETIZTQPo1GDBipBIucddIBPjoGBgYGROsXIcwZGahVsAJ+QNXp9Vg4dAAAAAElFTkSuQmCC",
+  "Letter Z Tile": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAASCAYAAABWzo5XAAAAnklEQVR42mNkYGBgkBBR/c9AAXjx5jYji4SI6n83K0lKzGHYdYzhPwuM09VVxcDAwMAQF5FDlOZFK6YwMDAwMJSVtTEwMDAwsCBLPn1wh2hXPH1wh+H2LYR6FnQF7R0FeA2orJiAVZyJgUqAhViFMJfgcjH9XETIJfRzEbEuob2LSHUJ/cMIF0B3MYqLkPMOIYCulpE6xchzBkZqFWwAGdk14W6LXRcAAAAASUVORK5CYII=",
+  "Mysterious Entrance": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAYCAYAAAD6S912AAAAvElEQVR42uWSMQ7DIAxFf4CxUpS5F2BmSi7AGSIOiHKGXKBXYE96g85xlw4QmQwkrZBqyRP4+fvbwMXR5B6sHemocJ4ntlblQM45hBBYmNYaAIgDN3vYEYgDe+8TqCiFAUAIAc65xB61/xDH7TmwoNf9ka0Rsbo42nWAJLDZrmmjWKXgOnVLD0F0mN3SsyoVN5IkKr5DFii2E0BrRzLGnFb4YRCv8OqRZTnvCx7+ZstUvcKt+i3/o4cV3eEbRt9yIp4nDHwAAAAASUVORK5CYII="
+};
+var FLOATING_ISLAND_ICON = FLOATING_ISLAND_ICON_DATA["Floating Island"];
 
 // src/dig_solver.js
 function normName(s) {
@@ -19503,7 +19563,7 @@ var VIEW_URL_SLUGS = {
   map: "map"
 };
 var IN_PROGRESS_ROUTE_PREFIX = "in_progress";
-var IN_PROGRESS_FILTER_IDS = /* @__PURE__ */ new Set(["all", "crops", "resources", "greenhouse", "beehive", "fruits", "animals", "composters", "cooking", "myco", "pete"]);
+var IN_PROGRESS_FILTER_IDS = /* @__PURE__ */ new Set(["all", "crops", "resources", "greenhouse", "beehive", "fruits", "animals", "composters", "cooking", "myco", "pete", "floating"]);
 function setInProgressRouteUrl(filter, history_ = "push") {
   if (history_ === "none" || typeof window === "undefined" || !window.history) return;
   const cat = filter && IN_PROGRESS_FILTER_IDS.has(filter) ? filter : "all";
@@ -21119,9 +21179,11 @@ function renderCookingFoodCard(building, name) {
   const ingredientBoostNote = isIngredientBoosted ? `<div class="cook-food-cost-line cook-boost-chip-row"><span class="cook-boost-chip-label">\u26A1 Ingredients:</span><div class="cook-boost-chips"><span class="boost-chip">Double Nom \xD7${doubleNomMult}</span></div></div>` : "";
   const doubleNomBonusFood = getDoubleNomBonusFood();
   const isYieldBoosted = doubleNomBonusFood > 0;
+  const jackpotChance = building === "Fire Pit" ? getFieryJackpotChance() : 0;
+  const jackpotNote = jackpotChance > 0 ? `<div class="cook-food-cost-line cook-boost-chip-row"><span class="cook-boost-chip-label">\u26A1 Yield:</span><div class="cook-boost-chips"><span class="boost-chip">Fiery Jackpot ${+(jackpotChance * 100).toFixed(2)}% chance of +1 food</span></div></div>` : "";
   const yieldBoostNote = isYieldBoosted ? `<div class="cook-food-cost-line cook-boost-chip-row"><span class="cook-boost-chip-label">\u26A1 Yield:</span><div class="cook-boost-chips"><span class="boost-chip">Double Nom +${doubleNomBonusFood} food</span></div></div>` : "";
   const foodIconHtml = cookFoodIcon(name);
-  const yieldCount = doubleNomMult;
+  const yieldCount = doubleNomMult + jackpotChance;
   return `
   <div class="cook-food-card${isExpanded ? " expanded" : ""}${count > 0 ? " is-ready" : ""}" data-food="${escapeHtml(name)}">
     <div class="cook-food-toggle">
@@ -21138,7 +21200,7 @@ function renderCookingFoodCard(building, name) {
       ${boostNote}
       ${timeBoostNote}
       ${ingredientBoostNote}
-      ${yieldBoostNote}
+      ${yieldBoostNote}${jackpotNote}
       <div class="cook-ing-label">Yield</div>
       ${renderCookYieldLine(yieldCount, foodIconHtml)}
       <div class="cook-ing-label">Ingredients</div>
@@ -21249,6 +21311,7 @@ function renderCookingPanel() {
   renderCookingBuildingTabs();
   __markSub("      renderCookingPanel: renderCookingBuildingTabs");
   renderCookingGuaranteedCatchToggle();
+  renderCookingOilToggle();
   __markSub("      renderCookingPanel: renderCookingGuaranteedCatchToggle");
   renderCookingFoodList();
   __markSub("      renderCookingPanel: renderCookingFoodList (n=" + Object.keys(COOKING_RECIPES[cookingActiveBuilding] || {}).length + ")");
@@ -21299,6 +21362,7 @@ function renderCookingFishTabs() {
       renderCookingFishTabs();
       renderCookingBuildingTabs();
       renderCookingGuaranteedCatchToggle();
+      renderCookingOilToggle();
       renderCookingFoodList();
     };
   });
@@ -21717,8 +21781,56 @@ function renderCrustaceanList() {
     };
   });
 }
+function renderFishingExtras() {
+  const note = $("fishingDailyLimitNote");
+  if (note) {
+    const info2 = getDailyFishingLimitInfo();
+    const parts = info2.parts.map((p) => `${escapeHtml(p.name)} +${p.add}`).join(", ");
+    note.innerHTML = `Daily fishing limit: <b>${info2.limit}</b> casts${parts ? ` (20 base, ${parts})` : " (20 base)"}`;
+  }
+  const row3 = $("fishFrenzyToggleRow");
+  const input = $("fishFrenzyToggleInput");
+  if (!row3 || !input) return;
+  const info = getFrenziedFishInfo();
+  row3.style.display = info ? "" : "none";
+  if (!info) return;
+  const meta = $("fishFrenzyMeta");
+  if (meta) meta.textContent = `Frenzied Fish: +${info.flat} fish per catch${info.crit > 0 ? `, ${info.crit}% chance of another +1` : ""} while Fish Frenzy is running`;
+  input.checked = fishFrenzyOn;
+  row3.classList.toggle("is-active", fishFrenzyOn);
+  const apply = (val) => {
+    setFishFrenzyOn(val);
+    renderFishingPanel();
+  };
+  input.onchange = () => apply(input.checked);
+  row3.onclick = (e) => {
+    if (e.target.closest(".switch")) return;
+    apply(!input.checked);
+  };
+}
+function renderCookingOilToggle() {
+  const row3 = $("cookOilToggleRow");
+  const input = $("cookOilToggleInput");
+  if (!row3 || !input) return;
+  const b = getCookingOilBoost(cookingActiveBuilding);
+  const meta = $("cookOilMeta");
+  if (meta) meta.textContent = `${cookingActiveBuilding}: cooks ${+(b * 100).toFixed(2)}% faster while the building has oil (time \xD7${+(1 - b).toFixed(4)})`;
+  input.checked = cookingOilOn;
+  row3.classList.toggle("is-active", cookingOilOn);
+  const apply = (val) => {
+    setCookingOilOn(val);
+    renderCookingOilToggle();
+    renderCookingFoodList();
+  };
+  input.onchange = () => apply(input.checked);
+  row3.onclick = (e) => {
+    if (e.target.closest(".switch")) return;
+    apply(!input.checked);
+  };
+}
 function renderFishingPanel() {
   invalidateCostCache();
+  renderFishingExtras();
   renderFishingCostModeToggle();
   renderFishingTierTabs();
   renderFishingTierList();
@@ -28189,6 +28301,206 @@ function getPumpkinPeteQuest(rawName) {
   return null;
 }
 
+// src/floating_island.js
+var ISLAND_TITLE = "Floating / Mystery Island";
+var CURRENCY = "Love Charm";
+function fiField(g, key) {
+  if (!g) return null;
+  if (g[key] != null) return g[key];
+  if (g.land && g.land[key] != null) return g.land[key];
+  return null;
+}
+function fiNumber(v) {
+  const n = Number(v && typeof v === "object" && v.toString ? v.toString() : v);
+  return Number.isFinite(n) ? n : 0;
+}
+function fiPlural(name, qty) {
+  if (qty === 1 || /s$/i.test(name)) return name;
+  return `${name}s`;
+}
+function fiCostText(costs) {
+  return costs.map((c) => `${c.qty.toLocaleString("en-US")} ${fiPlural(c.item, c.qty)}`).join(", ");
+}
+function fiAttr(text) {
+  return String(text).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+var FI_COPY_ICON = `<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><rect x="5" y="5" width="9" height="9" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M3 11V3.5A1.5 1.5 0 0 1 4.5 2H11" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>`;
+function floatingIslandIconSrc(name) {
+  if (IMAGE_ICONS[name]) return IMAGE_ICONS[name];
+  const lower = String(name || "").trim().toLowerCase();
+  const hit = Object.entries(IMAGE_ICONS).find(([k]) => k.toLowerCase() === lower);
+  if (hit) return hit[1];
+  return FLOATING_ISLAND_ICON_DATA[name] || null;
+}
+var FI_REMOTE_BASE = "https://sunflower-land.com/game-assets/";
+var FI_REMOTE_PATHS = {
+  "Mysterious Entrance": "decorations/mysterious_entrance.webp",
+  "Mermaid Fountain": "decorations/mermaid_fountain.webp",
+  "Heartstruck Tree": "decorations/heartstruck_tree.webp",
+  "Flower Statue": "decorations/flower_statue.webp"
+};
+function fiRemoteIconSrc(name) {
+  const key = String(name || "");
+  if (FI_REMOTE_PATHS[key]) return FI_REMOTE_BASE + FI_REMOTE_PATHS[key];
+  const tile = /^Letter ([A-Z]) Tile$/.exec(key);
+  if (tile) return `${FI_REMOTE_BASE}sfts/tiles/letter_${tile[1].toLowerCase()}_tile.png`;
+  return null;
+}
+function fiIconHtml(name, size) {
+  const local = floatingIslandIconSrc(name);
+  const remote = fiRemoteIconSrc(name);
+  const src = remote || local;
+  if (!src) return getIcon(name);
+  const fallback = remote && local ? ` data-fi-fallback="${fiAttr(local)}"` : "";
+  return `<img src="${fiAttr(src)}"${fallback} alt="${escapeHtml(name)}" decoding="async" style="width:${size}px;height:${size}px;object-fit:contain;image-rendering:pixelated;vertical-align:middle;">`;
+}
+document.addEventListener("error", (e) => {
+  const img = e.target;
+  if (!img || img.tagName !== "IMG" || !img.dataset || !img.dataset.fiFallback) return;
+  const fallback = img.dataset.fiFallback;
+  delete img.dataset.fiFallback;
+  img.src = fallback;
+}, true);
+function floatingIslandMiniIconHtml(size) {
+  return `<img src="${FLOATING_ISLAND_ICON}" alt="Floating Island" decoding="async" style="width:${size}px;height:${size}px;object-fit:contain;image-rendering:pixelated;vertical-align:middle;">`;
+}
+function floatingIslandClock(sec) {
+  sec = Math.max(0, Math.floor(sec));
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor(sec % 3600 / 60);
+  const s = sec % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
+function fiReadyAtText(ms) {
+  const d = new Date(ms);
+  const time = d.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true
+  });
+  const today = /* @__PURE__ */ new Date();
+  const sameDay = d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth() && d.getDate() === today.getDate();
+  return sameDay ? time : `${time} \xB7 ${d.toLocaleDateString(void 0, {
+    weekday: "short"
+  })}`;
+}
+function fiOwned(g, island, item) {
+  const boughtAt = island.boughtAt && typeof island.boughtAt === "object" ? island.boughtAt : {};
+  if (boughtAt[item.name]) return true;
+  if (item.type === "wearable") {
+    const wardrobe = fiField(g, "wardrobe");
+    return !!wardrobe && fiNumber(wardrobe[item.name]) > 0;
+  }
+  const inventory = fiField(g, "inventory");
+  return !!inventory && fiNumber(inventory[item.name]) > 0;
+}
+function floatingIslandDiscordText(entry, shop) {
+  const startSec = Math.floor(entry.startAt / 1e3);
+  const lines = [`**${ISLAND_TITLE}** - ${entry.isLive ? "Live now" : "Arriving"}`, `<t:${startSec}:F>`, `<t:${startSec}:R>`, `**ISLAND SHOP:**`];
+  shop.forEach((item) => lines.push(`- ${item.name}: ${item.costText}`));
+  return lines.join("\n");
+}
+function farmPanelComputeFloatingIslandCard(json, now) {
+  try {
+    const nowMs = now || Date.now();
+    const g = farmSyncExtractGameState(json);
+    const island = fiField(g, "floatingIsland");
+    if (!island || typeof island !== "object") return null;
+    const schedule = Array.isArray(island.schedule) ? island.schedule : [];
+    const entries = schedule.map((s) => ({
+      startAt: Number(s && s.startAt),
+      endAt: Number(s && s.endAt)
+    })).filter((s) => Number.isFinite(s.startAt) && Number.isFinite(s.endAt) && s.endAt > nowMs).sort((a, b) => a.startAt - b.startAt).map((s) => ({
+      startAt: s.startAt,
+      endAt: s.endAt,
+      isLive: nowMs >= s.startAt
+    }));
+    const inventory = fiField(g, "inventory") || {};
+    const shopSrc = island.shop && typeof island.shop === "object" ? Object.values(island.shop) : [];
+    const shop = shopSrc.filter((i) => i && i.name).map((i) => {
+      const items = i.cost && i.cost.items && typeof i.cost.items === "object" ? i.cost.items : {};
+      const costs = Object.entries(items).map(([item, qty]) => ({
+        item,
+        qty: fiNumber(qty),
+        balance: fiNumber(inventory[item])
+      }));
+      return {
+        name: i.name,
+        type: i.type === "wearable" ? "wearable" : "collectible",
+        costs,
+        costText: fiCostText(costs),
+        owned: fiOwned(g, island, i),
+        affordable: costs.every((c) => c.balance >= c.qty)
+      };
+    });
+    if (!entries.length && !shop.length) return null;
+    const live = entries.find((e) => e.isLive) || null;
+    const next = live || entries[0] || null;
+    const targetAt = next ? live ? live.endAt : next.startAt : 0;
+    return {
+      isFloatingIslandCard: true,
+      name: "Floating Island",
+      profit: 0,
+      entries,
+      shop,
+      isLive: !!live,
+      isReady: !!live,
+      targetAt,
+      remainingSec: targetAt ? Math.max(0, (targetAt - nowMs) / 1e3) : 0,
+      balance: fiNumber(inventory[CURRENCY])
+    };
+  } catch (e) {
+    return null;
+  }
+}
+function fiStatusFoldHtml(row3) {
+  if (!row3.targetAt) return `<div class="guro-status-fold"><span class="guro-status-label">NO ISLAND SCHEDULED</span></div>`;
+  const label = row3.isLive ? "ENDS IN" : "ARRIVING IN";
+  return `<div class="guro-status-fold"><span class="guro-status-label">${label}</span><span class="guro-status-stack"><span class="guro-status-value fi-countdown" data-fi-at="${row3.targetAt}">${floatingIslandClock(row3.remainingSec)}</span><span class="guro-status-clock">${escapeHtml(hiveClockText(row3.targetAt))}</span></span></div>`;
+}
+function fiEntryHtml(row3, entry) {
+  const label = entry.isLive ? "LIVE ISLAND" : "SCHEDULED ISLAND";
+  const targetAt = entry.isLive ? entry.endAt : entry.startAt;
+  const sub = entry.isLive ? `Ends at ${fiReadyAtText(entry.endAt)}` : `Ready at ${fiReadyAtText(entry.startAt)}`;
+  const text = floatingIslandDiscordText(entry, row3.shop);
+  return `<div class="fi-slot guro-frame${entry.isLive ? " is-live" : ""}"><div class="fi-slot-top"><span class="fi-slot-name"><span class="fi-dot"></span>${label}</span><button type="button" class="gf-copy px-no-frame" data-gf-copy="${fiAttr(text)}" title="Copy for Discord" aria-label="Copy for Discord">${FI_COPY_ICON}</button></div><div class="fi-slot-bottom"><span class="fi-slot-clock fi-countdown" data-fi-at="${targetAt}">${floatingIslandClock((targetAt - Date.now()) / 1e3)}</span><span class="fi-slot-sub">${sub}</span></div></div>`;
+}
+function fiShopRowHtml(item) {
+  const priceHtml = item.costs.map((c) => `<span class="fi-price"><span class="fi-price-amt">${c.qty.toLocaleString("en-US")}</span>${fiIconHtml(c.item, 16)}</span>`).join("");
+  const ownedHtml = item.owned ? `<span class="fi-owned">OWNED</span>` : "";
+  return `<div class="fi-shop-row guro-frame${item.owned ? " is-owned" : ""}${item.affordable ? "" : " is-short"}"><span class="fi-thumb">${fiIconHtml(item.name, 24)}</span><span class="fi-info"><span class="fi-name">${escapeHtml(item.name)}</span>${ownedHtml}</span><span class="fi-prices">${priceHtml}</span></div>`;
+}
+function farmPanelRenderFloatingIslandCard(row3, expanded) {
+  const badgeHtml = row3.isLive ? `<span class="harvest-badge is-ready">\u{1F7E2} Live</span>` : `<span class="harvest-badge is-growing">\u23F3 Waiting</span>`;
+  const countHtml = row3.entries.length ? `<span class="fi-count">x${row3.entries.length}</span>` : "";
+  const entriesHtml = row3.entries.map((entry) => fiEntryHtml(row3, entry)).join("");
+  const shopHtml = row3.shop.length ? `<div class="fi-shop-head"><span class="fi-shop-title">ISLAND SHOP</span><span class="fi-balance">${fiIconHtml(CURRENCY, 14)}<span>${row3.balance.toLocaleString("en-US")}</span></span></div><div class="fi-shop-list">${row3.shop.map(fiShopRowHtml).join("")}</div>` : "";
+  const emptyHtml = row3.entries.length ? "" : `<div class="fi-empty">No island is scheduled right now.</div>`;
+  return `
+  <div class="card animal-merged-card${row3.isLive ? " is-profit" : ""}${expanded ? " expanded" : ""}" data-search="floating-island" data-fp-category="floating">
+    <div class="card-toggle">
+      <div class="card-name-row">
+        <span class="card-icon">${floatingIslandMiniIconHtml(22)}</span>
+        <div>
+          <div class="card-name">Floating Island ${countHtml}</div>
+          <div class="card-type-row">
+            ${badgeHtml}
+          </div>
+        </div>
+      </div>
+      <div class="card-collapsed-profit">
+        <span class="chev">\u25BE</span>
+      </div>
+      ${fiStatusFoldHtml(row3)}
+    </div>
+    <div class="card-details">
+      ${entriesHtml}
+      ${emptyHtml}
+      ${shopHtml}
+    </div>
+  </div>`;
+}
+
 // src/cave_solver.js
 var CAVE_WIDTH = 5;
 var TILE_COUNT = CAVE_WIDTH * CAVE_WIDTH;
@@ -29648,6 +29960,11 @@ function farmPanelCardCatalog() {
       label: "Myco Bins",
       icon: getIcon("Myco Bin")
     }];
+    if (id === "floating") return [{
+      id: "floating",
+      label: "Floating Island",
+      icon: floatingIslandMiniIconHtml(16)
+    }];
     return [{
       id: "pete",
       label: "Pumpkin Pete Quest",
@@ -29687,6 +30004,7 @@ function farmPanelRowCardKey(row3) {
   else if (row3.isCropMachineCard) id = "Crop Machine";
   else if (row3.isMycoCard) id = "myco";
   else if (row3.isPeteQuestCard) id = "pete";
+  else if (row3.isFloatingIslandCard) id = "floating";
   return `${cat}:${id}`;
 }
 function farmPanelRowVisible(row3) {
@@ -34023,6 +34341,8 @@ function farmPanelComputeInProgress(json) {
   farmPanelComputeMycoCard(json).forEach((card2) => allCards.push(card2));
   const peteQuestCard = farmPanelComputePeteQuestCard(json);
   if (peteQuestCard) allCards.push(peteQuestCard);
+  const floatingIslandCard = farmPanelComputeFloatingIslandCard(json);
+  if (floatingIslandCard) allCards.push(floatingIslandCard);
   return allCards;
 }
 var PETE_QUEST_LINK = "https://github.com/01101010110/Pumpkin-Pete-Quests/blob/main/Quests.md";
@@ -34713,6 +35033,7 @@ function farmPanelCardCategory(row3) {
   if (row3.isCropMachineCard) return "crops";
   if (row3.isMycoCard) return "myco";
   if (row3.isPeteQuestCard) return "pete";
+  if (row3.isFloatingIslandCard) return "floating";
   if (row3.isAnimalMerged) return "animals";
   if (row3.isComposterCard) return "composters";
   if (row3.isHoneyCard) return "beehive";
@@ -34725,7 +35046,7 @@ function farmPanelCardCategory(row3) {
 }
 function farmPanelRowIsReady(row3) {
   if (!row3) return false;
-  if (row3.isPeteQuestCard) return !!row3.isReady;
+  if (row3.isPeteQuestCard || row3.isFloatingIslandCard) return !!row3.isReady;
   return (row3.readyCount || 0) > 0;
 }
 function guroCountdownText(sec) {
@@ -34800,6 +35121,11 @@ function farmPanelFilterCategories() {
     label: "Pumpkin Pete Quest",
     name: "Pete's Quest",
     icon: farmPanelPeteIconHtml()
+  }, {
+    id: "floating",
+    label: "Floating Island",
+    name: "Floating Island",
+    icon: floatingIslandMiniIconHtml(16)
   }];
   return cats;
 }
@@ -35493,6 +35819,7 @@ function farmPanelRenderInProgressRow(row3) {
   if (row3.isCropMachineCard) return farmPanelRenderCropMachineCard(row3);
   if (row3.isMycoCard) return farmPanelRenderMycoCard(row3);
   if (row3.isPeteQuestCard) return farmPanelRenderPeteQuestCard(row3);
+  if (row3.isFloatingIslandCard) return farmPanelRenderFloatingIslandCard(row3, farmPanelExpandedNames.has("floating-island"));
   const baseStatus = row3.readyCount > 0 ? row3.readyCount === row3.count ? "\u2705 All ready" : `\u2705 ${row3.readyCount} ready \xB7 \u23F3 ${row3.count - row3.readyCount} growing` : "\u23F3 Growing";
   const showCountdown = row3.soonestSec != null && row3.readyCount < row3.count;
   const noEtaGrowing = !showCountdown && row3.readyCount < row3.count && row3.noEtaCount > 0;
@@ -35684,11 +36011,20 @@ function farmPanelTickCountdowns() {
   if (farmPanelUserScrolling) return;
   const wrap = $("farmPanelTabContent");
   if (!wrap) return;
-  const els = wrap.querySelectorAll(".farm-countdown[data-base], .fp-quest-countdown[data-ready-at]");
+  const els = wrap.querySelectorAll(".farm-countdown[data-base], .fp-quest-countdown[data-ready-at], .fi-countdown[data-fi-at]");
   if (!els.length) return;
   const elapsedSec = (Date.now() - farmPanelRenderAtMs) / 1e3;
   let anyFinished = false;
   els.forEach((el) => {
+    if (el.hasAttribute("data-fi-at")) {
+      const islandRemaining = (parseFloat(el.getAttribute("data-fi-at")) - Date.now()) / 1e3;
+      if (islandRemaining <= 0) {
+        anyFinished = true;
+        return;
+      }
+      el.textContent = floatingIslandClock(islandRemaining);
+      return;
+    }
     if (el.hasAttribute("data-ready-at")) {
       const questRemaining = (parseFloat(el.getAttribute("data-ready-at")) - Date.now()) / 1e3;
       if (questRemaining <= 0) {
@@ -37214,6 +37550,9 @@ var BOOST_ICON_OVERRIDES = {
 var COIN_ICON = '<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAQBAMAAADUulMJAAAAIGNIUk0AAHomAACAhAAA+gAAAIDoAAB1MAAA6mAAADqYAAAXcJy6UTwAAAAVUExURQAAAAAAAK9IMf6uNP7nYfd2Iv///8kLUD8AAAACdFJOUwAzyUOsLgAAAAFiS0dEBmFmuH0AAAAHdElNRQfoBAMBCyeWyjz2AAAAW0lEQVQI103N0RGAIAwD0OgE4ASSygIWFrBMgPvvYuuP9if3LncpAKwk4mTYHmzazkhTvT6T3k/XOLUTYmrkxKHa5OfaRpdewFsnmVDJWjKwuZOvLWR5v+UcfADJng8ZS5A75AAAACV0RVh0ZGF0ZTpjcmVhdGUAMjAyNC0wNC0wM1QwMToxMTozOCswMDowMN4naB0AAAAldEVYdGRhdGU6bW9kaWZ5ADIwMjQtMDQtMDNUMDE6MTE6MzgrMDA6MDCvetChAAAAKHRFWHRkYXRlOnRpbWVzdGFtcAAyMDI0LTA0LTAzVDAxOjExOjM5KzAwOjAwXhj6ygAAAABJRU5ErkJggg==" alt="Coins" style="width:14px;height:14px;vertical-align:-2px;image-rendering:pixelated;">';
 Object.keys(GAME_ICON_DATA).forEach((name) => {
   if (!BOOST_ICON_OVERRIDES[name] && !IMAGE_ICONS[name]) BOOST_ICON_OVERRIDES[name] = GAME_ICON_DATA[name];
+});
+Object.keys(FLOATING_ISLAND_ICON_DATA).forEach((name) => {
+  if (!IMAGE_ICONS[name]) IMAGE_ICONS[name] = FLOATING_ISLAND_ICON_DATA[name];
 });
 Object.keys(GAME_ICON_ALIASES).forEach((name) => {
   if (BOOST_ICON_OVERRIDES[name] || IMAGE_ICONS[name]) return;
@@ -42655,19 +42994,16 @@ var SKILL_FISHING = [{
   id: "skill_fishy_chance",
   name: "Fishy Chance",
   skillTier: 1,
-  notModeled: true,
   note: "10% chance of +1 Basic Fish"
 }, {
   id: "skill_fishy_roll",
   name: "Fishy Roll",
   skillTier: 1,
-  notModeled: true,
   note: "10% chance of +1 Advanced Fish"
 }, {
   id: "skill_fishermans_5_rod",
   name: "Fisherman's 5 Fold",
   skillTier: 1,
-  notModeled: true,
   note: "+5 daily fishing reels"
 }, {
   id: "skill_reel_deal",
@@ -42682,13 +43018,11 @@ var SKILL_FISHING = [{
   id: "skill_fishermans_10_fold",
   name: "Fisherman's 10 Fold",
   skillTier: 2,
-  notModeled: true,
   note: "+10 daily fishing limit"
 }, {
   id: "skill_fishy_gamble",
   name: "Fishy Gamble",
   skillTier: 2,
-  notModeled: true,
   note: "20% chance of +1 Expert Fish"
 }, {
   id: "skill_fishy_fortune",
@@ -42700,7 +43034,6 @@ var SKILL_FISHING = [{
   id: "skill_frenzied_fish",
   name: "Frenzied Fish",
   skillTier: 3,
-  notModeled: true,
   note: "During Fish Frenzy: +1 fish, plus 50% chance of another +1"
 }, {
   id: "skill_fishy_feast",
@@ -42711,7 +43044,6 @@ var SKILL_FISHING = [{
   id: "skill_more_with_less",
   name: "More With Less",
   skillTier: 3,
-  notModeled: true,
   note: "+10/+25/+50 daily fishing reels"
 }];
 SKILL_FISHING.forEach((s) => {
@@ -42723,7 +43055,6 @@ var SKILL_COOKING = [{
   id: "skill_fast_feasts",
   name: "Fast Feasts",
   skillTier: 1,
-  notModeled: true,
   note: "-10% Fire Pit and Kitchen cooking time"
 }, {
   id: "skill_nom_nom",
@@ -42740,7 +43071,6 @@ var SKILL_COOKING = [{
   id: "skill_frosted_cakes",
   name: "Frosted Cakes",
   skillTier: 2,
-  notModeled: true,
   note: "-10% Cakes cooking time"
 }, {
   id: "skill_drive_through_deli",
@@ -42762,7 +43092,6 @@ var SKILL_COOKING = [{
   id: "skill_fiery_jackpot",
   name: "Fiery Jackpot",
   skillTier: 3,
-  notModeled: true,
   note: "20% chance of +1 food from the Fire Pit"
 }, {
   id: "skill_double_nom",
@@ -42773,19 +43102,16 @@ var SKILL_COOKING = [{
   id: "skill_swift_sizzle",
   name: "Swift Sizzle",
   skillTier: 1,
-  notModeled: true,
   note: "Desert Island \u2014 -40% Fire Pit cooking time with Oil"
 }, {
   id: "skill_turbo_fry",
   name: "Turbo Fry",
   skillTier: 2,
-  notModeled: true,
   note: "Desert Island \u2014 -50% Kitchen cooking time with Oil"
 }, {
   id: "skill_fry_frenzy",
   name: "Fry Frenzy",
   skillTier: 3,
-  notModeled: true,
   note: "Desert Island \u2014 -60% Deli cooking time with Oil"
 }];
 SKILL_COOKING.forEach((s) => {
@@ -43839,67 +44165,56 @@ var SKILL_CAVE = [{
   id: "skill_lean_compost",
   name: "Lean Compost",
   skillTier: 1,
-  notModeled: true,
   note: "\xD70.95 / \xD70.9 / \xD70.85 Myco Bin ingredient cost (rank I / II / III)"
 }, {
   id: "skill_rapid_mycelium",
   name: "Rapid Mycelium",
   skillTier: 1,
-  notModeled: true,
   note: "\xD70.95 / \xD70.9 / \xD70.85 Myco Bin growth time (rank I / II / III)"
 }, {
   id: "skill_mushroom_bloom",
   name: "Mushroom Bloom",
   skillTier: 1,
-  notModeled: true,
   note: "+1 / +2 / +3 Mushroom tiles in each Cave patch (Cave Digging reads this from the batch)"
 }, {
   id: "skill_muddy_bounty",
   name: "Muddy Bounty",
   skillTier: 1,
-  notModeled: true,
   note: "\xD71.1 / \xD71.2 / \xD71.3 Mud from Cave patches"
 }, {
   id: "skill_sturdy_shovel",
   name: "Sturdy Shovel",
   skillTier: 1,
-  notModeled: true,
   note: "10% / 20% / 30% chance a Cave dig keeps its Sand Shovel"
 }, {
   id: "skill_fungal_harvest",
   name: "Fungal Harvest",
   skillTier: 2,
-  notModeled: true,
   note: "+0.2 / +0.3 / +0.4 Mushrooms from each Cave Mushroom tile"
 }, {
   id: "skill_beetle_nest",
   name: "Beetle Nest",
   skillTier: 2,
-  notModeled: true,
   note: "+1 / +2 / +3 Beetle tiles in each Cave patch (Cave Digging reads this from the batch)"
 }, {
   id: "skill_sturdy_drill",
   name: "Sturdy Drill",
   skillTier: 2,
-  notModeled: true,
   note: "20% / 30% / 40% chance a Cave drill keeps its Sand Drill"
 }, {
   id: "skill_tool_hoarder",
   name: "Tool Hoarder",
   skillTier: 2,
-  notModeled: true,
   note: "Stock cap +25 / +50 / +100 Sand Shovel and +5 / +10 / +20 Sand Drill"
 }, {
   id: "skill_rare_breeds",
   name: "Rare Breeds",
   skillTier: 3,
-  notModeled: true,
   note: "Beetle odds shift toward rare ones: Green / Blue / Pink / Amber 35/35/15/15, 30/30/20/20, 25/25/25/25 (base 40/30/20/10)"
 }, {
   id: "skill_twin_beetles",
   name: "Twin Beetles",
   skillTier: 3,
-  notModeled: true,
   note: "5% / 10% / 15% chance of +1 Beetle when digging one up in the Cave"
 }];
 SKILL_CAVE.forEach((s) => {
@@ -66441,6 +66756,19 @@ function cookingComputeFoodTimeUncached(building, name) {
       if (b.timeMult) applyMult(b.timeMult, `${b.name} \xD7${b.timeMult}`, getBoostIcon(b.name));
     });
   }
+  const fastFeasts = building === "Fire Pit" || building === "Kitchen" ? [0.1, 0.15, 0.2] : null;
+  if (fastFeasts && isSkillActive("skill_fast_feasts")) {
+    const m = 1 - fastFeasts[Math.min(Math.max(getAscensionRank("skill_fast_feasts"), 1), 3) - 1];
+    applyMult(m, `Fast Feasts \xD7${+m.toFixed(4)}`, getBoostIcon("Fast Feasts"));
+  }
+  if (COOKING_CAKE_DISHES.has(name) && isSkillActive("skill_frosted_cakes")) {
+    const m = 1 - [0.1, 0.2, 0.3][Math.min(Math.max(getAscensionRank("skill_frosted_cakes"), 1), 3) - 1];
+    applyMult(m, `Frosted Cakes \xD7${+m.toFixed(4)}`, getBoostIcon("Frosted Cakes"));
+  }
+  if (cookingOilOn) {
+    const m = 1 - getCookingOilBoost(building);
+    applyMult(m, `Oil \xD7${+m.toFixed(4)}`, getBoostIcon("Oil"));
+  }
   return {
     time,
     boostsUsed,
@@ -67123,12 +67451,55 @@ function computeSeaweedFigures() {
   };
   return __seaweedFiguresMemo;
 }
+var fishFrenzyOn = localStorage.getItem("hl_fish_frenzy") === "true";
+function setFishFrenzyOn(val) {
+  fishFrenzyOn = !!val;
+  localStorage.setItem("hl_fish_frenzy", String(fishFrenzyOn));
+}
+var FRENZIED_FISH_FLAT = [1, 2, 3];
+var FRENZIED_FISH_CRIT = [50, 50, 0];
+function getFrenziedFishInfo() {
+  if (!isSkillActive("skill_frenzied_fish")) return null;
+  const i = Math.min(Math.max(getAscensionRank("skill_frenzied_fish"), 1), 3) - 1;
+  return {
+    flat: FRENZIED_FISH_FLAT[i],
+    crit: FRENZIED_FISH_CRIT[i]
+  };
+}
+function getFrenziedFishExtra() {
+  const info = getFrenziedFishInfo();
+  return info ? info.flat + info.crit / 100 : 0;
+}
+var FISHING_LIMIT_BOOSTS = [["Angler Waders", 10], ["Reelmaster's Chair", 5], ["Nautilus", 5], ["Deep Sea Slug", 5], ["Otty the Otter", 5], ["Saw Fish", 5]];
+function getDailyFishingLimitInfo() {
+  let limit = 20;
+  const parts = [];
+  [["Fisherman's 5 Fold", "skill_fishermans_5_rod"], ["Fisherman's 10 Fold", "skill_fishermans_10_fold"], ["More With Less", "skill_more_with_less"]].forEach(([name, id]) => {
+    const add = caveSkillValue(id);
+    if (add > 0) {
+      limit += add;
+      parts.push({ name, add });
+    }
+  });
+  FISHING_LIMIT_BOOSTS.forEach(([name, add]) => {
+    const b = BOOSTS.find((x) => x.name === name || stripBoostSuffix(x.name) === name);
+    if (b && isBoostActive(b.id)) {
+      limit += add;
+      parts.push({ name, add });
+    }
+  });
+  return {
+    limit,
+    parts
+  };
+}
 function fishCatchYieldMult(tier) {
   let mult = 1;
   if (typeof isBoostActive !== "function") return mult;
-  if (tier === "basic" && isBoostActive("skill_fishy_chance")) mult += 0.1;
-  if (tier === "advanced" && isBoostActive("skill_fishy_roll")) mult += 0.1;
-  if (tier === "expert" && isBoostActive("skill_fishy_gamble")) mult += 0.2;
+  if (tier === "basic") mult += caveSkillValue("skill_fishy_chance") / 100;
+  if (tier === "advanced") mult += caveSkillValue("skill_fishy_roll") / 100;
+  if (tier === "expert") mult += caveSkillValue("skill_fishy_gamble") / 100;
+  if (fishFrenzyOn) mult += getFrenziedFishExtra();
   if (typeof fishingBoostYieldAdd === "function") mult += fishingBoostYieldAdd(tier);
   return mult;
 }
@@ -67433,6 +67804,37 @@ function fishCatchComputeXPUncached(fishName, stage) {
     boostsUsed,
     baseXp
   };
+}
+var cookingOilOn = localStorage.getItem("hl_cooking_oil") === "true";
+function setCookingOilOn(val) {
+  cookingOilOn = !!val;
+  localStorage.setItem("hl_cooking_oil", String(cookingOilOn));
+  __cookingFoodTimeMemo.clear();
+}
+var COOKING_OIL_BASE_BOOST = {
+  "Fire Pit": 0.2,
+  Kitchen: 0.25,
+  "Smoothie Shack": 0.3,
+  Bakery: 0.35,
+  Deli: 0.4
+};
+var COOKING_OIL_SKILLS = {
+  "Fire Pit": ["skill_swift_sizzle", [0.4, 0.45, 0.5]],
+  Kitchen: ["skill_turbo_fry", [0.5, 0.55, 0.6]],
+  Deli: ["skill_fry_frenzy", [0.6, 0.65, 0.7]]
+};
+function getCookingOilBoost(building) {
+  const skill = COOKING_OIL_SKILLS[building];
+  if (skill && isSkillActive(skill[0])) {
+    const i = Math.min(Math.max(getAscensionRank(skill[0]), 1), 3) - 1;
+    return skill[1][i];
+  }
+  return COOKING_OIL_BASE_BOOST[building] || 0;
+}
+function getFieryJackpotChance() {
+  if (!isSkillActive("skill_fiery_jackpot")) return 0;
+  const i = Math.min(Math.max(getAscensionRank("skill_fiery_jackpot"), 1), 3) - 1;
+  return [0.2, 0.35, 0.5][i];
 }
 var cookingGuaranteedCatchOn = localStorage.getItem("hl_cooking_guaranteed_catch") === "true";
 function setCookingGuaranteedCatchOn(val) {
@@ -74350,6 +74752,9 @@ function loadStore2() {
   if (pruneStore(memStore)) saveStore2();
   return memStore;
 }
+function dailyHarvestReloadStore() {
+  memStore = null;
+}
 function freshStore() {
   const store = loadStore2();
   if (pruneStore(store)) saveStore2();
@@ -76638,6 +77043,28 @@ function currentFarmId() {
   }
   return "";
 }
+var CHUNK_MAX_CHARS = 2e4;
+var CHUNK_MAX_GROUPS = 100;
+function chunkTotals(totals) {
+  const chunks = [];
+  let cur = {};
+  let size = 0;
+  let count = 0;
+  Object.keys(totals).forEach((name) => {
+    const len = name.length + JSON.stringify(totals[name]).length + 6;
+    if (count && (size + len > CHUNK_MAX_CHARS || count >= CHUNK_MAX_GROUPS)) {
+      chunks.push(cur);
+      cur = {};
+      size = 0;
+      count = 0;
+    }
+    cur[name] = totals[name];
+    size += len;
+    count++;
+  });
+  if (count) chunks.push(cur);
+  return chunks;
+}
 async function pushTotals(trackKey) {
   const keyed = String(trackKey || "").trim();
   const farmId = FARM_RE.test(keyed) ? keyed : currentFarmId();
@@ -76650,7 +77077,7 @@ async function pushTotals(trackKey) {
   const sig = JSON.stringify([farmId, data.day, data.totals, coinSig]);
   const sent = loadSent();
   if (sent.sig === sig) return;
-  const post = (totals) => fetchWithTimeout2(HARVEST_LOG_BASE + "/log", {
+  const postOne = (totals, withCoins) => fetchWithTimeout2(HARVEST_LOG_BASE + "/log", {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
@@ -76659,9 +77086,18 @@ async function pushTotals(trackKey) {
       farmId,
       day: data.day,
       totals,
-      coins: data.coins || void 0
+      coins: withCoins ? data.coins || void 0 : void 0
     })
   });
+  const post = async (totals) => {
+    const chunks = chunkTotals(totals);
+    let last = null;
+    for (let i = 0; i < chunks.length; i++) {
+      last = await postOne(chunks[i], i === 0);
+      if (!last.ok) return last;
+    }
+    return last;
+  };
   let res = await post(data.totals);
   if (res.status === 400) {
     const plain = {};
@@ -76682,7 +77118,7 @@ async function pushTotals(trackKey) {
       }
     }
   }
-  if (res.status < 500) saveSent({
+  if (res.status < 500 && res.status !== 413) saveSent({
     sig
   });
 }
@@ -77496,6 +77932,7 @@ export {
   caveSkillLevel,
   caveTrackFromState,
   caveDayTotals,
+  dailyHarvestReloadStore,
   harvestLogSetFarm,
   harvestLogRequest,
   harvestLogFarmId,

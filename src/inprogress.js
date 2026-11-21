@@ -3,6 +3,8 @@ import { withAnimalFeedContext, ANIMAL_FEED_CHOICES, ICONS, NPC_ICONS, ALL_ANIMA
 import { findLivePriceForName, SFL_COMMUNITY_PROXY_BASE, SFL_NFT_PRICE_API, SFL_PROXY_BASE, computeRestockCost24h, cookingCostMode, cookingIngredientUnitCostCoins, fishSaltCostFlower, getActiveShrineDailyCostStable, getItemCostByName, getRestockGemCost, restocksForMode, getSpiceCostPerUseFlower, hasFreeSaltRakeCost, honeyCostFlowerForSpiceRack, marketItems, pickledVegCost, refinedSaltUnitCostFlower, saltCostFlowerForSpiceRack } from "./prices.js";
 
 import { getPumpkinPeteQuest } from "./pete_quests.js";
+
+import { farmPanelComputeFloatingIslandCard, farmPanelRenderFloatingIslandCard, floatingIslandClock, floatingIslandMiniIconHtml } from "./floating_island.js";
 import { caveBuriedCounts } from "./cave_solver.js";
 
 import { $, hiveClockText, cookFoodIcon, getBoostIcon, getIcon, renderAnimalCardProductDetailRow, renderAnimalYieldGroupsList, renderBeehiveListHtml, renderCardProductDetailRow, renderCostNetInfoTrigger, renderCrimstoneInstantMineBoostHtml, renderCrimstoneNodeYieldList, renderFarmPanelTabContent, renderFruitHarvestsLeftHtml, renderGoldInstantMineBoostHtml, renderNodeTierYieldList, renderOilNodeYieldList, renderPlantYieldNodeList, renderSaltNodeYieldList, renderSeaBlessedBoostHtml, renderTotalsBreakdown, renderTurnaroundBoostHtml } from "./ui.js";
@@ -243,6 +245,11 @@ export function farmPanelCardCatalog() {
       label: "Myco Bins",
       icon: getIcon("Myco Bin")
     } ];
+    if (id === "floating") return [ {
+      id: "floating",
+      label: "Floating Island",
+      icon: floatingIslandMiniIconHtml(16)
+    } ];
     return [ {
       id: "pete",
       label: "Pumpkin Pete Quest",
@@ -278,7 +285,7 @@ export function farmPanelCategoryVisible(id) {
 export function farmPanelRowCardKey(row) {
   const cat = farmPanelRowFilterCategory(row);
   let id = row.name;
-  if (row.isAnimalMerged) id = row.typeKey; else if (row.isComposterCard) id = row.composterName; else if (row.isCookingCard) id = row.cookingBuilding; else if (row.isCropMachineCard) id = "Crop Machine"; else if (row.isMycoCard) id = "myco"; else if (row.isPeteQuestCard) id = "pete";
+  if (row.isAnimalMerged) id = row.typeKey; else if (row.isComposterCard) id = row.composterName; else if (row.isCookingCard) id = row.cookingBuilding; else if (row.isCropMachineCard) id = "Crop Machine"; else if (row.isMycoCard) id = "myco"; else if (row.isPeteQuestCard) id = "pete"; else if (row.isFloatingIslandCard) id = "floating";
   return `${cat}:${id}`;
 }
 
@@ -4812,6 +4819,8 @@ export function farmPanelComputeInProgress(json) {
   farmPanelComputeMycoCard(json).forEach(card => allCards.push(card));
   const peteQuestCard = farmPanelComputePeteQuestCard(json);
   if (peteQuestCard) allCards.push(peteQuestCard);
+  const floatingIslandCard = farmPanelComputeFloatingIslandCard(json);
+  if (floatingIslandCard) allCards.push(floatingIslandCard);
   return allCards;
 }
 
@@ -5517,6 +5526,7 @@ function farmPanelCardCategory(row) {
   if (row.isCropMachineCard) return "crops";
   if (row.isMycoCard) return "myco";
   if (row.isPeteQuestCard) return "pete";
+  if (row.isFloatingIslandCard) return "floating";
   if (row.isAnimalMerged) return "animals";
   if (row.isComposterCard) return "composters";
   if (row.isHoneyCard) return "beehive";
@@ -5530,7 +5540,7 @@ function farmPanelCardCategory(row) {
 
 export function farmPanelRowIsReady(row) {
   if (!row) return false;
-  if (row.isPeteQuestCard) return !!row.isReady;
+  if (row.isPeteQuestCard || row.isFloatingIslandCard) return !!row.isReady;
   return (row.readyCount || 0) > 0;
 }
 
@@ -5610,6 +5620,11 @@ export function farmPanelFilterCategories() {
     label: "Pumpkin Pete Quest",
     name: "Pete's Quest",
     icon: farmPanelPeteIconHtml()
+  }, {
+    id: "floating",
+    label: "Floating Island",
+    name: "Floating Island",
+    icon: floatingIslandMiniIconHtml(16)
   } ];
   return cats;
 }
@@ -6170,6 +6185,7 @@ export function farmPanelRenderInProgressRow(row) {
   if (row.isCropMachineCard) return farmPanelRenderCropMachineCard(row);
   if (row.isMycoCard) return farmPanelRenderMycoCard(row);
   if (row.isPeteQuestCard) return farmPanelRenderPeteQuestCard(row);
+  if (row.isFloatingIslandCard) return farmPanelRenderFloatingIslandCard(row, farmPanelExpandedNames.has("floating-island"));
   const baseStatus = row.readyCount > 0 ? row.readyCount === row.count ? "✅ All ready" : `✅ ${row.readyCount} ready · ⏳ ${row.count - row.readyCount} growing` : "⏳ Growing";
   const showCountdown = row.soonestSec != null && row.readyCount < row.count;
   const noEtaGrowing = !showCountdown && row.readyCount < row.count && row.noEtaCount > 0;
@@ -6282,11 +6298,20 @@ function farmPanelTickCountdowns() {
   if (farmPanelUserScrolling) return;
   const wrap = $("farmPanelTabContent");
   if (!wrap) return;
-  const els = wrap.querySelectorAll(".farm-countdown[data-base], .fp-quest-countdown[data-ready-at]");
+  const els = wrap.querySelectorAll(".farm-countdown[data-base], .fp-quest-countdown[data-ready-at], .fi-countdown[data-fi-at]");
   if (!els.length) return;
   const elapsedSec = (Date.now() - farmPanelRenderAtMs) / 1e3;
   let anyFinished = false;
   els.forEach(el => {
+    if (el.hasAttribute("data-fi-at")) {
+      const islandRemaining = (parseFloat(el.getAttribute("data-fi-at")) - Date.now()) / 1e3;
+      if (islandRemaining <= 0) {
+        anyFinished = true;
+        return;
+      }
+      el.textContent = floatingIslandClock(islandRemaining);
+      return;
+    }
     if (el.hasAttribute("data-ready-at")) {
       const questRemaining = (parseFloat(el.getAttribute("data-ready-at")) - Date.now()) / 1e3;
       if (questRemaining <= 0) {
