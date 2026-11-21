@@ -16211,8 +16211,27 @@ body.app-dark body.app-dark .fi-slot-sub{ color:#a7a5a0; }
 .hl-backup-text li{ margin:0 0 3px; }
 .hl-backup-text b{ color:var(--ink); }
 .hl-backup-actions{ display:flex; flex-direction:row; gap:10px; }
-.hl-backup-actions .btn{ flex:1 1 0; min-width:0; }
-.hl-backup-actions .btn.is-armed{ filter:brightness(1.08); }
+.hl-backup-actions .es-mode-btn{ flex:1 1 0; min-width:0; }
+.hl-backup-actions .es-mode-btn.is-armed{ filter:brightness(1.08); }
 .hl-backup-box{ width:100%; box-sizing:border-box; padding:8px; resize:vertical; min-height:72px; font-family:monospace; font-size:11px; line-height:1.4; color:var(--ink); background:var(--sfl-outer, var(--wheat-dim)); }
 .hl-backup-status{ min-height:14px; font-size:11px; line-height:1.4; color:var(--ink-soft); }
 .hl-backup-status.is-bad{ color:#b3261e; }
+.hl-ask-overlay{ z-index:6100; }
+.hl-code-block{ padding:8px 10px; box-sizing:border-box; display:flex; flex-direction:column; gap:6px; }
+.hl-code-head{ font-family:var(--pixel-font); font-size:10px; letter-spacing:.5px; color:var(--ink); }
+.hl-code-state{ font-size:11px; line-height:1.45; color:var(--ink-soft); }
+.hl-code-view{ display:flex; align-items:center; gap:10px; }
+.hl-code-view[hidden]{ display:none; }
+.hl-code-value{ flex:1 1 auto; min-width:0; text-align:left; font-family:monospace; font-size:14px; letter-spacing:2px; color:var(--ink); background:transparent; border:0; padding:4px 0; cursor:pointer; word-break:break-all; }
+.hl-code-edit{ flex:0 0 auto; font-size:11px; color:var(--ink-soft); background:transparent; border:0; padding:4px 6px; text-decoration:underline; cursor:pointer; }
+.hl-code-form{ display:flex; flex-direction:row; gap:8px; align-items:stretch; }
+.hl-code-form[hidden]{ display:none; }
+.hl-code-input{ flex:1 1 auto; min-width:0; box-sizing:border-box; padding:8px; font-family:monospace; font-size:13px; color:var(--ink); background:var(--sfl-outer, var(--wheat-dim)); }
+.hl-ask-overlay .hl-code-input{ width:100%; flex:none; }
+.hl-code-form .es-mode-btn{ flex:0 0 auto; }
+.hl-code-msg{ min-height:14px; font-size:11px; line-height:1.4; color:var(--ink-soft); }
+.hl-code-msg.is-bad{ color:#b3261e; }
+.hl-mini{ justify-content:center; padding:7px 12px; font-size:11px; line-height:1.2; min-height:0; text-align:center; }
+.hl-code-input{ padding:6px 8px; font-size:12px; line-height:1.2; min-height:0; height:auto; }
+.hl-backup-box{ min-height:60px; padding:6px 8px; }
+.hl-code-head{ line-height:1.4; }

@@ -2,7 +2,7 @@ import {
   api,
   initNav,
   initRouter
-} from "./chunk.UMMBOHCI.js";
+} from "./chunk.FC3GVP5X.js";
 import {
   initGemPacks
 } from "./chunk.F7REBWYF.js";
@@ -20,13 +20,21 @@ import {
   farmPanelDetectMoneyTreeBonus,
   farmPanelGameState,
   getRealSeason,
+  harvestLogFarmId,
+  harvestStateInit,
   previewSeason,
   renderFarmPanelInfo,
   renderSeasonToggle,
   runDeferredInitialRender,
   setPreviewSeason,
+  stateCodeInfo,
+  stateCodeRequired,
+  stateCodeValid,
+  stateLastSaved,
+  stateRemoveCode,
+  stateSetCode,
   toast
-} from "./chunk.6VMAP2QN.js";
+} from "./chunk.BWKRHSTZ.js";
 import "./chunk.LPEVZJ4B.js";
 import "./chunk.D3PHX6VZ.js";
 import {
@@ -298,6 +306,188 @@ function onRestore() {
     window.location.reload();
   }, 700);
 }
+var codeShown = false;
+var askBusy = false;
+var codeBusy = false;
+function farmNow() {
+  return String(harvestLogFarmId() || "");
+}
+function setMsg(id, msg, bad) {
+  const el = $(id);
+  if (!el) return;
+  el.textContent = msg || "";
+  el.classList.toggle("is-bad", !!bad);
+}
+function failText(res) {
+  if (res.reason === "bad_code") return "Use 4 to 32 characters (letters, numbers or symbols, no spaces).";
+  if (res.reason === "code_exists") {
+    const left = Number(res.left);
+    return "This Farm ID already has a private code on the server. Enter the first code that was set." + (Number.isFinite(left) && left >= 0 ? " Tries left: " + left + "." : "");
+  }
+  if (res.reason === "locked") {
+    const mins = Math.max(1, Math.ceil((Number(res.retryAfter) || 900) / 60));
+    return "Too many wrong tries. Try again in about " + mins + " minute" + (mins === 1 ? "" : "s") + ".";
+  }
+  if (res.reason === "network") return "Could not reach the server. Check your connection and try again.";
+  if (res.reason === "no_farm") return "Sync your farm first so the app knows your Farm ID.";
+  return "The server could not save the code. Try again later.";
+}
+function timeText(ms) {
+  try {
+    return new Date(ms).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  } catch (e) {
+    return "";
+  }
+}
+function renderCode() {
+  const state = $("hlCodeState");
+  const view = $("hlCodeView");
+  const form = $("hlCodeForm");
+  const value = $("hlCodeValue");
+  if (!state || !view || !form || !value) return;
+  const farm = farmNow();
+  const info = farm ? stateCodeInfo(farm) : null;
+  const input = $("hlCodeInput");
+  const saveBtn = $("hlCodeSaveBtn");
+  if (!farm) {
+    state.textContent = "Sync your farm first so the app knows your Farm ID.";
+    view.hidden = true;
+    form.hidden = true;
+    return;
+  }
+  if (!info) {
+    state.textContent = stateCodeRequired(farm) ? "This Farm ID already has a private code on the server. Enter it to sync and view your log." : "Not set. Set a private code to turn on the automatic server backup for Farm ID " + farm + ".";
+    view.hidden = true;
+    form.hidden = false;
+  } else if (info.bad) {
+    state.textContent = "The code saved here does not match the code the server has for this Farm ID. Edit it and enter the first code that was set.";
+    view.hidden = false;
+    form.hidden = true;
+    codeShown = true;
+  } else {
+    const saved = stateLastSaved(farm);
+    if (saved && saved.tooLarge) state.textContent = "Server backup is on, but today's log is too large to store.";
+    else if (saved) state.textContent = "Server backup is on. Last saved " + timeText(saved.at) + ".";
+    else state.textContent = "Server backup is on. It saves after your next sync.";
+    view.hidden = false;
+    form.hidden = true;
+  }
+  if (info) value.textContent = codeShown ? info.code : "\u2022".repeat(Math.min(info.code.length, 12));
+  if (input) input.disabled = codeBusy;
+  if (saveBtn) saveBtn.disabled = codeBusy;
+}
+async function saveCodeFrom(inputId, msgId, onOk) {
+  const input = $(inputId);
+  const farm = farmNow();
+  if (!input) return;
+  if (!farm) {
+    setMsg(msgId, failText({
+      reason: "no_farm"
+    }), true);
+    return;
+  }
+  const code = input.value.trim();
+  if (!stateCodeValid(code)) {
+    setMsg(msgId, failText({
+      reason: "bad_code"
+    }), true);
+    return;
+  }
+  setMsg(msgId, "Saving\u2026", false);
+  const res = await stateSetCode(farm, code);
+  if (!res.ok) {
+    setMsg(msgId, failText(res), true);
+    return;
+  }
+  input.value = "";
+  codeShown = false;
+  setMsg(msgId, "", false);
+  toast("Private code saved");
+  onOk();
+}
+function onSaveCode() {
+  if (codeBusy) return;
+  codeBusy = true;
+  renderCode();
+  saveCodeFrom("hlCodeInput", "hlCodeMsg", () => {
+    setMsg("hlCodeMsg", "Code saved. Server backup is on.", false);
+  }).finally(() => {
+    codeBusy = false;
+    renderCode();
+  });
+}
+function onEditCode() {
+  const farm = farmNow();
+  if (!farm) return;
+  stateRemoveCode(farm);
+  codeShown = false;
+  renderCode();
+  const input = $("hlCodeInput");
+  if (input) input.focus();
+}
+function onToggleCodeValue() {
+  codeShown = !codeShown;
+  renderCode();
+}
+function snoozeKey(farm) {
+  return "hl_code_ask_snooze_" + farm;
+}
+function askOpen() {
+  const ask = $("hlCodeAsk");
+  if (!ask || !ask.hidden) return;
+  if (ask.parentNode !== document.body) document.body.appendChild(ask);
+  ask.hidden = false;
+  setMsg("hlAskMsg", "", false);
+}
+function askClose(snooze) {
+  const ask = $("hlCodeAsk");
+  if (!ask) return;
+  ask.hidden = true;
+  if (snooze) {
+    try {
+      sessionStorage.setItem(snoozeKey(farmNow()), "1");
+    } catch (e) {
+    }
+  }
+}
+function maybeAsk() {
+  const farm = farmNow();
+  if (!farm || stateCodeInfo(farm)) return;
+  const layer = $("hlBackupLayer");
+  if (layer && !layer.hidden) return;
+  try {
+    if (sessionStorage.getItem(snoozeKey(farm))) return;
+  } catch (e) {
+  }
+  askOpen();
+}
+function askRequired() {
+  const farm = farmNow();
+  if (!farm) return;
+  const info = stateCodeInfo(farm);
+  if (info && !info.bad) return;
+  const layer = $("hlBackupLayer");
+  if (layer && !layer.hidden) return;
+  try {
+    if (sessionStorage.getItem(snoozeKey(farm))) return;
+  } catch (e) {
+  }
+  askOpen();
+  setMsg("hlAskMsg", "This Farm ID already has a private code. Enter it to sync and view your log.", true);
+}
+function onAskSave() {
+  if (askBusy) return;
+  askBusy = true;
+  saveCodeFrom("hlAskInput", "hlAskMsg", () => {
+    askClose(false);
+    renderCode();
+  }).finally(() => {
+    askBusy = false;
+  });
+}
 function onToggle() {
   const panel = $("hlBackupLayer");
   const btn = $("hlBackupToggleBtn");
@@ -312,15 +502,41 @@ function onToggle() {
   if (!show) {
     resetRestoreButton();
     setStatus("", false);
+  } else {
+    codeShown = false;
+    setMsg("hlCodeMsg", "", false);
+    renderCode();
   }
 }
 function initHarvestBackup() {
   const closeImg = $("hlBackupCloseImg");
   if (closeImg) closeImg.src = ICON_DATA["close.png"];
+  harvestStateInit();
+  window.addEventListener("hlStateChange", (e) => {
+    renderCode();
+    if (e && e.detail && e.detail.type === "applied") toast("Daily Harvest Log restored from server");
+    if (e && e.detail && e.detail.type === "required") askRequired();
+  });
+  window.addEventListener("guroFarmSaved", () => {
+    renderCode();
+    setTimeout(maybeAsk, 1500);
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Enter") return;
+    const id = e.target && e.target.id;
+    if (id === "hlCodeInput") onSaveCode();
+    else if (id === "hlAskInput") onAskSave();
+  });
   document.addEventListener("click", (e) => {
     const t = e.target && e.target.closest ? e.target : null;
     if (!t) return;
-    if (t.id === "hlBackupLayer") onToggle();
+    if (t.id === "hlCodeAsk") askClose(true);
+    else if (t.closest("#hlAskSaveBtn")) onAskSave();
+    else if (t.closest("#hlAskLaterBtn")) askClose(true);
+    else if (t.closest("#hlCodeSaveBtn")) onSaveCode();
+    else if (t.closest("#hlCodeEdit")) onEditCode();
+    else if (t.closest("#hlCodeValue")) onToggleCodeValue();
+    else if (t.id === "hlBackupLayer") onToggle();
     else if (t.closest("#hlBackupToggleBtn")) onToggle();
     else if (t.closest("#hlBackupCopyBtn")) onCopy();
     else if (t.closest("#hlBackupRestoreBtn")) onRestore();

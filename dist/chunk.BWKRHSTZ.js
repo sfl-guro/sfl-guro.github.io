@@ -36734,6 +36734,451 @@ function __set_farmPanelSyncInFlight(v) {
   return farmPanelSyncInFlight = v;
 }
 
+// src/hl_code_store.js
+var CODES_KEY = "hl_hlog_codes_v1";
+var CODE_RE = /^[\x21-\x7e]{4,32}$/;
+var required = {};
+function isPlain(v) {
+  return !!v && typeof v === "object" && !Array.isArray(v);
+}
+function loadCodes() {
+  try {
+    const c = JSON.parse(localStorage.getItem(CODES_KEY) || "null");
+    return isPlain(c) ? c : {};
+  } catch (e) {
+    return {};
+  }
+}
+function writeCodes(codes) {
+  try {
+    localStorage.setItem(CODES_KEY, JSON.stringify(codes));
+  } catch (e) {
+  }
+}
+function stateEmit(type) {
+  try {
+    window.dispatchEvent(new CustomEvent("hlStateChange", {
+      detail: {
+        type
+      }
+    }));
+  } catch (e) {
+  }
+}
+function stateCodeValid(code) {
+  return CODE_RE.test(String(code == null ? "" : code));
+}
+function stateCodeInfo(farm) {
+  const e = loadCodes()[String(farm || "")];
+  if (!isPlain(e) || typeof e.code !== "string" || !CODE_RE.test(e.code)) return null;
+  return {
+    code: e.code,
+    bad: e.bad === true
+  };
+}
+function stateSaveLocalCode(farm, code, bad) {
+  const codes = loadCodes();
+  codes[farm] = {
+    code,
+    bad: bad === true
+  };
+  writeCodes(codes);
+  delete required[farm];
+}
+function stateRemoveLocalCode(farm) {
+  const codes = loadCodes();
+  delete codes[String(farm || "")];
+  writeCodes(codes);
+  stateEmit("code");
+}
+function stateMarkBad(farm) {
+  const info = stateCodeInfo(farm);
+  if (info && !info.bad) stateSaveLocalCode(farm, info.code, true);
+  stateEmit("code");
+}
+function stateCodeRequired(farm) {
+  return required[String(farm || "")] === true;
+}
+function stateHeaderCode(farm) {
+  const info = stateCodeInfo(farm);
+  return info && !info.bad ? info.code : "";
+}
+function stateNoteRejected(farm, errorName) {
+  const f = String(farm || "");
+  if (!f) return;
+  if (errorName === "code_required") {
+    required[f] = true;
+    stateEmit("required");
+  } else if (errorName === "code_mismatch") {
+    if (stateCodeInfo(f)) stateMarkBad(f);
+    else {
+      required[f] = true;
+      stateEmit("required");
+    }
+  }
+}
+
+// src/hl_state_sync.js
+var SAVED_KEY = "hl_hlog_state_saved_v1";
+var STORE_KEY = "hl_daily_harvest_v1";
+var SENT_KEY = "hl_hlog_sent_v1";
+var FARM_RE = /^\d{1,20}$/;
+var MAX_STATE_CHARS = 56e4;
+var PULL_TIMEOUT_MS = 4e3;
+var PUSH_TIMEOUT_MS = 8e3;
+var RETRY_AFTER_FAIL_MS = 12e4;
+var pulled = {};
+var forceNext = {};
+var lastNetFail = 0;
+var pushing = false;
+function utcDay2() {
+  return (/* @__PURE__ */ new Date()).toISOString().substring(0, 10);
+}
+function isPlain2(v) {
+  return !!v && typeof v === "object" && !Array.isArray(v);
+}
+function readJson(key) {
+  try {
+    return JSON.parse(localStorage.getItem(key) || "null");
+  } catch (e) {
+    return null;
+  }
+}
+function writeJson(key, value) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (e) {
+  }
+}
+function emitLocal(type) {
+  stateEmit(type);
+}
+function stateRemoveCode(farm) {
+  stateRemoveLocalCode(farm);
+  delete pulled[String(farm || "")];
+}
+function stateLastSaved(farm) {
+  const saved = readJson(SAVED_KEY);
+  const e = isPlain2(saved) ? saved[String(farm || "")] : null;
+  if (!isPlain2(e) || e.day !== utcDay2()) return null;
+  return {
+    at: Number(e.at) || 0,
+    score: Number(e.score) || 0,
+    tooLarge: e.tooLarge === true
+  };
+}
+function markSaved(farm, score, tooLarge) {
+  const saved = readJson(SAVED_KEY);
+  const all = isPlain2(saved) ? saved : {};
+  all[farm] = {
+    day: utcDay2(),
+    score,
+    at: Date.now(),
+    tooLarge: tooLarge === true
+  };
+  writeJson(SAVED_KEY, all);
+  emitLocal("saved");
+}
+function sumObj(o, field2) {
+  let s = 0;
+  if (!isPlain2(o)) return 0;
+  Object.keys(o).forEach((k) => {
+    const v = o[k];
+    if (isPlain2(v)) {
+      const n = Number(v[field2]);
+      if (Number.isFinite(n)) s += n;
+    }
+  });
+  return s;
+}
+function scoreRec(rec) {
+  if (!isPlain2(rec)) return 0;
+  let s = 0;
+  const stats = isPlain2(rec.stats) ? rec.stats : {};
+  Object.keys(stats).forEach((k) => {
+    const st = stats[k];
+    if (!isPlain2(st)) return;
+    s += (Number(st.banked) || 0) * 1e3;
+    if (isPlain2(st.counts)) Object.keys(st.counts).forEach((id) => {
+      const n = Number(st.counts[id]);
+      if (Number.isFinite(n)) s += n;
+    });
+  });
+  s += sumObj(rec.cook, "a");
+  s += sumObj(rec.mach, "a");
+  if (isPlain2(rec.gs)) s += Number(rec.gs.a) || 0;
+  if (isPlain2(rec.bris)) s += Number(rec.bris.a) || 0;
+  if (isPlain2(rec.coin)) s += (Number(rec.coin.e) || 0) + (Number(rec.coin.s) || 0);
+  return Math.max(0, Math.floor(s));
+}
+function caveScore(track, today) {
+  if (!isPlain2(track) || !isPlain2(track.days)) return 0;
+  const d = track.days[today];
+  if (!isPlain2(d)) return 0;
+  let s = (Number(d.tiles) || 0) + (Number(d.twin) || 0);
+  if (isPlain2(d.used)) Object.keys(d.used).forEach((k) => {
+    s += Number(d.used[k]) || 0;
+  });
+  return Math.max(0, Math.floor(s));
+}
+function stateScore(rec, track, today) {
+  return scoreRec(rec) + caveScore(track, today);
+}
+function caveKeysFor(farm) {
+  return ["guro_cave_dug_v1_" + farm, "guro_cave_track_v2_" + farm];
+}
+function buildState(farm) {
+  const store = readJson(STORE_KEY);
+  const today = utcDay2();
+  const rec = isPlain2(store) ? store[farm] : null;
+  if (!isPlain2(rec) || rec.day !== today || !isPlain2(rec.stats)) return null;
+  const data = {};
+  data[STORE_KEY] = {};
+  data[STORE_KEY][farm] = rec;
+  caveKeysFor(farm).forEach((k) => {
+    const v = readJson(k);
+    if (isPlain2(v)) data[k] = v;
+  });
+  return {
+    day: today,
+    score: stateScore(rec, data["guro_cave_track_v2_" + farm], today),
+    data
+  };
+}
+async function post(path, body, ms) {
+  const res = await harvestLogRequestTimed(path, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(body)
+  }, ms);
+  let json = null;
+  try {
+    json = await res.json();
+  } catch (e) {
+  }
+  return {
+    status: res.status,
+    json
+  };
+}
+function applyState(farm, payload) {
+  const today = utcDay2();
+  if (!isPlain2(payload) || payload.day !== today || !isPlain2(payload.data)) return false;
+  const data = payload.data;
+  const allowed = [STORE_KEY].concat(caveKeysFor(farm));
+  if (Object.keys(data).some((k) => allowed.indexOf(k) === -1)) return false;
+  if (!isPlain2(data[STORE_KEY])) return false;
+  const rec = data[STORE_KEY][farm];
+  if (!isPlain2(rec) || rec.day !== today || !isPlain2(rec.stats)) return false;
+  const incoming = stateScore(rec, data["guro_cave_track_v2_" + farm], today);
+  const localStore = readJson(STORE_KEY);
+  const local = isPlain2(localStore) ? localStore : {};
+  const localScore = isPlain2(local[farm]) && local[farm].day === today ? stateScore(local[farm], readJson("guro_cave_track_v2_" + farm), today) : 0;
+  if (!(incoming > localScore)) return false;
+  const snap = {};
+  [STORE_KEY, SENT_KEY].concat(caveKeysFor(farm)).forEach((k) => {
+    try {
+      snap[k] = localStorage.getItem(k);
+    } catch (e) {
+      snap[k] = null;
+    }
+  });
+  try {
+    local[farm] = rec;
+    if (!local.__last) local.__last = farm;
+    localStorage.setItem(STORE_KEY, JSON.stringify(local));
+    caveKeysFor(farm).forEach((k) => {
+      if (isPlain2(data[k])) localStorage.setItem(k, JSON.stringify(data[k]));
+    });
+    localStorage.removeItem(SENT_KEY);
+  } catch (e) {
+    Object.keys(snap).forEach((k) => {
+      try {
+        if (snap[k] == null) localStorage.removeItem(k);
+        else localStorage.setItem(k, snap[k]);
+      } catch (e2) {
+      }
+    });
+    dailyHarvestReloadStore();
+    return false;
+  }
+  dailyHarvestReloadStore();
+  markSaved(farm, incoming, false);
+  return true;
+}
+async function harvestStatePull(farmId) {
+  const farm = String(farmId || "");
+  if (!FARM_RE.test(farm) || pulled[farm]) return false;
+  const info = stateCodeInfo(farm);
+  if (!info || info.bad) return false;
+  if (Date.now() - lastNetFail < RETRY_AFTER_FAIL_MS) return false;
+  let r;
+  try {
+    r = await post("/state/load", {
+      farmId: farm,
+      code: info.code
+    }, PULL_TIMEOUT_MS);
+  } catch (e) {
+    lastNetFail = Date.now();
+    return false;
+  }
+  if (r.status >= 500) {
+    lastNetFail = Date.now();
+    return false;
+  }
+  pulled[farm] = true;
+  if (r.status === 404 && r.json && r.json.error === "no_code") {
+    try {
+      const c = await post("/state/claim", {
+        farmId: farm,
+        code: info.code
+      }, PUSH_TIMEOUT_MS);
+      if (c.status === 403) stateMarkBad(farm);
+      else if (c.status === 200) forceNext[farm] = true;
+    } catch (e) {
+    }
+    return false;
+  }
+  if (r.status === 403) {
+    stateMarkBad(farm);
+    return false;
+  }
+  if (r.status !== 200 || !r.json || r.json.ok !== true) return false;
+  if (r.json.empty) {
+    forceNext[farm] = true;
+    return false;
+  }
+  const applied = applyState(farm, r.json);
+  if (applied) {
+    emitLocal("applied");
+    return true;
+  }
+  const serverRec = isPlain2(r.json.data) && isPlain2(r.json.data[STORE_KEY]) ? r.json.data[STORE_KEY][farm] : null;
+  const localStore = readJson(STORE_KEY);
+  const localRec = isPlain2(localStore) ? localStore[farm] : null;
+  const serverTrack = isPlain2(r.json.data) ? r.json.data["guro_cave_track_v2_" + farm] : null;
+  const todayNow = utcDay2();
+  if (isPlain2(localRec) && localRec.day === todayNow && stateScore(localRec, readJson("guro_cave_track_v2_" + farm), todayNow) > stateScore(serverRec, serverTrack, todayNow)) forceNext[farm] = true;
+  return false;
+}
+async function harvestStatePush(farmId, force) {
+  const farm = String(farmId || "");
+  if (!FARM_RE.test(farm) || pushing) return;
+  const info = stateCodeInfo(farm);
+  if (!info || info.bad) return;
+  const built = buildState(farm);
+  if (!built) return;
+  const prev = stateLastSaved(farm);
+  if (forceNext[farm]) {
+    force = true;
+    delete forceNext[farm];
+  }
+  if (!force && prev) {
+    if (!(built.score > prev.score)) return;
+  }
+  const body = {
+    farmId: farm,
+    code: info.code,
+    day: built.day,
+    score: built.score,
+    data: built.data
+  };
+  if (JSON.stringify(body).length > MAX_STATE_CHARS) {
+    markSaved(farm, built.score, true);
+    return;
+  }
+  pushing = true;
+  try {
+    let r = await post("/state/save", body, PUSH_TIMEOUT_MS);
+    if (r.status === 404 && r.json && r.json.error === "no_code") {
+      const c = await post("/state/claim", {
+        farmId: farm,
+        code: info.code
+      }, PUSH_TIMEOUT_MS);
+      if (c.status === 403) {
+        stateMarkBad(farm);
+        return;
+      }
+      if (c.status === 200) r = await post("/state/save", body, PUSH_TIMEOUT_MS);
+    }
+    if (r.status === 403) {
+      stateMarkBad(farm);
+      return;
+    }
+    if (r.status === 200 && r.json && r.json.ok === true) {
+      const stored = Number(r.json.score);
+      markSaved(farm, Number.isFinite(stored) ? Math.max(stored, built.score) : built.score, false);
+    }
+  } catch (e) {
+  } finally {
+    pushing = false;
+  }
+}
+async function stateSetCode(farmId, codeRaw) {
+  const farm = String(farmId || "");
+  const code = String(codeRaw == null ? "" : codeRaw).trim();
+  if (!FARM_RE.test(farm)) return {
+    ok: false,
+    reason: "no_farm"
+  };
+  if (!stateCodeValid(code)) return {
+    ok: false,
+    reason: "bad_code"
+  };
+  let r;
+  try {
+    r = await post("/state/claim", {
+      farmId: farm,
+      code
+    }, PUSH_TIMEOUT_MS);
+  } catch (e) {
+    return {
+      ok: false,
+      reason: "network"
+    };
+  }
+  if (r.status === 200 && r.json && r.json.ok === true) {
+    stateSaveLocalCode(farm, code, false);
+    delete pulled[farm];
+    emitLocal("code");
+    (async () => {
+      await harvestStatePull(farm);
+      await harvestStatePush(farm, true);
+    })().catch(() => {
+    });
+    return {
+      ok: true,
+      created: r.json.created === true
+    };
+  }
+  if (r.status === 403) return {
+    ok: false,
+    reason: "code_exists",
+    left: r.json && r.json.left
+  };
+  if (r.status === 429) return {
+    ok: false,
+    reason: "locked",
+    retryAfter: r.json && r.json.retryAfter
+  };
+  if (r.status === 400) return {
+    ok: false,
+    reason: "bad_code"
+  };
+  return {
+    ok: false,
+    reason: "server"
+  };
+}
+function harvestStateInit() {
+  harvestLogSetAfterPush((farmId) => {
+    harvestStatePush(farmId, false).catch(() => {
+    });
+  });
+}
+
 // src/potion_icon.js
 var POTION_ROOM_ICON = "data:image/jpeg;base64,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";
 
@@ -54673,6 +55118,10 @@ async function performFarmPanelSync(farmId) {
     const budFertSpiceCrowMatched = !!(budResult.matched || fertResult.matched || spiceResult.matched || crowAoeResult.changed);
     const anythingChanged = JSON.stringify(selectedBoosts) !== prevSelectedBoostsSig || JSON.stringify(selectedSkills) !== prevSelectedSkillsSig || feePercent !== prevFeePercent || plotsResult.touched || !!budResult.matched || !!fertResult.matched || !!spiceResult.matched || !!crowAoeResult.changed;
     harvestLogSetFarm(farmId);
+    try {
+      await harvestStatePull(farmId);
+    } catch (e) {
+    }
     farmPanelSaveGameState(mergedFreshState, true, farmId);
     if (typeof invalidateCostCache === "function") invalidateCostCache();
     if (typeof syncCookingCountsFromInventory === "function") syncCookingCountsFromInventory(farmPanelGameState);
@@ -74689,10 +75138,10 @@ function simulateGuideRows(setup, spec) {
 }
 
 // src/daily_harvest.js
-var STORE_KEY = "hl_daily_harvest_v1";
+var STORE_KEY2 = "hl_daily_harvest_v1";
 var ROUND_THRESHOLD = 1;
 var memStore = null;
-function utcDay2(ms) {
+function utcDay3(ms) {
   return new Date(ms).toISOString().slice(0, 10);
 }
 function utcDayStart(ms) {
@@ -74700,7 +75149,7 @@ function utcDayStart(ms) {
   return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
 }
 function pruneStore(store) {
-  const today = utcDay2(Date.now());
+  const today = utcDay3(Date.now());
   const active = store.__last;
   let changed = false;
   Object.keys(store).forEach((k) => {
@@ -74743,7 +75192,7 @@ function pruneStore(store) {
 function loadStore2() {
   if (memStore) return memStore;
   try {
-    const raw = localStorage.getItem(STORE_KEY);
+    const raw = localStorage.getItem(STORE_KEY2);
     const parsed = raw ? JSON.parse(raw) : null;
     memStore = parsed && typeof parsed === "object" ? parsed : {};
   } catch (e) {
@@ -74762,7 +75211,7 @@ function freshStore() {
 }
 function saveStore2() {
   try {
-    localStorage.setItem(STORE_KEY, JSON.stringify(memStore || {}));
+    localStorage.setItem(STORE_KEY2, JSON.stringify(memStore || {}));
   } catch (e) {
   }
 }
@@ -75786,7 +76235,7 @@ function trackCoins(g, rec, fresh, prevSyncAt, start, now) {
 function dailyHarvestTrack(g, farmId) {
   if (!g || typeof g !== "object") return;
   const now = Date.now();
-  const today = utcDay2(now);
+  const today = utcDay3(now);
   const start = utcDayStart(now);
   const store = freshStore();
   const fid = String(farmId || store.__last || "");
@@ -76157,7 +76606,7 @@ function dailyHarvestTrack(g, farmId) {
 function dailyHarvestInfo(groupKey, farmId) {
   const store = freshStore();
   const rec = store[farmId ? String(farmId) : store.__last];
-  if (!rec || rec.day !== utcDay2(Date.now())) return null;
+  if (!rec || rec.day !== utcDay3(Date.now())) return null;
   const hasGold = groupKey === "Sunflower" && rec.gs && (rec.gs.a > 0 || rec.gs.x > 0);
   const st = rec.stats[groupKey] || (hasGold ? {
     total: 0,
@@ -76193,7 +76642,7 @@ function dailyHarvestInfo(groupKey, farmId) {
 function dailyCookingInfo(building, farmId) {
   const store = freshStore();
   const rec = store[farmId ? String(farmId) : store.__last];
-  if (!rec || rec.day !== utcDay2(Date.now())) return null;
+  if (!rec || rec.day !== utcDay3(Date.now())) return null;
   if (building === MACH_LABEL) return dailyMachineInfo(rec);
   const bld = rec.cook && rec.cook.bld ? rec.cook.bld[building] : null;
   if (!bld || !bld.items) return null;
@@ -76410,7 +76859,7 @@ function animalLogTotals(totals, groupKey, st) {
 function dailyHarvestTotals(farmId) {
   const store = freshStore();
   const rec = store[farmId ? String(farmId) : store.__last];
-  if (!rec || rec.day !== utcDay2(Date.now()) || !rec.stats) return null;
+  if (!rec || rec.day !== utcDay3(Date.now()) || !rec.stats) return null;
   const totals = {};
   Object.keys(rec.stats).forEach((groupKey) => {
     const st = rec.stats[groupKey];
@@ -76877,7 +77326,7 @@ document.addEventListener("keydown", (e) => {
 
 // src/harvest_log.js
 var HARVEST_LOG_BASE = "https://sfl-harvest-log.bossweki.workers.dev";
-var SENT_KEY = "hl_hlog_sent_v1";
+var SENT_KEY2 = "hl_hlog_sent_v1";
 var SETTLE_MS = 1200;
 var FALLBACK_MS = 6e3;
 var REQUEST_TIMEOUT_MS = 8e3;
@@ -76900,7 +77349,7 @@ var settleTimer = null;
 var fallbackTimer = null;
 function loadSent() {
   try {
-    const raw = JSON.parse(localStorage.getItem(SENT_KEY) || "null");
+    const raw = JSON.parse(localStorage.getItem(SENT_KEY2) || "null");
     return raw && typeof raw === "object" ? raw : {};
   } catch (e) {
     return {};
@@ -76908,16 +77357,32 @@ function loadSent() {
 }
 function saveSent(obj) {
   try {
-    localStorage.setItem(SENT_KEY, JSON.stringify(obj));
+    localStorage.setItem(SENT_KEY2, JSON.stringify(obj));
   } catch (e) {
   }
 }
-function fetchWithTimeout2(url, opts) {
+function fetchWithTimeout2(url, opts, ms) {
   const ctrl = typeof AbortController === "function" ? new AbortController() : null;
-  const timer = ctrl ? setTimeout(() => ctrl.abort(), REQUEST_TIMEOUT_MS) : null;
-  return fetch(url, Object.assign({}, opts, ctrl ? {
+  const timer = ctrl ? setTimeout(() => ctrl.abort(), ms || REQUEST_TIMEOUT_MS) : null;
+  const own = url.indexOf(HARVEST_LOG_BASE) === 0;
+  const farm = own ? currentFarmId() : "";
+  const code = own && farm ? stateHeaderCode(farm) : "";
+  const sendOpts = code ? Object.assign({}, opts, {
+    headers: Object.assign({}, opts && opts.headers, {
+      "X-Farm-Code": code
+    })
+  }) : opts;
+  return fetch(url, Object.assign({}, sendOpts, ctrl ? {
     signal: ctrl.signal
-  } : {})).finally(() => {
+  } : {})).then((res) => {
+    if (own && (res.status === 403 || res.status === 429)) {
+      res.clone().json().then((j) => {
+        if (j && typeof j.error === "string") stateNoteRejected(farm, j.error);
+      }).catch(() => {
+      });
+    }
+    return res;
+  }).finally(() => {
     if (timer) clearTimeout(timer);
   });
 }
@@ -77000,10 +77465,10 @@ function withLocalTools(list) {
   });
 }
 var FARM_KEY = "hl_hlog_farm";
-var FARM_RE = /^\d{1,20}$/;
+var FARM_RE2 = /^\d{1,20}$/;
 function harvestLogSetFarm(id) {
   id = String(id == null ? "" : id).trim();
-  if (!FARM_RE.test(id)) return;
+  if (!FARM_RE2.test(id)) return;
   try {
     localStorage.setItem(FARM_KEY, id);
   } catch (e) {
@@ -77011,6 +77476,13 @@ function harvestLogSetFarm(id) {
 }
 function harvestLogRequest(path, opts) {
   return fetchWithTimeout2(HARVEST_LOG_BASE + path, opts);
+}
+function harvestLogRequestTimed(path, opts, ms) {
+  return fetchWithTimeout2(HARVEST_LOG_BASE + path, opts, ms);
+}
+var afterPushHook = null;
+function harvestLogSetAfterPush(fn) {
+  afterPushHook = typeof fn === "function" ? fn : null;
 }
 function harvestLogFarmId() {
   return currentFarmId();
@@ -77039,7 +77511,7 @@ function currentFarmId() {
   tries.push(input ? input.value : "");
   for (const t of tries) {
     const id = String(t || "").trim();
-    if (FARM_RE.test(id)) return id;
+    if (FARM_RE2.test(id)) return id;
   }
   return "";
 }
@@ -77067,7 +77539,7 @@ function chunkTotals(totals) {
 }
 async function pushTotals(trackKey) {
   const keyed = String(trackKey || "").trim();
-  const farmId = FARM_RE.test(keyed) ? keyed : currentFarmId();
+  const farmId = FARM_RE2.test(keyed) ? keyed : currentFarmId();
   if (!farmId) return;
   const data = dailyHarvestTotals(trackKey);
   if (!data || !Object.keys(data.totals).length) return;
@@ -77089,7 +77561,7 @@ async function pushTotals(trackKey) {
       coins: withCoins ? data.coins || void 0 : void 0
     })
   });
-  const post = async (totals) => {
+  const post2 = async (totals) => {
     const chunks = chunkTotals(totals);
     let last = null;
     for (let i = 0; i < chunks.length; i++) {
@@ -77098,7 +77570,7 @@ async function pushTotals(trackKey) {
     }
     return last;
   };
-  let res = await post(data.totals);
+  let res = await post2(data.totals);
   if (res.status === 400) {
     const plain = {};
     Object.keys(data.totals).forEach((name) => {
@@ -77106,19 +77578,19 @@ async function pushTotals(trackKey) {
       delete e.tl;
       plain[name] = e;
     });
-    res = await post(plain);
+    res = await post2(plain);
     if (res.status === 400) {
       const legacy = {};
       Object.keys(plain).forEach((name) => {
         if (plain[name].k !== "composter" && plain[name].k !== "cave") legacy[name] = plain[name];
       });
       if (Object.keys(legacy).length && Object.keys(legacy).length < Object.keys(plain).length) {
-        res = await post(legacy);
+        res = await post2(legacy);
         if (res.status < 500) return;
       }
     }
   }
-  if (res.status < 500 && res.status !== 413) saveSent({
+  if (res.status < 500 && res.status !== 413 && res.status !== 403 && res.status !== 429) saveSent({
     sig
   });
 }
@@ -77134,6 +77606,12 @@ function flush() {
   }).finally(() => {
     craftedToolsPush(farmId).catch(() => {
     });
+    if (afterPushHook) {
+      try {
+        afterPushHook(farmId);
+      } catch (e) {
+      }
+    }
   });
 }
 function harvestLogArm(farmId) {
@@ -77933,8 +78411,13 @@ export {
   caveTrackFromState,
   caveDayTotals,
   dailyHarvestReloadStore,
+  stateCodeValid,
+  stateCodeInfo,
+  stateCodeRequired,
   harvestLogSetFarm,
   harvestLogRequest,
+  harvestLogRequestTimed,
+  harvestLogSetAfterPush,
   harvestLogFarmId,
   harvestLogCachedDays,
   harvestLogLoadDays,
@@ -77951,6 +78434,10 @@ export {
   farmPanelDetectActiveMutants,
   farmPanelDetectMoneyTreeBonus,
   inprogress_exports,
+  stateRemoveCode,
+  stateLastSaved,
+  stateSetCode,
+  harvestStateInit,
   POTION_ROOM_ICON,
   PET_NOT_TRADABLE,
   BEE_SWARM_ICON,
