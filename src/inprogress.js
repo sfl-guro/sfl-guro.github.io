@@ -11,6 +11,8 @@ import { $, hiveClockText, cookFoodIcon, getBoostIcon, getIcon, renderAnimalCard
 import { potionTrackFromState, digStreakTrackFromState } from "./calculator.js";
 
 import { caveTrackFromState } from "./cave_track.js";
+
+import { farmPanelComputeFishingCard, farmPanelRenderFishingCard, fishingMiniIconHtml, fishTrackFromState } from "./fishing_card.js";
 import { dailyHarvestTrack, dailyHarvestBadgeHtml, dailyHarvestSetYield, dailyHarvestSetResolver, dailyHarvestSetAnimalYieldProvider, dailyHarvestSetCookingProvider, dailyHarvestSetMachineProvider, dailyHarvestSetIconProvider, dailyHarvestSetToolProvider, dailyHarvestSetPriceProvider, dailyHarvestNodeToolMult } from "./daily_harvest.js";
 
 import { harvestLogArm } from "./harvest_log.js";
@@ -250,6 +252,11 @@ export function farmPanelCardCatalog() {
       label: "Floating Island",
       icon: floatingIslandMiniIconHtml(16)
     } ];
+    if (id === "fishing") return [ {
+      id: "fishing",
+      label: "Fishing",
+      icon: fishingMiniIconHtml(16)
+    } ];
     return [ {
       id: "pete",
       label: "Pumpkin Pete Quest",
@@ -285,7 +292,7 @@ export function farmPanelCategoryVisible(id) {
 export function farmPanelRowCardKey(row) {
   const cat = farmPanelRowFilterCategory(row);
   let id = row.name;
-  if (row.isAnimalMerged) id = row.typeKey; else if (row.isComposterCard) id = row.composterName; else if (row.isCookingCard) id = row.cookingBuilding; else if (row.isCropMachineCard) id = "Crop Machine"; else if (row.isMycoCard) id = "myco"; else if (row.isPeteQuestCard) id = "pete"; else if (row.isFloatingIslandCard) id = "floating";
+  if (row.isAnimalMerged) id = row.typeKey; else if (row.isComposterCard) id = row.composterName; else if (row.isCookingCard) id = row.cookingBuilding; else if (row.isCropMachineCard) id = "Crop Machine"; else if (row.isMycoCard) id = "myco"; else if (row.isPeteQuestCard) id = "pete"; else if (row.isFloatingIslandCard) id = "floating"; else if (row.isFishingCard) id = "fishing";
   return `${cat}:${id}`;
 }
 
@@ -4924,6 +4931,8 @@ export function farmPanelComputeInProgress(json) {
   if (peteQuestCard) allCards.push(peteQuestCard);
   const floatingIslandCard = farmPanelComputeFloatingIslandCard(json);
   if (floatingIslandCard) allCards.push(floatingIslandCard);
+  const fishingCard = farmPanelComputeFishingCard(json, String(json && json.id || farmPanelGetLastInfo().id || ""));
+  if (fishingCard) allCards.push(fishingCard);
   return allCards;
 }
 
@@ -5658,6 +5667,7 @@ function farmPanelCardCategory(row) {
   if (row.isMycoCard) return "myco";
   if (row.isPeteQuestCard) return "pete";
   if (row.isFloatingIslandCard) return "floating";
+  if (row.isFishingCard) return "fishing";
   if (row.isAnimalMerged) return "animals";
   if (row.isComposterCard) return "composters";
   if (row.isHoneyCard) return "beehive";
@@ -5671,7 +5681,7 @@ function farmPanelCardCategory(row) {
 
 export function farmPanelRowIsReady(row) {
   if (!row) return false;
-  if (row.isPeteQuestCard || row.isFloatingIslandCard) return !!row.isReady;
+  if (row.isPeteQuestCard || row.isFloatingIslandCard || row.isFishingCard) return !!row.isReady;
   return (row.readyCount || 0) > 0;
 }
 
@@ -5756,6 +5766,11 @@ export function farmPanelFilterCategories() {
     label: "Floating Island",
     name: "Floating Island",
     icon: floatingIslandMiniIconHtml(16)
+  }, {
+    id: "fishing",
+    label: "Fishing",
+    name: "Fishing",
+    icon: fishingMiniIconHtml(16)
   } ];
   return cats;
 }
@@ -6317,6 +6332,7 @@ export function farmPanelRenderInProgressRow(row) {
   if (row.isMycoCard) return farmPanelRenderMycoCard(row);
   if (row.isPeteQuestCard) return farmPanelRenderPeteQuestCard(row);
   if (row.isFloatingIslandCard) return farmPanelRenderFloatingIslandCard(row, farmPanelExpandedNames.has("floating-island"));
+  if (row.isFishingCard) return farmPanelRenderFishingCard(row, farmPanelExpandedNames.has("fishing"));
   const baseStatus = row.readyCount > 0 ? row.readyCount === row.count ? "✅ All ready" : `✅ ${row.readyCount} ready · ⏳ ${row.count - row.readyCount} growing` : "⏳ Growing";
   const showCountdown = row.soonestSec != null && row.readyCount < row.count;
   const noEtaGrowing = !showCountdown && row.readyCount < row.count && row.noEtaCount > 0;
@@ -6932,6 +6948,10 @@ export function farmPanelSaveGameState(json, isFullSync, syncedFarmId) {
     try {
       const caveFarmId = String(syncedFarmId || json.id || farmPanelGetLastInfo().id || "");
       if (caveFarmId) caveTrackFromState(farmSyncExtractGameState(json), caveFarmId);
+    } catch (e) {}
+    try {
+      const fishFarmId = String(syncedFarmId || json.id || farmPanelGetLastInfo().id || "");
+      if (fishFarmId) fishTrackFromState(farmSyncExtractGameState(json), fishFarmId);
     } catch (e) {}
     window.guroFarmSavedDone = true;
     window.dispatchEvent(new Event("guroFarmSaved"));

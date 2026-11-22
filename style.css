@@ -1284,6 +1284,7 @@ body.app-dark .gunter-mid-stat.is-total-stat .gunter-mid-stat-value{ color:#d8dc
   .fp-inprogress-list[data-fp-filter="myco"] .card[data-fp-category="myco"],
   .fp-inprogress-list[data-fp-filter="pete"] .card[data-fp-category="pete"],
   .fp-inprogress-list[data-fp-filter="floating"] .card[data-fp-category="floating"],
+  .fp-inprogress-list[data-fp-filter="fishing"] .card[data-fp-category="fishing"],
   .fp-inprogress-list[data-fp-filter="all"] .card[data-fp-category]{ display:block; }
   .fp-inprogress-list .card:not([data-fp-category]){ display:block; }
   .fp-quest-title{ font-size:13px; font-weight:800; color:var(--ink); margin-bottom:4px; }
@@ -13951,6 +13952,18 @@ html body.sfl-theme .dig-data-card .dig-total-row.is-profit .dig-total-val,
 html body.sfl-theme .dig-data-card .dig-total-row.is-profit .dig-total-label{ color:var(--sfl-profit) !important; }
 html body.sfl-theme .dig-data-card .dig-total-row.is-loss .dig-total-val,
 html body.sfl-theme .dig-data-card .dig-total-row.is-loss .dig-total-label{ color:var(--sfl-loss) !important; }
+html body .fh-card .dig-total-row.is-profit .dig-total-val,
+html body .fh-card .dig-total-row.is-profit .dig-total-label{ color:#2e8b3a !important; }
+html body .fh-card .dig-total-row.is-loss .dig-total-val,
+html body .fh-card .dig-total-row.is-loss .dig-total-label{ color:#d62f3a !important; }
+html body.app-dark .fh-card .dig-total-row.is-profit .dig-total-val,
+html body.app-dark .fh-card .dig-total-row.is-profit .dig-total-label{ color:#6fd47d !important; }
+html body.app-dark .fh-card .dig-total-row.is-loss .dig-total-val,
+html body.app-dark .fh-card .dig-total-row.is-loss .dig-total-label{ color:#ff6b73 !important; }
+html body.sfl-theme .fh-card .dig-total-row.is-profit .dig-total-val,
+html body.sfl-theme .fh-card .dig-total-row.is-profit .dig-total-label{ color:var(--sfl-profit) !important; }
+html body.sfl-theme .fh-card .dig-total-row.is-loss .dig-total-val,
+html body.sfl-theme .fh-card .dig-total-row.is-loss .dig-total-label{ color:var(--sfl-loss) !important; }
 .dig-cell{ overflow:visible; }
 .dig-cell .dig-seq{
   position:absolute; top:-5px; right:-5px; z-index:3; box-sizing:border-box;
@@ -16248,3 +16261,29 @@ body.app-dark body.app-dark .fi-slot-sub{ color:#a7a5a0; }
 #hlMiniInput[hidden]{ display:none; }
 #hlMiniInput{ width:100%; flex:none; }
 #hlMiniCancelBtn[hidden]{ display:none; }
+
+.fh-card .fh-label{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin:12px 0 6px; }
+.fh-card .fh-label-count{ font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:800; letter-spacing:0; color:var(--ink-soft); }
+.fh-list{ display:flex; flex-direction:column; gap:2px; }
+.fh-row{ display:flex; align-items:center; gap:6px; padding:3px 0; font-size:11px; color:var(--ink); min-width:0; }
+.fh-qty{ flex:0 0 auto; font-weight:800; min-width:30px; }
+.fh-ico{ display:inline-flex; align-items:center; justify-content:center; flex:0 0 auto; width:18px; height:18px; }
+.fh-ico img{ width:16px; height:16px; object-fit:contain; image-rendering:pixelated; }
+.fh-name{ flex:1 1 auto; min-width:0; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.fh-val{ flex:0 0 auto; display:inline-flex; align-items:center; gap:3px; font-weight:800; }
+.fh-val img, .fh-tot img, .fh-each img, .fh-card .dig-total-val img, .fh-card .dig-coin-val img{ width:13px; height:13px; vertical-align:-2px; image-rendering:pixelated; }
+.fh-na{ font-weight:700; color:var(--ink-soft); }
+.fh-trow{ display:flex; flex-direction:column; gap:2px; padding:5px 0; background-image:repeating-linear-gradient(90deg, var(--ink-soft) 0 3px, transparent 3px 6px); background-size:100% 1px; background-repeat:no-repeat; background-position:0 100%; }
+.fh-trow:last-child{ background-image:none; }
+.fh-trow-top{ display:flex; align-items:center; gap:6px; font-size:11px; color:var(--ink); min-width:0; }
+.fh-trow-bot{ display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; padding-left:36px; font-size:10.5px; color:var(--ink); }
+.fh-each{ display:inline-flex; align-items:center; gap:3px; font-weight:700; color:var(--ink-soft); }
+.fh-each small{ font-size:9.5px; margin-left:2px; }
+.fh-tot{ display:inline-flex; align-items:center; gap:3px; font-weight:800; margin-left:auto; }
+.fh-dot{ margin:0 3px; color:var(--ink-soft); }
+.fh-empty{ font-size:11px; font-weight:700; color:var(--ink-soft); padding:4px 2px 6px; }
+.fh-tool{ margin-bottom:4px; }
+.fh-card .dig-totals{ margin-top:10px; }
+.fh-card .dig-total-val{ display:inline-flex; align-items:center; gap:3px; flex-wrap:wrap; justify-content:flex-end; }
+.fh-card .dig-total-val small{ margin-left:2px; }
+.fh-card{ --es-ink:var(--ink); --es-ink-soft:var(--ink-soft); --es-line:var(--line); --es-panel-2:var(--wheat); }

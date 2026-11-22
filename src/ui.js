@@ -5704,7 +5704,7 @@ const VIEW_URL_SLUGS = {
 
 const IN_PROGRESS_ROUTE_PREFIX = "in_progress";
 
-const IN_PROGRESS_FILTER_IDS = new Set([ "all", "crops", "resources", "greenhouse", "beehive", "fruits", "animals", "composters", "cooking", "myco", "pete", "floating" ]);
+const IN_PROGRESS_FILTER_IDS = new Set([ "all", "crops", "resources", "greenhouse", "beehive", "fruits", "animals", "composters", "cooking", "myco", "pete", "floating", "fishing" ]);
 
 function setInProgressRouteUrl(filter, history_ = "push") {
   if (history_ === "none" || typeof window === "undefined" || !window.history) return;

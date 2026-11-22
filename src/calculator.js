@@ -32084,7 +32084,43 @@ export function getFrenziedFishExtra() {
 
 const FISHING_LIMIT_BOOSTS = [ [ "Angler Waders", 10 ], [ "Reelmaster's Chair", 5 ], [ "Nautilus", 5 ], [ "Deep Sea Slug", 5 ], [ "Otty the Otter", 5 ], [ "Saw Fish", 5 ] ];
 
+const FISHING_LIMIT_SKILL_RANKS = [ [ "Fisherman's 5 Fold", [ 5, 7, 10 ] ], [ "Fisherman's 10 Fold", [ 10, 18, 25 ] ], [ "More With Less", [ 10, 25, 50 ] ] ];
+
+export function getDailyFishingLimitInfoFromState(g) {
+  if (!g || typeof g !== "object") return null;
+  let limit = 20;
+  const parts = [];
+  const skills = g.bumpkin && g.bumpkin.skills && typeof g.bumpkin.skills === "object" ? g.bumpkin.skills : {};
+  FISHING_LIMIT_SKILL_RANKS.forEach(([name, ranks]) => {
+    const level = Math.min(Number(skills[name]) || 0, ranks.length);
+    if (level > 0) {
+      limit += ranks[level - 1];
+      parts.push({
+        name: name,
+        add: ranks[level - 1]
+      });
+    }
+  });
+  const placed = farmSyncCollectEquippedAndPlacedNames(g);
+  FISHING_LIMIT_BOOSTS.forEach(([name, add]) => {
+    if (placed.has(name)) {
+      limit += add;
+      parts.push({
+        name: name,
+        add: add
+      });
+    }
+  });
+  return {
+    limit: limit,
+    parts: parts
+  };
+}
+
 export function getDailyFishingLimitInfo() {
+  const gs = farmPanelGameState ? farmSyncExtractGameState(farmPanelGameState) : null;
+  const fromState = gs && gs.bumpkin ? getDailyFishingLimitInfoFromState(gs) : null;
+  if (fromState) return fromState;
   let limit = 20;
   const parts = [];
   [ [ "Fisherman's 5 Fold", "skill_fishermans_5_rod" ], [ "Fisherman's 10 Fold", "skill_fishermans_10_fold" ], [ "More With Less", "skill_more_with_less" ] ].forEach(([name, id]) => {
@@ -35771,6 +35807,99 @@ export function caveMycoUnitCoins(owner, name) {
 
 export function caveMycoToggleHtml(owner, name) {
   return digMatToggleHtml(owner, name);
+}
+
+function fishRodRecipe() {
+  const item = findTool("default_rod");
+  if (!item) return {
+    coins: 20,
+    materials: [ {
+      name: "Wood",
+      qty: 3
+    }, {
+      name: "Stone",
+      qty: 1
+    } ]
+  };
+  const boosted = getBoostedToolRecipe(item);
+  return {
+    coins: boosted.coinCost,
+    materials: boosted.materials.map(m => ({
+      name: m.name,
+      qty: m.qty
+    }))
+  };
+}
+
+export function fishRodIsFree() {
+  return typeof fishingRodIsFree === "function" && fishingRodIsFree();
+}
+
+export function fishRodUnitCoins() {
+  if (fishRodIsFree()) return 0;
+  const r = fishRodRecipe();
+  let total = r.coins;
+  r.materials.forEach(m => {
+    total += m.qty * digMatUnitCoins("Rod", m.name);
+  });
+  return total;
+}
+
+export function fishRodSectionHtml() {
+  const r = fishRodRecipe();
+  const free = fishRodIsFree();
+  const coinRow = r.coins > 0 ? '<div class="es-toolcfg-mat"><div class="es-toolcfg-mat-name"><span class="es-toolcfg-qty">\u00d7' + digFmt(r.coins) + "</span>" + COIN_ICON + "</div></div>" : "";
+  const matRows = r.materials.map(m => digMatRowHtml("Rod", m)).join("");
+  const unitRow = '<div class="es-toolcfg-mat dig-tool-unit"><span>Cost per rod</span><span class="es-toolcfg-qty dig-coin-val">' + digFmt(fishRodUnitCoins()) + COIN_ICON + "</span></div>";
+  const head = free ? '<div class="es-toolcfg-free">Free (Ancient Rod)</div>' : "";
+  return '<div class="es-toolcfg-block"><div class="es-toolcfg-head"><div class="es-toolcfg-name">' + digIconHtml("Rod") + "<span>Rod</span></div>" + head + '</div><div class="es-toolcfg-mats-label">Materials:</div>' + coinRow + matRows + unitRow + "</div>";
+}
+
+export function fishRodUsageHtml(rods) {
+  const n = Math.max(0, Number(rods) || 0);
+  const free = fishRodIsFree();
+  const r = fishRodRecipe();
+  const row = (qty, iconHtml, cost) => '<div class="es-toolcfg-mat"><div class="es-toolcfg-mat-name"><span class="es-toolcfg-qty">\u00d7' + digFmt(qty) + "</span>" + iconHtml + '<span class="es-toolcfg-cost dig-coin-val">(' + digFmt(cost) + COIN_ICON + ")</span></div></div>";
+  let total = 0;
+  let rows = "";
+  if (!free && r.coins > 0) {
+    const qty = r.coins * n;
+    total += qty;
+    rows += row(qty, COIN_ICON, qty);
+  }
+  if (!free) {
+    r.materials.forEach(m => {
+      const qty = m.qty * n;
+      const cost = qty * digMatUnitCoins("Rod", m.name);
+      total += cost;
+      rows += row(qty, digIconHtml(m.name), cost);
+    });
+  }
+  if (!rows) rows = '<div class="es-toolcfg-mat"><div class="es-toolcfg-mat-name"><span class="es-toolcfg-qty">' + (free ? "Free (Ancient Rod)" : "No rods used yet") + "</span></div></div>";
+  const totalRow = '<div class="es-toolcfg-mat dig-tool-unit"><span>Total for \u00d7' + digFmt(n) + ' rods</span><span class="es-toolcfg-qty dig-coin-val">' + digFmt(total) + COIN_ICON + "</span></div>";
+  return '<div class="es-toolcfg-block"><div class="es-toolcfg-head"><div class="es-toolcfg-name">' + digIconHtml("Rod") + "<span>Rods Used</span></div></div>" + rows + totalRow + "</div>";
+}
+
+export function fishSetRodMatMode(name, mode) {
+  caveSetMatMode("Rod", name, mode);
+}
+
+export function fishTreasurePrice(name) {
+  const base = SELLABLE_TREASURES[name];
+  if (typeof base !== "number") return null;
+  return {
+    base: base,
+    price: base * (1 + digPricePct() / 100)
+  };
+}
+
+export function fishMarketFlowerPrice(name) {
+  const live = findLivePriceForName(name);
+  return live != null && isFinite(live) && live > 0 ? live : 0;
+}
+
+export function fishDigFmt(n) {
+  return digFmt(n);
 }
 
 export function caveToolCostsOpen() {
