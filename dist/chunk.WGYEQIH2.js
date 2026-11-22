@@ -543,9 +543,17 @@ __export(calculator_exports, {
   fishBuds: () => fishBuds,
   fishCatchComputeXP: () => fishCatchComputeXP,
   fishCatchYieldMult: () => fishCatchYieldMult,
+  fishDigFmt: () => fishDigFmt,
   fishFrenzyOn: () => fishFrenzyOn,
   fishInventoryNameForCategory: () => fishInventoryNameForCategory,
+  fishMarketFlowerPrice: () => fishMarketFlowerPrice,
+  fishRodIsFree: () => fishRodIsFree,
+  fishRodSectionHtml: () => fishRodSectionHtml,
+  fishRodUnitCoins: () => fishRodUnitCoins,
+  fishRodUsageHtml: () => fishRodUsageHtml,
+  fishSetRodMatMode: () => fishSetRodMatMode,
   fishStageForCategory: () => fishStageForCategory,
+  fishTreasurePrice: () => fishTreasurePrice,
   fishingBoostsActiveByScope: () => fishingBoostsActiveByScope,
   fishingExpandedTierFish: () => fishingExpandedTierFish,
   fishingRodIsFree: () => fishingRodIsFree,
@@ -618,6 +626,7 @@ __export(calculator_exports, {
   getCurrentChapterMutantSet: () => getCurrentChapterMutantSet,
   getCurrentChapterName: () => getCurrentChapterName,
   getDailyFishingLimitInfo: () => getDailyFishingLimitInfo,
+  getDailyFishingLimitInfoFromState: () => getDailyFishingLimitInfoFromState,
   getDailyProfitCalcMode: () => getDailyProfitCalcMode,
   getDailyProfitPeriodMode: () => getDailyProfitPeriodMode,
   getDailyProfitSwap: () => getDailyProfitSwap,
@@ -19563,7 +19572,7 @@ var VIEW_URL_SLUGS = {
   map: "map"
 };
 var IN_PROGRESS_ROUTE_PREFIX = "in_progress";
-var IN_PROGRESS_FILTER_IDS = /* @__PURE__ */ new Set(["all", "crops", "resources", "greenhouse", "beehive", "fruits", "animals", "composters", "cooking", "myco", "pete", "floating"]);
+var IN_PROGRESS_FILTER_IDS = /* @__PURE__ */ new Set(["all", "crops", "resources", "greenhouse", "beehive", "fruits", "animals", "composters", "cooking", "myco", "pete", "floating", "fishing"]);
 function setInProgressRouteUrl(filter, history_ = "push") {
   if (history_ === "none" || typeof window === "undefined" || !window.history) return;
   const cat = filter && IN_PROGRESS_FILTER_IDS.has(filter) ? filter : "all";
@@ -29222,6 +29231,345 @@ function caveDayTotals(farmId, now) {
   return day;
 }
 
+// src/fishing_card.js
+var STORE_PREFIX2 = "guro_fish_track_v1_";
+var KEEP_DAYS2 = 14;
+var ROD_ITEM_ID = 306;
+var HARPOON_CHANCE = 20;
+var MAX_CHAIN = 5e3;
+var FISH_SKILL_BOOSTS = [{
+  name: "Fishy Chance",
+  ranks: [10, 12.5, 15],
+  text: (v) => `+${v}% basic fish`
+}, {
+  name: "Fishy Roll",
+  ranks: [10, 12.5, 15],
+  text: (v) => `+${v}% advanced fish`
+}, {
+  name: "Fishy Gamble",
+  ranks: [20, 25, 30],
+  text: (v) => `+${v}% expert fish`
+}, {
+  name: "Reel Deal",
+  ranks: [0.5, 0.45, 0.4],
+  text: (v) => `\xD7${v} Rod coin cost`
+}, {
+  name: "Frenzied Fish",
+  ranks: [1, 2, 3],
+  text: (v) => `+${v} fish during Fish Frenzy`
+}];
+function skillLevelOf(g, name, max) {
+  const skills = g && g.bumpkin && g.bumpkin.skills && typeof g.bumpkin.skills === "object" ? g.bumpkin.skills : {};
+  return Math.min(Number(skills[name]) || 0, max);
+}
+var CRUSTACEANS = new Set(CRUSTACEAN_NAMES);
+var ROD_ICON_HTML = (size) => `<img src="${rodIconSrc()}" alt="Rod" decoding="async" style="width:${size}px;height:${size}px;object-fit:contain;image-rendering:pixelated;vertical-align:middle;">`;
+function rodIconSrc() {
+  const m = /src="([^"]+)"/.exec(getIcon("Rod"));
+  return m ? m[1] : "";
+}
+function fishingMiniIconHtml(size) {
+  return ROD_ICON_HTML(size);
+}
+function utcDay2(ms) {
+  return new Date(ms).toISOString().substring(0, 10);
+}
+function nextUtcMidnight(ms) {
+  const d = new Date(ms);
+  return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1);
+}
+function emptyDay2() {
+  return {
+    items: {},
+    casts: 0,
+    free: 0,
+    rodsFree: 0
+  };
+}
+function loadStore2(farmKey) {
+  try {
+    const raw = JSON.parse(localStorage.getItem(STORE_PREFIX2 + farmKey) || "null");
+    if (raw && typeof raw === "object" && raw.days && typeof raw.days === "object") {
+      return {
+        counters: raw.counters && typeof raw.counters === "object" ? raw.counters : {},
+        cast: Number.isFinite(raw.cast) ? raw.cast : null,
+        days: raw.days,
+        started: raw.started === true,
+        startedAt: Number(raw.startedAt) || 0
+      };
+    }
+  } catch (e) {
+  }
+  return {
+    counters: {},
+    cast: null,
+    days: {},
+    started: false,
+    startedAt: 0
+  };
+}
+function saveStore2(farmKey, store) {
+  try {
+    localStorage.setItem(STORE_PREFIX2 + farmKey, JSON.stringify(store));
+  } catch (e) {
+  }
+}
+function readCaught(activity) {
+  const out = {};
+  Object.keys(activity || {}).forEach((key) => {
+    if (key.length <= 7 || key.slice(-7) !== " Caught") return;
+    const name = key.slice(0, -7);
+    if (CRUSTACEANS.has(name)) return;
+    const v = Number(activity[key]);
+    if (isFinite(v) && v >= 0) out[name] = v;
+  });
+  return out;
+}
+function fishTrackFromState(g, farmId) {
+  if (!g || typeof g !== "object" || !g.farmActivity || typeof g.farmActivity !== "object") return;
+  const farmKey = String(farmId || "");
+  const farmNum = Number(farmId);
+  if (!farmKey || !isFinite(farmNum)) return;
+  const store = loadStore2(farmKey);
+  const now = Date.now();
+  const caught = readCaught(g.farmActivity);
+  const rawCast = Number(g.farmActivity["Rod Casted"]);
+  const castNow = isFinite(rawCast) && rawCast >= 0 ? rawCast : null;
+  if (store.started) {
+    const day = utcDay2(now);
+    const bucket = store.days[day] || (store.days[day] = emptyDay2());
+    Object.keys(caught).forEach((name) => {
+      const diff = caught[name] - (Number(store.counters[name]) || 0);
+      if (diff > 0) bucket.items[name] = (bucket.items[name] || 0) + diff;
+    });
+    if (castNow !== null && store.cast !== null && castNow > store.cast) {
+      const placed = farmSyncCollectEquippedAndPlacedNames(g);
+      const casts = castNow - store.cast;
+      bucket.casts += casts;
+      if (placed.has("Ancient Rod")) bucket.rodsFree += casts;
+      if (placed.has("Harpoon")) {
+        const from = Math.max(store.cast + 1, castNow - MAX_CHAIN + 1);
+        for (let n = from; n <= castNow; n++) {
+          if (sflPrngChance({
+            farmId: farmNum,
+            itemId: ROD_ITEM_ID,
+            counter: n,
+            chance: HARPOON_CHANCE,
+            criticalHitName: "Harpoon"
+          })) bucket.free += 1;
+        }
+      }
+    }
+  } else {
+    store.startedAt = now;
+  }
+  store.counters = caught;
+  if (castNow !== null) store.cast = castNow;
+  store.started = true;
+  const cutoff = utcDay2(now - KEEP_DAYS2 * 864e5);
+  Object.keys(store.days).forEach((day) => {
+    if (day < cutoff) delete store.days[day];
+  });
+  saveStore2(farmKey, store);
+}
+function fiNumber2(v) {
+  const n = Number(v && typeof v === "object" && v.toString ? v.toString() : v);
+  return Number.isFinite(n) ? n : 0;
+}
+function fishingClock(sec) {
+  sec = Math.max(0, Math.floor(sec));
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor(sec % 3600 / 60);
+  const s = sec % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
+function pairText(coins) {
+  return `${fishDigFmt(coins)}${COIN_ICON}<span class="fh-dot">\xB7</span>${fishDigFmt(coinsToFlower(coins))}${FLOWER_ICON}`;
+}
+function farmPanelComputeFishingCard(json, farmId, now) {
+  try {
+    const nowMs = now || Date.now();
+    const g = farmSyncExtractGameState(json);
+    if (!g || !g.fishing || typeof g.fishing !== "object") return null;
+    const farmKey = String(farmId || "");
+    const store = farmKey ? loadStore2(farmKey) : {
+      days: {},
+      started: false,
+      startedAt: 0
+    };
+    const today = utcDay2(nowMs);
+    const day = store.days[today] || emptyDay2();
+    const fishRows = [];
+    const treasureRows = [];
+    Object.keys(day.items).forEach((name) => {
+      const qty = day.items[name];
+      if (!(qty > 0)) return;
+      const tp = fishTreasurePrice(name);
+      if (tp) {
+        const coins = tp.price * qty;
+        treasureRows.push({
+          name,
+          qty,
+          each: tp.price,
+          coins
+        });
+      } else {
+        const flower2 = fishMarketFlowerPrice(name);
+        const flowerTotal = flower2 * qty;
+        fishRows.push({
+          name,
+          qty,
+          each: flower2,
+          flower: flowerTotal
+        });
+      }
+    });
+    fishRows.sort((a, b) => b.flower - a.flower || b.qty - a.qty);
+    treasureRows.sort((a, b) => b.coins - a.coins);
+    const fishQty = fishRows.reduce((s, r) => s + r.qty, 0);
+    const treasureQty = treasureRows.reduce((s, r) => s + r.qty, 0);
+    const cpf = coinPerFlower > 0 ? coinPerFlower : 1;
+    const fishCoins = fishRows.reduce((s, r) => s + r.flower * cpf, 0);
+    const treasureCoins = treasureRows.reduce((s, r) => s + r.coins, 0);
+    const rodFree = fishRodIsFree();
+    const rodsUsed = Math.max(0, day.casts - (rodFree ? day.rodsFree : 0));
+    const rodUnit = fishRodUnitCoins();
+    const toolCost = rodUnit * rodsUsed;
+    const fishing = g.fishing;
+    const attempts = fiNumber2(fishing.dailyAttempts && fishing.dailyAttempts[today]);
+    const limitInfo = getDailyFishingLimitInfoFromState(g) || {
+      limit: 20,
+      parts: []
+    };
+    const limit = limitInfo.limit;
+    const extra = fiNumber2(fishing.extraReels && fishing.extraReels.count);
+    const extraUsed = Math.max(0, attempts - limit);
+    const reelsLeft = Math.max(0, limit - attempts) + extra;
+    const skillBoosts = [];
+    FISH_SKILL_BOOSTS.forEach((def) => {
+      const level = skillLevelOf(g, def.name, def.ranks.length);
+      if (level > 0) skillBoosts.push({
+        name: def.name,
+        text: def.text(def.ranks[level - 1])
+      });
+    });
+    const placed = farmSyncCollectEquippedAndPlacedNames(g);
+    const targetAt = nextUtcMidnight(nowMs);
+    return {
+      isFishingCard: true,
+      name: "Fishing",
+      profit: 0,
+      isReady: reelsLeft > 0,
+      targetAt,
+      remainingSec: Math.max(0, (targetAt - nowMs) / 1e3),
+      tracked: store.started,
+      day,
+      fishRows,
+      treasureRows,
+      fishQty,
+      treasureQty,
+      fishCoins,
+      treasureCoins,
+      rodsUsed,
+      rodUnit,
+      rodFree,
+      toolCost,
+      attempts,
+      limit,
+      extraReels: extra,
+      extraUsed,
+      limitParts: limitInfo.parts,
+      skillBoosts,
+      reelsLeft,
+      harpoon: placed.has("Harpoon"),
+      ancientRod: placed.has("Ancient Rod"),
+      yieldBoosts: fishingBoostsActiveByScope("fishYield").map((b) => b.name)
+    };
+  } catch (e) {
+    return null;
+  }
+}
+function fishingStatusFoldHtml(row3) {
+  return `<div class="guro-status-fold"><span class="guro-status-label">RESETS IN</span><span class="guro-status-stack"><span class="guro-status-value fi-countdown" data-fi-at="${row3.targetAt}">${fishingClock(row3.remainingSec)}</span><span class="guro-status-clock">${escapeHtml(hiveClockText(row3.targetAt))}</span></span></div>`;
+}
+function boostRow(name, text) {
+  return `<div class="boost-applied-row is-yield">${getBoostIcon(name)}<b>${escapeHtml(name)}</b> <span class="boost-total-value">${escapeHtml(text)}</span></div>`;
+}
+function appliedBoostHtml(row3) {
+  const rows = [];
+  const day = row3.day;
+  row3.limitParts.forEach((p) => rows.push(boostRow(p.name, `+${fishDigFmt(p.add)} daily reels`)));
+  row3.skillBoosts.forEach((b) => rows.push(boostRow(b.name, b.text)));
+  if (row3.harpoon || day.free > 0) rows.push(boostRow("Harpoon", `${fishDigFmt(day.free)}\xD7 free reel (${fishDigFmt(day.casts)} casts)`));
+  if (row3.ancientRod || day.rodsFree > 0) rows.push(boostRow("Ancient Rod", `${fishDigFmt(day.rodsFree)}\xD7 free Rod`));
+  const bonus = Math.max(0, row3.fishQty - day.casts);
+  if (row3.yieldBoosts.length && day.casts > 0) {
+    const icons = row3.yieldBoosts.map((name) => getBoostIcon(name)).join("");
+    rows.push(`<div class="boost-applied-row is-yield" title="${escapeHtml(row3.yieldBoosts.join(", "))}">${icons}<b>Bonus Fish</b> <span class="boost-total-value">+${fishDigFmt(bonus)} (${fishDigFmt(row3.fishQty)} fish from ${fishDigFmt(day.casts)} casts)</span></div>`);
+  }
+  if (!rows.length) return "";
+  return `<div class="section-badge is-boost-label">\u26A1 Applied Boost</div>${rows.join("")}`;
+}
+function fishRowHtml(r) {
+  const val = r.each > 0 ? `<span class="fh-val">${fishDigFmt(r.flower)}${FLOWER_ICON}</span>` : `<span class="fh-val fh-na">No price</span>`;
+  return `<div class="fh-row"><span class="fh-qty">\xD7${fishDigFmt(r.qty)}</span><span class="fh-ico">${getIcon(r.name)}</span><span class="fh-name" title="${escapeHtml(r.name)}">${escapeHtml(r.name)}</span>${val}</div>`;
+}
+function treasureRowHtml(r) {
+  return `<div class="fh-trow"><div class="fh-trow-top"><span class="fh-qty">\xD7${fishDigFmt(r.qty)}</span><span class="fh-ico">${getIcon(r.name)}</span><span class="fh-name" title="${escapeHtml(r.name)}">${escapeHtml(r.name)}</span></div><div class="fh-trow-bot"><span class="fh-each">${fishDigFmt(r.each)}${COIN_ICON}<small>/ item</small></span><span class="fh-tot">${pairText(r.coins)}</span></div></div>`;
+}
+function totalsHtml(row3) {
+  const grossCoins = row3.fishCoins + row3.treasureCoins;
+  const net = grossCoins - row3.toolCost;
+  const line = (label, val, cls, title) => `<div class="dig-total-row${cls ? " " + cls : ""}"${title ? ` title="${escapeHtml(title)}"` : ""}><span class="dig-total-label">${label}</span><span class="dig-total-val">${val}</span></div>`;
+  const rodNote = row3.rodFree ? "Ancient Rod (free)" : `Rod \xD7${fishDigFmt(row3.rodsUsed)}`;
+  const cap = row3.limit + row3.extraUsed + row3.extraReels;
+  const rodsQty = row3.rodFree ? `\xD7${fishDigFmt(row3.day.casts)} <small>(free)</small>` : `\xD7${fishDigFmt(row3.rodsUsed)}${row3.day.casts === 0 && row3.attempts > 0 ? ` <small>(\u2248${fishDigFmt(row3.attempts)} reels today)</small>` : ""}`;
+  return `<div class="dig-totals">${line("Reels Left", `${fishDigFmt(row3.reelsLeft)} <small>(${fishDigFmt(row3.attempts)}/${fishDigFmt(cap)} used)</small>`, "")}${line("Fish Value", pairText(row3.fishCoins), "")}${line("Treasure Value", pairText(row3.treasureCoins), "")}${line("Total Gross", pairText(grossCoins), "")}${line("Rods Used", rodsQty, "", rodNote)}${line("Tool Cost", pairText(row3.toolCost), "", rodNote)}${line("Net", `${net > 0 ? "+" : ""}${pairText(net)}`, (net > 0 ? "is-profit" : net < 0 ? "is-loss" : "") + " dig-total-net")}</div>`;
+}
+function farmPanelRenderFishingCard(row3, expanded) {
+  const badgeHtml = row3.isReady ? `<span class="harvest-badge is-ready">\u{1F7E2} ${fishDigFmt(row3.reelsLeft)} reels left</span>` : `<span class="harvest-badge is-growing">\u23F3 No reels left</span>`;
+  const fishHtml = row3.fishRows.length ? row3.fishRows.map(fishRowHtml).join("") : `<div class="fh-empty">No fish caught yet.</div>`;
+  const treasureHtml = row3.treasureRows.length ? row3.treasureRows.map(treasureRowHtml).join("") : `<div class="fh-empty">No treasures caught yet.</div>`;
+  const noteHtml = row3.tracked ? "" : `<div class="fh-empty">Catches are counted from your first sync. Sync again after fishing to see them here.</div>`;
+  return `
+  <div class="card animal-merged-card fh-card${row3.isReady ? " is-profit" : ""}${expanded ? " expanded" : ""}" data-search="fishing" data-fp-category="fishing">
+    <div class="card-toggle">
+      <div class="card-name-row">
+        <span class="card-icon">${fishingMiniIconHtml(22)}</span>
+        <div>
+          <div class="card-name">Fishing</div>
+          <div class="card-type-row">
+            ${badgeHtml}
+          </div>
+        </div>
+      </div>
+      <div class="card-collapsed-profit">
+        <span class="chev">\u25BE</span>
+      </div>
+      ${fishingStatusFoldHtml(row3)}
+    </div>
+    <div class="card-details">
+      ${noteHtml}
+      <div class="dig-data-label fh-label">Fish <span class="fh-label-count">\xD7${fishDigFmt(row3.fishQty)}</span></div>
+      <div class="fh-list">${fishHtml}</div>
+      <div class="dig-data-label fh-label">Treasures <span class="fh-label-count">\xD7${fishDigFmt(row3.treasureQty)}</span></div>
+      <div class="fh-list">${treasureHtml}</div>
+      <div class="dig-data-label fh-label">Tool Cost</div>
+      <div class="fh-tool">${fishRodSectionHtml()}</div>
+      <div class="dig-data-label fh-label">Materials Used</div>
+      <div class="fh-tool">${fishRodUsageHtml(row3.rodsUsed)}</div>
+      ${totalsHtml(row3)}
+      ${appliedBoostHtml(row3)}
+    </div>
+  </div>`;
+}
+document.addEventListener("click", (e) => {
+  const t = e.target && e.target.closest ? e.target.closest(".fh-card [data-dig-mat-mode]") : null;
+  if (!t) return;
+  fishSetRodMatMode(t.getAttribute("data-dig-mat-name"), t.getAttribute("data-dig-mat-mode"));
+  renderFarmPanelTabContent();
+});
+
 // src/speed_windows.js
 var HOUR_MS = 60 * 60 * 1e3;
 var DAY_MS = 24 * HOUR_MS;
@@ -29965,6 +30313,11 @@ function farmPanelCardCatalog() {
       label: "Floating Island",
       icon: floatingIslandMiniIconHtml(16)
     }];
+    if (id === "fishing") return [{
+      id: "fishing",
+      label: "Fishing",
+      icon: fishingMiniIconHtml(16)
+    }];
     return [{
       id: "pete",
       label: "Pumpkin Pete Quest",
@@ -30005,6 +30358,7 @@ function farmPanelRowCardKey(row3) {
   else if (row3.isMycoCard) id = "myco";
   else if (row3.isPeteQuestCard) id = "pete";
   else if (row3.isFloatingIslandCard) id = "floating";
+  else if (row3.isFishingCard) id = "fishing";
   return `${cat}:${id}`;
 }
 function farmPanelRowVisible(row3) {
@@ -34441,6 +34795,8 @@ function farmPanelComputeInProgress(json) {
   if (peteQuestCard) allCards.push(peteQuestCard);
   const floatingIslandCard = farmPanelComputeFloatingIslandCard(json);
   if (floatingIslandCard) allCards.push(floatingIslandCard);
+  const fishingCard = farmPanelComputeFishingCard(json, String(json && json.id || farmPanelGetLastInfo().id || ""));
+  if (fishingCard) allCards.push(fishingCard);
   return allCards;
 }
 var PETE_QUEST_LINK = "https://github.com/01101010110/Pumpkin-Pete-Quests/blob/main/Quests.md";
@@ -34927,7 +35283,7 @@ function farmPanelRenderCropMachineCard(row3) {
   }
   const speedText = row3.speed > 1 ? ` \xB7 \u26A1 \xD7${Math.round(row3.speed * 1e3) / 1e3} speed` : "";
   const fuelRow = `<div class="animal-detail-stat"><span class="label">Oil</span><span class="value">${fuelText}${speedText}</span></div>`;
-  const totalsHtml = row3.gross > 0 ? `
+  const totalsHtml2 = row3.gross > 0 ? `
         <div class="animal-detail-stat"><span class="label">Market Value</span><span class="value">${fmt(row3.gross)} ${FLOWER_ICON}</span></div>
         <div class="animal-detail-stat"><span class="label">Tax</span><span class="value">${row3.fee > 0 ? `-${fmt(row3.fee)}` : "0"} ${FLOWER_ICON}</span></div>` : "";
   const netHtml = row3.gross > 0 ? `<div class="animal-net-row2"><span class="label">Net</span><span class="value is-profit">${fmt(row3.gross - row3.fee)} ${FLOWER_ICON}</span></div>` : "";
@@ -34958,7 +35314,7 @@ function farmPanelRenderCropMachineCard(row3) {
         ${fuelRow}
         ${packRowsHtml}
         ${cropRowsHtml}
-        ${totalsHtml}
+        ${totalsHtml2}
       </div>
       ${netHtml}
       ${boostHtml}
@@ -35161,6 +35517,7 @@ function farmPanelCardCategory(row3) {
   if (row3.isMycoCard) return "myco";
   if (row3.isPeteQuestCard) return "pete";
   if (row3.isFloatingIslandCard) return "floating";
+  if (row3.isFishingCard) return "fishing";
   if (row3.isAnimalMerged) return "animals";
   if (row3.isComposterCard) return "composters";
   if (row3.isHoneyCard) return "beehive";
@@ -35173,7 +35530,7 @@ function farmPanelCardCategory(row3) {
 }
 function farmPanelRowIsReady(row3) {
   if (!row3) return false;
-  if (row3.isPeteQuestCard || row3.isFloatingIslandCard) return !!row3.isReady;
+  if (row3.isPeteQuestCard || row3.isFloatingIslandCard || row3.isFishingCard) return !!row3.isReady;
   return (row3.readyCount || 0) > 0;
 }
 function guroCountdownText(sec) {
@@ -35253,6 +35610,11 @@ function farmPanelFilterCategories() {
     label: "Floating Island",
     name: "Floating Island",
     icon: floatingIslandMiniIconHtml(16)
+  }, {
+    id: "fishing",
+    label: "Fishing",
+    name: "Fishing",
+    icon: fishingMiniIconHtml(16)
   }];
   return cats;
 }
@@ -35633,7 +35995,7 @@ function farmPanelRenderMycoCard(row3) {
   const valueBlockHtml = fig && fig.gross > 0 ? guroValueBlockHtml(fig.gross, fig.fee, fmt) : "";
   const itemRows = shown.map((i) => renderAnimalCardProductDetailRow(mycoIcon(i), i.key, i.qty, i.gross, i.fee)).join("");
   const priceRows = shown.map((i) => `<div class="animal-detail-stat"><span class="label">${i.key} Price/Unit</span><span class="value">${fmt(i.unit)} ${FLOWER_ICON}</span></div>`).join("");
-  const totalsHtml = fig && shown.length ? `
+  const totalsHtml2 = fig && shown.length ? `
         <div class="animal-detail-stat"><span class="label">Market Value</span><span class="value">${fmt(fig.gross)} ${FLOWER_ICON}</span></div>
         <div class="animal-detail-stat"><span class="label">Tax</span><span class="value">${fig.fee > 0 ? `-${fmt(fig.fee)}` : "0"} ${FLOWER_ICON}</span></div>` : "";
   const netHtml = fig && shown.length ? `<div class="animal-net-row2"><span class="label">Net</span><span class="value is-profit">${fmt(fig.gross - fig.fee)} ${FLOWER_ICON}</span></div>` : "";
@@ -35662,7 +36024,7 @@ function farmPanelRenderMycoCard(row3) {
         <div class="animal-detail-stat"><span class="label">Status</span><span class="value">${stateValue}</span></div>
         ${itemRows}
         ${priceRows}
-        ${totalsHtml}
+        ${totalsHtml2}
       </div>
       ${netHtml}
       ${boostHtml}
@@ -35947,6 +36309,7 @@ function farmPanelRenderInProgressRow(row3) {
   if (row3.isMycoCard) return farmPanelRenderMycoCard(row3);
   if (row3.isPeteQuestCard) return farmPanelRenderPeteQuestCard(row3);
   if (row3.isFloatingIslandCard) return farmPanelRenderFloatingIslandCard(row3, farmPanelExpandedNames.has("floating-island"));
+  if (row3.isFishingCard) return farmPanelRenderFishingCard(row3, farmPanelExpandedNames.has("fishing"));
   const baseStatus = row3.readyCount > 0 ? row3.readyCount === row3.count ? "\u2705 All ready" : `\u2705 ${row3.readyCount} ready \xB7 \u23F3 ${row3.count - row3.readyCount} growing` : "\u23F3 Growing";
   const showCountdown = row3.soonestSec != null && row3.readyCount < row3.count;
   const noEtaGrowing = !showCountdown && row3.readyCount < row3.count && row3.noEtaCount > 0;
@@ -36629,6 +36992,11 @@ function farmPanelSaveGameState(json, isFullSync, syncedFarmId) {
       if (caveFarmId) caveTrackFromState(farmSyncExtractGameState(json), caveFarmId);
     } catch (e) {
     }
+    try {
+      const fishFarmId = String(syncedFarmId || json.id || farmPanelGetLastInfo().id || "");
+      if (fishFarmId) fishTrackFromState(farmSyncExtractGameState(json), fishFarmId);
+    } catch (e) {
+    }
     window.guroFarmSavedDone = true;
     window.dispatchEvent(new Event("guroFarmSaved"));
   }
@@ -36952,7 +37320,7 @@ var pulled = {};
 var forceNext = {};
 var lastNetFail = 0;
 var pushing = false;
-function utcDay2() {
+function utcDay3() {
   return (/* @__PURE__ */ new Date()).toISOString().substring(0, 10);
 }
 function isPlain2(v) {
@@ -36977,7 +37345,7 @@ function emitLocal(type) {
 function stateLastSaved(farm) {
   const saved = readJson(SAVED_KEY);
   const e = isPlain2(saved) ? saved[String(farm || "")] : null;
-  if (!isPlain2(e) || e.day !== utcDay2()) return null;
+  if (!isPlain2(e) || e.day !== utcDay3()) return null;
   return {
     at: Number(e.at) || 0,
     score: Number(e.score) || 0,
@@ -36988,7 +37356,7 @@ function markSaved(farm, score, tooLarge) {
   const saved = readJson(SAVED_KEY);
   const all = isPlain2(saved) ? saved : {};
   all[farm] = {
-    day: utcDay2(),
+    day: utcDay3(),
     score,
     at: Date.now(),
     tooLarge: tooLarge === true
@@ -37046,7 +37414,7 @@ function caveKeysFor(farm) {
 }
 function buildState(farm) {
   const store = readJson(STORE_KEY);
-  const today = utcDay2();
+  const today = utcDay3();
   const rec = isPlain2(store) ? store[farm] : null;
   if (!isPlain2(rec) || rec.day !== today || !isPlain2(rec.stats)) return null;
   const data = {};
@@ -37081,7 +37449,7 @@ async function post(path, body, ms) {
   };
 }
 function applyState(farm, payload) {
-  const today = utcDay2();
+  const today = utcDay3();
   if (!isPlain2(payload) || payload.day !== today || !isPlain2(payload.data)) return false;
   const data = payload.data;
   const allowed = [STORE_KEY].concat(caveKeysFor(farm));
@@ -37176,7 +37544,7 @@ async function harvestStatePull(farmId) {
   const localStore = readJson(STORE_KEY);
   const localRec = isPlain2(localStore) ? localStore[farm] : null;
   const serverTrack = isPlain2(r.json.data) ? r.json.data["guro_cave_track_v2_" + farm] : null;
-  const todayNow = utcDay2();
+  const todayNow = utcDay3();
   if (isPlain2(localRec) && localRec.day === todayNow && stateScore(localRec, readJson("guro_cave_track_v2_" + farm), todayNow) > stateScore(serverRec, serverTrack, todayNow)) forceNext[farm] = true;
   return false;
 }
@@ -68037,7 +68405,41 @@ function getFrenziedFishExtra() {
   return info ? info.flat + info.crit / 100 : 0;
 }
 var FISHING_LIMIT_BOOSTS = [["Angler Waders", 10], ["Reelmaster's Chair", 5], ["Nautilus", 5], ["Deep Sea Slug", 5], ["Otty the Otter", 5], ["Saw Fish", 5]];
+var FISHING_LIMIT_SKILL_RANKS = [["Fisherman's 5 Fold", [5, 7, 10]], ["Fisherman's 10 Fold", [10, 18, 25]], ["More With Less", [10, 25, 50]]];
+function getDailyFishingLimitInfoFromState(g) {
+  if (!g || typeof g !== "object") return null;
+  let limit = 20;
+  const parts = [];
+  const skills = g.bumpkin && g.bumpkin.skills && typeof g.bumpkin.skills === "object" ? g.bumpkin.skills : {};
+  FISHING_LIMIT_SKILL_RANKS.forEach(([name, ranks]) => {
+    const level = Math.min(Number(skills[name]) || 0, ranks.length);
+    if (level > 0) {
+      limit += ranks[level - 1];
+      parts.push({
+        name,
+        add: ranks[level - 1]
+      });
+    }
+  });
+  const placed = farmSyncCollectEquippedAndPlacedNames(g);
+  FISHING_LIMIT_BOOSTS.forEach(([name, add]) => {
+    if (placed.has(name)) {
+      limit += add;
+      parts.push({
+        name,
+        add
+      });
+    }
+  });
+  return {
+    limit,
+    parts
+  };
+}
 function getDailyFishingLimitInfo() {
+  const gs = farmPanelGameState ? farmSyncExtractGameState(farmPanelGameState) : null;
+  const fromState = gs && gs.bumpkin ? getDailyFishingLimitInfoFromState(gs) : null;
+  if (fromState) return fromState;
   let limit = 20;
   const parts = [];
   [["Fisherman's 5 Fold", "skill_fishermans_5_rod"], ["Fisherman's 10 Fold", "skill_fishermans_10_fold"], ["More With Less", "skill_more_with_less"]].forEach(([name, id]) => {
@@ -71505,6 +71907,90 @@ function caveMycoUnitCoins(owner, name) {
 }
 function caveMycoToggleHtml(owner, name) {
   return digMatToggleHtml(owner, name);
+}
+function fishRodRecipe() {
+  const item = findTool("default_rod");
+  if (!item) return {
+    coins: 20,
+    materials: [{
+      name: "Wood",
+      qty: 3
+    }, {
+      name: "Stone",
+      qty: 1
+    }]
+  };
+  const boosted = getBoostedToolRecipe(item);
+  return {
+    coins: boosted.coinCost,
+    materials: boosted.materials.map((m) => ({
+      name: m.name,
+      qty: m.qty
+    }))
+  };
+}
+function fishRodIsFree() {
+  return typeof fishingRodIsFree === "function" && fishingRodIsFree();
+}
+function fishRodUnitCoins() {
+  if (fishRodIsFree()) return 0;
+  const r = fishRodRecipe();
+  let total = r.coins;
+  r.materials.forEach((m) => {
+    total += m.qty * digMatUnitCoins("Rod", m.name);
+  });
+  return total;
+}
+function fishRodSectionHtml() {
+  const r = fishRodRecipe();
+  const free = fishRodIsFree();
+  const coinRow = r.coins > 0 ? '<div class="es-toolcfg-mat"><div class="es-toolcfg-mat-name"><span class="es-toolcfg-qty">\xD7' + digFmt(r.coins) + "</span>" + COIN_ICON + "</div></div>" : "";
+  const matRows = r.materials.map((m) => digMatRowHtml("Rod", m)).join("");
+  const unitRow = '<div class="es-toolcfg-mat dig-tool-unit"><span>Cost per rod</span><span class="es-toolcfg-qty dig-coin-val">' + digFmt(fishRodUnitCoins()) + COIN_ICON + "</span></div>";
+  const head = free ? '<div class="es-toolcfg-free">Free (Ancient Rod)</div>' : "";
+  return '<div class="es-toolcfg-block"><div class="es-toolcfg-head"><div class="es-toolcfg-name">' + digIconHtml("Rod") + "<span>Rod</span></div>" + head + '</div><div class="es-toolcfg-mats-label">Materials:</div>' + coinRow + matRows + unitRow + "</div>";
+}
+function fishRodUsageHtml(rods) {
+  const n = Math.max(0, Number(rods) || 0);
+  const free = fishRodIsFree();
+  const r = fishRodRecipe();
+  const row3 = (qty, iconHtml2, cost) => '<div class="es-toolcfg-mat"><div class="es-toolcfg-mat-name"><span class="es-toolcfg-qty">\xD7' + digFmt(qty) + "</span>" + iconHtml2 + '<span class="es-toolcfg-cost dig-coin-val">(' + digFmt(cost) + COIN_ICON + ")</span></div></div>";
+  let total = 0;
+  let rows = "";
+  if (!free && r.coins > 0) {
+    const qty = r.coins * n;
+    total += qty;
+    rows += row3(qty, COIN_ICON, qty);
+  }
+  if (!free) {
+    r.materials.forEach((m) => {
+      const qty = m.qty * n;
+      const cost = qty * digMatUnitCoins("Rod", m.name);
+      total += cost;
+      rows += row3(qty, digIconHtml(m.name), cost);
+    });
+  }
+  if (!rows) rows = '<div class="es-toolcfg-mat"><div class="es-toolcfg-mat-name"><span class="es-toolcfg-qty">' + (free ? "Free (Ancient Rod)" : "No rods used yet") + "</span></div></div>";
+  const totalRow = '<div class="es-toolcfg-mat dig-tool-unit"><span>Total for \xD7' + digFmt(n) + ' rods</span><span class="es-toolcfg-qty dig-coin-val">' + digFmt(total) + COIN_ICON + "</span></div>";
+  return '<div class="es-toolcfg-block"><div class="es-toolcfg-head"><div class="es-toolcfg-name">' + digIconHtml("Rod") + "<span>Rods Used</span></div></div>" + rows + totalRow + "</div>";
+}
+function fishSetRodMatMode(name, mode) {
+  caveSetMatMode("Rod", name, mode);
+}
+function fishTreasurePrice(name) {
+  const base = SELLABLE_TREASURES[name];
+  if (typeof base !== "number") return null;
+  return {
+    base,
+    price: base * (1 + digPricePct() / 100)
+  };
+}
+function fishMarketFlowerPrice(name) {
+  const live = findLivePriceForName(name);
+  return live != null && isFinite(live) && live > 0 ? live : 0;
+}
+function fishDigFmt(n) {
+  return digFmt(n);
 }
 function caveToolCostsOpen() {
   return digDataLoadState().caveToolsOpen === true;
@@ -75258,7 +75744,7 @@ function simulateGuideRows(setup, spec) {
 var STORE_KEY2 = "hl_daily_harvest_v1";
 var ROUND_THRESHOLD = 1;
 var memStore = null;
-function utcDay3(ms) {
+function utcDay4(ms) {
   return new Date(ms).toISOString().slice(0, 10);
 }
 function utcDayStart(ms) {
@@ -75266,7 +75752,7 @@ function utcDayStart(ms) {
   return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
 }
 function pruneStore(store) {
-  const today = utcDay3(Date.now());
+  const today = utcDay4(Date.now());
   const active = store.__last;
   let changed = false;
   Object.keys(store).forEach((k) => {
@@ -75306,7 +75792,7 @@ function pruneStore(store) {
   });
   return changed;
 }
-function loadStore2() {
+function loadStore3() {
   if (memStore) return memStore;
   try {
     const raw = localStorage.getItem(STORE_KEY2);
@@ -75315,18 +75801,18 @@ function loadStore2() {
   } catch (e) {
     memStore = {};
   }
-  if (pruneStore(memStore)) saveStore2();
+  if (pruneStore(memStore)) saveStore3();
   return memStore;
 }
 function dailyHarvestReloadStore() {
   memStore = null;
 }
 function freshStore() {
-  const store = loadStore2();
-  if (pruneStore(store)) saveStore2();
+  const store = loadStore3();
+  if (pruneStore(store)) saveStore3();
   return store;
 }
-function saveStore2() {
+function saveStore3() {
   try {
     localStorage.setItem(STORE_KEY2, JSON.stringify(memStore || {}));
   } catch (e) {
@@ -76352,7 +76838,7 @@ function trackCoins(g, rec, fresh, prevSyncAt, start, now) {
 function dailyHarvestTrack(g, farmId) {
   if (!g || typeof g !== "object") return;
   const now = Date.now();
-  const today = utcDay3(now);
+  const today = utcDay4(now);
   const start = utcDayStart(now);
   const store = freshStore();
   const fid = String(farmId || store.__last || "");
@@ -76718,12 +77204,12 @@ function dailyHarvestTrack(g, farmId) {
   trackCoins(g, rec, fresh, prevSyncAt, start, now);
   rec.syncAt = now;
   store[fid] = rec;
-  saveStore2();
+  saveStore3();
 }
 function dailyHarvestInfo(groupKey, farmId) {
   const store = freshStore();
   const rec = store[farmId ? String(farmId) : store.__last];
-  if (!rec || rec.day !== utcDay3(Date.now())) return null;
+  if (!rec || rec.day !== utcDay4(Date.now())) return null;
   const hasGold = groupKey === "Sunflower" && rec.gs && (rec.gs.a > 0 || rec.gs.x > 0);
   const st = rec.stats[groupKey] || (hasGold ? {
     total: 0,
@@ -76759,7 +77245,7 @@ function dailyHarvestInfo(groupKey, farmId) {
 function dailyCookingInfo(building, farmId) {
   const store = freshStore();
   const rec = store[farmId ? String(farmId) : store.__last];
-  if (!rec || rec.day !== utcDay3(Date.now())) return null;
+  if (!rec || rec.day !== utcDay4(Date.now())) return null;
   if (building === MACH_LABEL) return dailyMachineInfo(rec);
   const bld = rec.cook && rec.cook.bld ? rec.cook.bld[building] : null;
   if (!bld || !bld.items) return null;
@@ -76897,7 +77383,7 @@ function dailyHarvestSetYield(groupKey, perNode, iconHtml2, nodeQty, econ, farmI
   }
   const st = rec && rec.stats ? rec.stats[groupKey] : null;
   if (!st || !Array.isArray(st.log)) {
-    if (ymChanged) saveStore2();
+    if (ymChanged) saveStore3();
     return;
   }
   let changed = resolvePending(st, groupKey) || ymChanged;
@@ -76918,7 +77404,7 @@ function dailyHarvestSetYield(groupKey, perNode, iconHtml2, nodeQty, econ, farmI
       changed = true;
     }
   });
-  if (changed) saveStore2();
+  if (changed) saveStore3();
 }
 var LOG_NODE_GROUPS = ["Wood", "Stone", "Iron", "Gold", "Crimstone", "Oil"];
 var LOG_KIND_OF = {
@@ -76976,7 +77462,7 @@ function animalLogTotals(totals, groupKey, st) {
 function dailyHarvestTotals(farmId) {
   const store = freshStore();
   const rec = store[farmId ? String(farmId) : store.__last];
-  if (!rec || rec.day !== utcDay3(Date.now()) || !rec.stats) return null;
+  if (!rec || rec.day !== utcDay4(Date.now()) || !rec.stats) return null;
   const totals = {};
   Object.keys(rec.stats).forEach((groupKey) => {
     const st = rec.stats[groupKey];
