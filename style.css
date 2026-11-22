@@ -16235,3 +16235,16 @@ body.app-dark body.app-dark .fi-slot-sub{ color:#a7a5a0; }
 .hl-code-input{ padding:6px 8px; font-size:12px; line-height:1.2; min-height:0; height:auto; }
 .hl-backup-box{ min-height:60px; padding:6px 8px; }
 .hl-code-head{ line-height:1.4; }
+
+.hl-code-eye{ flex:0 0 auto; display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:700; color:var(--ink); background:var(--sfl-outer, var(--wheat-dim)); padding:4px 8px; cursor:pointer; line-height:1.2; }
+.hl-code-eye svg{ width:16px; height:12px; flex:0 0 auto; }
+.hl-code-eye:active{ transform:translate(1px,1px); }
+.hl-mini-overlay{ z-index:6200; }
+.hl-mini-card{ max-width:340px; }
+.hl-mini-current{ display:flex; flex-direction:column; gap:4px; padding:8px 10px; box-sizing:border-box; background:var(--sfl-outer, var(--wheat-dim)); }
+.hl-mini-current[hidden]{ display:none; }
+.hl-mini-label{ font-family:var(--pixel-font); font-size:9px; letter-spacing:.5px; color:var(--ink-soft); }
+.hl-mini-code{ font-family:monospace; font-size:15px; letter-spacing:2px; color:var(--ink); word-break:break-all; user-select:all; }
+#hlMiniInput[hidden]{ display:none; }
+#hlMiniInput{ width:100%; flex:none; }
+#hlMiniCancelBtn[hidden]{ display:none; }

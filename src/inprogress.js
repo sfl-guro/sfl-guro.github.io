@@ -804,7 +804,7 @@ function farmPanelBuildSequentialWoodRollChains(json, treeType, count) {
   return chains;
 }
 
-function farmPanelGetBudYieldForResource(resourceName) {
+function farmPanelGetBudYieldEntriesForResource(resourceName) {
   const entries = typeof allResourceBudBoostEntries === "function" ? allResourceBudBoostEntries() : [];
   const perBud = {};
   entries.forEach(e => {
@@ -812,34 +812,117 @@ function farmPanelGetBudYieldForResource(resourceName) {
     const applies = e.scope === "resource" ? e.target === resourceName : e.scope === "resourceList" ? Array.isArray(e.resources) && e.resources.includes(resourceName) : false;
     if (!applies) return;
     const key = e.budId || e.id;
-    perBud[key] = (perBud[key] || 0) + e.yieldAdd;
+    if (!perBud[key]) perBud[key] = {
+      total: 0,
+      entries: []
+    };
+    perBud[key].total += e.yieldAdd;
+    perBud[key].entries.push(e);
   });
-  const totals = Object.values(perBud);
-  return totals.length ? Math.max(...totals) : 0;
+  const groups = Object.values(perBud);
+  if (!groups.length) return {
+    total: 0,
+    entries: []
+  };
+  return groups.reduce((best, g) => g.total > best.total ? g : best, groups[0]);
 }
 
-function farmPanelComputeExactWoodYieldForNode(node, treeType, critRolls) {
+function farmPanelGetBudYieldForResource(resourceName) {
+  return farmPanelGetBudYieldEntriesForResource(resourceName).total;
+}
+
+function farmPanelBoostNameById(id) {
+  const b = BOOSTS.find(x => x && x.id === id);
+  return b && b.name ? b.name : id;
+}
+
+function farmPanelMakeGainRecorder(rec) {
+  const gains = rec ? new Map : null;
+  return {
+    note: (name, delta) => {
+      if (gains && delta) gains.set(name, (gains.get(name) || 0) + delta);
+    },
+    flush: scale => {
+      if (gains) gains.forEach((delta, name) => rec.set(name, (rec.get(name) || 0) + delta * scale));
+    }
+  };
+}
+
+function farmPanelRecordBudGains(resourceName, recorder) {
+  const bud = farmPanelGetBudYieldEntriesForResource(resourceName);
+  bud.entries.forEach(e => recorder.note(e.name, e.yieldAdd));
+  return bud.total;
+}
+
+function farmPanelMakeMultTrackingList(getAmount) {
+  const list = [];
+  const nativePush = list.push.bind(list);
+  let last = 1;
+  list.push = (...items) => {
+    const cur = getAmount();
+    items.forEach(it => {
+      if (it && it.amount === undefined && typeof it.valueText === "string" && it.valueText.charAt(0) === "×") it.amount = cur - last;
+    });
+    last = cur;
+    return nativePush(...items);
+  };
+  return list;
+}
+
+function farmPanelGenericBoostEntry(b, multDelta, totalMult) {
+  const parts = [];
+  if (typeof b.yieldAdd === "number" && b.yieldAdd) parts.push(`+${fmt(b.yieldAdd)} yield`);
+  if (typeof b.yieldMult === "number" && b.yieldMult !== 1) parts.push(`×${b.yieldMult} yield`);
+  if (!parts.length) return null;
+  let gain = typeof b.yieldAdd === "number" ? b.yieldAdd : 0;
+  if (typeof b.yieldMult === "number" && b.yieldMult !== 1 && totalMult !== 1) gain += multDelta * Math.log(b.yieldMult) / Math.log(totalMult);
+  return {
+    name: b.name,
+    amount: gain,
+    valueText: parts.join(", ")
+  };
+}
+
+function farmPanelGainsToBoosts(rec) {
+  return Array.from(rec.entries()).filter(([, amt]) => amt > 1e-9).map(([name, amt]) => ({
+    name: name,
+    amount: amt,
+    valueText: `+${fmt(amt)} yield`
+  }));
+}
+
+function farmPanelComputeExactWoodYieldForNode(node, treeType, critRolls, rec) {
   if (!critRolls) return null;
+  const R = farmPanelMakeGainRecorder(rec);
   let amount = 1;
-  const hasBeaverReady = isBoostActive("woody_the_beaver") || isBoostActive("apprentice_beaver") || isBoostActive("foreman_beaver");
-  if (hasBeaverReady) amount *= 1.2;
-  if (isBoostActive("discord_mod")) amount *= 1.35;
-  if (isBoostActive("lumberjack")) amount *= 1.1;
-  if (critRolls.toughTreeCrit) amount *= 3;
+  const mulStep = (name, m) => {
+    const before = amount;
+    amount *= m;
+    R.note(name, amount - before);
+  };
+  const addStep = (name, v) => {
+    amount += v;
+    R.note(name, v);
+  };
+  if (isBoostActive("foreman_beaver")) mulStep(farmPanelBoostNameById("foreman_beaver"), 1.2); else if (isBoostActive("apprentice_beaver")) mulStep(farmPanelBoostNameById("apprentice_beaver"), 1.2); else if (isBoostActive("woody_the_beaver")) mulStep(farmPanelBoostNameById("woody_the_beaver"), 1.2);
+  if (isBoostActive("discord_mod")) mulStep(farmPanelBoostNameById("discord_mod"), 1.35);
+  if (isBoostActive("lumberjack")) mulStep(farmPanelBoostNameById("lumberjack"), 1.1);
+  if (critRolls.toughTreeCrit) mulStep(farmPanelBoostNameById("skill_tough_tree"), 3);
   if (isSkillActive("skill_lumberjacks_extra")) {
     const rank = getAscensionRank("skill_lumberjacks_extra");
     const values = ASCENSION_RANK_DATA.skill_lumberjacks_extra.values;
-    amount += values[Math.min(Math.max(rank, 1), values.length) - 1];
+    addStep(farmPanelBoostNameById("skill_lumberjacks_extra"), values[Math.min(Math.max(rank, 1), values.length) - 1]);
   }
-  if (isBoostActive("wood_nymph_wendy")) amount += .2;
-  if (isBoostActive("tiki_totem")) amount += .1;
-  if (isBoostActive("squirrel")) amount += .1;
-  if (isBoostActive("faction_shield_res")) amount += .25;
-  if (critRolls.nativeHit) amount += 1;
-  if (isBoostActive("legendary_shrine_res")) amount += 1;
-  amount += farmPanelGetBudYieldForResource("Wood");
+  if (isBoostActive("wood_nymph_wendy")) addStep(farmPanelBoostNameById("wood_nymph_wendy"), .2);
+  if (isBoostActive("tiki_totem")) addStep(farmPanelBoostNameById("tiki_totem"), .1);
+  if (isBoostActive("squirrel")) addStep(farmPanelBoostNameById("squirrel"), .1);
+  if (isBoostActive("faction_shield_res")) addStep(farmPanelBoostNameById("faction_shield_res"), .25);
+  if (critRolls.nativeHit) addStep(farmPanelBoostNameById("native_boost"), 1);
+  if (isBoostActive("legendary_shrine_res")) addStep(farmPanelBoostNameById("legendary_shrine_res"), 1);
+  amount += farmPanelRecordBudGains("Wood", R);
   const multiplier = node && typeof node.multiplier === "number" ? node.multiplier : 1;
   amount *= multiplier;
+  R.flush(multiplier);
   const tier = node && typeof node.tier === "number" ? node.tier : treeType === "Sacred Tree" ? 3 : treeType === "Ancient Tree" ? 2 : 1;
   if (tier === 2) amount += .5;
   if (tier === 3) amount += 2.5;
@@ -960,38 +1043,44 @@ function farmPanelPredictStoneCritRolls(json, rockName) {
   return rolls && rolls.length ? rolls[0] : null;
 }
 
-function farmPanelComputeExactStoneYieldForNode(json, node, rockName, critRolls, atTime) {
+function farmPanelComputeExactStoneYieldForNode(json, node, rockName, critRolls, atTime, rec) {
   if (!critRolls) return null;
   const g = farmSyncExtractGameState(json);
+  const R = farmPanelMakeGainRecorder(rec);
   let amount = 1;
-  if (critRolls.rockGolemCrit) amount += 2;
-  if (isBoostActive("prospector")) amount += .2;
-  if (isBoostActive("tunnel_mole")) amount += .25;
-  if (isBoostActive("stone_beetle")) amount += .1;
+  const addStep = (name, v) => {
+    amount += v;
+    R.note(name, v);
+  };
+  if (critRolls.rockGolemCrit) addStep(farmPanelBoostNameById("rock_golem"), 2);
+  if (isBoostActive("prospector")) addStep(farmPanelBoostNameById("prospector"), .2);
+  if (isBoostActive("tunnel_mole")) addStep(farmPanelBoostNameById("tunnel_mole"), .25);
+  if (isBoostActive("stone_beetle")) addStep(farmPanelBoostNameById("stone_beetle"), .1);
   if (isSkillActive("skill_rocknroll")) {
     const rank = getAscensionRank("skill_rocknroll");
     const values = ASCENSION_RANK_DATA.skill_rocknroll.values;
-    amount += values[Math.min(Math.max(rank, 1), values.length) - 1];
+    addStep(farmPanelBoostNameById("skill_rocknroll"), values[Math.min(Math.max(rank, 1), values.length) - 1]);
   }
   if (isSkillActive("skill_rocky_favor")) {
     const rank = getAscensionRank("skill_rocky_favor");
     const values = ASCENSION_RANK_DATA.skill_rocky_favor.values["resourceEffects.Stone"];
-    amount += values[Math.min(Math.max(rank, 1), values.length) - 1];
+    addStep(farmPanelBoostNameById("skill_rocky_favor"), values[Math.min(Math.max(rank, 1), values.length) - 1]);
   }
   if (isSkillActive("skill_ferrous_favor")) {
     const rank = getAscensionRank("skill_ferrous_favor");
     const values = ASCENSION_RANK_DATA.skill_ferrous_favor.values["resourceEffects.Stone"];
-    amount += values[Math.min(Math.max(rank, 1), values.length) - 1];
+    addStep(farmPanelBoostNameById("skill_ferrous_favor"), values[Math.min(Math.max(rank, 1), values.length) - 1]);
   }
-  if (critRolls.nativeHit) amount += 1;
-  if (isBoostActive("emerald_turtle") && farmPanelCheckTurtleAOEBonus(g, "Emerald Turtle", node)) amount += .5;
-  if (isBoostActive("tin_turtle") && farmPanelCheckTurtleAOEBonus(g, "Tin Turtle", node)) amount += .1;
-  if (isBoostActive("faction_shield_res")) amount += .25;
-  if (isBoostActive("legendary_shrine_res")) amount += 1;
-  amount += farmPanelGetBudYieldForResource("Stone");
-  if (isBoostActive("volcano_gnome")) amount += .1;
+  if (critRolls.nativeHit) addStep(farmPanelBoostNameById("native_boost"), 1);
+  if (isBoostActive("emerald_turtle") && farmPanelCheckTurtleAOEBonus(g, "Emerald Turtle", node)) addStep(farmPanelBoostNameById("emerald_turtle"), .5);
+  if (isBoostActive("tin_turtle") && farmPanelCheckTurtleAOEBonus(g, "Tin Turtle", node)) addStep(farmPanelBoostNameById("tin_turtle"), .1);
+  if (isBoostActive("faction_shield_res")) addStep(farmPanelBoostNameById("faction_shield_res"), .25);
+  if (isBoostActive("legendary_shrine_res")) addStep(farmPanelBoostNameById("legendary_shrine_res"), 1);
+  amount += farmPanelRecordBudGains("Stone", R);
+  if (isBoostActive("volcano_gnome")) addStep(farmPanelBoostNameById("volcano_gnome"), .1);
   const multiplier = node && typeof node.multiplier === "number" ? node.multiplier : 1;
   amount *= multiplier;
+  R.flush(multiplier);
   const tier = node && typeof node.tier === "number" ? node.tier : rockName === "Reinforced Stone Rock" ? 3 : rockName === "Fused Stone Rock" ? 2 : 1;
   if (tier === 2) amount += .5;
   if (tier === 3) amount += 2.5;
@@ -1025,36 +1114,42 @@ function farmPanelPredictIronCritRolls(json, rockName) {
   return rolls && rolls.length ? rolls[0] : null;
 }
 
-function farmPanelComputeExactIronYieldForNode(json, node, rockName, critRolls, atTime) {
+function farmPanelComputeExactIronYieldForNode(json, node, rockName, critRolls, atTime, rec) {
   if (!critRolls) return null;
   const g = farmSyncExtractGameState(json);
+  const R = farmPanelMakeGainRecorder(rec);
   let amount = 1;
-  if (isBoostActive("rocky_the_mole")) amount += .25;
-  if (isBoostActive("radiant_ray")) amount += .1;
-  if (isBoostActive("iron_idol")) amount += 1;
-  if (isBoostActive("iron_beetle")) amount += .1;
+  const addStep = (name, v) => {
+    amount += v;
+    R.note(name, v);
+  };
+  if (isBoostActive("rocky_the_mole")) addStep(farmPanelBoostNameById("rocky_the_mole"), .25);
+  if (isBoostActive("radiant_ray")) addStep(farmPanelBoostNameById("radiant_ray"), .1);
+  if (isBoostActive("iron_idol")) addStep(farmPanelBoostNameById("iron_idol"), 1);
+  if (isBoostActive("iron_beetle")) addStep(farmPanelBoostNameById("iron_beetle"), .1);
   if (isSkillActive("skill_iron_bumpkin")) {
     const rank = getAscensionRank("skill_iron_bumpkin");
     const values = ASCENSION_RANK_DATA.skill_iron_bumpkin.values;
-    amount += values[Math.min(Math.max(rank, 1), values.length) - 1];
+    addStep(farmPanelBoostNameById("skill_iron_bumpkin"), values[Math.min(Math.max(rank, 1), values.length) - 1]);
   }
   if (isSkillActive("skill_rocky_favor")) {
     const rank = getAscensionRank("skill_rocky_favor");
     const values = ASCENSION_RANK_DATA.skill_rocky_favor.values["resourceEffects.Iron"];
-    amount += values[Math.min(Math.max(rank, 1), values.length) - 1];
+    addStep(farmPanelBoostNameById("skill_rocky_favor"), values[Math.min(Math.max(rank, 1), values.length) - 1]);
   }
   if (isSkillActive("skill_ferrous_favor")) {
     const rank = getAscensionRank("skill_ferrous_favor");
     const values = ASCENSION_RANK_DATA.skill_ferrous_favor.values["resourceEffects.Iron"];
-    amount += values[Math.min(Math.max(rank, 1), values.length) - 1];
+    addStep(farmPanelBoostNameById("skill_ferrous_favor"), values[Math.min(Math.max(rank, 1), values.length) - 1]);
   }
-  if (critRolls.nativeHit) amount += 1;
-  if (isBoostActive("emerald_turtle") && farmPanelCheckTurtleAOEBonus(g, "Emerald Turtle", node)) amount += .5;
-  if (isBoostActive("faction_shield_res")) amount += .25;
-  amount += farmPanelGetBudYieldForResource("Iron");
-  if (isBoostActive("volcano_gnome")) amount += .1;
+  if (critRolls.nativeHit) addStep(farmPanelBoostNameById("native_boost"), 1);
+  if (isBoostActive("emerald_turtle") && farmPanelCheckTurtleAOEBonus(g, "Emerald Turtle", node)) addStep(farmPanelBoostNameById("emerald_turtle"), .5);
+  if (isBoostActive("faction_shield_res")) addStep(farmPanelBoostNameById("faction_shield_res"), .25);
+  amount += farmPanelRecordBudGains("Iron", R);
+  if (isBoostActive("volcano_gnome")) addStep(farmPanelBoostNameById("volcano_gnome"), .1);
   const multiplier = node && typeof node.multiplier === "number" ? node.multiplier : 1;
   amount *= multiplier;
+  R.flush(multiplier);
   const tier = node && typeof node.tier === "number" ? node.tier : rockName === "Tempered Iron Rock" ? 3 : rockName === "Refined Iron Rock" ? 2 : 1;
   if (tier === 2) amount += .5;
   if (tier === 3) amount += 2.5;
@@ -1156,26 +1251,32 @@ function farmPanelBuildSequentialGoldRollChains(json, rockName, count) {
   return chains;
 }
 
-function farmPanelComputeExactGoldYieldForNode(json, node, rockName, critRolls, atTime) {
+function farmPanelComputeExactGoldYieldForNode(json, node, rockName, critRolls, atTime, rec) {
   if (!critRolls) return null;
   const g = farmSyncExtractGameState(json);
+  const R = farmPanelMakeGainRecorder(rec);
   let amount = 1;
-  if (isBoostActive("gold_rush")) amount += .5;
+  const addStep = (name, v) => {
+    amount += v;
+    R.note(name, v);
+  };
+  if (isBoostActive("gold_rush")) addStep(farmPanelBoostNameById("gold_rush"), .5);
   if (isSkillActive("skill_golden_touch")) {
     const rank = getAscensionRank("skill_golden_touch");
     const values = ASCENSION_RANK_DATA.skill_golden_touch.values;
-    amount += values[Math.min(Math.max(rank, 1), values.length) - 1];
+    addStep(farmPanelBoostNameById("skill_golden_touch"), values[Math.min(Math.max(rank, 1), values.length) - 1]);
   }
-  if (critRolls.nativeHit) amount += 1;
-  if (isBoostActive("nugget")) amount += .25;
-  if (isBoostActive("gilded_swordfish")) amount += .1;
-  if (isBoostActive("gold_beetle")) amount += .1;
-  if (isBoostActive("emerald_turtle") && farmPanelCheckTurtleAOEBonus(g, "Emerald Turtle", node)) amount += .5;
-  if (isBoostActive("faction_shield_res")) amount += .25;
-  amount += farmPanelGetBudYieldForResource("Gold");
-  if (isBoostActive("volcano_gnome")) amount += .1;
+  if (critRolls.nativeHit) addStep(farmPanelBoostNameById("native_boost"), 1);
+  if (isBoostActive("nugget")) addStep(farmPanelBoostNameById("nugget"), .25);
+  if (isBoostActive("gilded_swordfish")) addStep(farmPanelBoostNameById("gilded_swordfish"), .1);
+  if (isBoostActive("gold_beetle")) addStep(farmPanelBoostNameById("gold_beetle"), .1);
+  if (isBoostActive("emerald_turtle") && farmPanelCheckTurtleAOEBonus(g, "Emerald Turtle", node)) addStep(farmPanelBoostNameById("emerald_turtle"), .5);
+  if (isBoostActive("faction_shield_res")) addStep(farmPanelBoostNameById("faction_shield_res"), .25);
+  amount += farmPanelRecordBudGains("Gold", R);
+  if (isBoostActive("volcano_gnome")) addStep(farmPanelBoostNameById("volcano_gnome"), .1);
   const multiplier = node && typeof node.multiplier === "number" ? node.multiplier : 1;
   amount *= multiplier;
+  R.flush(multiplier);
   const tier = node && typeof node.tier === "number" ? node.tier : rockName === "Prime Gold Rock" ? 3 : rockName === "Pure Gold Rock" ? 2 : 1;
   if (tier === 2) amount += .5;
   if (tier === 3) amount += 2.5;
@@ -1589,7 +1690,7 @@ export function farmPanelComputeExactCropYield(json, g, cropName, plot, counter,
   const tierLabel = farmPanelCropTierLabel(cropName);
   const itemId = CROP_KNOWN_IDS[cropName];
   let amount = 1;
-  const boosts = [];
+  const boosts = farmPanelMakeMultTrackingList(() => amount);
   const steps = opts && opts.machine ? [] : null;
   const stepAdd = v => {
     if (steps) steps.push({
@@ -1662,15 +1763,11 @@ export function farmPanelComputeExactCropYield(json, g, cropName, plot, counter,
     });
   }
   const generic = farmPanelSumCatalogBoosts(b => (b.scope === "crop" && b.target === cropName || b.scope === "tier" && b.target === tierLabel || b.scope === "global" && b.category === "crops" && (b.target === null || b.target === undefined)) && !(isGreenhouse && CROPS_GLOBAL_EXCLUDED_FROM_GREENHOUSE.has(b.id)) && (b.id !== "hoot" || !isGreenhouse || cropName === "Rice"), farmPanelCropYieldExcluded());
+  const cropGenericMultDelta = amount * (generic.mult - 1);
   if (generic.mult !== 1) amount *= generic.mult;
   generic.boosts.forEach(b => {
-    const parts = [];
-    if (typeof b.yieldAdd === "number" && b.yieldAdd) parts.push(`+${fmt(b.yieldAdd)} yield`);
-    if (typeof b.yieldMult === "number" && b.yieldMult !== 1) parts.push(`×${b.yieldMult} yield`);
-    if (parts.length) boosts.push({
-      name: b.name,
-      valueText: parts.join(", ")
-    });
+    const entry = farmPanelGenericBoostEntry(b, cropGenericMultDelta, generic.mult);
+    if (entry) boosts.push(entry);
   });
   if (Number.isFinite(farmId) && farmId > 0 && itemId) {
     if (cropName === "Potato" && isBoostActive("peeled_potato") && critRoll({
@@ -1985,15 +2082,11 @@ export function farmPanelComputeExactFruitYield(json, g, fruitName, counter, isG
   const fruitExcludeIds = isGreenhouse ? new Set([ ...FRUIT_PRNG_EXCLUDE, ...PATCH_FRUIT_ONLY_GLOBAL_BOOSTS_EXCLUDED_FROM_GREENHOUSE ]) : FRUIT_PRNG_EXCLUDE;
   const generic = farmPanelSumCatalogBoosts(b => b.scope === "fruit" && b.target === fruitName || b.category === "fruits" && b.scope === "global" || b.category === "fruits" && b.scope === "fruitList" && Array.isArray(b.fruits) && b.fruits.includes(fruitName), fruitExcludeIds);
   amount += generic.add;
+  const genericMultDelta = amount * (generic.mult - 1);
   amount *= generic.mult;
   generic.boosts.forEach(b => {
-    const parts = [];
-    if (typeof b.yieldAdd === "number" && b.yieldAdd) parts.push(`+${fmt(b.yieldAdd)} yield`);
-    if (typeof b.yieldMult === "number" && b.yieldMult !== 1) parts.push(`×${b.yieldMult} yield`);
-    if (parts.length) boosts.push({
-      name: b.name,
-      valueText: parts.join(", ")
-    });
+    const entry = farmPanelGenericBoostEntry(b, genericMultDelta, generic.mult);
+    if (entry) boosts.push(entry);
   });
   if (!isGreenhouse && (patchFertiliserName === "Fruitful Blend" || patchFertiliserName === "Turbofruit Mix")) {
     let fertBonus = .1;
@@ -2042,15 +2135,11 @@ export function farmPanelComputeExactGreenhouseYield(json, g, plantName, counter
   const boosts = base.boosts.slice();
   const generic = farmPanelSumCatalogBoosts(b => b.scope === "greenhouse" && b.target === plantName || b.category === "greenhouse" && b.scope === "global", new Set([ "skill_greenhouse_gamble", "antique_dress", "apply_greenhouse_goodie", "power_hour_greenhouse" ]));
   amount += generic.add;
+  const genericMultDelta = amount * (generic.mult - 1);
   amount *= generic.mult;
   generic.boosts.forEach(b => {
-    const parts = [];
-    if (typeof b.yieldAdd === "number" && b.yieldAdd) parts.push(`+${fmt(b.yieldAdd)} yield`);
-    if (typeof b.yieldMult === "number" && b.yieldMult !== 1) parts.push(`×${b.yieldMult} yield`);
-    if (parts.length) boosts.push({
-      name: b.name,
-      valueText: parts.join(", ")
-    });
+    const entry = farmPanelGenericBoostEntry(b, genericMultDelta, generic.mult);
+    if (entry) boosts.push(entry);
   });
   if (isSkillActive("skill_greenhouse_gamble")) {
     const lastInfo = farmPanelGetLastInfo();
@@ -2614,25 +2703,31 @@ function farmPanelComputeInProgressRaw(json, opts) {
         woodCritRollsForNode = critRolls;
         woodChainForNode = chain;
         mapProcsForRow = farmPanelCollectMapProcs(chain);
+        const woodGainRec = new Map;
         if (chain && chain.length) {
-          exactAmount = chain.reduce((sum, roll) => sum + farmPanelComputeExactWoodYieldForNode(node, treeType, roll), 0);
+          exactAmount = chain.reduce((sum, roll) => sum + farmPanelComputeExactWoodYieldForNode(node, treeType, roll, woodGainRec), 0);
         } else {
-          exactAmount = farmPanelComputeExactWoodYieldForNode(node, treeType, critRolls);
+          exactAmount = farmPanelComputeExactWoodYieldForNode(node, treeType, critRolls, woodGainRec);
         }
+        if (exactAmount != null) exactBoosts = farmPanelGainsToBoosts(woodGainRec);
       } else if (storedAmount == null && resourceName === "Stone" && stoneRockName) {
         const idx = mapMode ? mapNodePositions.get(node) || 0 : sequentialIndexByType[stoneRockName] || 0;
         const rolls = stoneSequentialRollsByType[stoneRockName];
         const critRolls = rolls && rolls[idx] ? rolls[idx] : null;
         if (critRolls) sequentialIndexByType[stoneRockName] = idx + 1;
         mapProcsForRow = farmPanelCollectMapProcs(critRolls);
-        exactAmount = farmPanelComputeExactStoneYieldForNode(json, node, stoneRockName, critRolls, predictedMineAt);
+        const stoneGainRec = new Map;
+        exactAmount = farmPanelComputeExactStoneYieldForNode(json, node, stoneRockName, critRolls, predictedMineAt, stoneGainRec);
+        if (exactAmount != null) exactBoosts = farmPanelGainsToBoosts(stoneGainRec);
       } else if (storedAmount == null && resourceName === "Iron" && ironRockName) {
         const idx = mapMode ? mapNodePositions.get(node) || 0 : sequentialIndexByType[ironRockName] || 0;
         const rolls = ironSequentialRollsByType[ironRockName];
         const critRolls = rolls && rolls[idx] ? rolls[idx] : null;
         if (critRolls) sequentialIndexByType[ironRockName] = idx + 1;
         mapProcsForRow = farmPanelCollectMapProcs(critRolls);
-        exactAmount = farmPanelComputeExactIronYieldForNode(json, node, ironRockName, critRolls, predictedMineAt);
+        const ironGainRec = new Map;
+        exactAmount = farmPanelComputeExactIronYieldForNode(json, node, ironRockName, critRolls, predictedMineAt, ironGainRec);
+        if (exactAmount != null) exactBoosts = farmPanelGainsToBoosts(ironGainRec);
       } else if (storedAmount == null && resourceName === "Gold" && goldRockName) {
         const idx = mapMode ? mapNodePositions.get(node) || 0 : sequentialIndexByType[goldRockName] || 0;
         const rolls = goldSequentialRollsByType[goldRockName];
@@ -2642,11 +2737,13 @@ function farmPanelComputeInProgressRaw(json, opts) {
         goldCritRollsForNode = critRolls;
         goldChainForNode = chain;
         mapProcsForRow = farmPanelCollectMapProcs(chain);
+        const goldGainRec = new Map;
         if (chain && chain.length) {
-          exactAmount = chain.reduce((sum, roll) => sum + farmPanelComputeExactGoldYieldForNode(json, node, goldRockName, roll, predictedMineAt), 0);
+          exactAmount = chain.reduce((sum, roll, i) => sum + farmPanelComputeExactGoldYieldForNode(json, node, goldRockName, roll, predictedMineAt, i === 0 ? goldGainRec : null), 0);
         } else {
-          exactAmount = farmPanelComputeExactGoldYieldForNode(json, node, goldRockName, critRolls, predictedMineAt);
+          exactAmount = farmPanelComputeExactGoldYieldForNode(json, node, goldRockName, critRolls, predictedMineAt, goldGainRec);
         }
+        if (exactAmount != null) exactBoosts = farmPanelGainsToBoosts(goldGainRec);
       }
       const actualAmount = storedAmount != null ? storedAmount : exactAmount;
       const tierGroupLabel = tierMatch ? tierMatch.displayLabel || tierMatch.label : resourceName === "Crimstone" ? "Crimstone Rock" : null;
@@ -4622,7 +4719,7 @@ export function farmPanelComputeInProgress(json) {
       plantYieldLabel = BASE_CROPS[g.name] ? "Crops Yield" : BASE_GREENHOUSE[g.name] ? "Greenhouse Yield" : "Flower Bed Yield";
       plantYieldGroups = g.nodes.map((n, idx) => ({
         index: typeof n.plotIndex === "number" ? n.plotIndex : idx + 1,
-        qty: typeof n.qty === "number" ? n.qty : null,
+        qty: typeof n.qty === "number" ? (Array.isArray(n.exactBoosts) ? n.qty - n.exactBoosts.reduce((sum, b) => b.timeMult && b.timeMult !== 1 ? sum : sum + Math.max(0, typeof b.amount === "number" ? b.amount : parseYieldBoostAmount(b.valueText)), 0) : n.qty) : null,
         seedReward: n.seedReward || null
       }));
     }
@@ -4635,7 +4732,13 @@ export function farmPanelComputeInProgress(json) {
     const tierYields = {};
     g.nodes.forEach(n => {
       if (!n.tierGroupLabel) return;
-      const y = typeof n.qty === "number" ? n.qty : boostedPerUnit;
+      let y = typeof n.qty === "number" ? n.qty : boostedPerUnit;
+      if (typeof n.qty === "number" && Array.isArray(n.exactBoosts)) {
+        n.exactBoosts.forEach(b => {
+          if (typeof b.amount === "number") y -= b.amount;
+        });
+        if (g.name === "Gold" && typeof n.goldInstantMineBonusEstimate === "number") y -= n.goldInstantMineBonusEstimate;
+      }
       tierYields[n.tierGroupLabel] = (tierYields[n.tierGroupLabel] || 0) + y;
     });
     const rawTotalYield = g.nodes.reduce((sum, n) => sum + (typeof n.qty === "number" ? n.qty : boostedPerUnit), 0);
@@ -4655,7 +4758,7 @@ export function farmPanelComputeInProgress(json) {
     const exactBoostTotalsSeen = new Map;
     g.nodes.forEach(n => {
       (n.exactBoosts || []).forEach(b => {
-        const amt = parseYieldBoostAmount(b.valueText);
+        const amt = typeof b.amount === "number" ? b.amount : parseYieldBoostAmount(b.valueText);
         if (!amt) return;
         if (!exactBoostTotalsSeen.has(b.name)) exactBoostTotalsSeen.set(b.name, 0);
         exactBoostTotalsSeen.set(b.name, exactBoostTotalsSeen.get(b.name) + amt);
@@ -5049,12 +5152,14 @@ export function farmPanelCropMachinePackYield(g, pack, startCounter, atTime, far
     amount: pack.amount,
     seeds: seeds,
     crits: {},
+    gains: null,
     exact: true
   };
   const fid = Number.isFinite(Number(farmId)) && Number(farmId) > 0 ? Number(farmId) : null;
   const info = farmPanelMachineCritInfo(pack.crop, fid);
   const crits = {};
   const cache = {};
+  const gains = {};
   let total = 0;
   for (let i = 0; i < seeds; i++) {
     const fired = {};
@@ -5073,20 +5178,31 @@ export function farmPanelCropMachinePackYield(g, pack, startCounter, atTime, far
     });
     let v = cache[key];
     if (v === undefined) {
-      v = farmPanelComputeExactCropYield(null, g, pack.crop, null, startCounter + i, false, atTime, {
+      const r = farmPanelComputeExactCropYield(null, g, pack.crop, null, startCounter + i, false, atTime, {
         noSeedDrop: true,
         machine: true,
         crits: fired,
         farmId: fid
-      }).amount;
+      });
+      v = {
+        amount: r.amount,
+        gains: (r.boosts || []).filter(b => !(b.timeMult && b.timeMult !== 1)).map(b => ({
+          name: b.name,
+          value: typeof b.amount === "number" ? b.amount : parseYieldBoostAmount(b.valueText)
+        })).filter(b => b.value > 1e-9)
+      };
       cache[key] = v;
     }
-    total += v;
+    total += v.amount;
+    v.gains.forEach(b => {
+      gains[b.name] = (gains[b.name] || 0) + b.value;
+    });
   }
   return {
     amount: Math.round(total * 1e8) / 1e8,
     seeds: seeds,
     crits: crits,
+    gains: gains,
     exact: !info.unresolved
   };
 }
@@ -5163,6 +5279,8 @@ export function farmPanelComputeCropMachineCards(json) {
           readyAmount: 0,
           readyPacks: 0,
           crits: {},
+          gains: {},
+          gainsExact: true,
           exact: true,
           startCounter: p.startCounter
         });
@@ -5176,6 +5294,9 @@ export function farmPanelComputeCropMachineCards(json) {
         Object.keys(p.yield.crits || {}).forEach(k => {
           grp.crits[k] = (grp.crits[k] || 0) + p.yield.crits[k];
         });
+        if (p.yield.gains) Object.keys(p.yield.gains).forEach(k => {
+          grp.gains[k] = (grp.gains[k] || 0) + p.yield.gains[k];
+        }); else grp.gainsExact = false;
         if (!p.yield.exact) grp.exact = false;
         grp.startCounter = Math.min(grp.startCounter, p.startCounter);
       });
@@ -5251,12 +5372,22 @@ function farmPanelCropMachineStatusText(p) {
 function farmPanelCropMachineBoostHtml(row) {
   const blocks = row.crops.map(c => {
     const rows = [];
-    (c.boosts || []).forEach(b => {
-      rows.push(`<div class="boost-applied-row is-yield">${getBoostIcon(b.name)}<b>${escapeHtml(b.name)}</b> <span class="boost-total-value">${escapeHtml(b.valueText || "")}</span></div>`);
-    });
-    Object.keys(c.crits || {}).forEach(name => {
-      rows.push(`<div class="boost-applied-row is-yield">${getBoostIcon(name)}<b>${escapeHtml(name)}</b> <span class="boost-total-value">${c.crits[name]}× crit procs</span></div>`);
-    });
+    const cropIcon = getIcon(c.name);
+    if (c.gainsExact && c.gains) {
+      Object.keys(c.gains).filter(name => c.gains[name] > 1e-9).sort((a, b) => c.gains[b] - c.gains[a]).forEach(name => {
+        rows.push(`<div class="boost-applied-row is-yield">${getBoostIcon(name)}<b>${escapeHtml(name)}</b> <span class="boost-total-value">+${fmt(c.gains[name])}</span>${cropIcon}</div>`);
+      });
+      (c.boosts || []).filter(b => b.timeMult && b.timeMult !== 1 && !(c.gains[b.name] > 1e-9)).forEach(b => {
+        rows.push(`<div class="boost-applied-row is-yield">${getBoostIcon(b.name)}<b>${escapeHtml(b.name)}</b> <span class="boost-total-value">${escapeHtml(b.valueText || "")}</span></div>`);
+      });
+    } else {
+      (c.boosts || []).forEach(b => {
+        rows.push(`<div class="boost-applied-row is-yield">${getBoostIcon(b.name)}<b>${escapeHtml(b.name)}</b> <span class="boost-total-value">${escapeHtml(b.valueText || "")}</span></div>`);
+      });
+      Object.keys(c.crits || {}).forEach(name => {
+        rows.push(`<div class="boost-applied-row is-yield">${getBoostIcon(name)}<b>${escapeHtml(name)}</b> <span class="boost-total-value">${c.crits[name]}× crit procs</span></div>`);
+      });
+    }
     if (!rows.length) return "";
     return `<div class="lib-section-title" style="margin-top:10px;">${escapeHtml(c.name.toUpperCase())}</div>${rows.join("")}`;
   }).join("");
