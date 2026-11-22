@@ -6,7 +6,7 @@ import { ICON_DATA } from "./icon_data.js";
 
 import { harvestLogFarmId } from "./harvest_log.js";
 
-import { stateSetCode, stateRemoveCode, stateLastSaved, harvestStateInit } from "./hl_state_sync.js";
+import { stateSetCode, stateLastSaved, harvestStateInit } from "./hl_state_sync.js";
 
 import { stateCodeInfo, stateCodeValid, stateCodeRequired } from "./hl_code_store.js";
 
@@ -259,7 +259,17 @@ function onRestore() {
   }, 700);
 }
 
+const EYE_ON = '<svg viewBox="0 0 16 12" aria-hidden="true" focusable="false"><path d="M1 6C3.5 2 12.5 2 15 6C12.5 10 3.5 10 1 6Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="miter"/><rect x="6.5" y="4.5" width="3" height="3" fill="currentColor"/></svg>';
+
+const EYE_OFF = '<svg viewBox="0 0 16 12" aria-hidden="true" focusable="false"><path d="M1 6C3.5 2 12.5 2 15 6C12.5 10 3.5 10 1 6Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="miter"/><rect x="6.5" y="4.5" width="3" height="3" fill="currentColor"/><path d="M2 11.5L14 0.5" stroke="currentColor" stroke-width="1.5"/></svg>';
+
 let codeShown = false;
+
+let miniMode = "";
+
+let miniBack = "";
+
+let miniBusy = false;
 
 let askBusy = false;
 
@@ -335,7 +345,17 @@ function renderCode() {
     view.hidden = false;
     form.hidden = true;
   }
-  if (info) value.textContent = codeShown ? info.code : "\u2022".repeat(Math.min(info.code.length, 12));
+  if (info) {
+    value.textContent = codeShown ? info.code : "\u2022".repeat(Math.min(info.code.length, 12));
+    const label = codeShown ? "Hide private code" : "Show private code";
+    value.setAttribute("aria-label", label);
+    const eye = $("hlCodeEye");
+    if (eye) {
+      eye.innerHTML = (codeShown ? EYE_OFF : EYE_ON) + "<span>" + (codeShown ? "Hide" : "Show") + "</span>";
+      eye.setAttribute("aria-label", label);
+      eye.setAttribute("title", label);
+    }
+  }
   if (input) input.disabled = codeBusy;
   if (saveBtn) saveBtn.disabled = codeBusy;
 }
@@ -360,6 +380,11 @@ async function saveCodeFrom(inputId, msgId, onOk) {
   setMsg(msgId, "Saving…", false);
   const res = await stateSetCode(farm, code);
   if (!res.ok) {
+    if (res.reason === "code_exists") {
+      setMsg(msgId, "", false);
+      showCodeExistsPopup(res, "");
+      return;
+    }
     setMsg(msgId, failText(res), true);
     return;
   }
@@ -382,14 +407,141 @@ function onSaveCode() {
   });
 }
 
+function miniEl(id) {
+  return $(id);
+}
+
+function miniShow() {
+  const dlg = miniEl("hlMiniDlg");
+  if (!dlg) return;
+  if (dlg.parentNode !== document.body) document.body.appendChild(dlg);
+  dlg.hidden = false;
+}
+
+function miniClose() {
+  const dlg = miniEl("hlMiniDlg");
+  if (dlg) dlg.hidden = true;
+  const input = miniEl("hlMiniInput");
+  if (input) input.value = "";
+  miniMode = "";
+  miniBack = "";
+  setMsg("hlMiniMsg", "", false);
+}
+
+function miniRender(mode, text) {
+  const title = miniEl("hlMiniTitle");
+  const body = miniEl("hlMiniBody");
+  const cur = miniEl("hlMiniCurrent");
+  const codeEl = miniEl("hlMiniCode");
+  const input = miniEl("hlMiniInput");
+  const ok = miniEl("hlMiniOkBtn");
+  const cancel = miniEl("hlMiniCancelBtn");
+  if (!title || !body || !cur || !codeEl || !input || !ok || !cancel) return;
+  miniMode = mode;
+  cur.hidden = mode !== "edit";
+  input.hidden = mode !== "edit";
+  cancel.hidden = mode === "error";
+  if (mode === "confirm") {
+    title.textContent = "EDIT PRIVATE CODE";
+    body.textContent = "Are you sure you want to edit your private code?";
+    ok.textContent = "Yes, edit";
+    cancel.textContent = "Cancel";
+  } else if (mode === "edit") {
+    const info = stateCodeInfo(farmNow());
+    title.textContent = "EDIT PRIVATE CODE";
+    body.textContent = "This is your current code. Enter the new code below. The server only accepts the first code that was set for this Farm ID.";
+    codeEl.textContent = info ? info.code : "";
+    ok.textContent = "Save";
+    cancel.textContent = "Cancel";
+  } else {
+    title.textContent = "CODE ALREADY LINKED";
+    body.textContent = text || "";
+    ok.textContent = "OK";
+  }
+  setMsg("hlMiniMsg", "", false);
+}
+
+function showCodeExistsPopup(res, back) {
+  const left = Number(res && res.left);
+  const tries = Number.isFinite(left) && left >= 0 ? " Tries left: " + left + "." : "";
+  miniBack = back || "";
+  miniShow();
+  miniRender("error", "This Farm ID already has a linked code in the server. Please input the correct code." + tries);
+}
+
 function onEditCode() {
   const farm = farmNow();
-  if (!farm) return;
-  stateRemoveCode(farm);
+  if (!farm || !stateCodeInfo(farm)) return;
+  miniBack = "";
+  miniShow();
+  miniRender("confirm");
+}
+
+async function onMiniOk() {
+  if (miniBusy) return;
+  const input = miniEl("hlMiniInput");
+  if (miniMode === "confirm") {
+    miniRender("edit");
+    if (input) input.focus();
+    return;
+  }
+  if (miniMode === "error") {
+    if (miniBack === "edit") {
+      miniRender("edit");
+      if (input) input.focus();
+    } else {
+      miniClose();
+    }
+    return;
+  }
+  if (miniMode !== "edit" || !input) return;
+  const farm = farmNow();
+  if (!farm) {
+    setMsg("hlMiniMsg", failText({
+      reason: "no_farm"
+    }), true);
+    return;
+  }
+  const code = input.value.trim();
+  if (!stateCodeValid(code)) {
+    setMsg("hlMiniMsg", failText({
+      reason: "bad_code"
+    }), true);
+    return;
+  }
+  const info = stateCodeInfo(farm);
+  if (info && !info.bad && info.code === code) {
+    setMsg("hlMiniMsg", "That is already your current code.", true);
+    return;
+  }
+  const okBtn = miniEl("hlMiniOkBtn");
+  miniBusy = true;
+  if (okBtn) okBtn.disabled = true;
+  setMsg("hlMiniMsg", "Saving…", false);
+  let res;
+  try {
+    res = await stateSetCode(farm, code);
+  } finally {
+    miniBusy = false;
+    if (okBtn) okBtn.disabled = false;
+  }
+  if (!res.ok) {
+    if (res.reason === "code_exists") {
+      showCodeExistsPopup(res, "edit");
+      return;
+    }
+    setMsg("hlMiniMsg", failText(res), true);
+    return;
+  }
+  miniClose();
   codeShown = false;
+  toast("Private code saved");
   renderCode();
-  const input = $("hlCodeInput");
-  if (input) input.focus();
+}
+
+function onMiniCancel() {
+  if (miniBusy) return;
+  miniClose();
 }
 
 function onToggleCodeValue() {
@@ -468,6 +620,7 @@ function onToggle() {
     btn.setAttribute("aria-expanded", show ? "true" : "false");
   }
   if (!show) {
+    miniClose();
     resetRestoreButton();
     setStatus("", false);
   } else {
@@ -493,12 +646,12 @@ export function initHarvestBackup() {
   document.addEventListener("keydown", e => {
     if (e.key !== "Enter") return;
     const id = e.target && e.target.id;
-    if (id === "hlCodeInput") onSaveCode(); else if (id === "hlAskInput") onAskSave();
+    if (id === "hlCodeInput") onSaveCode(); else if (id === "hlAskInput") onAskSave(); else if (id === "hlMiniInput") onMiniOk();
   });
   document.addEventListener("click", e => {
     const t = e.target && e.target.closest ? e.target : null;
     if (!t) return;
-    if (t.id === "hlCodeAsk") askClose(true); else if (t.closest("#hlAskSaveBtn")) onAskSave(); else if (t.closest("#hlAskLaterBtn")) askClose(true); else if (t.closest("#hlCodeSaveBtn")) onSaveCode(); else if (t.closest("#hlCodeEdit")) onEditCode(); else if (t.closest("#hlCodeValue")) onToggleCodeValue(); else if (t.id === "hlBackupLayer") onToggle(); else if (t.closest("#hlBackupToggleBtn")) onToggle(); else if (t.closest("#hlBackupCopyBtn")) onCopy(); else if (t.closest("#hlBackupRestoreBtn")) onRestore(); else if (t.closest("#hlBackupCloseBtn")) {
+    if (t.id === "hlMiniDlg") onMiniCancel(); else if (t.closest("#hlMiniOkBtn")) onMiniOk(); else if (t.closest("#hlMiniCancelBtn")) onMiniCancel(); else if (t.id === "hlCodeAsk") askClose(true); else if (t.closest("#hlAskSaveBtn")) onAskSave(); else if (t.closest("#hlAskLaterBtn")) askClose(true); else if (t.closest("#hlCodeSaveBtn")) onSaveCode(); else if (t.closest("#hlCodeEdit")) onEditCode(); else if (t.closest("#hlCodeValue") || t.closest("#hlCodeEye")) onToggleCodeValue(); else if (t.id === "hlBackupLayer") onToggle(); else if (t.closest("#hlBackupToggleBtn")) onToggle(); else if (t.closest("#hlBackupCopyBtn")) onCopy(); else if (t.closest("#hlBackupRestoreBtn")) onRestore(); else if (t.closest("#hlBackupCloseBtn")) {
       const panel = $("hlBackupLayer");
       if (panel && !panel.hidden) onToggle();
     }
