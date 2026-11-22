@@ -445,6 +445,7 @@ __export(calculator_exports, {
   computeSpiceFigures: () => computeSpiceFigures,
   cookGetLevelInfo: () => cookGetLevelInfo,
   cookingActiveBuilding: () => cookingActiveBuilding,
+  cookingBuildingPlan: () => cookingBuildingPlan,
   cookingCategoryEnabled: () => cookingCategoryEnabled,
   cookingCategoryFoodNames: () => cookingCategoryFoodNames,
   cookingComputeFoodExp: () => cookingComputeFoodExp,
@@ -455,7 +456,10 @@ __export(calculator_exports, {
   cookingFindRecipeForFood: () => cookingFindRecipeForFood,
   cookingFishCategory: () => cookingFishCategory,
   cookingGuaranteedCatchOn: () => cookingGuaranteedCatchOn,
-  cookingOilOn: () => cookingOilOn,
+  cookingOilCostCoins: () => cookingOilCostCoins,
+  cookingOilPerCook: () => cookingOilPerCook,
+  cookingPlanAll: () => cookingPlanAll,
+  cookingSyncedCounts: () => cookingSyncedCounts,
   copySkillTreeSelection: () => copySkillTreeSelection,
   craftMaterialRows: () => craftMaterialRows,
   cropBuds: () => cropBuds,
@@ -616,6 +620,8 @@ __export(calculator_exports, {
   getBuildDetailActiveEntries: () => getBuildDetailActiveEntries,
   getCookingCount: () => getCookingCount,
   getCookingOilBoost: () => getCookingOilBoost,
+  getCookingPlannedCount: () => getCookingPlannedCount,
+  getCookingSyncedCount: () => getCookingSyncedCount,
   getCropMachineOilCap: () => getCropMachineOilCap,
   getCropMachineOilCapHours: () => getCropMachineOilCapHours,
   getCropMachinePackMax: () => getCropMachinePackMax,
@@ -653,6 +659,7 @@ __export(calculator_exports, {
   getGuaranteedCatchItemForFish: () => getGuaranteedCatchItemForFish,
   getHiveCount: () => getHiveCount,
   getIconSmall: () => getIconSmall,
+  getInstantGratificationInfo: () => getInstantGratificationInfo,
   getInstantRegrowChance: () => getInstantRegrowChance,
   getInstantRegrowSources: () => getInstantRegrowSources,
   getKaleMixKaleQty: () => getKaleMixKaleQty,
@@ -712,6 +719,7 @@ __export(calculator_exports, {
   isBoostDraftDirty: () => isBoostDraftDirty,
   isBuildingBoostActive: () => isBuildingBoostActive,
   isCalendarSeasonalBoost: () => isCalendarSeasonalBoost,
+  isCookingOilOn: () => isCookingOilOn,
   isCropInSeason: () => isCropInSeason,
   isCropMachineUnlocked: () => isCropMachineUnlocked,
   isFertilizerTierEnabled: () => isFertilizerTierEnabled,
@@ -13571,6 +13579,9 @@ function renderBoostPanel() {
     }, {
       label: "\u23F1\uFE0F Cooking time \u2014 all buildings",
       items: inCategory.filter((b) => b.scope === "cookTimeGlobal")
+    }, {
+      label: "\u{1F6E2}\uFE0F Oil \u2014 faster cooking, burns Oil per planned dish",
+      items: inCategory.filter((b) => b.scope === "cookOil")
     }];
   } else if (boostCategory === "pets") {
     groups = [{
@@ -20977,7 +20988,7 @@ function renderCookingHeader() {
   } catch (e) {
   }
   const cur = cookGetLevelInfo(experience);
-  const { totalExpAdded, totalCostCoins, xpByCategory } = cookingComputeTotals();
+  const { totalExpAdded, totalCostCoins, xpByCategory, totalOil, oilCostCoins, totalCookSecs } = cookingComputeTotals();
   const preview = cookGetLevelInfo(experience + totalExpAdded);
   const curPct = cur.span > 0 ? Math.min(100, cur.progress / cur.span * 100) : 100;
   const previewExtra = cur.isMax ? 0 : Math.min(cur.span - cur.progress, Math.max(0, totalExpAdded));
@@ -21050,7 +21061,9 @@ function renderCookingHeader() {
     <div class="cook-total-row">
       <span>Total EXP added: <b>${fmt(totalExpAdded)}</b></span>
       <span>Total cost: <b>${fmt(flowerCost2)} ${typeof FLOWER_ICON !== "undefined" ? FLOWER_ICON : "FLOWER"}</b></span>
-      <div class="cook-xp-breakdown">${xpBreakdownRows}</div>
+      <span>Total cooking time: <b>${formatCookSpan(totalCookSecs)}</b>${totalCookSecs >= 3600 ? ` <span class="cook-time-sub">\u2248 ${fmt(+(totalCookSecs / 86400).toFixed(2))} days \xB7 ${fmt(Math.round(totalCookSecs / 3600))} hours (all buildings cook at the same time)</span>` : ""}</span>
+      ${totalOil > 0 ? `<span>Oil needed: <b>${cookingIngredientIcon("Oil")} ${fmt(totalOil)}</b> \xB7 ${fmt(coinsToFlower(oilCostCoins))} ${typeof FLOWER_ICON !== "undefined" ? FLOWER_ICON : "FLOWER"}</span>
+      ` : ""}      <div class="cook-xp-breakdown">${xpBreakdownRows}</div>
     </div>
   `;
 }
@@ -21126,15 +21139,47 @@ function renderCookYieldLine(yieldCount, iconHtml2) {
         <span class="cook-total-cost-value">${fmt(yieldCount)}\xD7 ${iconHtml2}</span>
       </div>`;
 }
-function renderCookingFoodCard(building, name) {
+function formatCookSpan(secs) {
+  secs = Math.max(0, Math.round(secs));
+  const mo = Math.floor(secs / 2592e3);
+  let rest = secs - mo * 2592e3;
+  const d = Math.floor(rest / 86400);
+  rest -= d * 86400;
+  const h = Math.floor(rest / 3600);
+  rest -= h * 3600;
+  const m = Math.floor(rest / 60);
+  const parts = [];
+  if (mo) parts.push(`${mo}mo`);
+  if (d) parts.push(`${d}d`);
+  if (h) parts.push(`${h}h`);
+  if (m || !parts.length) parts.push(`${m}m`);
+  return parts.join(" ");
+}
+function formatCookSpanHtml(secs) {
+  const main = formatCookSpan(secs);
+  if (secs < 3600) return main;
+  return `${main}<span class="cook-time-sub">\u2248 ${fmt(+(secs / 86400).toFixed(2))} days \xB7 ${fmt(Math.round(secs / 3600))} hours</span>`;
+}
+function cookingCoinsToDisplayFlower(coins) {
+  return coinsToFlower(coins);
+}
+function cookingOilLineHtml(label, qty, costCoins) {
+  const flowerIcon = typeof FLOWER_ICON !== "undefined" ? FLOWER_ICON : "FLOWER";
+  return `
+      <div class="cook-food-cost-line cook-total-cost-line cook-oil-line">
+        <span class="cook-total-cost-label">${label}</span>
+        <span class="cook-total-cost-value">${cookingIngredientIcon("Oil")} ${fmt(qty)} \xB7 ${fmt(cookingCoinsToDisplayFlower(costCoins))}${flowerIcon}</span>
+      </div>`;
+}
+function cookingFoodDetailsHtml(building, name, plan) {
   const rec = COOKING_RECIPES[building][name];
   const { exp: boostedExp, boostsUsed } = cookingComputeFoodExp(building, name);
   const isBoosted = Math.abs(boostedExp - rec.exp) > 1e-9;
   const count = getCookingCount(name);
-  const isExpanded = cookingExpandedFoods.has(name);
+  const synced = getCookingSyncedCount(name);
+  const planned = getCookingPlannedCount(name);
   const { time: boostedTime, boostsUsed: timeBoostsUsed, baseTime } = cookingComputeFoodTime(building, name);
   const isTimeBoosted = baseTime != null && Math.abs(boostedTime - baseTime) > 1e-9;
-  const timeDisplay = baseTime == null ? "\u23F1 time unknown" : `\u23F1 ${isTimeBoosted ? `<span class="base">${formatDuration(baseTime)}</span>` : ""}${formatDuration(boostedTime)}`;
   const timeBoostNote = isTimeBoosted ? `<div class="cook-food-cost-line cook-boost-chip-row"><span class="cook-boost-chip-label">\u26A1 Time:</span><div class="cook-boost-chips">${timeBoostsUsed.map((bu) => `<span class="boost-chip">${bu.icon}${escapeHtml(bu.text)}</span>`).join("")}</div></div>` : "";
   let totalCostCoins = 0;
   const effectiveCount = count > 0 ? count : 1;
@@ -21193,18 +21238,45 @@ function renderCookingFoodCard(building, name) {
   const yieldBoostNote = isYieldBoosted ? `<div class="cook-food-cost-line cook-boost-chip-row"><span class="cook-boost-chip-label">\u26A1 Yield:</span><div class="cook-boost-chips"><span class="boost-chip">Double Nom +${doubleNomBonusFood} food</span></div></div>` : "";
   const foodIconHtml = cookFoodIcon(name);
   const yieldCount = doubleNomMult + jackpotChance;
+  const entry = plan && plan.byName ? plan.byName[name] : null;
+  const skipped = entry ? entry.skipped : 0;
+  const oilQty = entry ? entry.planned * entry.oilEach : 0;
+  const oilCoins = cookingOilCostCoins(oilQty);
+  const oilFlower = coinsToFlower(oilCoins);
+  const cardSecs = entry ? (entry.planned - skipped) * entry.unit : 0;
+  let timeSection = "";
+  if (baseTime == null) {
+    timeSection = `<div class="cook-food-cost-line">\u23F1 time unknown</div>`;
+  } else if (count > 0) {
+    const syncedRow = synced > 0 ? `
+      <div class="cook-food-cost-line cook-plan-row"><span>Already cooked (synced)</span><span>${fmt(Math.min(synced, count))}\xD7 ${foodIconHtml}</span></div>` : "";
+    if (planned > 0) {
+      const igRow = skipped > 0 ? `
+      <div class="cook-food-cost-line cook-plan-row"><span>\u26A1 Instant Gratification</span><span>${fmt(skipped)}\xD7 instant \xB7 saves ${formatCookSpan(skipped * boostedTime)}</span></div>` : "";
+      timeSection = `${syncedRow}
+      <div class="cook-food-cost-line cook-plan-row"><span>Planned to cook</span><span>${fmt(planned)}\xD7 ${foodIconHtml}</span></div>
+      <div class="cook-food-cost-line cook-total-cost-line cook-total-time-line">
+        <span class="cook-total-cost-label">Total Time for ${fmt(planned)}\xD7 ${foodIconHtml}</span>
+        <span class="cook-total-cost-value cook-time-value">${formatCookSpanHtml(cardSecs)}</span>
+      </div>${igRow}`;
+    } else {
+      timeSection = `${syncedRow}
+      <div class="cook-food-cost-line cook-plan-row"><span>Planned to cook</span><span>0 \u2014 everything is already cooked</span></div>`;
+    }
+  } else {
+    timeSection = `<div class="cook-food-cost-line cook-plan-row"><span>Enter a count to see the total time</span></div>`;
+  }
+  const oilIngredientSection = oilQty > 0 ? cookingOilLineHtml(`Oil for ${fmt(planned)}\xD7 ${foodIconHtml}`, oilQty, oilCoins) : "";
+  const countCostFlower = totalFlower * effectiveCount + oilFlower;
+  const showCountLine = count > 1 || oilQty > 0;
+  const countLineLabel = oilQty > 0 ? `Total Cost for ${fmt(effectiveCount)}\xD7 ${foodIconHtml} + Oil` : `Total Cost for ${fmt(effectiveCount)}\xD7 ${foodIconHtml}`;
+  const flowerIcon = typeof FLOWER_ICON !== "undefined" ? FLOWER_ICON : "FLOWER";
+  const countCostLine = `
+      <div class="cook-food-cost-line cook-total-cost-line cook-food-count-total-line"${showCountLine ? "" : ' style="display:none;"'}>
+        <span class="cook-total-cost-label">${countLineLabel}</span>
+        <span class="cook-total-cost-value">${fmt(countCostFlower)}${flowerIcon}</span>
+      </div>`;
   return `
-  <div class="cook-food-card${isExpanded ? " expanded" : ""}${count > 0 ? " is-ready" : ""}" data-food="${escapeHtml(name)}">
-    <div class="cook-food-toggle">
-      <span class="cook-food-icon">${foodIconHtml}</span>
-      <div class="cook-food-main">
-        <div class="cook-food-name">${escapeHtml(name)}</div>
-        <div class="cook-food-exp">${isBoosted ? `<span class="base">${fmt(rec.exp)}</span>` : ""}${fmt(boostedExp)} EXP \xB7 ${timeDisplay}</div>
-      </div>
-      <input type="number" min="0" step="1" class="cook-food-count" value="${count || ""}" placeholder="0" data-food="${escapeHtml(name)}" data-unit-cost="${totalFlower}" data-exp-per-unit="${boostedExp}">
-      <span class="cook-food-chev">\u25BE</span>
-    </div>
-    <div class="cook-food-details">
       ${isBoosted || isTimeBoosted || isIngredientBoosted || isYieldBoosted ? `<div class="cook-ing-label">Applied Boost</div>` : ""}
       ${boostNote}
       ${timeBoostNote}
@@ -21218,13 +21290,77 @@ function renderCookingFoodCard(building, name) {
         <div class="cook-ing-label">Total Ingredients for ${effectiveCount}\xD7 ${foodIconHtml}</div>
         ${ingredientTotalRows}
       </div>
+      <div class="cook-ing-label">Cooking Time</div>
+      ${timeSection}
+      ${oilIngredientSection ? `<div class="cook-ing-label">Oil</div>
+      ${oilIngredientSection}` : ""}
       <div class="cook-ing-label">Food Cost</div>
       ${renderCookTotalCostLine(totalFlower, foodIconHtml, `${cookingCostMode === "buy" ? "Buy" : "Collect"} ingredients`, "", yieldCount)}
-      ${renderCookTotalCostForCountLine(totalFlower, effectiveCount, foodIconHtml, !(count > 1))}
+      ${countCostLine}
       <div class="cook-ing-label">Experience</div>
       ${renderCookTotalExpLine(boostedExp, effectiveCount, foodIconHtml)}
+    `;
+}
+function cookingPlanSummaryHtml(building, plan) {
+  const flowerIcon = typeof FLOWER_ICON !== "undefined" ? FLOWER_ICON : "FLOWER";
+  const synced = plan.entries.reduce((a, e) => a + Math.min(getCookingSyncedCount(e.name), getCookingCount(e.name)), 0);
+  if (!plan.plannedCount) {
+    return `<div class="cook-plan-summary guro-frame" id="cookPlanSummary"><div class="cook-plan-title">\u23F1 Cooking plan \xB7 ${escapeHtml(building)}</div><div class="cook-food-cost-line cook-plan-row"><span>Nothing planned yet \u2014 raise a count above your synced amount to see the time${plan.oilOn ? " and Oil" : ""}.</span></div></div>`;
+  }
+  let igHtml = "";
+  if (plan.ig) {
+    const cd = formatCookSpan(plan.ig.cooldownSecs);
+    const avail = plan.ig.delaySecs > 0 ? ` \xB7 ready again in ${formatCookSpan(plan.ig.delaySecs)}` : " \xB7 ready now";
+    igHtml = `<div class="cook-food-cost-line cook-plan-row"><span>\u26A1 Instant Gratification (cooldown ${cd}${avail})</span><span>${fmt(plan.uses)} use${plan.uses === 1 ? "" : "s"} \xB7 \u2212${formatCookSpan(plan.savedSecs)}</span></div><div class="cook-plan-note">Each use finishes the food being cooked at once, so it is counted as the longest remaining dish. The oil that dish would have burned is still spent.</div>`;
+  }
+  const oilHtml = plan.oilOn ? `<div class="cook-food-cost-line cook-total-cost-line cook-oil-line"><span class="cook-total-cost-label">Oil needed for the planned food</span><span class="cook-total-cost-value">${cookingIngredientIcon("Oil")} ${fmt(plan.oilTotal)} \xB7 ${fmt(coinsToFlower(cookingOilCostCoins(plan.oilTotal)))}${flowerIcon}</span></div>` : "";
+  const unknown = plan.unknownTime ? `<div class="cook-plan-note">Some planned dishes have no known cooking time and are not counted.</div>` : "";
+  return `<div class="cook-plan-summary guro-frame" id="cookPlanSummary"><div class="cook-plan-title">\u23F1 Cooking plan \xB7 ${escapeHtml(building)}</div><div class="cook-food-cost-line cook-plan-row"><span>Planned to cook</span><span>${fmt(plan.plannedCount)} food${synced > 0 ? ` \xB7 ${fmt(synced)} already cooked` : ""}</span></div><div class="cook-food-cost-line cook-total-cost-line cook-total-time-line"><span class="cook-total-cost-label">Total cooking time</span><span class="cook-total-cost-value cook-time-value">${formatCookSpanHtml(plan.totalSecs)}</span></div>${igHtml}${oilHtml}${unknown}</div>`;
+}
+function renderCookingFoodCard(building, name, plan) {
+  const rec = COOKING_RECIPES[building][name];
+  const { exp: boostedExp } = cookingComputeFoodExp(building, name);
+  const isBoosted = Math.abs(boostedExp - rec.exp) > 1e-9;
+  const count = getCookingCount(name);
+  const isExpanded = cookingExpandedFoods.has(name);
+  const { time: boostedTime, baseTime } = cookingComputeFoodTime(building, name);
+  const isTimeBoosted = baseTime != null && Math.abs(boostedTime - baseTime) > 1e-9;
+  const timeDisplay = baseTime == null ? "\u23F1 time unknown" : `\u23F1 ${isTimeBoosted ? `<span class="base">${formatDuration(baseTime)}</span>` : ""}${formatDuration(boostedTime)}`;
+  const doubleNomMult = getDoubleNomIngredientMultiplier();
+  let unitCostCoins = 0;
+  Object.keys(rec.ingredients).forEach((ing) => {
+    unitCostCoins += rec.ingredients[ing] * doubleNomMult * cookingIngredientUnitCostCoins(ing, cookingCostMode);
+  });
+  const totalFlower = coinsToFlower(unitCostCoins);
+  const foodIconHtml = cookFoodIcon(name);
+  return `
+  <div class="cook-food-card${isExpanded ? " expanded" : ""}${count > 0 ? " is-ready" : ""}" data-food="${escapeHtml(name)}">
+    <div class="cook-food-toggle">
+      <span class="cook-food-icon">${foodIconHtml}</span>
+      <div class="cook-food-main">
+        <div class="cook-food-name">${escapeHtml(name)}</div>
+        <div class="cook-food-exp">${isBoosted ? `<span class="base">${fmt(rec.exp)}</span>` : ""}${fmt(boostedExp)} EXP \xB7 ${timeDisplay}</div>
+      </div>
+      <input type="number" min="0" step="1" class="cook-food-count" value="${count || ""}" placeholder="0" data-food="${escapeHtml(name)}" data-unit-cost="${totalFlower}" data-exp-per-unit="${boostedExp}">
+      <span class="cook-food-chev">\u25BE</span>
     </div>
+    <div class="cook-food-details">${cookingFoodDetailsHtml(building, name, plan)}</div>
   </div>`;
+}
+function refreshCookingBuildingView() {
+  const wrap = $("cookFoodList");
+  if (!wrap || cookingFishCategory) return;
+  const building = cookingActiveBuilding;
+  const plan = cookingBuildingPlan(building);
+  const summary = $("cookPlanSummary");
+  if (summary) summary.outerHTML = cookingPlanSummaryHtml(building, plan);
+  wrap.querySelectorAll(".cook-food-card").forEach((card2) => {
+    const name = card2.dataset.food;
+    if (!COOKING_RECIPES[building] || !COOKING_RECIPES[building][name]) return;
+    const details = card2.querySelector(".cook-food-details");
+    if (details) details.innerHTML = cookingFoodDetailsHtml(building, name, plan);
+    card2.classList.toggle("is-ready", getCookingCount(name) > 0);
+  });
 }
 function renderCookingFoodList() {
   const wrap = $("cookFoodList");
@@ -21236,7 +21372,8 @@ function renderCookingFoodList() {
   }
   const building = cookingActiveBuilding;
   const foods = Object.keys(COOKING_RECIPES[building] || {});
-  wrap.innerHTML = foods.map((f) => renderCookingFoodCard(building, f)).join("");
+  const plan = cookingBuildingPlan(building);
+  wrap.innerHTML = cookingPlanSummaryHtml(building, plan) + foods.map((f) => renderCookingFoodCard(building, f, plan)).join("");
   wrap.querySelectorAll(".cook-food-toggle").forEach((el) => {
     el.onclick = () => {
       const card2 = el.closest(".cook-food-card");
@@ -21254,55 +21391,9 @@ function renderCookingFoodList() {
         renderCookingBuildingTabs();
         renderCookingFishTabs();
       }
+      invalidateCostCache();
       renderCookingHeader();
-      const card2 = el.closest(".cook-food-card");
-      const n = Number(el.value);
-      if (card2) card2.classList.toggle("is-ready", n > 0);
-      const effectiveCount = n > 0 ? n : 1;
-      const iconHtml2 = card2 && card2.querySelector(".cook-food-icon") ? card2.querySelector(".cook-food-icon").innerHTML : "";
-      const totalLine = card2 ? card2.querySelector(".cook-food-count-total-line") : null;
-      if (totalLine) {
-        const unitCost = Number(el.dataset.unitCost) || 0;
-        if (n > 1) {
-          totalLine.style.display = "";
-          const flowerIcon = typeof FLOWER_ICON !== "undefined" ? FLOWER_ICON : "FLOWER";
-          const labelEl = totalLine.querySelector(".cook-total-cost-label");
-          const valueEl = totalLine.querySelector(".cook-total-cost-value");
-          if (labelEl) labelEl.innerHTML = `Total Cost for ${fmt(effectiveCount)}\xD7 ${iconHtml2}`;
-          if (valueEl) valueEl.innerHTML = `${fmt(unitCost * effectiveCount)}${flowerIcon}`;
-        } else {
-          totalLine.style.display = "none";
-        }
-      }
-      const expLine = card2 ? card2.querySelector(".cook-total-exp-line") : null;
-      if (expLine) {
-        const expPerUnit = Number(el.dataset.expPerUnit) || 0;
-        const labelEl = expLine.querySelector(".cook-total-cost-label");
-        const valueEl = expLine.querySelector(".cook-total-cost-value");
-        if (labelEl) labelEl.innerHTML = `Total EXP for ${fmt(effectiveCount)}\xD7 ${iconHtml2}`;
-        if (valueEl) valueEl.innerHTML = `${fmt(expPerUnit * effectiveCount)} EXP`;
-      }
-      const totalSection = card2 ? card2.querySelector(".cook-ing-total-section") : null;
-      if (totalSection) {
-        if (n > 1) {
-          totalSection.style.display = "";
-          const label = totalSection.querySelector(".cook-ing-label");
-          if (label) label.innerHTML = `Total Ingredients for ${effectiveCount}\xD7 ${iconHtml2}`;
-          totalSection.querySelectorAll("[data-ing-total]").forEach((row3) => {
-            const qty = Number(row3.dataset.qty) || 0;
-            const unitCoins = Number(row3.dataset.unitCoins) || 0;
-            const ingName = row3.dataset.ingName || "";
-            const totalQty = qty * effectiveCount;
-            const totalIngCoins = qty * effectiveCount * unitCoins;
-            const displayUnit = cookingCostMode === "buy" ? typeof FLOWER_ICON !== "undefined" ? FLOWER_ICON : "F" : typeof COIN_ICON !== "undefined" ? COIN_ICON : "c";
-            const totalDisplayVal = cookingCostMode === "buy" ? coinsToFlower(totalIngCoins) : totalIngCoins;
-            const costLabel = unitCoins > 0 ? `${fmt(totalDisplayVal)}${displayUnit}` : "\u2014";
-            row3.innerHTML = `<span>${cookingIngredientIcon(ingName)}</span><span class="ing-name">${escapeHtml(ingName)} \xD7${fmt(totalQty)}</span><span class="ing-cost">${costLabel}</span>`;
-          });
-        } else {
-          totalSection.style.display = "none";
-        }
-      }
+      refreshCookingBuildingView();
     };
   });
 }
@@ -21823,12 +21914,14 @@ function renderCookingOilToggle() {
   if (!row3 || !input) return;
   const b = getCookingOilBoost(cookingActiveBuilding);
   const meta = $("cookOilMeta");
-  if (meta) meta.textContent = `${cookingActiveBuilding}: cooks ${+(b * 100).toFixed(2)}% faster while the building has oil (time \xD7${+(1 - b).toFixed(4)})`;
-  input.checked = cookingOilOn;
-  row3.classList.toggle("is-active", cookingOilOn);
+  if (meta) meta.textContent = `${cookingActiveBuilding}: cooks ${+(b * 100).toFixed(2)}% faster while the building has oil (time \xD7${+(1 - b).toFixed(4)}) and burns ${{ "Fire Pit": 1, Kitchen: 5, "Smoothie Shack": 8, Bakery: 10, Deli: 12 }[cookingActiveBuilding] || 0} Oil per day of recipe time. Also in Boost, Oil.`;
+  const oilNow = isCookingOilOn();
+  input.checked = oilNow;
+  row3.classList.toggle("is-active", oilNow);
   const apply = (val) => {
     setCookingOilOn(val);
     renderCookingOilToggle();
+    renderCookingHeader();
     renderCookingFoodList();
   };
   input.onchange = () => apply(input.checked);
@@ -45712,7 +45805,7 @@ var ASCENSION_RANK_DATA = {
     field: null,
     unit: "d",
     values: [4, 3.5, 3],
-    note: "Power skill cooldown \u2014 not wired into time math yet"
+    note: "Power skill cooldown \u2014 used by the Cooking panel's cooking time plan"
   },
   skill_barnyard_rouse: {
     field: null,
@@ -48827,6 +48920,12 @@ COOKING_BOOSTS.push({
   scope: "foodGlobal",
   expMult: 1.1,
   note: "+10% EXP from all food & fish (VIP). Auto-selected when your synced farm has VIP, or tick it manually"
+});
+COOKING_BOOSTS.push({
+  id: "cooking_oil",
+  name: "Oil",
+  scope: "cookOil",
+  note: "Building Oil: cooks faster in every cooking building (Fire Pit 20%, Kitchen 25%, Smoothie Shack 30%, Bakery 35%, Deli 40% \u2014 higher with Swift Sizzle, Turbo Fry and Fry Frenzy) and burns Oil per planned dish. Auto-selected when a synced cooking building holds Oil, or tick it manually"
 });
 PORT_BUD_BOOSTS.forEach((b) => COOKING_BOOSTS.push(b));
 COOKING_BOOSTS.forEach((b) => {
@@ -52783,6 +52882,13 @@ function applyFarmGreenThumbLegacyOnly(json) {
     owned
   };
 }
+function farmSyncHasCookingBuildingOil(g) {
+  const buildings = g && g.buildings && typeof g.buildings === "object" ? g.buildings : {};
+  return ["Fire Pit", "Kitchen", "Smoothie Shack", "Bakery", "Deli"].some((name) => {
+    const list = Array.isArray(buildings[name]) ? buildings[name] : [];
+    return list.some((b) => b && b.coordinates && Number(b.oil) > 0);
+  });
+}
 function applyFarmBoostsOnly(json) {
   const g = farmSyncExtractGameState(json);
   farmSyncRefreshLimitedBoostActiveState(g);
@@ -52818,6 +52924,7 @@ function applyFarmBoostsOnly(json) {
   }
   const vipStatus = farmSyncGetVipStatus(g);
   if (vipStatus && vipStatus.active && !freshBoostIds.includes("vip_access")) freshBoostIds.push("vip_access");
+  if (farmSyncHasCookingBuildingOil(g) && !freshBoostIds.includes("cooking_oil")) freshBoostIds.push("cooking_oil");
   const ISLAND_PROGRESSION_ORDER = ["basic", "spring", "desert", "volcano", "swamp", "spooky", "crystal", "galaxy", "marble"];
   const syncedIslandType = g && g.island && typeof g.island.type === "string" ? g.island.type : null;
   const syncedIslandIndex = syncedIslandType ? ISLAND_PROGRESSION_ORDER.indexOf(syncedIslandType) : -1;
@@ -52827,7 +52934,7 @@ function applyFarmBoostsOnly(json) {
   __lastBoostsSig = JSON.stringify([freshBoostIds.slice().sort(), vipStatus.active]);
   const boostDomainIds = new Set(freshBoostIds);
   BOOSTS.forEach((b) => {
-    if (b.source !== "skill" && !b.isBud && !b.composterFertilizer && b.id !== "vip_access" && !b.portBud) boostDomainIds.add(b.id);
+    if (b.source !== "skill" && !b.isBud && !b.composterFertilizer && b.id !== "vip_access" && b.id !== "cooking_oil" && !b.portBud) boostDomainIds.add(b.id);
   });
   [].concat(FACTION_QUIVER_BOOST_IDS, FACTION_SHIELD_BOOST_IDS, FACTION_MEDALLION_BOOST_IDS, ["volcano_gnome"]).forEach((id) => boostDomainIds.add(id));
   const toAddBoosts = freshBoostIds.filter((id) => !selectedBoosts.includes(id));
@@ -67450,6 +67557,13 @@ var COOKING_FOOD_EMOJI = {
   "Truffle Cake": "\u{1F370}"
 };
 var cookingCounts = safeLSJSON(localStorage.getItem("hl_cooking_counts"), {});
+var cookingSyncedCounts = safeLSJSON(localStorage.getItem("hl_cooking_synced_counts"), {});
+function getCookingSyncedCount(name) {
+  return Number(cookingSyncedCounts[name]) || 0;
+}
+function getCookingPlannedCount(name) {
+  return Math.max(0, getCookingCount(name) - getCookingSyncedCount(name));
+}
 function getCookingCount(name) {
   return Number(cookingCounts[name]) || 0;
 }
@@ -67699,7 +67813,7 @@ function cookingComputeFoodTimeUncached(building, name) {
     const m = 1 - [0.1, 0.2, 0.3][Math.min(Math.max(getAscensionRank("skill_frosted_cakes"), 1), 3) - 1];
     applyMult(m, `Frosted Cakes \xD7${+m.toFixed(4)}`, getBoostIcon("Frosted Cakes"));
   }
-  if (cookingOilOn) {
+  if (isBoostActive("cooking_oil")) {
     const m = 1 - getCookingOilBoost(building);
     applyMult(m, `Oil \xD7${+m.toFixed(4)}`, getBoostIcon("Oil"));
   }
@@ -67738,6 +67852,7 @@ function syncCookingCountsFromInventory(json) {
   };
   cookingCategoryOff = {};
   cookingCategoryStash = {};
+  cookingSyncedCounts = {};
   const normalizeInvKey = (s) => String(s || "").trim().toLowerCase();
   const invKeyByNormalized = {};
   Object.keys(inv).forEach((k) => {
@@ -67748,8 +67863,10 @@ function syncCookingCountsFromInventory(json) {
   let synced = 0;
   const applyInvSync = (storeName, invKey) => {
     const qty = invKey ? Math.max(0, Math.floor(cookingInvAmount(inv[invKey]))) : 0;
-    if (qty > 0) cookingCounts[storeName] = qty;
-    else delete cookingCounts[storeName];
+    if (qty > 0) {
+      cookingCounts[storeName] = qty;
+      cookingSyncedCounts[storeName] = qty;
+    } else delete cookingCounts[storeName];
     synced++;
     if (invKey) matched++;
   };
@@ -67768,10 +67885,127 @@ function syncCookingCountsFromInventory(json) {
       });
     });
   }
-  if (synced) saveCookingCounts();
+  if (synced) {
+    saveCookingCounts();
+    localStorage.setItem("hl_cooking_synced_counts", JSON.stringify(cookingSyncedCounts));
+  }
   return {
     matched
   };
+}
+var COOKING_OIL_DAILY = {
+  "Fire Pit": 1,
+  Kitchen: 5,
+  "Smoothie Shack": 8,
+  Bakery: 10,
+  Deli: 12
+};
+var COOKING_COOLDOWN_WEARABLES = {
+  "Luna's Crescent": 0.5,
+  "Ascension Staff": 0.9
+};
+function cookingOilPerCook(building, name) {
+  const rec = COOKING_RECIPES[building] && COOKING_RECIPES[building][name];
+  if (!rec || rec.time == null) return 0;
+  return (COOKING_OIL_DAILY[building] || 0) * rec.time / 86400;
+}
+function getInstantGratificationInfo() {
+  if (typeof isSkillActive !== "function" || !isSkillActive("skill_instant_gratification")) return null;
+  const rank = Math.min(Math.max(getAscensionRank("skill_instant_gratification"), 1), 3);
+  let cooldownSecs = [4, 3.5, 3][rank - 1] * 86400;
+  let delaySecs = 0;
+  try {
+    const g = farmPanelGameState && typeof farmSyncExtractGameState === "function" ? farmSyncExtractGameState(farmPanelGameState) : null;
+    const bumpkin = g && g.bumpkin ? g.bumpkin : null;
+    const worn = /* @__PURE__ */ new Set();
+    const collect = (eq) => {
+      if (eq && typeof eq === "object") Object.values(eq).forEach((v) => {
+        if (typeof v === "string") worn.add(v);
+      });
+    };
+    if (bumpkin) collect(bumpkin.equipped);
+    const hands = g && g.farmHands && g.farmHands.bumpkins ? g.farmHands.bumpkins : {};
+    Object.values(hands).forEach((h) => collect(h && h.equipped));
+    Object.keys(COOKING_COOLDOWN_WEARABLES).forEach((n) => {
+      if (worn.has(n)) cooldownSecs *= COOKING_COOLDOWN_WEARABLES[n];
+    });
+    const last = bumpkin && bumpkin.previousPowerUseAt ? Number(bumpkin.previousPowerUseAt["Instant Gratification"]) : 0;
+    if (last > 0) delaySecs = Math.max(0, (last + cooldownSecs * 1e3 - Date.now()) / 1e3);
+  } catch (e) {
+  }
+  return {
+    cooldownSecs,
+    delaySecs,
+    rank
+  };
+}
+function cookingBuildingPlan(building) {
+  const oilOn = isBoostActive("cooking_oil");
+  const entries = [];
+  let unknownTime = false;
+  Object.keys(COOKING_RECIPES[building] || {}).forEach((name) => {
+    const planned = getCookingPlannedCount(name);
+    if (!planned) return;
+    const { time } = cookingComputeFoodTime(building, name);
+    if (time == null) {
+      unknownTime = true;
+      return;
+    }
+    entries.push({
+      name,
+      planned,
+      unit: time,
+      skipped: 0,
+      oilEach: oilOn ? cookingOilPerCook(building, name) : 0
+    });
+  });
+  const baseSecs = entries.reduce((a, e) => a + e.planned * e.unit, 0);
+  const ig = getInstantGratificationInfo();
+  let savedSecs = 0;
+  let uses = 0;
+  if (ig && entries.length) {
+    const order = entries.slice().sort((a, b) => b.unit - a.unit);
+    let idx = 0;
+    while (uses < 5e3) {
+      const at = ig.delaySecs + uses * ig.cooldownSecs;
+      if (!(at < baseSecs - savedSecs)) break;
+      while (idx < order.length && order[idx].skipped >= order[idx].planned) idx++;
+      if (idx >= order.length) break;
+      order[idx].skipped++;
+      savedSecs += order[idx].unit;
+      uses++;
+    }
+  }
+  const oilTotal = entries.reduce((a, e) => a + e.planned * e.oilEach, 0);
+  return {
+    building,
+    entries,
+    byName: Object.fromEntries(entries.map((e) => [e.name, e])),
+    baseSecs,
+    savedSecs,
+    totalSecs: Math.max(0, baseSecs - savedSecs),
+    uses,
+    ig,
+    oilOn,
+    oilTotal,
+    unknownTime,
+    plannedCount: entries.reduce((a, e) => a + e.planned, 0)
+  };
+}
+function cookingPlanAll() {
+  const plans = COOKING_BUILDINGS.filter((b) => cookingCategoryEnabled(b)).map((b) => cookingBuildingPlan(b));
+  return {
+    plans,
+    totalSecs: plans.reduce((a, p) => Math.max(a, p.totalSecs), 0),
+    sumSecs: plans.reduce((a, p) => a + p.totalSecs, 0),
+    savedSecs: plans.reduce((a, p) => a + p.savedSecs, 0),
+    oilTotal: plans.reduce((a, p) => a + p.oilTotal, 0),
+    plannedCount: plans.reduce((a, p) => a + p.plannedCount, 0)
+  };
+}
+function cookingOilCostCoins(oilQty) {
+  if (!(oilQty > 0)) return 0;
+  return oilQty * cookingIngredientUnitCostCoins("Oil", cookingCostMode);
 }
 function cookingComputeTotals() {
   let totalExpAdded = 0;
@@ -67800,6 +68034,9 @@ function cookingComputeTotals() {
       });
     });
   });
+  const oilPlan = cookingPlanAll();
+  const oilCostCoins = cookingOilCostCoins(oilPlan.oilTotal);
+  totalCostCoins += oilCostCoins;
   if (typeof cookingFishTotals === "function") {
     const fishTotals = cookingFishTotals();
     totalExpAdded += fishTotals.totalExpAdded;
@@ -67813,7 +68050,11 @@ function cookingComputeTotals() {
   return {
     totalExpAdded,
     totalCostCoins,
-    xpByCategory
+    xpByCategory,
+    totalOil: oilPlan.oilTotal,
+    oilCostCoins,
+    totalCookSecs: oilPlan.totalSecs,
+    savedCookSecs: oilPlan.savedSecs
   };
 }
 function factionPetGetEffectiveStreak() {
@@ -68773,11 +69014,22 @@ function fishCatchComputeXPUncached(fishName, stage) {
     baseXp
   };
 }
-var cookingOilOn = localStorage.getItem("hl_cooking_oil") === "true";
+function isCookingOilOn() {
+  return isBoostActive("cooking_oil");
+}
 function setCookingOilOn(val) {
-  cookingOilOn = !!val;
-  localStorage.setItem("hl_cooking_oil", String(cookingOilOn));
+  const has = selectedBoosts.includes("cooking_oil");
+  if (val && !has) selectedBoosts = selectedBoosts.concat(["cooking_oil"]);
+  else if (!val && has) selectedBoosts = selectedBoosts.filter((id) => id !== "cooking_oil");
+  saveBoostState();
   __cookingFoodTimeMemo.clear();
+}
+if (localStorage.getItem("hl_cooking_oil") === "true") {
+  if (!selectedBoosts.includes("cooking_oil")) {
+    selectedBoosts = selectedBoosts.concat(["cooking_oil"]);
+    localStorage.setItem("hl_selected_boosts", JSON.stringify(selectedBoosts));
+  }
+  localStorage.removeItem("hl_cooking_oil");
 }
 var COOKING_OIL_BASE_BOOST = {
   "Fire Pit": 0.2,

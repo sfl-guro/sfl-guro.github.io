@@ -16,7 +16,7 @@ import {
   skillCategory,
   toast,
   updateSkillSaveBarState
-} from "./chunk.WGYEQIH2.js";
+} from "./chunk.4GBG4OBT.js";
 import "./chunk.LPEVZJ4B.js";
 import "./chunk.D3PHX6VZ.js";
 import "./chunk.VR6FV3KR.js";
@@ -49,6 +49,7 @@ function expBoosts() {
 }
 function boostGroupLabel(b) {
   if (b.id === "vip_access") return "VIP";
+  if (b.scope === "cookOil") return "Oil";
   if (b.portBud) return "Buds";
   if (b.scope === "cookTimeGlobal") return "Cooking Time";
   if (b.agedFishXpMult || b.agingTimeMult) return "Fish Aging";
@@ -62,6 +63,7 @@ function boostEffectText(b) {
   }
   if (b.expAdd) parts.push(`+${n2(b.expAdd)} flat EXP`);
   if (b.timeMult) parts.push(`${n2((b.timeMult - 1) * 100)}% cooking time`);
+  if (b.scope === "cookOil") parts.push("faster cooking while Oil lasts, burns Oil per planned dish");
   if (b.agedFishXpMult) parts.push(`\xD7${n2(b.agedFishXpMult)} aged fish EXP`);
   if (b.agingTimeMult) parts.push(`\xD7${n2(b.agingTimeMult)} fish aging time`);
   return parts.join(", ");
@@ -74,7 +76,7 @@ function boostRowHtml(b) {
   return `<div class="lib-item-row rc-boost-pick${active ? " boost-active" : ""}${locked ? " season-locked" : ""}" data-boost-id="${b.id}"><span class="lib-item-icon">${mark}</span><div class="lib-item-main"><div class="lib-item-name">${getBoostIcon(b.name)}${esc(b.name)}</div><div class="lib-item-meta">${esc(boostEffectText(b))}${esc(note)}</div></div></div>`;
 }
 function boostBodyHtml() {
-  const order = ["VIP", "Food and Fish EXP", "Buds", "Cooking Time", "Fish Aging"];
+  const order = ["VIP", "Food and Fish EXP", "Buds", "Cooking Time", "Oil", "Fish Aging"];
   const groups = {};
   expBoosts().forEach((b) => {
     const g = boostGroupLabel(b);

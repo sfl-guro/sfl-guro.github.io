@@ -4411,6 +4411,17 @@ body.app-dark .gunter-mid-stat.is-total-stat .gunter-mid-stat-value{ color:#d8dc
     line-height:1.5; white-space:nowrap;
   }
   .boost-chip img{ width:12px; height:12px; image-rendering:pixelated; flex-shrink:0; }
+  .cook-boost-chips .boost-chip{ white-space:normal; max-width:100%; min-width:0; overflow-wrap:anywhere; word-break:break-word; line-height:1.35; align-items:flex-start; box-sizing:border-box; }
+  .cook-boost-chips .boost-chip img{ margin-top:1px; }
+  .cook-plan-summary{ margin:0 0 8px; padding:8px 9px; background:var(--sfl-outer, var(--wheat-dim)); box-sizing:border-box; max-width:100%; }
+  .cook-plan-title{ font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:700; color:var(--sun-deep); margin-bottom:4px; }
+  .cook-plan-row{ display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:4px 10px; margin:4px 0; }
+  .cook-plan-row > span:last-child{ text-align:right; margin-left:auto; }
+  .cook-plan-note{ font-family:'Inter',sans-serif; font-size:10px; font-weight:600; color:var(--ink-soft); margin:2px 0 4px; line-height:1.35; }
+  .cook-time-value{ flex-direction:column; align-items:flex-end; gap:1px; text-align:right; }
+  .cook-time-sub{ display:block; font-family:'Inter',sans-serif; font-size:9.6px; font-weight:600; color:var(--ink-soft); line-height:1.3; }
+  .cook-total-row .cook-time-sub{ display:block; }
+  .cook-oil-line .cook-total-cost-value{ flex-wrap:wrap; justify-content:flex-end; }
   .cook-ingredient-row{ display:flex; align-items:center; gap:6px; font-size:12.6px; padding:3px 0; }
   .cook-ingredient-row .ing-name{ flex:1; color:var(--ink); }
   .cook-ingredient-row .ing-cost{ font-family:'JetBrains Mono',monospace; color:var(--ink-soft); }

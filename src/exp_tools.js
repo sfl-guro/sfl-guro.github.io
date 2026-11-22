@@ -33,6 +33,7 @@ function expBoosts() {
 
 function boostGroupLabel(b) {
   if (b.id === "vip_access") return "VIP";
+  if (b.scope === "cookOil") return "Oil";
   if (b.portBud) return "Buds";
   if (b.scope === "cookTimeGlobal") return "Cooking Time";
   if (b.agedFishXpMult || b.agingTimeMult) return "Fish Aging";
@@ -47,6 +48,7 @@ function boostEffectText(b) {
   }
   if (b.expAdd) parts.push(`+${n2(b.expAdd)} flat EXP`);
   if (b.timeMult) parts.push(`${n2((b.timeMult - 1) * 100)}% cooking time`);
+  if (b.scope === "cookOil") parts.push("faster cooking while Oil lasts, burns Oil per planned dish");
   if (b.agedFishXpMult) parts.push(`×${n2(b.agedFishXpMult)} aged fish EXP`);
   if (b.agingTimeMult) parts.push(`×${n2(b.agingTimeMult)} fish aging time`);
   return parts.join(", ");
@@ -61,7 +63,7 @@ function boostRowHtml(b) {
 }
 
 function boostBodyHtml() {
-  const order = [ "VIP", "Food and Fish EXP", "Buds", "Cooking Time", "Fish Aging" ];
+  const order = [ "VIP", "Food and Fish EXP", "Buds", "Cooking Time", "Oil", "Fish Aging" ];
   const groups = {};
   expBoosts().forEach(b => {
     const g = boostGroupLabel(b);
