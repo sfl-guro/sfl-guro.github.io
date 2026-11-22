@@ -1,6 +1,6 @@
 import { NAV_ICON_DATA } from "./nav_icons.js";
 import { ICON_DATA } from "./icon_data.js";
-import { cookingOilOn, setCookingOilOn, getCookingOilBoost, getFieryJackpotChance, fishFrenzyOn, setFishFrenzyOn, getFrenziedFishInfo, getDailyFishingLimitInfo } from "./calculator.js";
+import { cookingBuildingPlan, cookingOilCostCoins, getCookingPlannedCount, getCookingSyncedCount, isCookingOilOn, setCookingOilOn, getCookingOilBoost, getFieryJackpotChance, fishFrenzyOn, setFishFrenzyOn, getFrenziedFishInfo, getDailyFishingLimitInfo } from "./calculator.js";
 import { fishAgingTimeInfo, BASE_STOCK_TREASURE_TOOLS, getFeedQtyPerFeed, digTileProfitInfo, runWithFlowerMarketModes, getSkillRankMult, getSpiceDurationHarvests, SPICE_KEYS, SPICE_KEY_NAMES, getTruffleSeasoningSleeps, getAscensionRank, setRateInputValue, ALWAYS_ON_BOOST_IDS, ANIMAL_BASE_CYCLE_SEC, ANIMAL_DATA, ANIMAL_LOVE_ITEM_XP, ASCENSION_RANK_DATA, BAIT_RECIPES, BASE_COMPOSTERS, BASE_CROPS, BASE_CROP_MACHINE, BASE_FRUITS, BASE_GREENHOUSE, BASE_STOCK_CROPS, BASE_STOCK_FRUITS, BASE_STOCK_FLOWERS, BASE_STOCK_GREENHOUSE, BASE_STOCK_TOOLS, BEE_SWARM_ICON, BOOSTS, BOOST_ICON_OVERRIDES, BOOST_LABELS, BOOST_TIERS, BOUNTY_WEEKLY_BONUS, BUD_ANIMAL_STEMS, BUD_ANIMAL_TYPES, BUD_AURAS, BUD_CROP_STEMS, BUD_CROP_TYPES, BUD_FIELD_LABELS, BUD_FISH_TYPES, BUD_FRUIT_STEMS, BUD_FRUIT_TYPES, BUD_GREENHOUSE_STEMS, BUD_GREENHOUSE_TYPES, BUD_RESOURCE_STEMS, BUD_RESOURCE_TYPES, CHEER_ICON_SRC, CM_MODULE_SKILL_IDS, CM_MODULE_SKILL_NAMES, COIN_ICON, COOKING_BUILDINGS, COOKING_BUILDING_ICONS, COOKING_FOOD_EMOJI, COOKING_FOOD_IMAGES, COOKING_RECIPES, CROP_MACHINE_PACK_MAX, CRUSTACEAN_CATCH_DATA, CRUSTACEAN_NAMES, ES_ISLAND_ICONS, FACTION_BANNER_ICONS, FACTION_DISPLAY_NAMES, FACTION_PET_BOOST_TIERS, FACTION_PET_HAPPY_ICONS, FARM_LEVEL_NODES, FEED_LABELS, FISHING_ROD_ICON, FISH_CATCH_DATA, FISH_CATCH_NAMES, FISH_MARKET_GUARANTEED_CATCH, FISH_MARKET_ITEM_NAMES, FISH_TIER_LABEL, FLOWER_ICON, FLOWER_SEEDS, FLOWER_SEED_ICONS, FLOWER_VARIETIES, GEM_ICON, ICONS, IMAGE_ICONS, IMAGE_ICON_FALLBACK, LIMITED_TIME_BOOSTS, LOVE_CHARM_ICON_SRC, MANUAL_CYCLE_REFRESH_FNS, MARK_ICON_SRC, MUTANT_FALLBACK_ICON, NPC_ICONS, OBSIDIAN_WEEKLY_PURCHASE_CAP, OBSIDIAN_WEEKLY_SELL_CAP, OIL_BONUS_DROP_AMOUNT, OIL_SINGLE_HARVEST_BASE, PET_AURA_TRAITS, PET_BASE_XP_ENERGY, PET_BIB_TRAITS, PET_CATEGORIES, PET_CATEGORY_ICON, PET_COMMON_TYPES, PET_FOOD_LISTS, PET_LEVEL_PERKS, PET_NAMES_BY_TYPE, PET_NFT_TYPES, PET_RESOURCE_ENERGY, PET_RESOURCE_ICON, PET_TRADABLE_RESOURCES, PET_TYPE_EMOJI, PICKLED_VEG_DATA, PRE_ASCENSION_MAX_LEVEL, PROFILE_BUILD_FILTERS, PROFILE_TRADABLE_TABS, REQUIRED_FOOD_QTY_MAP, RESOURCE_DATA, RESOURCE_NODE_TIERS, RESTOCK_PANEL_CATEGORIES, SALT_BASE_TIME_SEC, SALT_BASE_YIELD, SALT_FERTILIZER_DATA, SCULPTURE_EFFECTS_LIST, SCULPTURE_LEVELS, SEASON_ACCENT, SEASON_COMPOST_REQUIREMENTS, SEASON_EMOJI, SEASON_ORDER, SKILL_BOOSTS, SKILL_TREES, SPICE_ANIMAL_TYPES, SPICE_RECIPES, SYNC_PROGRESS_STAGES, SYNODIC_MONTH_DAYS, TICKET_NPC_DISPLAY_NAMES, __getIconCache, __getTreasureIconCache, __lastSyncTiming, __markSub, __postinc_craftMaterialIdSeq, __preinc_digPanelRenderToken, __set___lastSyncTiming, __set___syncTimingPanelOpen, __set_bettySortMode, __set_boostDraftSelectedBoosts, __set_budPickerContext, __set_budPickerKind, __set_cmOilTank, __set_cmQty, __set_cmSelectedCrop, __set_coinPerFlower, __set_craftMaterialRows, __set_dailyProfitCardsCache, __set_editingLibId, __set_finderIngredient, __set_finderSeed, __set_fpBoostPanelOpen, __set_harvestSelectedLibId, __set_limitedTimeBoostRefreshTimer, __set_obsidianInputsHidden, __set_pendingDeleteId, __set_pendingDeleteType, __set_petAddAuraValue, __set_petAddBibValue, __set_petAddIsNFT, __set_petAddName, __set_petAddOpen, __set_petAddStep, __set_petAddType, __set_petOpenId, __set_petTraitPickerKind, __set_petsData, __set_pixelPickerOnSelect, __set_rcmActiveTab, __set_selectedBoosts, __set_skillDraftSelectedSkills, __set_syncProgressTimer, __set_tradePendingDeleteId, __set_tradePendingDeleteType, __set_tradePickedItemName, __set_tradeSellingId, __set_tradeSortMode, __syncTimingPanelOpen, allocateAoeAcrossTiers, animalAffectionTools, animalBuds, animalSicknessEstimate, animalWeekly, applyLibTypeVisibility, applyLibrarySearchFilter, applyPickerSearchFilter, applyTradeItemSearchFilter, ascensionDescribeRank, ascensionLevelBadgeText, attachDailyProfitCardEvents, attachFarmPanelCategoryFilterBar, attachProfileTradableEditHandlers, beeSwarmActiveCount, beeSwarmAffectedPlots, bettyActiveTab, bettyGatherItems, bettyGreenThumbOn, bettyHighestRate, bettySortItems, bettySortMode, boostCategory, boostDraftSelectedBoosts, bountyWeekly, budAnimalSummaryText, budContextFields, budContextPrefix, budContextState, budContextUpdateDuplicateState, budFarmCropSummaryText, budFieldCap, budFruitSummaryText, budPickerContext, budPickerKind, budResourceSummaryText, budSummaryText, calcMode, calendarDebuffProtection, choresWeekly, cmCalcMode, cmClampQty, cmModuleTagHtml, cmOilTank, cmQty, cmQueue, cmSelectedCrop, coinPerFlower, coinsToFlower, compute24hProjection, computeAgedFishFigures, computeAll, computeGuideAveragePanelItems, computeAnimalBaseCoinFigures, computeAnimalFeedFigures, computeAnimalTypeFigures, computePigBristlesPlan, computeAnimalWeeklyFigures, computeBaitFigures, computeBasicFishFigures, computeBoostedCropStats, computeBoostedFlowerVarietyStats, computeFlowerChainTime, computeBoostedFruitStats, computeBoostedGreenhouseStats, computeBoostedResourceStats, computeBoostedStock, computeComposterFigures, computeCrabFigures, computeCropMachineBatch, computeCrustaceanFigures, computeDailyProfitProjection, buildDailyProfitSwapStats, getDailyProfitCalcMode, setDailyProfitCalcMode, getDailyProfitPeriodMode, setDailyProfitPeriodMode, getDailyProfitTotalsMode, setDailyProfitTotalsMode, getDailyProfitSwap, setDailyProfitSwap, computeFertilizerFigures, computeFlowerVarietyRestockInfo, computeHiveEconomics, computeLavaPitFigures, computeMachineRestockGems, computeObsidianWeeklyProfit, computeResourceFigures, computeResourceProjection24h, computeSaltFarmFigures, computeSeaweedFigures, computeShrineAffectedProfitability, computeSpiceFigures, ASCENSION_LEVELS_PER_BAND, ASCENSION_LEVEL_UPS, COOK_LEVEL_XP, ascensionBandBaseline, ascensionBandXp, ascensionLevelXp, cookGetLevelInfo, cookingActiveBuilding, cookingComputeFoodExp, cookingComputeFoodTime, cookingComputeTotals, cookingExpandedFoods, cookingFindRecipeForFood, cookingFishCategory, cookingGuaranteedCatchOn, craftMaterialRows, cropBuds, cropTierFilter, crustaceanExpanded, crustaceanTrapTabActive, currentSeason, dailyProfitExpandedNames, dailyProfitGetCycleCount, deleteActiveTrade, deleteHistoryTrade, describeAoeTierAllocation, digCellClass, digClearManualMark, digCycleManualMark, DIG_MANUAL_MARK_OVERRIDE_STATUSES, digGetFarmId, digGetManualMark, digPanelRenderToken, digSolveBoard, renderDigDataPanel, renderPotionDataPanel, draftSetAscensionRank, editingLibId, ensureExchangeRates, esHideReachNote, esRenderAll, esRenderReachNote, esState, esSyncAutoBoostsFromFarm, escapeHtml, expandedAnimalCards, expandedAnimalFeedByLevel, expandedAnimalFeedConsumption, expandedComposters, expandedCropMachine, expandedCrops, expandedFlowers, expandedFruits, expandedGreenhouse, expandedResources, factionPetGetActiveTier, factionPetGetEffectiveStreak, factionPetManualMode, factionPetSetManualStreak, factionPetShouldApplyBoost, factionPetUpdateBoostUI, farmLevelMaxNodes, farmSyncExtractGameState, farmSyncGetApiUsername, farmSyncGetLimitedTimeBoostStatus, feePercent, fertilizerTierScope, findTool, findVarietiesBySeedIngredient, finderIngredient, finderSeed, fishBudSummaryText, flowerPerGem, fishBuds, fishCatchComputeXP, fishCatchYieldMult, fishInventoryNameForCategory, fishStageForCategory, fishingExpandedTierFish, fishingTierActive, fmt, computeAnimalAffectionSummary, fmtAnimal, fmtAnimalCost, fmtXp, fmtCycleInputValue, fmtInt, formatDuration, formatTrade12h, fpBoostPanelOpen, fruitBuds, fullMoonSeedStockQty, gatherTop10ProfitItems, gemFlowerSpent, gemsReceived, getActiveAnimalBoosts, getActiveBoostsForResource, getActiveSaltBoosts, getAllMaterialCandidates, getAnimalCount, getAscensionLevelInfo, getBeeSwarmPerSwarmYield, getBeeSwarmStatsForCrop, getBoostAoeInfo, getBoostedMedicineRecipe, getBoostedToolRecipe, getCookingCount, cookingCategoryEnabled, setCookingCategoryEnabled, getCropMachineOilCap, getCropMachinePackMax, getCropMachineQueueSlots, getCropSeasons, getDoubleNomBonusFood, getDoubleNomIngredientMultiplier, getDraftAscensionRank, getDraftAscensionTotals, getDraftSkillPointsUsed, getEffectiveDailyReward, getEffectiveYieldAdd, getFruitCount, getFishSeasons, getFruitSeasons, getGreenhouseCount, getHiveCount, getIconSmall, getLimitedBoostRemainingSec, getManualCycleOverride, getManualCycleRawValue, getMaterialMode, getMedicineIngredientMode, getMissingPlotNodeFields, getNodeCount, getNodeIconHtml, getNodeLabel, getNodeTierCounts, getPlotCount, getResourceForTool, getRestockExclusionNote, getSeedPoolCategoryForName, getSharedPoolBreakdown, getSharedPoolDivisor, getSicknessEstimate, getSpiceEffectForAnimalType, getSpiceLickDurationHarvests, getVarietyIngredient, globalPlotCount, greenhouseBuds, gunterActiveTab, gunterGridEntranceShown, gunterMutantSyncAutoBoosts, gunterRenderBottom, gunterRenderMid, gunterRenderSunstoneInput, gunterRenderTop, harvestSelectedLibId, renderChapterFishMutants, hasPlotsNodesData, ingredientKindLabel, isBoostActive, isBoostDraftActive, isBoostDraftDirty, isCalendarSeasonalBoost, isCropInSeason, isCropMachineUnlocked, isFertilizerTierEnabled, isFlowerVarietySeasonLocked, isFruitInSeason, isFullMoonToday, isPetFoodChecked, isSeasonLocked, isSkillActive, isSkillDraftActive, isSkillDraftDirty, isSkillDraftTierUnlocked, isTieredResource, limitedTimeBoostRefreshTimer, megastoreTickets, normalizeSearch, npcSkipDays, obsidianInputsHidden, petAddAuraValue, petAddBibValue, petAddIsNFT, petAddName, petAddOpen, petAddStep, petAddType, petAuraInfoText, petBibInfoText, petCalcCacheReset, petComputeCardCached, petComputeResourceTotals, petFoodChecks, petOpenId, petPerkActive, petPerkApplies, petResetAddFlow, petTraitPickerKind, petsData, petsFoodTab, pickerTarget, pixelPickerOnSelect, POTION_ICONS, POTION_NAMES, potionActiveGuessSlot, potionSetActiveGuessSlot, potionSolveState, potionStatusBadgeIcon, potionStatusLabel, previewSeason, profileBackNav, profileBumpkinCache, profileBumpkinFrameHtml, profileBumpkinIdHtml, profileBumpkinImageOnError, profileBumpkinNoteText, profileClearTradableCache, profileComputeFarmValue, profileComputeWithdrawTax, profileFactionHtml, profileFactionIconHtml, profileFmtUsd, profileGetDisplayName, profileGetExpansionInfo, profileGetFarmAgeText, profileGetG, profileGetInventoryAmount, profileGetMainTabMeta, profileGetReputation, profileGoBottomNav, profileRenderBuildColumns, profileState, profileTradableContentHtml, profileTradableRowsForTab, profileTradableRowsSubtotal, profileTradableTotalFlower, profileVipHtml, rcmActiveTab, rcmPendingExcluded, readFarmSyncedId, readFarmVipEnabled, refreshAfterSkillChange, refreshAfterSpiceChange, removeAnimalBud, removeBud, removeCropBud, removeFishBud, removeFruitBud, removeResourceBud, render24hBadge, render24hTotalsGrid, resolveAscensionLevelInfo, resourceBuds, safeParse, saltFarmLevel, saltSculptureLevel, saltUiSet, scheduleCascade, sculptureEffects, seasonDays, seedIconHtmlFor, seedIngredientOptionsList, selectedBoosts, selectedHoneyFlower, selectedSwarmCrop, setAnimalCount, setCookingActiveBuilding, setCookingCount, setCookingFishCategory, setCookingGuaranteedCatchOn, setCrustaceanSelectedChum, setCrustaceanTrapTab, setFactionPetManualMode, setFishingTier, setFruitCount, setGreenhouseCount, setManualCycleOverride, setMaterialMode, setMedicineIngredientMode, setNodeCount, setNodeTierQty, setPetsFoodTab, setPlotCount, setPreviewSeason, setSaltFarmLevel, setSculptureLevel, setSelectedHoneyFlower, setSelectedSwarmCrop, setSkillTreeSectionOpen, setSpiceMaterialMode, setVarietyIngredient, setVegMaterialMode, simulateStockCycles, skillAoeNoteForRank, skillCategory, skillDraftSelectedSkills, skillRankUsageHtml, skillSyncedBoostText, skillSyncedLevel, slug, spiceUsage, stepperHtml, syncProgressTimer, ticketBoosts, tierUnlockHintText, toast, toolRecipes, tradeActive, tradeActiveTab, tradeCardKey, tradeExpandedIds, tradeGatherActiveSorted, tradeHistory, tradeLifetime, tradePickItem, tradeSortMode, undeliveredLastSeason, updateBoostSaveBarState, updateCalcRcmToggleUI, updateCalcSelectedDisplay, updateCalcSummary, updateDailyProfitSummary, updateLibCraftTotal, updateNewTradeLiveTotal, updateRcmUnsavedNote, updateSellTradeLiveTotal, updateSettingsSummary, updateSkillSaveBarState, varietyIngredientOptions, vegMaterialMode, wireEvents, withPreservedCardScrolls, withPreservedManualCycleFocus, withPreservedResourceScroll, withPreservedScroll } from "./calculator.js";
 
 import { setFarmPanelAnimalFeedChoice, __set_farmPanelActiveTab, __set_farmPanelInProgressCategoryFilter, __set_farmPanelRenderAtMs, __set_farmPanelTabContentDirty, farmPanelActiveTab, farmPanelCategoryVisible, farmPanelRowVisible, farmPanelComputeInProgress, farmPanelRowIsReady, farmPanelComputeStocks, farmPanelDetectActiveMutants, farmPanelDetectMoneyTreeBonus, farmPanelExpandedNames, farmPanelGameState, farmPanelGetLastInfo, farmPanelInProgressCategoryFilter, farmPanelRenderCategoryFilterBar, farmPanelRenderInProgressRow, farmPanelRenderMoneyTreeBonusCard, farmPanelRenderMutantAlertCard, farmPanelRenderStockRow, farmPanelStateIsCached, farmPanelSyncInFlight, farmPanelTabContentDirty } from "./inprogress.js";
@@ -830,6 +830,9 @@ export function renderBoostPanel() {
     }, {
       label: "⏱️ Cooking time — all buildings",
       items: inCategory.filter(b => b.scope === "cookTimeGlobal")
+    }, {
+      label: "🛢️ Oil — faster cooking, burns Oil per planned dish",
+      items: inCategory.filter(b => b.scope === "cookOil")
     } ];
   } else if (boostCategory === "pets") {
     groups = [ {
@@ -6800,7 +6803,7 @@ function renderCookingHeader() {
     }
   } catch (e) {}
   const cur = cookGetLevelInfo(experience);
-  const {totalExpAdded: totalExpAdded, totalCostCoins: totalCostCoins, xpByCategory: xpByCategory} = cookingComputeTotals();
+  const {totalExpAdded: totalExpAdded, totalCostCoins: totalCostCoins, xpByCategory: xpByCategory, totalOil: totalOil, oilCostCoins: oilCostCoins, totalCookSecs: totalCookSecs} = cookingComputeTotals();
   const preview = cookGetLevelInfo(experience + totalExpAdded);
   const curPct = cur.span > 0 ? Math.min(100, cur.progress / cur.span * 100) : 100;
   const previewExtra = cur.isMax ? 0 : Math.min(cur.span - cur.progress, Math.max(0, totalExpAdded));
@@ -6828,7 +6831,7 @@ function renderCookingHeader() {
     ascensionHtml = `\n    <div class="cook-ascension-row">\n      <span class="cook-ascension-badge">Ascension [${ascCur.ascension}] · Lv ${ascCur.level}${ascCur.isReadyToAscend ? " ✅ Ready" : ""}</span>${projectedTag}\n    </div>\n    <div class="cook-bar-stack">\n      <div class="cook-bar-track">\n        <div class="cook-bar-fill preview" style="width:${ascPreviewPct}%;"></div>\n        <div class="cook-bar-fill" style="width:${ascCurPct}%;"></div>\n      </div>\n    </div>\n    <div class="cook-bar-caption">${ascCur.isReadyToAscend ? "Ready to Ascend" : `${fmt(ascCur.currentExperienceProgress)} / ${fmt(ascCur.experienceToNextLevel)} EXP to Ascension [${ascCur.ascension}] Lv ${ascCur.level + 1}${ascLevelUpNote}`}</div>${projectedAscensionHtml}\n  `;
   }
   const xpBreakdownRows = [ "Basic Fish", "Aged Fish", "Prime Aged Fish", "Bakery", "Deli", "Kitchen", "Smoothie Shack", "Fire Pit" ].map(cat => `<div class="cook-xp-breakdown-row"><span>${escapeHtml(cat)}</span><b>${fmt(xpByCategory[cat] || 0)} EXP</b></div>`).join("");
-  wrap.innerHTML = `\n    <div class="cook-header-row">\n      <span class="cook-level-badge"><span class="cook-level-badge-title">Bumpkin</span><span class="cook-level-badge-value">🧑‍🌾 Level ${cur.level}${cur.isMax ? " MAX" : ""}</span></span>\n      <span class="cook-exp-label">${fmt(experience)} EXP</span>\n    </div>\n    <div class="cook-bar-stack">\n      <div class="cook-bar-track">\n        <div class="cook-bar-fill preview" style="width:${previewPct}%;"></div>\n        <div class="cook-bar-fill" style="width:${curPct}%;"></div>\n      </div>\n    </div>\n    <div class="cook-bar-caption">${cur.isMax ? "Max level reached" : `${fmt(cur.progress)} / ${fmt(cur.span)} EXP to Level ${cur.level + 1}`}</div>\n    ${projectedLevelHtml}\n    ${ascensionHtml}\n    <div class="cook-total-row">\n      <span>Total EXP added: <b>${fmt(totalExpAdded)}</b></span>\n      <span>Total cost: <b>${fmt(flowerCost)} ${typeof FLOWER_ICON !== "undefined" ? FLOWER_ICON : "FLOWER"}</b></span>\n      <div class="cook-xp-breakdown">${xpBreakdownRows}</div>\n    </div>\n  `;
+  wrap.innerHTML = `\n    <div class="cook-header-row">\n      <span class="cook-level-badge"><span class="cook-level-badge-title">Bumpkin</span><span class="cook-level-badge-value">🧑‍🌾 Level ${cur.level}${cur.isMax ? " MAX" : ""}</span></span>\n      <span class="cook-exp-label">${fmt(experience)} EXP</span>\n    </div>\n    <div class="cook-bar-stack">\n      <div class="cook-bar-track">\n        <div class="cook-bar-fill preview" style="width:${previewPct}%;"></div>\n        <div class="cook-bar-fill" style="width:${curPct}%;"></div>\n      </div>\n    </div>\n    <div class="cook-bar-caption">${cur.isMax ? "Max level reached" : `${fmt(cur.progress)} / ${fmt(cur.span)} EXP to Level ${cur.level + 1}`}</div>\n    ${projectedLevelHtml}\n    ${ascensionHtml}\n    <div class="cook-total-row">\n      <span>Total EXP added: <b>${fmt(totalExpAdded)}</b></span>\n      <span>Total cost: <b>${fmt(flowerCost)} ${typeof FLOWER_ICON !== "undefined" ? FLOWER_ICON : "FLOWER"}</b></span>\n      <span>Total cooking time: <b>${formatCookSpan(totalCookSecs)}</b>${totalCookSecs >= 3600 ? ` <span class="cook-time-sub">≈ ${fmt(+(totalCookSecs / 86400).toFixed(2))} days · ${fmt(Math.round(totalCookSecs / 3600))} hours (all buildings cook at the same time)</span>` : ""}</span>\n      ${totalOil > 0 ? `<span>Oil needed: <b>${cookingIngredientIcon("Oil")} ${fmt(totalOil)}</b> · ${fmt(coinsToFlower(oilCostCoins))} ${typeof FLOWER_ICON !== "undefined" ? FLOWER_ICON : "FLOWER"}</span>\n      ` : ""}      <div class="cook-xp-breakdown">${xpBreakdownRows}</div>\n    </div>\n  `;
 }
 
 function renderCookingModeToggle() {
@@ -6891,15 +6894,47 @@ function renderCookYieldLine(yieldCount, iconHtml) {
   return `\n      <div class="cook-food-cost-line cook-yield-line">\n        <span class="cook-total-cost-label">Yield</span>\n        <span class="cook-total-cost-value">${fmt(yieldCount)}× ${iconHtml}</span>\n      </div>`;
 }
 
-function renderCookingFoodCard(building, name) {
+function formatCookSpan(secs) {
+  secs = Math.max(0, Math.round(secs));
+  const mo = Math.floor(secs / 2592000);
+  let rest = secs - mo * 2592000;
+  const d = Math.floor(rest / 86400);
+  rest -= d * 86400;
+  const h = Math.floor(rest / 3600);
+  rest -= h * 3600;
+  const m = Math.floor(rest / 60);
+  const parts = [];
+  if (mo) parts.push(`${mo}mo`);
+  if (d) parts.push(`${d}d`);
+  if (h) parts.push(`${h}h`);
+  if (m || !parts.length) parts.push(`${m}m`);
+  return parts.join(" ");
+}
+
+function formatCookSpanHtml(secs) {
+  const main = formatCookSpan(secs);
+  if (secs < 3600) return main;
+  return `${main}<span class="cook-time-sub">≈ ${fmt(+(secs / 86400).toFixed(2))} days · ${fmt(Math.round(secs / 3600))} hours</span>`;
+}
+
+function cookingCoinsToDisplayFlower(coins) {
+  return coinsToFlower(coins);
+}
+
+function cookingOilLineHtml(label, qty, costCoins) {
+  const flowerIcon = typeof FLOWER_ICON !== "undefined" ? FLOWER_ICON : "FLOWER";
+  return `\n      <div class="cook-food-cost-line cook-total-cost-line cook-oil-line">\n        <span class="cook-total-cost-label">${label}</span>\n        <span class="cook-total-cost-value">${cookingIngredientIcon("Oil")} ${fmt(qty)} · ${fmt(cookingCoinsToDisplayFlower(costCoins))}${flowerIcon}</span>\n      </div>`;
+}
+
+function cookingFoodDetailsHtml(building, name, plan) {
   const rec = COOKING_RECIPES[building][name];
   const {exp: boostedExp, boostsUsed: boostsUsed} = cookingComputeFoodExp(building, name);
   const isBoosted = Math.abs(boostedExp - rec.exp) > 1e-9;
   const count = getCookingCount(name);
-  const isExpanded = cookingExpandedFoods.has(name);
+  const synced = getCookingSyncedCount(name);
+  const planned = getCookingPlannedCount(name);
   const {time: boostedTime, boostsUsed: timeBoostsUsed, baseTime: baseTime} = cookingComputeFoodTime(building, name);
   const isTimeBoosted = baseTime != null && Math.abs(boostedTime - baseTime) > 1e-9;
-  const timeDisplay = baseTime == null ? "⏱ time unknown" : `⏱ ${isTimeBoosted ? `<span class="base">${formatDuration(baseTime)}</span>` : ""}${formatDuration(boostedTime)}`;
   const timeBoostNote = isTimeBoosted ? `<div class="cook-food-cost-line cook-boost-chip-row"><span class="cook-boost-chip-label">⚡ Time:</span><div class="cook-boost-chips">${timeBoostsUsed.map(bu => `<span class="boost-chip">${bu.icon}${escapeHtml(bu.text)}</span>`).join("")}</div></div>` : "";
   let totalCostCoins = 0;
   const effectiveCount = count > 0 ? count : 1;
@@ -6948,7 +6983,85 @@ function renderCookingFoodCard(building, name) {
   const yieldBoostNote = isYieldBoosted ? `<div class="cook-food-cost-line cook-boost-chip-row"><span class="cook-boost-chip-label">⚡ Yield:</span><div class="cook-boost-chips"><span class="boost-chip">Double Nom +${doubleNomBonusFood} food</span></div></div>` : "";
   const foodIconHtml = cookFoodIcon(name);
   const yieldCount = doubleNomMult + jackpotChance;
-  return `\n  <div class="cook-food-card${isExpanded ? " expanded" : ""}${count > 0 ? " is-ready" : ""}" data-food="${escapeHtml(name)}">\n    <div class="cook-food-toggle">\n      <span class="cook-food-icon">${foodIconHtml}</span>\n      <div class="cook-food-main">\n        <div class="cook-food-name">${escapeHtml(name)}</div>\n        <div class="cook-food-exp">${isBoosted ? `<span class="base">${fmt(rec.exp)}</span>` : ""}${fmt(boostedExp)} EXP · ${timeDisplay}</div>\n      </div>\n      <input type="number" min="0" step="1" class="cook-food-count" value="${count || ""}" placeholder="0" data-food="${escapeHtml(name)}" data-unit-cost="${totalFlower}" data-exp-per-unit="${boostedExp}">\n      <span class="cook-food-chev">▾</span>\n    </div>\n    <div class="cook-food-details">\n      ${isBoosted || isTimeBoosted || isIngredientBoosted || isYieldBoosted ? `<div class="cook-ing-label">Applied Boost</div>` : ""}\n      ${boostNote}\n      ${timeBoostNote}\n      ${ingredientBoostNote}\n      ${yieldBoostNote}${jackpotNote}\n      <div class="cook-ing-label">Yield</div>\n      ${renderCookYieldLine(yieldCount, foodIconHtml)}\n      <div class="cook-ing-label">Ingredients</div>\n      ${ingredientRows}\n      <div class="cook-ing-total-section"${effectiveCount > 1 ? "" : ' style="display:none;"'}>\n        <div class="cook-ing-label">Total Ingredients for ${effectiveCount}× ${foodIconHtml}</div>\n        ${ingredientTotalRows}\n      </div>\n      <div class="cook-ing-label">Food Cost</div>\n      ${renderCookTotalCostLine(totalFlower, foodIconHtml, `${cookingCostMode === "buy" ? "Buy" : "Collect"} ingredients`, "", yieldCount)}\n      ${renderCookTotalCostForCountLine(totalFlower, effectiveCount, foodIconHtml, !(count > 1))}\n      <div class="cook-ing-label">Experience</div>\n      ${renderCookTotalExpLine(boostedExp, effectiveCount, foodIconHtml)}\n    </div>\n  </div>`;
+  const entry = plan && plan.byName ? plan.byName[name] : null;
+  const skipped = entry ? entry.skipped : 0;
+  const oilQty = entry ? entry.planned * entry.oilEach : 0;
+  const oilCoins = cookingOilCostCoins(oilQty);
+  const oilFlower = coinsToFlower(oilCoins);
+  const cardSecs = entry ? (entry.planned - skipped) * entry.unit : 0;
+  let timeSection = "";
+  if (baseTime == null) {
+    timeSection = `<div class="cook-food-cost-line">⏱ time unknown</div>`;
+  } else if (count > 0) {
+    const syncedRow = synced > 0 ? `\n      <div class="cook-food-cost-line cook-plan-row"><span>Already cooked (synced)</span><span>${fmt(Math.min(synced, count))}× ${foodIconHtml}</span></div>` : "";
+    if (planned > 0) {
+      const igRow = skipped > 0 ? `\n      <div class="cook-food-cost-line cook-plan-row"><span>⚡ Instant Gratification</span><span>${fmt(skipped)}× instant · saves ${formatCookSpan(skipped * boostedTime)}</span></div>` : "";
+      timeSection = `${syncedRow}\n      <div class="cook-food-cost-line cook-plan-row"><span>Planned to cook</span><span>${fmt(planned)}× ${foodIconHtml}</span></div>\n      <div class="cook-food-cost-line cook-total-cost-line cook-total-time-line">\n        <span class="cook-total-cost-label">Total Time for ${fmt(planned)}× ${foodIconHtml}</span>\n        <span class="cook-total-cost-value cook-time-value">${formatCookSpanHtml(cardSecs)}</span>\n      </div>${igRow}`;
+    } else {
+      timeSection = `${syncedRow}\n      <div class="cook-food-cost-line cook-plan-row"><span>Planned to cook</span><span>0 — everything is already cooked</span></div>`;
+    }
+  } else {
+    timeSection = `<div class="cook-food-cost-line cook-plan-row"><span>Enter a count to see the total time</span></div>`;
+  }
+  const oilIngredientSection = oilQty > 0 ? cookingOilLineHtml(`Oil for ${fmt(planned)}× ${foodIconHtml}`, oilQty, oilCoins) : "";
+  const countCostFlower = totalFlower * effectiveCount + oilFlower;
+  const showCountLine = count > 1 || oilQty > 0;
+  const countLineLabel = oilQty > 0 ? `Total Cost for ${fmt(effectiveCount)}× ${foodIconHtml} + Oil` : `Total Cost for ${fmt(effectiveCount)}× ${foodIconHtml}`;
+  const flowerIcon = typeof FLOWER_ICON !== "undefined" ? FLOWER_ICON : "FLOWER";
+  const countCostLine = `\n      <div class="cook-food-cost-line cook-total-cost-line cook-food-count-total-line"${showCountLine ? "" : ' style="display:none;"'}>\n        <span class="cook-total-cost-label">${countLineLabel}</span>\n        <span class="cook-total-cost-value">${fmt(countCostFlower)}${flowerIcon}</span>\n      </div>`;
+  return `\n      ${isBoosted || isTimeBoosted || isIngredientBoosted || isYieldBoosted ? `<div class="cook-ing-label">Applied Boost</div>` : ""}\n      ${boostNote}\n      ${timeBoostNote}\n      ${ingredientBoostNote}\n      ${yieldBoostNote}${jackpotNote}\n      <div class="cook-ing-label">Yield</div>\n      ${renderCookYieldLine(yieldCount, foodIconHtml)}\n      <div class="cook-ing-label">Ingredients</div>\n      ${ingredientRows}\n      <div class="cook-ing-total-section"${effectiveCount > 1 ? "" : ' style="display:none;"'}>\n        <div class="cook-ing-label">Total Ingredients for ${effectiveCount}× ${foodIconHtml}</div>\n        ${ingredientTotalRows}\n      </div>\n      <div class="cook-ing-label">Cooking Time</div>\n      ${timeSection}\n      ${oilIngredientSection ? `<div class="cook-ing-label">Oil</div>\n      ${oilIngredientSection}` : ""}\n      <div class="cook-ing-label">Food Cost</div>\n      ${renderCookTotalCostLine(totalFlower, foodIconHtml, `${cookingCostMode === "buy" ? "Buy" : "Collect"} ingredients`, "", yieldCount)}\n      ${countCostLine}\n      <div class="cook-ing-label">Experience</div>\n      ${renderCookTotalExpLine(boostedExp, effectiveCount, foodIconHtml)}\n    `;
+}
+
+function cookingPlanSummaryHtml(building, plan) {
+  const flowerIcon = typeof FLOWER_ICON !== "undefined" ? FLOWER_ICON : "FLOWER";
+  const synced = plan.entries.reduce((a, e) => a + Math.min(getCookingSyncedCount(e.name), getCookingCount(e.name)), 0);
+  if (!plan.plannedCount) {
+    return `<div class="cook-plan-summary guro-frame" id="cookPlanSummary"><div class="cook-plan-title">⏱ Cooking plan · ${escapeHtml(building)}</div><div class="cook-food-cost-line cook-plan-row"><span>Nothing planned yet — raise a count above your synced amount to see the time${plan.oilOn ? " and Oil" : ""}.</span></div></div>`;
+  }
+  let igHtml = "";
+  if (plan.ig) {
+    const cd = formatCookSpan(plan.ig.cooldownSecs);
+    const avail = plan.ig.delaySecs > 0 ? ` · ready again in ${formatCookSpan(plan.ig.delaySecs)}` : " · ready now";
+    igHtml = `<div class="cook-food-cost-line cook-plan-row"><span>⚡ Instant Gratification (cooldown ${cd}${avail})</span><span>${fmt(plan.uses)} use${plan.uses === 1 ? "" : "s"} · −${formatCookSpan(plan.savedSecs)}</span></div><div class="cook-plan-note">Each use finishes the food being cooked at once, so it is counted as the longest remaining dish. The oil that dish would have burned is still spent.</div>`;
+  }
+  const oilHtml = plan.oilOn ? `<div class="cook-food-cost-line cook-total-cost-line cook-oil-line"><span class="cook-total-cost-label">Oil needed for the planned food</span><span class="cook-total-cost-value">${cookingIngredientIcon("Oil")} ${fmt(plan.oilTotal)} · ${fmt(coinsToFlower(cookingOilCostCoins(plan.oilTotal)))}${flowerIcon}</span></div>` : "";
+  const unknown = plan.unknownTime ? `<div class="cook-plan-note">Some planned dishes have no known cooking time and are not counted.</div>` : "";
+  return `<div class="cook-plan-summary guro-frame" id="cookPlanSummary"><div class="cook-plan-title">⏱ Cooking plan · ${escapeHtml(building)}</div><div class="cook-food-cost-line cook-plan-row"><span>Planned to cook</span><span>${fmt(plan.plannedCount)} food${synced > 0 ? ` · ${fmt(synced)} already cooked` : ""}</span></div><div class="cook-food-cost-line cook-total-cost-line cook-total-time-line"><span class="cook-total-cost-label">Total cooking time</span><span class="cook-total-cost-value cook-time-value">${formatCookSpanHtml(plan.totalSecs)}</span></div>${igHtml}${oilHtml}${unknown}</div>`;
+}
+
+function renderCookingFoodCard(building, name, plan) {
+  const rec = COOKING_RECIPES[building][name];
+  const {exp: boostedExp} = cookingComputeFoodExp(building, name);
+  const isBoosted = Math.abs(boostedExp - rec.exp) > 1e-9;
+  const count = getCookingCount(name);
+  const isExpanded = cookingExpandedFoods.has(name);
+  const {time: boostedTime, baseTime: baseTime} = cookingComputeFoodTime(building, name);
+  const isTimeBoosted = baseTime != null && Math.abs(boostedTime - baseTime) > 1e-9;
+  const timeDisplay = baseTime == null ? "⏱ time unknown" : `⏱ ${isTimeBoosted ? `<span class="base">${formatDuration(baseTime)}</span>` : ""}${formatDuration(boostedTime)}`;
+  const doubleNomMult = getDoubleNomIngredientMultiplier();
+  let unitCostCoins = 0;
+  Object.keys(rec.ingredients).forEach(ing => {
+    unitCostCoins += rec.ingredients[ing] * doubleNomMult * cookingIngredientUnitCostCoins(ing, cookingCostMode);
+  });
+  const totalFlower = coinsToFlower(unitCostCoins);
+  const foodIconHtml = cookFoodIcon(name);
+  return `\n  <div class="cook-food-card${isExpanded ? " expanded" : ""}${count > 0 ? " is-ready" : ""}" data-food="${escapeHtml(name)}">\n    <div class="cook-food-toggle">\n      <span class="cook-food-icon">${foodIconHtml}</span>\n      <div class="cook-food-main">\n        <div class="cook-food-name">${escapeHtml(name)}</div>\n        <div class="cook-food-exp">${isBoosted ? `<span class="base">${fmt(rec.exp)}</span>` : ""}${fmt(boostedExp)} EXP · ${timeDisplay}</div>\n      </div>\n      <input type="number" min="0" step="1" class="cook-food-count" value="${count || ""}" placeholder="0" data-food="${escapeHtml(name)}" data-unit-cost="${totalFlower}" data-exp-per-unit="${boostedExp}">\n      <span class="cook-food-chev">▾</span>\n    </div>\n    <div class="cook-food-details">${cookingFoodDetailsHtml(building, name, plan)}</div>\n  </div>`;
+}
+
+function refreshCookingBuildingView() {
+  const wrap = $("cookFoodList");
+  if (!wrap || cookingFishCategory) return;
+  const building = cookingActiveBuilding;
+  const plan = cookingBuildingPlan(building);
+  const summary = $("cookPlanSummary");
+  if (summary) summary.outerHTML = cookingPlanSummaryHtml(building, plan);
+  wrap.querySelectorAll(".cook-food-card").forEach(card => {
+    const name = card.dataset.food;
+    if (!COOKING_RECIPES[building] || !COOKING_RECIPES[building][name]) return;
+    const details = card.querySelector(".cook-food-details");
+    if (details) details.innerHTML = cookingFoodDetailsHtml(building, name, plan);
+    card.classList.toggle("is-ready", getCookingCount(name) > 0);
+  });
 }
 
 export function renderCookingFoodList() {
@@ -6961,7 +7074,8 @@ export function renderCookingFoodList() {
   }
   const building = cookingActiveBuilding;
   const foods = Object.keys(COOKING_RECIPES[building] || {});
-  wrap.innerHTML = foods.map(f => renderCookingFoodCard(building, f)).join("");
+  const plan = cookingBuildingPlan(building);
+  wrap.innerHTML = cookingPlanSummaryHtml(building, plan) + foods.map(f => renderCookingFoodCard(building, f, plan)).join("");
   wrap.querySelectorAll(".cook-food-toggle").forEach(el => {
     el.onclick = () => {
       const card = el.closest(".cook-food-card");
@@ -6978,55 +7092,9 @@ export function renderCookingFoodList() {
         renderCookingBuildingTabs();
         renderCookingFishTabs();
       }
+      invalidateCostCache();
       renderCookingHeader();
-      const card = el.closest(".cook-food-card");
-      const n = Number(el.value);
-      if (card) card.classList.toggle("is-ready", n > 0);
-      const effectiveCount = n > 0 ? n : 1;
-      const iconHtml = card && card.querySelector(".cook-food-icon") ? card.querySelector(".cook-food-icon").innerHTML : "";
-      const totalLine = card ? card.querySelector(".cook-food-count-total-line") : null;
-      if (totalLine) {
-        const unitCost = Number(el.dataset.unitCost) || 0;
-        if (n > 1) {
-          totalLine.style.display = "";
-          const flowerIcon = typeof FLOWER_ICON !== "undefined" ? FLOWER_ICON : "FLOWER";
-          const labelEl = totalLine.querySelector(".cook-total-cost-label");
-          const valueEl = totalLine.querySelector(".cook-total-cost-value");
-          if (labelEl) labelEl.innerHTML = `Total Cost for ${fmt(effectiveCount)}× ${iconHtml}`;
-          if (valueEl) valueEl.innerHTML = `${fmt(unitCost * effectiveCount)}${flowerIcon}`;
-        } else {
-          totalLine.style.display = "none";
-        }
-      }
-      const expLine = card ? card.querySelector(".cook-total-exp-line") : null;
-      if (expLine) {
-        const expPerUnit = Number(el.dataset.expPerUnit) || 0;
-        const labelEl = expLine.querySelector(".cook-total-cost-label");
-        const valueEl = expLine.querySelector(".cook-total-cost-value");
-        if (labelEl) labelEl.innerHTML = `Total EXP for ${fmt(effectiveCount)}× ${iconHtml}`;
-        if (valueEl) valueEl.innerHTML = `${fmt(expPerUnit * effectiveCount)} EXP`;
-      }
-      const totalSection = card ? card.querySelector(".cook-ing-total-section") : null;
-      if (totalSection) {
-        if (n > 1) {
-          totalSection.style.display = "";
-          const label = totalSection.querySelector(".cook-ing-label");
-          if (label) label.innerHTML = `Total Ingredients for ${effectiveCount}× ${iconHtml}`;
-          totalSection.querySelectorAll("[data-ing-total]").forEach(row => {
-            const qty = Number(row.dataset.qty) || 0;
-            const unitCoins = Number(row.dataset.unitCoins) || 0;
-            const ingName = row.dataset.ingName || "";
-            const totalQty = qty * effectiveCount;
-            const totalIngCoins = qty * effectiveCount * unitCoins;
-            const displayUnit = cookingCostMode === "buy" ? typeof FLOWER_ICON !== "undefined" ? FLOWER_ICON : "F" : typeof COIN_ICON !== "undefined" ? COIN_ICON : "c";
-            const totalDisplayVal = cookingCostMode === "buy" ? coinsToFlower(totalIngCoins) : totalIngCoins;
-            const costLabel = unitCoins > 0 ? `${fmt(totalDisplayVal)}${displayUnit}` : "—";
-            row.innerHTML = `<span>${cookingIngredientIcon(ingName)}</span><span class="ing-name">${escapeHtml(ingName)} ×${fmt(totalQty)}</span><span class="ing-cost">${costLabel}</span>`;
-          });
-        } else {
-          totalSection.style.display = "none";
-        }
-      }
+      refreshCookingBuildingView();
     };
   });
 }
@@ -7441,12 +7509,14 @@ function renderCookingOilToggle() {
   if (!row || !input) return;
   const b = getCookingOilBoost(cookingActiveBuilding);
   const meta = $("cookOilMeta");
-  if (meta) meta.textContent = `${cookingActiveBuilding}: cooks ${+(b * 100).toFixed(2)}% faster while the building has oil (time ×${+(1 - b).toFixed(4)})`;
-  input.checked = cookingOilOn;
-  row.classList.toggle("is-active", cookingOilOn);
+  if (meta) meta.textContent = `${cookingActiveBuilding}: cooks ${+(b * 100).toFixed(2)}% faster while the building has oil (time ×${+(1 - b).toFixed(4)}) and burns ${{ "Fire Pit": 1, Kitchen: 5, "Smoothie Shack": 8, Bakery: 10, Deli: 12 }[cookingActiveBuilding] || 0} Oil per day of recipe time. Also in Boost, Oil.`;
+  const oilNow = isCookingOilOn();
+  input.checked = oilNow;
+  row.classList.toggle("is-active", oilNow);
   const apply = val => {
     setCookingOilOn(val);
     renderCookingOilToggle();
+    renderCookingHeader();
     renderCookingFoodList();
   };
   input.onchange = () => apply(input.checked);

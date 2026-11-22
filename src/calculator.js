@@ -8433,7 +8433,7 @@ export const ASCENSION_RANK_DATA = {
     field: null,
     unit: "d",
     values: [ 4, 3.5, 3 ],
-    note: "Power skill cooldown — not wired into time math yet"
+    note: "Power skill cooldown — used by the Cooking panel's cooking time plan"
   },
   skill_barnyard_rouse: {
     field: null,
@@ -11659,6 +11659,13 @@ COOKING_BOOSTS.push({
   scope: "foodGlobal",
   expMult: 1.1,
   note: "+10% EXP from all food & fish (VIP). Auto-selected when your synced farm has VIP, or tick it manually"
+});
+
+COOKING_BOOSTS.push({
+  id: "cooking_oil",
+  name: "Oil",
+  scope: "cookOil",
+  note: "Building Oil: cooks faster in every cooking building (Fire Pit 20%, Kitchen 25%, Smoothie Shack 30%, Bakery 35%, Deli 40% — higher with Swift Sizzle, Turbo Fry and Fry Frenzy) and burns Oil per planned dish. Auto-selected when a synced cooking building holds Oil, or tick it manually"
 });
 
 PORT_BUD_BOOSTS.forEach(b => COOKING_BOOSTS.push(b));
@@ -15980,6 +15987,14 @@ function applyFarmGreenThumbLegacyOnly(json) {
   };
 }
 
+function farmSyncHasCookingBuildingOil(g) {
+  const buildings = g && g.buildings && typeof g.buildings === "object" ? g.buildings : {};
+  return [ "Fire Pit", "Kitchen", "Smoothie Shack", "Bakery", "Deli" ].some(name => {
+    const list = Array.isArray(buildings[name]) ? buildings[name] : [];
+    return list.some(b => b && b.coordinates && Number(b.oil) > 0);
+  });
+}
+
 export function applyFarmBoostsOnly(json) {
   const g = farmSyncExtractGameState(json);
   farmSyncRefreshLimitedBoostActiveState(g);
@@ -16015,6 +16030,7 @@ export function applyFarmBoostsOnly(json) {
   }
   const vipStatus = farmSyncGetVipStatus(g);
   if (vipStatus && vipStatus.active && !freshBoostIds.includes("vip_access")) freshBoostIds.push("vip_access");
+  if (farmSyncHasCookingBuildingOil(g) && !freshBoostIds.includes("cooking_oil")) freshBoostIds.push("cooking_oil");
   const ISLAND_PROGRESSION_ORDER = [ "basic", "spring", "desert", "volcano", "swamp", "spooky", "crystal", "galaxy", "marble" ];
   const syncedIslandType = g && g.island && typeof g.island.type === "string" ? g.island.type : null;
   const syncedIslandIndex = syncedIslandType ? ISLAND_PROGRESSION_ORDER.indexOf(syncedIslandType) : -1;
@@ -16024,7 +16040,7 @@ export function applyFarmBoostsOnly(json) {
   __lastBoostsSig = JSON.stringify([ freshBoostIds.slice().sort(), vipStatus.active ]);
   const boostDomainIds = new Set(freshBoostIds);
   BOOSTS.forEach(b => {
-    if (b.source !== "skill" && !b.isBud && !b.composterFertilizer && b.id !== "vip_access" && !b.portBud) boostDomainIds.add(b.id);
+    if (b.source !== "skill" && !b.isBud && !b.composterFertilizer && b.id !== "vip_access" && b.id !== "cooking_oil" && !b.portBud) boostDomainIds.add(b.id);
   });
   [].concat(FACTION_QUIVER_BOOST_IDS, FACTION_SHIELD_BOOST_IDS, FACTION_MEDALLION_BOOST_IDS, [ "volcano_gnome" ]).forEach(id => boostDomainIds.add(id));
   const toAddBoosts = freshBoostIds.filter(id => !selectedBoosts.includes(id));
@@ -31092,6 +31108,16 @@ export const COOKING_FOOD_EMOJI = {
 
 export let cookingCounts = safeLSJSON(localStorage.getItem("hl_cooking_counts"), {});
 
+export let cookingSyncedCounts = safeLSJSON(localStorage.getItem("hl_cooking_synced_counts"), {});
+
+export function getCookingSyncedCount(name) {
+  return Number(cookingSyncedCounts[name]) || 0;
+}
+
+export function getCookingPlannedCount(name) {
+  return Math.max(0, getCookingCount(name) - getCookingSyncedCount(name));
+}
+
 export function getCookingCount(name) {
   return Number(cookingCounts[name]) || 0;
 }
@@ -31358,7 +31384,7 @@ function cookingComputeFoodTimeUncached(building, name) {
     const m = 1 - [ .1, .2, .3 ][Math.min(Math.max(getAscensionRank("skill_frosted_cakes"), 1), 3) - 1];
     applyMult(m, `Frosted Cakes ×${+m.toFixed(4)}`, getBoostIcon("Frosted Cakes"));
   }
-  if (cookingOilOn) {
+  if (isBoostActive("cooking_oil")) {
     const m = 1 - getCookingOilBoost(building);
     applyMult(m, `Oil ×${+m.toFixed(4)}`, getBoostIcon("Oil"));
   }
@@ -31398,6 +31424,7 @@ export function syncCookingCountsFromInventory(json) {
   };
   cookingCategoryOff = {};
   cookingCategoryStash = {};
+  cookingSyncedCounts = {};
   const normalizeInvKey = s => String(s || "").trim().toLowerCase();
   const invKeyByNormalized = {};
   Object.keys(inv).forEach(k => {
@@ -31408,7 +31435,10 @@ export function syncCookingCountsFromInventory(json) {
   let synced = 0;
   const applyInvSync = (storeName, invKey) => {
     const qty = invKey ? Math.max(0, Math.floor(cookingInvAmount(inv[invKey]))) : 0;
-    if (qty > 0) cookingCounts[storeName] = qty; else delete cookingCounts[storeName];
+    if (qty > 0) {
+      cookingCounts[storeName] = qty;
+      cookingSyncedCounts[storeName] = qty;
+    } else delete cookingCounts[storeName];
     synced++;
     if (invKey) matched++;
   };
@@ -31427,10 +31457,133 @@ export function syncCookingCountsFromInventory(json) {
       });
     });
   }
-  if (synced) saveCookingCounts();
+  if (synced) {
+    saveCookingCounts();
+    localStorage.setItem("hl_cooking_synced_counts", JSON.stringify(cookingSyncedCounts));
+  }
   return {
     matched: matched
   };
+}
+
+const COOKING_OIL_DAILY = {
+  "Fire Pit": 1,
+  Kitchen: 5,
+  "Smoothie Shack": 8,
+  Bakery: 10,
+  Deli: 12
+};
+
+const COOKING_COOLDOWN_WEARABLES = {
+  "Luna's Crescent": .5,
+  "Ascension Staff": .9
+};
+
+export function cookingOilPerCook(building, name) {
+  const rec = COOKING_RECIPES[building] && COOKING_RECIPES[building][name];
+  if (!rec || rec.time == null) return 0;
+  return (COOKING_OIL_DAILY[building] || 0) * rec.time / 86400;
+}
+
+export function getInstantGratificationInfo() {
+  if (typeof isSkillActive !== "function" || !isSkillActive("skill_instant_gratification")) return null;
+  const rank = Math.min(Math.max(getAscensionRank("skill_instant_gratification"), 1), 3);
+  let cooldownSecs = [ 4, 3.5, 3 ][rank - 1] * 86400;
+  let delaySecs = 0;
+  try {
+    const g = farmPanelGameState && typeof farmSyncExtractGameState === "function" ? farmSyncExtractGameState(farmPanelGameState) : null;
+    const bumpkin = g && g.bumpkin ? g.bumpkin : null;
+    const worn = new Set();
+    const collect = eq => {
+      if (eq && typeof eq === "object") Object.values(eq).forEach(v => {
+        if (typeof v === "string") worn.add(v);
+      });
+    };
+    if (bumpkin) collect(bumpkin.equipped);
+    const hands = g && g.farmHands && g.farmHands.bumpkins ? g.farmHands.bumpkins : {};
+    Object.values(hands).forEach(h => collect(h && h.equipped));
+    Object.keys(COOKING_COOLDOWN_WEARABLES).forEach(n => {
+      if (worn.has(n)) cooldownSecs *= COOKING_COOLDOWN_WEARABLES[n];
+    });
+    const last = bumpkin && bumpkin.previousPowerUseAt ? Number(bumpkin.previousPowerUseAt["Instant Gratification"]) : 0;
+    if (last > 0) delaySecs = Math.max(0, (last + cooldownSecs * 1000 - Date.now()) / 1000);
+  } catch (e) {}
+  return {
+    cooldownSecs: cooldownSecs,
+    delaySecs: delaySecs,
+    rank: rank
+  };
+}
+
+export function cookingBuildingPlan(building) {
+  const oilOn = isBoostActive("cooking_oil");
+  const entries = [];
+  let unknownTime = false;
+  Object.keys(COOKING_RECIPES[building] || {}).forEach(name => {
+    const planned = getCookingPlannedCount(name);
+    if (!planned) return;
+    const {time: time} = cookingComputeFoodTime(building, name);
+    if (time == null) {
+      unknownTime = true;
+      return;
+    }
+    entries.push({
+      name: name,
+      planned: planned,
+      unit: time,
+      skipped: 0,
+      oilEach: oilOn ? cookingOilPerCook(building, name) : 0
+    });
+  });
+  const baseSecs = entries.reduce((a, e) => a + e.planned * e.unit, 0);
+  const ig = getInstantGratificationInfo();
+  let savedSecs = 0;
+  let uses = 0;
+  if (ig && entries.length) {
+    const order = entries.slice().sort((a, b) => b.unit - a.unit);
+    let idx = 0;
+    while (uses < 5000) {
+      const at = ig.delaySecs + uses * ig.cooldownSecs;
+      if (!(at < baseSecs - savedSecs)) break;
+      while (idx < order.length && order[idx].skipped >= order[idx].planned) idx++;
+      if (idx >= order.length) break;
+      order[idx].skipped++;
+      savedSecs += order[idx].unit;
+      uses++;
+    }
+  }
+  const oilTotal = entries.reduce((a, e) => a + e.planned * e.oilEach, 0);
+  return {
+    building: building,
+    entries: entries,
+    byName: Object.fromEntries(entries.map(e => [ e.name, e ])),
+    baseSecs: baseSecs,
+    savedSecs: savedSecs,
+    totalSecs: Math.max(0, baseSecs - savedSecs),
+    uses: uses,
+    ig: ig,
+    oilOn: oilOn,
+    oilTotal: oilTotal,
+    unknownTime: unknownTime,
+    plannedCount: entries.reduce((a, e) => a + e.planned, 0)
+  };
+}
+
+export function cookingPlanAll() {
+  const plans = COOKING_BUILDINGS.filter(b => cookingCategoryEnabled(b)).map(b => cookingBuildingPlan(b));
+  return {
+    plans: plans,
+    totalSecs: plans.reduce((a, p) => Math.max(a, p.totalSecs), 0),
+    sumSecs: plans.reduce((a, p) => a + p.totalSecs, 0),
+    savedSecs: plans.reduce((a, p) => a + p.savedSecs, 0),
+    oilTotal: plans.reduce((a, p) => a + p.oilTotal, 0),
+    plannedCount: plans.reduce((a, p) => a + p.plannedCount, 0)
+  };
+}
+
+export function cookingOilCostCoins(oilQty) {
+  if (!(oilQty > 0)) return 0;
+  return oilQty * cookingIngredientUnitCostCoins("Oil", cookingCostMode);
 }
 
 export function cookingComputeTotals() {
@@ -31460,6 +31613,9 @@ export function cookingComputeTotals() {
       });
     });
   });
+  const oilPlan = cookingPlanAll();
+  const oilCostCoins = cookingOilCostCoins(oilPlan.oilTotal);
+  totalCostCoins += oilCostCoins;
   if (typeof cookingFishTotals === "function") {
     const fishTotals = cookingFishTotals();
     totalExpAdded += fishTotals.totalExpAdded;
@@ -31473,7 +31629,11 @@ export function cookingComputeTotals() {
   return {
     totalExpAdded: totalExpAdded,
     totalCostCoins: totalCostCoins,
-    xpByCategory: xpByCategory
+    xpByCategory: xpByCategory,
+    totalOil: oilPlan.oilTotal,
+    oilCostCoins: oilCostCoins,
+    totalCookSecs: oilPlan.totalSecs,
+    savedCookSecs: oilPlan.savedSecs
   };
 }
 
@@ -32471,12 +32631,24 @@ function fishCatchComputeXPUncached(fishName, stage) {
   };
 }
 
-export let cookingOilOn = localStorage.getItem("hl_cooking_oil") === "true";
+export function isCookingOilOn() {
+  return isBoostActive("cooking_oil");
+}
 
 export function setCookingOilOn(val) {
-  cookingOilOn = !!val;
-  localStorage.setItem("hl_cooking_oil", String(cookingOilOn));
+  const has = selectedBoosts.includes("cooking_oil");
+  if (val && !has) selectedBoosts = selectedBoosts.concat([ "cooking_oil" ]);
+  else if (!val && has) selectedBoosts = selectedBoosts.filter(id => id !== "cooking_oil");
+  saveBoostState();
   __cookingFoodTimeMemo.clear();
+}
+
+if (localStorage.getItem("hl_cooking_oil") === "true") {
+  if (!selectedBoosts.includes("cooking_oil")) {
+    selectedBoosts = selectedBoosts.concat([ "cooking_oil" ]);
+    localStorage.setItem("hl_selected_boosts", JSON.stringify(selectedBoosts));
+  }
+  localStorage.removeItem("hl_cooking_oil");
 }
 
 const COOKING_OIL_BASE_BOOST = {

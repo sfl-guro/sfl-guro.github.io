@@ -11,7 +11,7 @@ import {
   toolRestockIconsHtml,
   toolRestockShareCount,
   unmountBeetlesCalculator
-} from "./chunk.TT5QSZMO.js";
+} from "./chunk.DJTL73WP.js";
 import {
   ANIMAL_DATA,
   ANIMAL_LOVE_ITEM_XP,
@@ -246,7 +246,7 @@ import {
   toast,
   updateCalcSummary,
   updateSkillSaveBarState
-} from "./chunk.WGYEQIH2.js";
+} from "./chunk.4GBG4OBT.js";
 import "./chunk.LPEVZJ4B.js";
 import "./chunk.D3PHX6VZ.js";
 import "./chunk.VR6FV3KR.js";
