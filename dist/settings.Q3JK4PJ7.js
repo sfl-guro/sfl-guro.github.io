@@ -1,9 +1,10 @@
 import {
   farmPanelCardCatalog,
+  farmPanelFilterCategories,
   farmPanelHiddenCards,
   farmPanelSetHiddenCards,
   renderFarmPanelTabContent
-} from "./chunk.Q6WIYO66.js";
+} from "./chunk.A4SO7UZT.js";
 import "./chunk.XKJMJZUJ.js";
 import "./chunk.LPEVZJ4B.js";
 import "./chunk.D3PHX6VZ.js";
@@ -85,6 +86,16 @@ function growCardHtml(c) {
     <input type="checkbox" data-st-grow="${c.key}"${on ? " checked" : ""} aria-label="${c.label}">
   </label>`;
 }
+var GROW_TOGGLE_IDS = ["crops", "fruits", "greenhouse", "beehive"];
+function growToggleGroupHtml(g) {
+  const on = g.cards.some((c) => growDraft.has(c.key));
+  const cat = farmPanelFilterCategories().find((c) => c.id === g.id);
+  const icon = cat && cat.icon ? cat.icon : g.cards[0] ? g.cards[0].icon : "";
+  return `<label class="st-grow-card guro-frame${on ? " is-on" : ""}">
+    <span class="st-grow-name"><span class="st-grow-icon">${icon}</span><span class="st-grow-text">${g.label}</span></span>
+    <input type="checkbox" data-st-grow-group="${g.id}"${on ? " checked" : ""} aria-label="${g.label}">
+  </label>`;
+}
 function growGroupHtml(g) {
   return `<div class="st-grow-group">
     <div class="st-label st-grow-group-label">${g.label}</div>
@@ -104,8 +115,11 @@ function growHtml() {
   return `<div class="st-outer guro-frame st-grow-outer">
       <div class="st-inner guro-frame">
         <div class="st-label">Growing Display Settings</div>
-        <p class="st-grow-note">Adding a check to the check box will display the card in the Growing Panel. Removing the check hides it. Hidden cards are still computed and still included in the Logs, they are only hidden from the display. Click Save to apply your changes.</p>
-        ${farmPanelCardCatalog().map(growGroupHtml).join("")}
+        <p class="st-grow-note">Adding a check to the check box will display it in the Growing Panel. Removing the check hides it. Beehive also controls the flowers. Hidden cards are still computed and still included in the Logs, they are only hidden from the display. Click Save to apply your changes.</p>
+        <div class="st-grow-group">
+          <div class="st-grow-list">${farmPanelCardCatalog().filter((g) => GROW_TOGGLE_IDS.includes(g.id)).map(growToggleGroupHtml).join("")}</div>
+        </div>
+        ${farmPanelCardCatalog().filter((g) => !GROW_TOGGLE_IDS.includes(g.id)).map(growGroupHtml).join("")}
         <div class="st-save-row"><button type="button" class="st-save-btn guro-frame${cls}" data-st-grow-save${disabled}>${growBtnHtml()}</button></div>
       </div>
     </div>`;
@@ -113,6 +127,10 @@ function growHtml() {
 function growSyncUi() {
   if (!rootEl) return;
   rootEl.querySelectorAll("[data-st-grow]").forEach((box) => {
+    const card = box.closest(".st-grow-card");
+    if (card) card.classList.toggle("is-on", box.checked);
+  });
+  rootEl.querySelectorAll("[data-st-grow-group]").forEach((box) => {
     const card = box.closest(".st-grow-card");
     if (card) card.classList.toggle("is-on", box.checked);
   });
@@ -161,6 +179,15 @@ function render() {
 function onChange(e) {
   const t = e.target;
   if (!t || !t.dataset) return;
+  if (t.dataset.stGrowGroup != null) {
+    const group = farmPanelCardCatalog().find((g) => g.id === t.dataset.stGrowGroup);
+    if (group) group.cards.forEach((c) => {
+      if (t.checked) growDraft.add(c.key);
+      else growDraft.delete(c.key);
+    });
+    growSyncUi();
+    return;
+  }
   if (t.dataset.stGrow != null) {
     if (t.checked) growDraft.add(t.dataset.stGrow);
     else growDraft.delete(t.dataset.stGrow);

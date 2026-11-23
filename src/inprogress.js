@@ -548,7 +548,7 @@ export function farmPanelDetectActiveMutants(json) {
 }
 
 export function farmPanelRenderMutantAlertCard(entry) {
-  const icon = IMAGE_ICONS[entry.name] ? getIcon(entry.name) : `<span style="font-size:24px;">${MUTANT_TYPE_EMOJI[entry.type] || "✨"}</span>`;
+  const icon = IMAGE_ICONS[entry.name] ? getIcon(entry.name) : `<span style="font-size:calc(24px * var(--fs-desk,1));">${MUTANT_TYPE_EMOJI[entry.type] || "✨"}</span>`;
   const countNote = entry.count > 1 ? ` ×${entry.count}` : "";
   return `\n  <div class="mutant-alert-card" data-search="mutant-${entry.type.toLowerCase()}">\n    <div class="mutant-alert-shine"></div>\n    <div class="mutant-alert-icon">${icon}</div>\n    <div class="mutant-alert-text">\n      <div class="mutant-alert-title">You have a Mutant! <span class="mutant-alert-type">[${escapeHtml(entry.type)}]</span></div>\n      <div class="mutant-alert-name">${escapeHtml(entry.name)}${countNote}</div>\n    </div>\n  </div>`;
 }
@@ -5541,7 +5541,7 @@ function peteRewardIconHtml(name) {
     const base = name.replace(/ Seed$/, "");
     if (hasIcon(base)) return getIcon(base);
   }
-  if (/mushroom/i.test(name)) return '<span style="font-size:16px;line-height:1;">🍄</span>';
+  if (/mushroom/i.test(name)) return '<span style="font-size:calc(16px * var(--fs-desk,1));line-height:1;">🍄</span>';
   return "";
 }
 
@@ -6743,7 +6743,7 @@ function farmPanelRenderCookingCard(row) {
   const cookFee = cookGross * ((feePercent || 0) / 100);
   const valueBlockHtml = cookGross > 0 ? guroValueBlockHtml(cookGross, cookFee, fmt) : "";
   const buildingIconKey = (row.cookingKind === "fermentation" || row.cookingKind === "spice") && IMAGE_ICONS["Aging Shed"] ? "Aging Shed" : building;
-  const buildingIcon = IMAGE_ICONS[buildingIconKey] ? getIcon(buildingIconKey) : COOKING_BUILDING_ICONS[building] ? `<span style="font-size:19.2px;line-height:1;">${COOKING_BUILDING_ICONS[building]}</span>` : getIcon(building);
+  const buildingIcon = IMAGE_ICONS[buildingIconKey] ? getIcon(buildingIconKey) : COOKING_BUILDING_ICONS[building] ? `<span style="font-size:calc(19.2px * var(--fs-desk,1));line-height:1;">${COOKING_BUILDING_ICONS[building]}</span>` : getIcon(building);
   const searchKey = building.toLowerCase().replace(/\s+/g, "-");
   const expandedCls = farmPanelExpandedNames.has(searchKey) ? " expanded" : "";
   const growingCount = row.slotCount - row.readyCount;
