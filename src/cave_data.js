@@ -399,6 +399,7 @@ function dugHtml(api, g, ctx) {
   const stats = [];
   stats.push(`<div class="dig-total-row"><span class="dig-total-label">Tiles dug</span><span class="dig-total-val">${fmt(day.tiles)}</span></div>`);
   stats.push(`<div class="dig-total-row"><span class="dig-total-label">Twin Beetles procs</span><span class="dig-total-val">${fmt(day.twin)}</span></div>`);
+  if (day.vip) stats.push(`<div class="dig-total-row"><span class="dig-total-label">VIP Beetle procs</span><span class="dig-total-val">${fmt(day.vip)}</span></div>`);
   const shovels = day.used["Sand Shovel"];
   const drills = day.used["Sand Drill"];
   const toolRows = (tool, used) => {

@@ -309,7 +309,7 @@ function fishRowHtml(r) {
 }
 
 function treasureRowHtml(r) {
-  return `<div class="fh-trow"><div class="fh-trow-top"><span class="fh-qty">×${fishDigFmt(r.qty)}</span><span class="fh-ico">${getIcon(r.name)}</span><span class="fh-name" title="${escapeHtml(r.name)}">${escapeHtml(r.name)}</span></div><div class="fh-trow-bot"><span class="fh-each">${fishDigFmt(r.each)}${COIN_ICON}<small>/ item</small></span><span class="fh-tot">${pairText(r.coins)}</span></div></div>`;
+  return `<div class="fh-trow"><div class="fh-trow-top"><span class="fh-qty">×${fishDigFmt(r.qty)}</span><span class="fh-ico">${getIcon(r.name)}</span><span class="fh-name" title="${escapeHtml(r.name)}">${escapeHtml(r.name)}</span><span class="fh-each">${fishDigFmt(r.each)}${COIN_ICON}<small>/ item</small></span><span class="fh-tot">${pairText(r.coins)}</span></div></div>`;
 }
 
 function totalsHtml(row) {
@@ -328,7 +328,7 @@ export function farmPanelRenderFishingCard(row, expanded) {
   const treasureHtml = row.treasureRows.length ? row.treasureRows.map(treasureRowHtml).join("") : `<div class="fh-empty">No treasures caught yet.</div>`;
   const noteHtml = row.tracked ? "" : `<div class="fh-empty">Catches are counted from your first sync. Sync again after fishing to see them here.</div>`;
   return `
-  <div class="card animal-merged-card fh-card${row.isReady ? " is-profit" : ""}${expanded ? " expanded" : ""}" data-search="fishing" data-fp-category="fishing">
+  <div class="card animal-merged-card fh-card${row.isReady ? " is-profit" : ""}${expanded ? " expanded" : ""}" data-search="fishing" data-fp-category="pete">
     <div class="card-toggle">
       <div class="card-name-row">
         <span class="card-icon">${fishingMiniIconHtml(22)}</span>

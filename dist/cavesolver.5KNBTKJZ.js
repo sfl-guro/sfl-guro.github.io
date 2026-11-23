@@ -3,7 +3,7 @@ import {
 } from "./chunk.XKJMJZUJ.js";
 import {
   mycoItemUnitCostFlower
-} from "./chunk.DJTL73WP.js";
+} from "./chunk.FBHZSQSH.js";
 import {
   CAVE_SKILL_RANKS,
   CAVE_WIDTH,
@@ -28,7 +28,7 @@ import {
   findLivePriceForName,
   getMaterialUnitCostCoins,
   solveCaveBatch
-} from "./chunk.4GBG4OBT.js";
+} from "./chunk.RUFZJDTZ.js";
 import "./chunk.LPEVZJ4B.js";
 import "./chunk.D3PHX6VZ.js";
 import "./chunk.VR6FV3KR.js";
@@ -397,6 +397,7 @@ function dugHtml(api, g, ctx) {
   const stats = [];
   stats.push(`<div class="dig-total-row"><span class="dig-total-label">Tiles dug</span><span class="dig-total-val">${fmt(day.tiles)}</span></div>`);
   stats.push(`<div class="dig-total-row"><span class="dig-total-label">Twin Beetles procs</span><span class="dig-total-val">${fmt(day.twin)}</span></div>`);
+  if (day.vip) stats.push(`<div class="dig-total-row"><span class="dig-total-label">VIP Beetle procs</span><span class="dig-total-val">${fmt(day.vip)}</span></div>`);
   const shovels = day.used["Sand Shovel"];
   const drills = day.used["Sand Drill"];
   const toolRows = (tool, used) => {

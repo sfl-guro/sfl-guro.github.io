@@ -1,4 +1,4 @@
-import { sflPrngChance, farmSyncCollectEquippedAndPlacedNames } from "./calculator.js";
+import { sflPrngChance, farmSyncCollectEquippedAndPlacedNames, farmSyncHasVipBeetleBonus, VIP_BEETLE_BONUS_CHANCE } from "./calculator.js";
 
 const STORE_PREFIX = "guro_cave_track_v2_";
 
@@ -119,6 +119,7 @@ function emptyDay() {
     items: {},
     tiles: 0,
     twin: 0,
+    vip: 0,
     used: {
       "Sand Shovel": 0,
       "Sand Drill": 0
@@ -204,8 +205,18 @@ export function caveTrackFromState(g, farmId) {
           chance: twinRank,
           criticalHitName: "Twin Beetles"
         })) {
-          amount = 2;
+          amount += 1;
           bucket.twin += 1;
+        }
+        if (counters && farmSyncHasVipBeetleBonus(g, t.dugAt) && sflPrngChance({
+          farmId: farmNum,
+          itemId: ITEM_IDS[name],
+          counter: counters[i],
+          chance: VIP_BEETLE_BONUS_CHANCE,
+          criticalHitName: "VIP Access"
+        })) {
+          amount += 1;
+          bucket.vip = (bucket.vip || 0) + 1;
         }
       }
       const slot = bucket.items[name] || (bucket.items[name] = {

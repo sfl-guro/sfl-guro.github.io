@@ -7,8 +7,10 @@ import { getPumpkinPeteQuest } from "./pete_quests.js";
 import { farmPanelComputeFloatingIslandCard, farmPanelRenderFloatingIslandCard, floatingIslandClock, floatingIslandMiniIconHtml } from "./floating_island.js";
 import { caveBuriedCounts } from "./cave_solver.js";
 
+import { POWER_SKILL_DEFS, farmPanelComputePowerSkillCards, farmPanelRenderPowerSkillCard } from "./power_skills.js";
+
 import { $, hiveClockText, cookFoodIcon, getBoostIcon, getIcon, renderAnimalCardProductDetailRow, renderAnimalYieldGroupsList, renderBeehiveListHtml, renderCardProductDetailRow, renderCostNetInfoTrigger, renderCrimstoneInstantMineBoostHtml, renderCrimstoneNodeYieldList, renderFarmPanelTabContent, renderFruitHarvestsLeftHtml, renderGoldInstantMineBoostHtml, renderNodeTierYieldList, renderOilNodeYieldList, renderPlantYieldNodeList, renderSaltNodeYieldList, renderSeaBlessedBoostHtml, renderTotalsBreakdown, renderTurnaroundBoostHtml } from "./ui.js";
-import { potionTrackFromState, digStreakTrackFromState } from "./calculator.js";
+import { potionTrackFromState, digStreakTrackFromState, farmSyncHasVipBeetleBonus, VIP_BEETLE_BONUS_CHANCE } from "./calculator.js";
 
 import { caveTrackFromState } from "./cave_track.js";
 
@@ -17,7 +19,7 @@ import { dailyHarvestTrack, dailyHarvestBadgeHtml, dailyHarvestSetYield, dailyHa
 
 import { harvestLogArm } from "./harvest_log.js";
 
-import { resolveCropMachine, cropMachineFuelAt, cropMachineWindows, effectiveSpeedAt, cropPlotWindows, cropFertiliserWindows, fruitWindows, turbofruitWindows, greenhouseWindows, greenhouseGlowWindows, flowerWindows, treeWindows, mineWindows, oilWindows, animalWindows, cookingWindows, computeReadyAt, growDurationMsFor, resolveCookingQueue } from "./speed_windows.js";
+import { resolveCropMachine, cropMachineFuelAt, cropMachineWindows, effectiveSpeedAt, cropPlotWindows, cropFertiliserWindows, fruitWindows, turbofruitWindows, greenhouseWindows, greenhouseGlowWindows, flowerWindows, treeWindows, mineWindows, oilWindows, animalWindows, cookingWindows, computeReadyAt, growDurationMsFor, resolveCookingQueue, placementsOf, collectibleExpiry, BOOST_EXPIRY_MS } from "./speed_windows.js";
 
 import { craftedToolsTrack } from "./crafted_tools.js";
 
@@ -187,7 +189,11 @@ const farmPanelCookingCards = () => [ ...COOKING_BUILDINGS, "Fish Market", "Agin
 function farmPanelLoadHiddenCards() {
   try {
     const raw = JSON.parse(localStorage.getItem(FARM_PANEL_HIDDEN_CARDS_KEY) || "[]");
-    return new Set(Array.isArray(raw) ? raw.filter(k => typeof k === "string") : []);
+    const legacy = {
+      "floating:floating": "pete:floating",
+      "fishing:fishing": "pete:fishing"
+    };
+    return new Set(Array.isArray(raw) ? raw.filter(k => typeof k === "string").map(k => legacy[k] || k) : []);
   } catch (e) {
     return new Set;
   }
@@ -247,21 +253,23 @@ export function farmPanelCardCatalog() {
       label: "Myco Bins",
       icon: getIcon("Myco Bin")
     } ];
-    if (id === "floating") return [ {
-      id: "floating",
-      label: "Floating Island",
-      icon: floatingIslandMiniIconHtml(16)
-    } ];
-    if (id === "fishing") return [ {
-      id: "fishing",
-      label: "Fishing",
-      icon: fishingMiniIconHtml(16)
-    } ];
     return [ {
       id: "pete",
       label: "Pumpkin Pete Quest",
       icon: farmPanelPeteIconHtml()
-    } ];
+    }, {
+      id: "floating",
+      label: "Floating Island",
+      icon: floatingIslandMiniIconHtml(16)
+    }, {
+      id: "fishing",
+      label: "Fishing",
+      icon: fishingMiniIconHtml(16)
+    } ].concat(POWER_SKILL_DEFS.map(d => ({
+      id: d.name,
+      label: d.name,
+      icon: getIcon(d.name)
+    })));
   };
   return cats.map(c => ({
     id: c.id,
@@ -3675,21 +3683,246 @@ function cookingIsWearableEquipped(g, wearableName) {
   return false;
 }
 
+let farmPanelCookingExtend = (() => {
+  try {
+    const v = JSON.parse(localStorage.getItem("fp_cooking_extend") || "{}");
+    return v && typeof v === "object" ? v : {};
+  } catch (e) {
+    return {};
+  }
+})();
+
+let farmPanelCookingLimitedOpen = (() => {
+  try {
+    const v = JSON.parse(localStorage.getItem("fp_cooking_limited_open") || "{}");
+    return v && typeof v === "object" ? v : {};
+  } catch (e) {
+    return {};
+  }
+})();
+
+export function toggleFarmPanelCookingExtend(key) {
+  if (!key) return;
+  if (farmPanelCookingExtend[key]) delete farmPanelCookingExtend[key]; else farmPanelCookingExtend[key] = true;
+  try {
+    localStorage.setItem("fp_cooking_extend", JSON.stringify(farmPanelCookingExtend));
+  } catch (e) {}
+}
+
+export function toggleFarmPanelCookingLimitedOpen(building) {
+  if (!building) return;
+  if (farmPanelCookingLimitedOpen[building]) delete farmPanelCookingLimitedOpen[building]; else farmPanelCookingLimitedOpen[building] = true;
+  try {
+    localStorage.setItem("fp_cooking_limited_open", JSON.stringify(farmPanelCookingLimitedOpen));
+  } catch (e) {}
+}
+
+const COOKING_LIMITED_BOOSTS = [ {
+  name: "Time Warp Totem",
+  cost: {
+    "Time Warp Totem": 1
+  }
+}, {
+  name: "Super Totem",
+  cost: {
+    "Super Totem": 1
+  }
+}, {
+  name: "Gourmet Hourglass",
+  cost: {
+    "Gourmet Hourglass": 1
+  }
+}, {
+  name: "Legendary Shrine",
+  cost: {
+    Obsidian: 1,
+    Moonfur: 10,
+    Acorn: 15
+  }
+}, {
+  name: "Boar Shrine",
+  cost: {
+    Acorn: 15
+  }
+} ];
+
+function cookingInventoryCount(g, name) {
+  const inv = farmPanelField(g, "inventory");
+  const raw = inv && typeof inv === "object" ? Number(inv[name]) : 0;
+  const owned = Number.isFinite(raw) && raw > 0 ? raw : 0;
+  if (BOOST_EXPIRY_MS[name]) {
+    const placed = placementsOf(g, name).filter(p => p && p.coordinates).length;
+    return Math.max(0, owned - placed);
+  }
+  return owned;
+}
+
+function cookingProjectBuilding(g, building, instances, extendSet, extendOil) {
+  const windows = cookingWindows(g, extendSet);
+  const out = [];
+  instances.forEach((inst, instIdx) => {
+    const crafting = Array.isArray(inst.crafting) ? inst.crafting : [];
+    if (!crafting.length) return;
+    const hasOil = inst.oilSettledAt !== undefined;
+    const tank = typeof inst.oil === "number" ? inst.oil : 0;
+    const report = {};
+    const resolved = resolveCookingQueue({
+      crafting: crafting,
+      windows: windows,
+      oil: hasOil ? {
+        tank: tank,
+        settledAt: inst.oilSettledAt
+      } : undefined,
+      buildingName: building,
+      extendOil: !!extendOil && hasOil,
+      report: report
+    });
+    out.push({
+      instIdx: instIdx,
+      readyAts: resolved.map(t => t.readyAt),
+      oilUsed: report.oilUsed || 0,
+      oilEmptyAt: report.oilEmptyAt,
+      tank: tank,
+      hasOil: hasOil
+    });
+  });
+  return out;
+}
+
+function cookingExtendSetFromState() {
+  const set = new Set;
+  COOKING_LIMITED_BOOSTS.forEach(b => {
+    if (farmPanelCookingExtend[b.name]) set.add(b.name);
+  });
+  return set;
+}
+
+function cookingOilExtendFor(building) {
+  return !!farmPanelCookingExtend[`Oil|${building}`];
+}
+
+function cookingQueueHorizon(g, extendSet) {
+  const buildings = farmPanelField(g, "buildings");
+  let horizon = 0;
+  COOKING_BUILDINGS.forEach(b => {
+    const instances = buildings && Array.isArray(buildings[b]) ? buildings[b] : null;
+    if (!instances || !instances.length) return;
+    cookingProjectBuilding(g, b, instances, extendSet, cookingOilExtendFor(b)).forEach(p => {
+      p.readyAts.forEach(t => {
+        if (typeof t === "number" && t > horizon) horizon = t;
+      });
+    });
+  });
+  return horizon;
+}
+
+function cookingCollectibleEntry(g, def, extendSet) {
+  const now = Date.now();
+  const duration = BOOST_EXPIRY_MS[def.name];
+  const placed = placementsOf(g, def.name).filter(p => p && typeof p.createdAt === "number" && p.coordinates && typeof p.removedAt !== "number");
+  let expiresAt = 0;
+  placed.forEach(p => {
+    expiresAt = Math.max(expiresAt, collectibleExpiry(def.name, p));
+  });
+  const status = !placed.length ? "missing" : expiresAt > now ? "active" : "expired";
+  let needed = 0;
+  if (status === "active") {
+    const probe = new Set(extendSet);
+    probe.add(def.name);
+    const horizon = cookingQueueHorizon(g, probe);
+    needed = horizon > expiresAt ? Math.ceil((horizon - expiresAt) / duration) : 0;
+  }
+  const costItems = Object.keys(def.cost).map(item => ({
+    item: item,
+    qty: def.cost[item] * needed,
+    unit: def.cost[item],
+    have: cookingInventoryCount(g, item)
+  }));
+  const short = costItems.filter(c => c.qty > 0 && c.have < c.qty);
+  let canExtend = status === "active" && !short.length;
+  let reason = "";
+  if (status === "missing") reason = "Not placed on your farm"; else if (status === "expired") reason = "Expired — renew it in game first"; else if (short.length) reason = `Missing ${short.map(c => `${fmt(c.qty - c.have)} ${c.item}`).join(", ")}`; else if (needed === 0) reason = "Already covers the whole queue"; else reason = `Uses ${costItems.map(c => `${fmt(c.qty)} ${c.item}`).join(" + ")}`;
+  return {
+    key: def.name,
+    name: def.name,
+    kind: "collectible",
+    status: status,
+    expiresAt: expiresAt,
+    remainingSec: status === "active" ? (expiresAt - now) / 1e3 : 0,
+    needed: needed,
+    costItems: costItems,
+    canExtend: canExtend,
+    reason: reason
+  };
+}
+
+function cookingOilEntry(g, building, instances, extendSet) {
+  const now = Date.now();
+  const base = cookingProjectBuilding(g, building, instances, extendSet, false);
+  const full = cookingProjectBuilding(g, building, instances, extendSet, true);
+  const supported = base.length > 0 && base.every(p => p.hasOil);
+  let needed = 0;
+  full.forEach(p => {
+    needed += Math.max(0, p.oilUsed - p.tank);
+  });
+  needed = Math.ceil(needed * 100) / 100;
+  const tankTotal = base.reduce((sum, p) => sum + p.tank, 0);
+  let emptyAt = 0;
+  base.forEach(p => {
+    if (typeof p.oilEmptyAt === "number" && (!emptyAt || p.oilEmptyAt < emptyAt)) emptyAt = p.oilEmptyAt;
+  });
+  const have = cookingInventoryCount(g, "Oil");
+  let status;
+  if (!supported) status = "missing"; else if (emptyAt > now) status = "active"; else if (tankTotal > 0 && !emptyAt) status = "enough"; else status = "empty";
+  const canExtend = supported && needed <= have + 1e-9;
+  let reason;
+  if (!supported) reason = "Oil is not tracked for this building yet"; else if (!canExtend) reason = `Missing ${fmt(Math.ceil((needed - have) * 100) / 100)} Oil`; else if (needed <= 0) reason = "Tank already covers the whole queue"; else reason = `Uses ${fmt(needed)} Oil`;
+  return {
+    key: `Oil|${building}`,
+    name: "Oil",
+    kind: "oil",
+    status: status,
+    expiresAt: emptyAt,
+    remainingSec: status === "active" ? (emptyAt - now) / 1e3 : 0,
+    needed: needed,
+    costItems: [ {
+      item: "Oil",
+      qty: needed,
+      unit: 1,
+      have: have
+    } ],
+    canExtend: canExtend,
+    reason: reason
+  };
+}
+
+function cookingLimitedEntries(g, building, instances, extendSet) {
+  const entries = COOKING_LIMITED_BOOSTS.map(def => cookingCollectibleEntry(g, def, extendSet));
+  entries.push(cookingOilEntry(g, building, instances, extendSet));
+  return entries;
+}
+
 function farmPanelBuildCookingBuildingCard(building, instances, farmActivity, g) {
+  const storedSet = cookingExtendSetFromState();
+  const storedEntries = cookingLimitedEntries(g, building, instances, storedSet);
+  const effectiveSet = new Set;
+  storedEntries.forEach(e => {
+    if (e.kind === "collectible" && farmPanelCookingExtend[e.key] && e.canExtend) effectiveSet.add(e.name);
+  });
+  const limitedBoosts = cookingLimitedEntries(g, building, instances, effectiveSet).map(e => ({
+    ...e,
+    extended: !!farmPanelCookingExtend[e.key] && e.canExtend
+  }));
+  const oilEntry = limitedBoosts.find(e => e.kind === "oil");
+  const extendOil = !!oilEntry && oilEntry.extended;
+  const projection = cookingProjectBuilding(g, building, instances, effectiveSet, extendOil);
   const allSlots = [];
   instances.forEach((inst, instIdx) => {
     const crafting = Array.isArray(inst.crafting) ? inst.crafting : [];
     if (!crafting.length) return;
     const yields = cookingComputeQueueYields(building, crafting, farmActivity);
-    const windowedReadyAts = resolveCookingQueue({
-      crafting: crafting,
-      windows: cookingWindows(g),
-      oil: inst.oilSettledAt !== undefined ? {
-        tank: typeof inst.oil === "number" ? inst.oil : 0,
-        settledAt: inst.oilSettledAt
-      } : undefined,
-      buildingName: building
-    }).map(t => t.readyAt);
+    const proj = projection.find(p => p.instIdx === instIdx);
+    const windowedReadyAts = proj ? proj.readyAts : [];
     yields.forEach((y, yi) => {
       const readyAt = typeof windowedReadyAts[yi] === "number" ? windowedReadyAts[yi] : typeof y.recipe.readyAt === "number" ? y.recipe.readyAt : 0;
       allSlots.push({
@@ -3751,6 +3984,7 @@ function farmPanelBuildCookingBuildingCard(building, instances, farmActivity, g)
     })),
     timeBoosts: Array.from(timeBoostSeen.values()),
     productGroups: productGroups,
+    limitedBoosts: limitedBoosts,
     profit: -totalCostFlower
   };
 }
@@ -4933,6 +5167,7 @@ export function farmPanelComputeInProgress(json) {
   if (floatingIslandCard) allCards.push(floatingIslandCard);
   const fishingCard = farmPanelComputeFishingCard(json, String(json && json.id || farmPanelGetLastInfo().id || ""));
   if (fishingCard) allCards.push(fishingCard);
+  farmPanelComputePowerSkillCards(json).forEach(card => allCards.push(card));
   return allCards;
 }
 
@@ -5045,6 +5280,7 @@ function farmPanelComputeMycoCard(json) {
         fungalLevel: skillLevel("Fungal Harvest"),
         muddyLevel: skillLevel("Muddy Bounty"),
         twinLevel: skillLevel("Twin Beetles"),
+        vipBeetle: farmSyncHasVipBeetleBonus(g, Date.now()) ? VIP_BEETLE_BONUS_CHANCE / 100 : 0,
         binId: id,
         name: "Myco Bin " + id,
         searchKey: "myco-bin-" + id,
@@ -5666,8 +5902,7 @@ function farmPanelCardCategory(row) {
   if (row.isCropMachineCard) return "crops";
   if (row.isMycoCard) return "myco";
   if (row.isPeteQuestCard) return "pete";
-  if (row.isFloatingIslandCard) return "floating";
-  if (row.isFishingCard) return "fishing";
+  if (row.isFloatingIslandCard || row.isFishingCard || row.isPowerSkillCard) return "pete";
   if (row.isAnimalMerged) return "animals";
   if (row.isComposterCard) return "composters";
   if (row.isHoneyCard) return "beehive";
@@ -5681,7 +5916,7 @@ function farmPanelCardCategory(row) {
 
 export function farmPanelRowIsReady(row) {
   if (!row) return false;
-  if (row.isPeteQuestCard || row.isFloatingIslandCard || row.isFishingCard) return !!row.isReady;
+  if (row.isPeteQuestCard || row.isFloatingIslandCard || row.isFishingCard || row.isPowerSkillCard) return !!row.isReady;
   return (row.readyCount || 0) > 0;
 }
 
@@ -5758,19 +5993,9 @@ export function farmPanelFilterCategories() {
     icon: getIcon("Myco Bin")
   }, {
     id: "pete",
-    label: "Pumpkin Pete Quest",
-    name: "Pete's Quest",
+    label: "Other",
+    name: "Other",
     icon: farmPanelPeteIconHtml()
-  }, {
-    id: "floating",
-    label: "Floating Island",
-    name: "Floating Island",
-    icon: floatingIslandMiniIconHtml(16)
-  }, {
-    id: "fishing",
-    label: "Fishing",
-    name: "Fishing",
-    icon: fishingMiniIconHtml(16)
   } ];
   return cats;
 }
@@ -5925,6 +6150,66 @@ function cookingFoodOrFishIcon(name) {
   return getIcon(name);
 }
 
+function cookingQueueClockText(ms) {
+  const d = new Date(ms);
+  const today = new Date;
+  const dayStart = x => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const diffDays = Math.round((dayStart(d) - dayStart(today)) / 864e5);
+  let h = d.getHours();
+  const ampm = h >= 12 ? "PM" : "AM";
+  h = h % 12 || 12;
+  const time = `${h}:${String(d.getMinutes()).padStart(2, "0")} ${ampm}`;
+  if (diffDays <= 0) return time;
+  if (diffDays === 1) return `tomorrow ${time}`;
+  return `${d.toLocaleDateString(undefined, {
+    weekday: "short"
+  })} ${time}`;
+}
+
+function farmPanelRenderCookingQueueList(row) {
+  const slots = Array.isArray(row.slots) ? row.slots : [];
+  if (!slots.length) return "";
+  const now = Date.now();
+  const rowsHtml = slots.map(s => {
+    const itemName = row.cookingKind === "aging" && s.outputName ? s.outputName : s.name;
+    const isReady = !(s.readyAt > now);
+    const timeHtml = isReady ? `<span class="hive-time-pill guro-frame is-ready">Ready</span>` : `<span class="hive-time-pill guro-frame farm-countdown" data-base="${(s.readyAt - now) / 1e3}">${guroCountdownText((s.readyAt - now) / 1e3)}</span><span class="hive-time-clock">${cookingQueueClockText(s.readyAt)}</span>`;
+    const primeNote = row.cookingKind === "aging" && s.isPrime ? ` <span style="color:#c9821a;font-weight:700;">(Prime!)</span>` : "";
+    return `<div class="guro-queue-row"><span class="guro-queue-item"><span class="guro-queue-yield">+${fmt(s.amount)}</span>${cookingFoodOrFishIcon(itemName)}<span class="guro-queue-name">${escapeHtml(itemName)}${primeNote}</span></span><span class="guro-queue-time hive-time">${timeHtml}</span></div>`;
+  }).join("");
+  return `<div class="lib-section-title" style="margin-top:10px;">${escapeHtml(row.cookingBuilding)} Queue</div><div class="guro-queue-list">${rowsHtml}</div>`;
+}
+
+function farmPanelRenderCookingLimitedBoosts(row) {
+  const list = Array.isArray(row.limitedBoosts) ? row.limitedBoosts : [];
+  if (!list.length) return "";
+  const building = row.cookingBuilding;
+  const open = !!farmPanelCookingLimitedOpen[building];
+  const extendedCount = list.filter(e => e.extended).length;
+  const rowsHtml = list.map(e => {
+    const icon = e.kind === "oil" ? getIcon("Oil") : getBoostIcon(e.name);
+    let badgeHtml;
+    if (e.status === "active") {
+      badgeHtml = `<span class="hive-time-pill guro-frame farm-countdown" data-base="${e.remainingSec}">${guroCountdownText(e.remainingSec)}</span><span class="hive-time-clock">${cookingQueueClockText(e.expiresAt)}</span>`;
+    } else if (e.status === "enough") {
+      badgeHtml = `<span class="hive-time-pill guro-frame is-ready">Enough</span>`;
+    } else if (e.status === "expired") {
+      badgeHtml = `<span class="hive-time-pill guro-frame is-idle">Expired</span>`;
+    } else if (e.status === "empty") {
+      badgeHtml = `<span class="hive-time-pill guro-frame is-idle">No oil</span>`;
+    } else {
+      badgeHtml = `<span class="hive-time-pill guro-frame is-idle">Not placed</span>`;
+    }
+    const subText = e.extended ? "Extended — keeps running through the queue" : e.reason;
+    const subCls = !e.canExtend && e.status !== "missing" && e.status !== "expired" ? " is-short" : "";
+    const disabled = !e.canExtend ? " disabled" : "";
+    const on = e.extended ? " is-on" : "";
+    return `<div class="fp-ext-row"><div class="fp-ext-main"><span class="fp-ext-icon">${icon}</span><div class="fp-ext-text"><span class="fp-ext-name">${escapeHtml(e.name)}</span><span class="fp-ext-sub${subCls}">${escapeHtml(subText)}</span></div></div><div class="fp-ext-side"><span class="hive-time">${badgeHtml}</span><button type="button" class="fp-ext-switch guro-frame${on}" role="switch" aria-checked="${e.extended ? "true" : "false"}" data-fp-ext-key="${escapeHtml(e.key)}"${disabled}><span class="fp-ext-switch-label">Extend</span><span class="fp-ext-knob"></span></button></div></div>`;
+  }).join("");
+  const countHtml = extendedCount ? `<span class="fp-ext-count">${extendedCount} extended</span>` : "";
+  return `<div class="fp-ext-block"><button type="button" class="fp-ext-head guro-frame${open ? " is-open" : ""}" data-fp-ext-open="${escapeHtml(building)}" aria-expanded="${open ? "true" : "false"}"><span class="fp-ext-title">Limited Time Boosts</span>${countHtml}<span class="chev">▾</span></button>${open ? `<div class="fp-ext-list">${rowsHtml}</div>` : ""}</div>`;
+}
+
 function farmPanelRenderCookingBoostList(row) {
   const yieldHtmlParts = (row.yieldBoostTotals || []).map(b => `<div class="boost-applied-row is-yield">${getBoostIcon(b.name)}<b>${escapeHtml(b.name)}</b> <span class="boost-total-value">+${fmt(b.total)}</span></div>`);
   const chanceHtmlParts = (row.chanceBoosts || []).map(b => `<div class="boost-applied-row is-yield">${getBoostIcon(b.name)}<b>${escapeHtml(b.name)}</b> <span class="boost-mult-note">(${escapeHtml(b.note)})</span></div>`);
@@ -5958,6 +6243,7 @@ function farmPanelMycoBuriedFigures(row) {
   const fungal = row.fungalLevel ? MYCO_FUNGAL_BONUS[row.fungalLevel - 1] : 0;
   const muddy = row.muddyLevel ? MYCO_MUDDY_BONUS[row.muddyLevel - 1] : 0;
   const twin = row.twinLevel ? MYCO_TWIN_CHANCE[row.twinLevel - 1] : 0;
+  const vipBeetle = row.vipBeetle || 0;
   const mushroomQty = buried.Mushroom * (1 + fungal);
   const beetleQty = buried.Beetle;
   const mudQty = buried.Mud * (buried.mudPerTile || 1) * (1 + muddy);
@@ -5985,7 +6271,8 @@ function farmPanelMycoBuriedFigures(row) {
     fee: fee,
     fungal: fungal,
     muddy: muddy,
-    twin: twin
+    twin: twin,
+    vipBeetle: vipBeetle
   };
 }
 
@@ -5999,6 +6286,7 @@ function farmPanelMycoBoostListHtml(row, fig) {
   if (fig && fig.fungal) parts.push(rowHtml("Fungal Harvest", `+${fig.fungal} per Mushroom`));
   if (fig && fig.muddy) parts.push(rowHtml("Muddy Bounty", `x${Math.round((1 + fig.muddy) * 100) / 100} Mud`));
   if (fig && fig.twin) parts.push(rowHtml("Twin Beetles", `${Math.round(fig.twin * 100)}% chance of +1 Beetle`));
+  if (fig && fig.vipBeetle) parts.push(rowHtml("VIP Access", `${Math.round(fig.vipBeetle * 100)}% chance of +1 Beetle`));
   if (!parts.length) return "";
   return `<div class="section-badge is-boost-label">⚡ Applied Boost</div><div class="lib-section-title" style="margin-top:10px;">YIELD</div>${parts.join("")}`;
 }
@@ -6124,17 +6412,10 @@ function farmPanelRenderCookingCard(row) {
   const statusFoldHtml = guroStatusFoldHtml("Cooking", showCountdown ? row.soonestSec : null);
   const dailyBadgeHtml = dailyHarvestBadgeHtml(building, "cooking", buildingIcon, farmPanelDailyFarmId());
   const productChipHtml = row.productGroups.map(p => `\n      <span class="animal-produce-chip">\n        <span class="produce-yield">+${fmt(p.amount)}</span>\n        <span class="produce-icon">${cookingFoodOrFishIcon(p.name)}</span>\n        <span class="produce-name">${escapeHtml(p.name)}</span>\n      </span>`).join("");
-  const yieldLabel = `${building} Yield`;
-  const yieldRows = row.slots.map(s => {
-    if (row.cookingKind === "aging") {
-      const primeNote = s.isPrime ? ` <span style="color:#c9821a;font-weight:700;">(Prime!)</span>` : "";
-      return `<div class="boost-applied-row is-yield">${cookingFoodOrFishIcon(s.outputName)}<b>${escapeHtml(s.outputName)}</b> <span class="boost-total-value">${fmt(s.amount)}</span>${primeNote}</div>`;
-    }
-    return `<div class="boost-applied-row is-yield">${cookingFoodOrFishIcon(s.name)}<b>${escapeHtml(s.name)}</b> <span class="boost-total-value">${fmt(s.amount)}</span></div>`;
-  }).join("");
-  const yieldListHtml = `<div class="lib-section-title" style="margin-top:10px;">${escapeHtml(yieldLabel)}</div>${yieldRows}`;
   const boostListHtml = farmPanelRenderCookingBoostList(row);
-  return `\n  <div class="card animal-merged-card${isProfit ? " is-profit" : " is-loss"}${expandedCls}" data-search="${searchKey}" data-fp-category="cooking">\n    <div class="card-toggle">\n      <div class="card-name-row">\n        <span class="card-icon">${buildingIcon}</span>\n        <div>\n          <div class="card-name">${escapeHtml(building)}</div>\n          <div class="card-type-row">\n            <span class="card-type">${row.slotCount} slot${row.slotCount === 1 ? "" : "s"}</span>\n            ${badgeHtml}\n          </div>\n          <div class="animal-fold-row">${productChipHtml}</div>${valueBlockHtml}\n        </div>\n      </div>\n      <div class="card-collapsed-profit">\n        <span class="harvest-stack">${dailyBadgeHtml}${statusBadgeHtml}</span>\n        <span class="chev">▾</span>\n      </div>\n      ${statusFoldHtml}\n    </div>\n    <div class="card-details">\n      ${yieldListHtml}\n      ${boostListHtml}\n    </div>\n  </div>`;
+  const queueListHtml = farmPanelRenderCookingQueueList(row);
+  const limitedHtml = farmPanelRenderCookingLimitedBoosts(row);
+  return `\n  <div class="card animal-merged-card${isProfit ? " is-profit" : " is-loss"}${expandedCls}" data-search="${searchKey}" data-fp-category="cooking">\n    <div class="card-toggle">\n      <div class="card-name-row">\n        <span class="card-icon">${buildingIcon}</span>\n        <div>\n          <div class="card-name">${escapeHtml(building)}</div>\n          <div class="card-type-row">\n            <span class="card-type">${row.slotCount} slot${row.slotCount === 1 ? "" : "s"}</span>\n            ${badgeHtml}\n          </div>\n          <div class="animal-fold-row">${productChipHtml}</div>${valueBlockHtml}\n        </div>\n      </div>\n      <div class="card-collapsed-profit">\n        <span class="harvest-stack">${dailyBadgeHtml}${statusBadgeHtml}</span>\n        <span class="chev">▾</span>\n      </div>\n      ${statusFoldHtml}\n    </div>\n    <div class="card-details">\n      ${queueListHtml}\n      ${boostListHtml}\n      ${limitedHtml}\n    </div>\n  </div>`;
 }
 
 const FARM_PANEL_DAILY_NODE_KINDS = {
@@ -6333,6 +6614,7 @@ export function farmPanelRenderInProgressRow(row) {
   if (row.isPeteQuestCard) return farmPanelRenderPeteQuestCard(row);
   if (row.isFloatingIslandCard) return farmPanelRenderFloatingIslandCard(row, farmPanelExpandedNames.has("floating-island"));
   if (row.isFishingCard) return farmPanelRenderFishingCard(row, farmPanelExpandedNames.has("fishing"));
+  if (row.isPowerSkillCard) return farmPanelRenderPowerSkillCard(row, farmPanelExpandedNames.has(row.searchKey), row.isReady ? "" : guroStatusFoldHtml("Ready", row.remainingSec));
   const baseStatus = row.readyCount > 0 ? row.readyCount === row.count ? "✅ All ready" : `✅ ${row.readyCount} ready · ⏳ ${row.count - row.readyCount} growing` : "⏳ Growing";
   const showCountdown = row.soonestSec != null && row.readyCount < row.count;
   const noEtaGrowing = !showCountdown && row.readyCount < row.count && row.noEtaCount > 0;
