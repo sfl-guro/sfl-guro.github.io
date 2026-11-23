@@ -103,13 +103,13 @@ function span(ms) {
   return escapeHtml(formatDuration(Math.round(ms / 1e3)));
 }
 
-function boostRow(name, text) {
-  return `<div class="boost-applied-row is-yield">${getBoostIcon(name)}<b>${escapeHtml(name)}</b> <span class="boost-total-value">${escapeHtml(text)}</span></div>`;
+function boostRow(name, text, iconName) {
+  return `<div class="boost-applied-row is-yield">${getBoostIcon(iconName || name)}<b>${escapeHtml(name)}</b> <span class="boost-total-value">${escapeHtml(text)}</span></div>`;
 }
 
 function appliedBoostHtml(row) {
   const rows = [];
-  if (row.rankMs < row.baseMs) rows.push(boostRow(`${row.name} Lv ${row.level}`, `${formatDuration(Math.round(row.baseMs / 1e3))} → ${formatDuration(Math.round(row.rankMs / 1e3))}`));
+  if (row.rankMs < row.baseMs) rows.push(boostRow(`${row.name} Lv ${row.level}`, `${formatDuration(Math.round(row.baseMs / 1e3))} → ${formatDuration(Math.round(row.rankMs / 1e3))}`, row.name));
   row.wearables.forEach(w => rows.push(boostRow(w.name, `×${w.mult} cooldown`)));
   if (!rows.length) return "";
   return `<div class="section-badge is-boost-label">⚡ Applied Boost</div>${rows.join("")}`;

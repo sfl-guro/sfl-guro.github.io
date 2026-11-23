@@ -6145,6 +6145,11 @@ function farmPanelRenderComposterCard(row) {
   return `\n  <div class="card animal-merged-card is-profit${expandedCls}" data-search="${row.searchKey}" data-fp-category="composters">\n    <div class="card-toggle">\n      <div class="card-name-row">\n        <span class="card-icon">${composterIcon}</span>\n        <div>\n          <div class="card-name">${escapeHtml(row.composterName)}</div>\n          <div class="card-type-row">\n            <span class="card-type">${row.count} batch${row.count === 1 ? "" : "es"}</span>\n          </div>\n          <div class="animal-fold-row">${productChipsHtml}</div>${valueBlockHtml}\n        </div>\n      </div>\n      <div class="card-collapsed-profit">\n        <span class="harvest-stack">${dailyBadgeHtml}${statusBadgeHtml}</span>\n        <span class="chev">▾</span>\n      </div>\n      ${statusFoldHtml}\n    </div>\n    <div class="card-details">\n      <div class="animal-detail-grid">\n        ${fertDetailRow}\n        ${wormDetailRow}\n        ${mismatchNote}\n        ${reqRow}\n        ${timeRow}\n        ${counterRow}\n      </div>\n      ${chainHtml}\n      ${boostListHtml}\n    </div>\n  </div>`;
 }
 
+function fmtCookQty(n) {
+  const r = Math.round(n * 1e6) / 1e6;
+  return Number.isInteger(r) ? r.toLocaleString() : fmt(n);
+}
+
 function cookingFoodOrFishIcon(name) {
   if (COOKING_FOOD_IMAGES[name]) return cookFoodIcon(name);
   return getIcon(name);
@@ -6174,8 +6179,7 @@ function farmPanelRenderCookingQueueList(row) {
     const itemName = row.cookingKind === "aging" && s.outputName ? s.outputName : s.name;
     const isReady = !(s.readyAt > now);
     const timeHtml = isReady ? `<span class="hive-time-pill guro-frame is-ready">Ready</span>` : `<span class="hive-time-pill guro-frame farm-countdown" data-base="${(s.readyAt - now) / 1e3}">${guroCountdownText((s.readyAt - now) / 1e3)}</span><span class="hive-time-clock">${cookingQueueClockText(s.readyAt)}</span>`;
-    const primeNote = row.cookingKind === "aging" && s.isPrime ? ` <span style="color:#c9821a;font-weight:700;">(Prime!)</span>` : "";
-    return `<div class="guro-queue-row"><span class="guro-queue-item"><span class="guro-queue-yield">+${fmt(s.amount)}</span>${cookingFoodOrFishIcon(itemName)}<span class="guro-queue-name">${escapeHtml(itemName)}${primeNote}</span></span><span class="guro-queue-time hive-time">${timeHtml}</span></div>`;
+    return `<div class="guro-queue-row"><span class="guro-queue-item"><span class="guro-queue-yield">+${fmtCookQty(s.amount)}</span>${cookingFoodOrFishIcon(itemName)}<span class="guro-queue-name">${escapeHtml(itemName)}</span></span><span class="guro-queue-time hive-time">${timeHtml}</span></div>`;
   }).join("");
   return `<div class="lib-section-title" style="margin-top:10px;">${escapeHtml(row.cookingBuilding)} Queue</div><div class="guro-queue-list">${rowsHtml}</div>`;
 }
@@ -6211,7 +6215,7 @@ function farmPanelRenderCookingLimitedBoosts(row) {
 }
 
 function farmPanelRenderCookingBoostList(row) {
-  const yieldHtmlParts = (row.yieldBoostTotals || []).map(b => `<div class="boost-applied-row is-yield">${getBoostIcon(b.name)}<b>${escapeHtml(b.name)}</b> <span class="boost-total-value">+${fmt(b.total)}</span></div>`);
+  const yieldHtmlParts = (row.yieldBoostTotals || []).map(b => `<div class="boost-applied-row is-yield">${getBoostIcon(b.name)}<b>${escapeHtml(b.name)}</b> <span class="boost-total-value">+${fmtCookQty(b.total)}</span></div>`);
   const chanceHtmlParts = (row.chanceBoosts || []).map(b => `<div class="boost-applied-row is-yield">${getBoostIcon(b.name)}<b>${escapeHtml(b.name)}</b> <span class="boost-mult-note">(${escapeHtml(b.note)})</span></div>`);
   const timeHtmlParts = (row.timeBoosts || []).map(b => {
     const boostIcon = getBoostIcon(b.name);
@@ -6411,7 +6415,7 @@ function farmPanelRenderCookingCard(row) {
   const statusLine = baseStatus;
   const statusFoldHtml = guroStatusFoldHtml("Cooking", showCountdown ? row.soonestSec : null);
   const dailyBadgeHtml = dailyHarvestBadgeHtml(building, "cooking", buildingIcon, farmPanelDailyFarmId());
-  const productChipHtml = row.productGroups.map(p => `\n      <span class="animal-produce-chip">\n        <span class="produce-yield">+${fmt(p.amount)}</span>\n        <span class="produce-icon">${cookingFoodOrFishIcon(p.name)}</span>\n        <span class="produce-name">${escapeHtml(p.name)}</span>\n      </span>`).join("");
+  const productChipHtml = row.productGroups.map(p => `\n      <span class="animal-produce-chip">\n        <span class="produce-yield">+${fmtCookQty(p.amount)}</span>\n        <span class="produce-icon">${cookingFoodOrFishIcon(p.name)}</span>\n        <span class="produce-name">${escapeHtml(p.name)}</span>\n      </span>`).join("");
   const boostListHtml = farmPanelRenderCookingBoostList(row);
   const queueListHtml = farmPanelRenderCookingQueueList(row);
   const limitedHtml = farmPanelRenderCookingLimitedBoosts(row);
