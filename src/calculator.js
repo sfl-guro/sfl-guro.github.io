@@ -3836,7 +3836,7 @@ export function getNodeIconHtml(resourceName) {
   const info = RESOURCE_NODE_DISPLAY[resourceName];
   if (!info) return getIcon(resourceName);
   if (info.iconName) return getIcon(info.iconName);
-  return `<span style="font-size:19.2px;line-height:1;">${info.emoji}</span>`;
+  return `<span style="font-size:calc(19.2px * var(--fs-desk,1));line-height:1;">${info.emoji}</span>`;
 }
 
 export function getNodeLabel(resourceName) {
@@ -19213,7 +19213,7 @@ export let finderSeed = localStorage.getItem("hl_finder_seed") || "Sunpetal";
 export let finderIngredient = localStorage.getItem("hl_finder_ingredient") || "";
 
 export function seedIconHtmlFor(s) {
-  return IMAGE_ICONS[s + " Seed"] ? getIcon(s + " Seed") : `<span style="font-size:16.8px;">${FLOWER_SEED_ICONS[s] || "🌱"}</span>`;
+  return IMAGE_ICONS[s + " Seed"] ? getIcon(s + " Seed") : `<span style="font-size:calc(16.8px * var(--fs-desk,1));">${FLOWER_SEED_ICONS[s] || "🌱"}</span>`;
 }
 
 const hiveCountInputEl = $("hiveCountInput");
@@ -27183,7 +27183,7 @@ export function deleteActiveTrade(id) {
   tradePendingDeleteId = id;
   tradePendingDeleteType = "active";
   const fig = computeTradeFigures(t);
-  $("deleteTradeConfirmItem").innerHTML = `\n    <span class="trade-card-icon" style="font-size:21.6px;">${getIcon(t.itemName)}</span>\n    <div>\n      <div class="name">${escapeHtml(t.itemName)}</div>\n      <div class="meta">${fmt(t.remainingQty)}× held · ${fmt(fig.costBasis)} ${FLOWER_ICON} FLOWER capital</div>\n    </div>`;
+  $("deleteTradeConfirmItem").innerHTML = `\n    <span class="trade-card-icon" style="font-size:calc(21.6px * var(--fs-desk,1));">${getIcon(t.itemName)}</span>\n    <div>\n      <div class="name">${escapeHtml(t.itemName)}</div>\n      <div class="meta">${fmt(t.remainingQty)}× held · ${fmt(fig.costBasis)} ${FLOWER_ICON} FLOWER capital</div>\n    </div>`;
   $("deleteTradeConfirmOverlay").classList.add("show");
 }
 
@@ -27192,7 +27192,7 @@ export function deleteHistoryTrade(id) {
   if (!t) return;
   tradePendingDeleteId = id;
   tradePendingDeleteType = "history";
-  $("deleteTradeConfirmItem").innerHTML = `\n    <span class="trade-card-icon" style="font-size:21.6px;">${getIcon(t.itemName)}</span>\n    <div>\n      <div class="name">${escapeHtml(t.itemName)}</div>\n      <div class="meta">${fmt(t.qty)}× traded · ${fmt(t.qty * t.buyPrice)} ${FLOWER_ICON} FLOWER capital</div>\n    </div>`;
+  $("deleteTradeConfirmItem").innerHTML = `\n    <span class="trade-card-icon" style="font-size:calc(21.6px * var(--fs-desk,1));">${getIcon(t.itemName)}</span>\n    <div>\n      <div class="name">${escapeHtml(t.itemName)}</div>\n      <div class="meta">${fmt(t.qty)}× traded · ${fmt(t.qty * t.buyPrice)} ${FLOWER_ICON} FLOWER capital</div>\n    </div>`;
   $("deleteTradeConfirmOverlay").classList.add("show");
 }
 
@@ -27246,7 +27246,7 @@ $("newTradeOverlay").addEventListener("click", e => {
 export function tradePickItem(name) {
   tradePickedItemName = name;
   const price = tradeMarketPrice(name);
-  $("tradeItemPickBtn").innerHTML = `\n    <span class="trade-card-icon" style="font-size:21.6px;">${getIcon(name)}</span>\n    <div>\n      <div class="item-name">${escapeHtml(name)}</div>\n      <div class="item-price">Market ${fmt(price)} ${FLOWER_ICON} FLOWER/u</div>\n    </div>\n    <span class="chev">▸</span>`;
+  $("tradeItemPickBtn").innerHTML = `\n    <span class="trade-card-icon" style="font-size:calc(21.6px * var(--fs-desk,1));">${getIcon(name)}</span>\n    <div>\n      <div class="item-name">${escapeHtml(name)}</div>\n      <div class="item-price">Market ${fmt(price)} ${FLOWER_ICON} FLOWER/u</div>\n    </div>\n    <span class="chev">▸</span>`;
   $("newTradeFields").style.display = "block";
   updateNewTradeLiveTotal();
 }
@@ -28780,7 +28780,7 @@ export function gatherAllProfitItems() {
     items.push({
       name: fig.label,
       category: "Animal",
-      icon: getIcon(fig.label) || `<span style="font-size:16.8px;">${fig.emoji}</span>`,
+      icon: getIcon(fig.label) || `<span style="font-size:calc(16.8px * var(--fs-desk,1));">${fig.emoji}</span>`,
       boosts: getBuildDetailActiveEntries("animals", type),
       countLabel: "Head",
       count: qty,
@@ -30100,7 +30100,7 @@ export function computeSpiceFigures(name) {
 }
 
 export function stepperHtml(id, value, min, max) {
-  return `<div class="stepper" data-stepper-id="${id}" data-min="${min}" data-max="${max}" style="display:flex;align-items:center;gap:6px;">\n    <button type="button" class="stepper-btn" data-stepper-id="${id}" data-dir="-1" style="width:28px;height:28px;flex:0 0 auto;border-radius:6px;border:1.5px solid var(--line);cursor:pointer;font-size:18px;line-height:1;background:#fff;color:var(--ink);">−</button>\n    <div style="flex:1;text-align:center;font-family:'JetBrains Mono',monospace;font-size:14.4px;font-weight:700;border:1.5px solid var(--line);border-radius:6px;padding:6px 4px;background:#fff;">${fmt(value)}</div>\n    <button type="button" class="stepper-btn" data-stepper-id="${id}" data-dir="1" style="width:28px;height:28px;flex:0 0 auto;border-radius:6px;border:1.5px solid var(--line);cursor:pointer;font-size:18px;line-height:1;background:#fff;color:var(--ink);">+</button>\n  </div>`;
+  return `<div class="stepper" data-stepper-id="${id}" data-min="${min}" data-max="${max}" style="display:flex;align-items:center;gap:6px;">\n    <button type="button" class="stepper-btn" data-stepper-id="${id}" data-dir="-1" style="width:28px;height:28px;flex:0 0 auto;border-radius:6px;border:1.5px solid var(--line);cursor:pointer;font-size:calc(18px * var(--fs-desk,1));line-height:1;background:#fff;color:var(--ink);">−</button>\n    <div style="flex:1;text-align:center;font-family:'JetBrains Mono',monospace;font-size:calc(14.4px * var(--fs-desk,1));font-weight:700;border:1.5px solid var(--line);border-radius:6px;padding:6px 4px;background:#fff;">${fmt(value)}</div>\n    <button type="button" class="stepper-btn" data-stepper-id="${id}" data-dir="1" style="width:28px;height:28px;flex:0 0 auto;border-radius:6px;border:1.5px solid var(--line);cursor:pointer;font-size:calc(18px * var(--fs-desk,1));line-height:1;background:#fff;color:var(--ink);">+</button>\n  </div>`;
 }
 
 export function getIconSmall(name) {
@@ -30108,7 +30108,7 @@ export function getIconSmall(name) {
   const imgSrc = IMAGE_ICONS[name] || Object.entries(IMAGE_ICONS).find(([k]) => k.toLowerCase() === name.trim().toLowerCase())?.[1];
   if (imgSrc) return `<img src="${imgSrc}" alt="${escapeHtml(name)}" style="width:11px;height:11px;image-rendering:pixelated;vertical-align:-2px;">`;
   const emoji = ICONS[name] || Object.entries(ICONS).find(([k]) => k.toLowerCase() === name.trim().toLowerCase())?.[1];
-  return `<span style="font-size:13.2px;line-height:1;">${emoji || "🌾"}</span>`;
+  return `<span style="font-size:calc(13.2px * var(--fs-desk,1));line-height:1;">${emoji || "🌾"}</span>`;
 }
 
 export function runDeferredInitialRender() {

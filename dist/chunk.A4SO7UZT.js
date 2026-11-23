@@ -13315,7 +13315,7 @@ function renderSkillPanel() {
 function getLimitedTimeBoostIcon(entry) {
   const imgSrc = IMAGE_ICONS[entry.name];
   if (imgSrc) return `<img src="${imgSrc}" alt="${escapeHtml(entry.name)}" style="width:18px;height:18px;image-rendering:pixelated;vertical-align:middle;">`;
-  return `<span style="font-size:21.6px;line-height:1;">${entry.fallbackEmoji || "\u23F3"}</span>`;
+  return `<span style="font-size:calc(21.6px * var(--fs-desk,1));line-height:1;">${entry.fallbackEmoji || "\u23F3"}</span>`;
 }
 function renderShrineProfitabilityBlock(b, cost) {
   const affected = computeShrineAffectedProfitability(b.name);
@@ -14045,7 +14045,7 @@ function renderSaltFertilizerApplyToggles() {
     label: "Greenhouse Goodie",
     desc: "+0.2 yield on Greenhouse crops (Rice/Grape/Olive) \xB7 exclusive with Greenhouse Glow"
   }];
-  return `<div class="lib-section-title">\u{1F9C2} Salt Baits &amp; Fertilisers <span style="font-weight:400;color:var(--ink-soft);font-size:9.6px;">\u2014 upgrades from the Salt tab</span></div>
+  return `<div class="lib-section-title">\u{1F9C2} Salt Baits &amp; Fertilisers <span style="font-weight:400;color:var(--ink-soft);font-size:calc(9.6px * var(--fs-desk,1));">\u2014 upgrades from the Salt tab</span></div>
   <div class="hint-collapsible"><button type="button" class="hint-q-btn" aria-label="More info">\u2753</button><div class="hint-slide"><div class="field-hint" style="background:#fdeee0;border:1.5px solid var(--sun-deep);padding:8px 10px;border-radius:8px;margin-bottom:8px;font-weight:600;color:#7a3d10;">
     Off by default, same as the classic fertilisers below. These are <b>upgrades</b> made in \u{1F9C2} Salt \u2192 Fermentation Rack \u2014 turning
     one on here automatically switches its classic counterpart off (and vice versa), since only one fertiliser can sit on a
@@ -14176,7 +14176,7 @@ function renderComposterSeasonSection(name, outputQty) {
       </div>`;
     }).join("");
     const perUnit = outputQty > 0 ? total / outputQty : 0;
-    const selectedTag = season === previewSeason ? ` <span style="font-weight:600;color:var(--ink-soft);font-size:10px;">(selected)</span>` : "";
+    const selectedTag = season === previewSeason ? ` <span style="font-weight:600;color:var(--ink-soft);font-size:calc(10px * var(--fs-desk,1));">(selected)</span>` : "";
     return `<div class="lib-cycle-container composter-season-card" style="padding-bottom:8px;">
       <div class="lib-section-title" style="display:flex;align-items:center;justify-content:flex-start;gap:6px;margin-top:0;">${SEASON_EMOJI[season] || ""} <span>${season}</span>${selectedTag}</div>
       ${rows || `<div class="lib-item-meta">\u2014</div>`}
@@ -14222,7 +14222,7 @@ function renderComposterCard(name) {
         <span class="plabel">Cost per fertiliser</span>
         <span><span class="pvalue">${fmt(fig.costPerUnitCoins)}${COIN_ICON}</span></span>
       </div>
-      <div style="font-size:9.6px;color:var(--ink-soft);margin-top:4px;">Turn ${fig.fertilizer} on in \u26A1 Boost Settings \u2192 \u{1FAB1} Composter to apply it (and its cost) to ${name === "Turbo Composter" ? "Fruit" : "Crop"} cards.</div>
+      <div style="font-size:calc(9.6px * var(--fs-desk,1));color:var(--ink-soft);margin-top:4px;">Turn ${fig.fertilizer} on in \u26A1 Boost Settings \u2192 \u{1FAB1} Composter to apply it (and its cost) to ${name === "Turbo Composter" ? "Fruit" : "Crop"} cards.</div>
       ${renderComposterSeasonSection(name, fig.outputQty)}
     </div>
   </div>`;
@@ -14252,11 +14252,11 @@ function renderBaseStockTables() {
       const changed = Math.abs(boosted - base) > 1e-3;
       const itemIcon3 = IMAGE_ICONS[name] ? getIcon(name) : icon;
       return `<div class="lib-item-row" style="padding:5px 8px;">
-        <span class="lib-item-icon" style="font-size:15.6px;">${itemIcon3}</span>
+        <span class="lib-item-icon" style="font-size:calc(15.6px * var(--fs-desk,1));">${itemIcon3}</span>
         <div class="lib-item-main">
-          <div class="lib-item-name" style="font-size:12.6px;">${escapeHtml(name)}</div>
+          <div class="lib-item-name" style="font-size:calc(12.6px * var(--fs-desk,1));">${escapeHtml(name)}</div>
         </div>
-        <div style="text-align:right;font-weight:700;font-size:12.6px;">${fmt(boosted)}${changed ? ` <span style="color:var(--ink-soft);font-weight:600;font-size:10.2px;">(${fmt(base)} base)</span>` : ""}</div>
+        <div style="text-align:right;font-weight:700;font-size:calc(12.6px * var(--fs-desk,1));">${fmt(boosted)}${changed ? ` <span style="color:var(--ink-soft);font-weight:600;font-size:calc(10.2px * var(--fs-desk,1));">(${fmt(base)} base)</span>` : ""}</div>
       </div>`;
     }).join("");
     return `<div class="lib-section-title">${title}</div>${rows}`;
@@ -14268,18 +14268,18 @@ function renderBaseStockTables() {
       const changed = Math.abs(boosted - base) > 1e-3;
       const itemIcon3 = IMAGE_ICONS[name + " Seed"] ? getIcon(name + " Seed") : FLOWER_SEED_ICONS[name] || "\u{1F331}";
       return `<div class="lib-item-row" style="padding:5px 8px;">
-        <span class="lib-item-icon" style="font-size:15.6px;">${itemIcon3}</span>
+        <span class="lib-item-icon" style="font-size:calc(15.6px * var(--fs-desk,1));">${itemIcon3}</span>
         <div class="lib-item-main">
-          <div class="lib-item-name" style="font-size:12.6px;">${escapeHtml(name)}</div>
+          <div class="lib-item-name" style="font-size:calc(12.6px * var(--fs-desk,1));">${escapeHtml(name)}</div>
         </div>
-        <div style="text-align:right;font-weight:700;font-size:12.6px;">${fmt(boosted)}${changed ? ` <span style="color:var(--ink-soft);font-weight:600;font-size:10.2px;">(${fmt(base)} base)</span>` : ""}</div>
+        <div style="text-align:right;font-weight:700;font-size:calc(12.6px * var(--fs-desk,1));">${fmt(boosted)}${changed ? ` <span style="color:var(--ink-soft);font-weight:600;font-size:calc(10.2px * var(--fs-desk,1));">(${fmt(base)} base)</span>` : ""}</div>
       </div>`;
     }).join("");
     return `<div class="lib-section-title">${title}</div>${rows}`;
   }
   return `
     <div style="margin-top:10px;border-top:2px dashed var(--line);padding-top:8px;">
-      <div class="lib-section-title" style="font-size:13.2px;">\u{1F4E6} Base Restock Stocks <span style="font-weight:400;color:var(--ink-soft);">(current cap, live with boosts above)</span></div>
+      <div class="lib-section-title" style="font-size:calc(13.2px * var(--fs-desk,1));">\u{1F4E6} Base Restock Stocks <span style="font-weight:400;color:var(--ink-soft);">(current cap, live with boosts above)</span></div>
       ${table("\u{1F331} Crops", BASE_STOCK_CROPS, "seed", "\u{1F331}")}
       ${table("\u{1F34E} Fruits", BASE_STOCK_FRUITS, "seed", "\u{1F34E}")}
       ${table("\u{1F347} Greenhouse", BASE_STOCK_GREENHOUSE, "seed", "\u{1F347}")}
@@ -14564,7 +14564,7 @@ function renderTotalsBreakdown(opts) {
   const manualCycleRow = opts.manualCycleKey ? `
         <div class="stat manual-cycle-stat" style="grid-column:1 / -1;flex-direction:column;align-items:stretch;gap:3px;background:rgba(255,193,7,.22);border:1.25px solid rgba(217,119,6,.55);border-radius:8px;padding:6px 7px;">
           <span class="label" style="color:#8a5a00;">Manual Cycle <span style="opacity:.75;font-weight:500;">(override${opts.totalCyclesSuffix != null ? " " + opts.totalCyclesSuffix : "/day"} \u2014 leave blank for auto)</span></span>
-          <input type="text" inputmode="decimal" pattern="[0-9]*.?[0-9]*" autocomplete="off" class="manual-cycle-input" data-cycle-key="${escapeHtml(opts.manualCycleKey)}" data-cycle-refresh="${escapeHtml(opts.manualCycleRefresh || "")}" placeholder="Type Manual Cycle here" value="${opts.manualCycleValue != null && opts.manualCycleValue !== "" ? escapeHtml(String(opts.manualCycleValue)) : ""}" style="width:100%;font-family:'JetBrains Mono',monospace;font-size:12.6px;border:1.25px solid var(--line);border-radius:6px;padding:5px 6px;background:#fffdf5;">
+          <input type="text" inputmode="decimal" pattern="[0-9]*.?[0-9]*" autocomplete="off" class="manual-cycle-input" data-cycle-key="${escapeHtml(opts.manualCycleKey)}" data-cycle-refresh="${escapeHtml(opts.manualCycleRefresh || "")}" placeholder="Type Manual Cycle here" value="${opts.manualCycleValue != null && opts.manualCycleValue !== "" ? escapeHtml(String(opts.manualCycleValue)) : ""}" style="width:100%;font-family:'JetBrains Mono',monospace;font-size:calc(12.6px * var(--fs-desk,1));border:1.25px solid var(--line);border-radius:6px;padding:5px 6px;background:#fffdf5;">
         </div>` : "";
   const feedRow = opts.feedQty != null ? `<div class="stat"><span class="label">${opts.feedIcon || ""} Feed Consumed</span><span class="value">${fmt(opts.feedQty)} ${opts.feedName || ""}${opts.headsCount != null ? ` <span style="opacity:.65;font-weight:500;">(${fmt(opts.headsCount)} heads)</span>` : ""}</span></div>` : "";
   const perSeedHtml = opts.perSeedLabel ? `
@@ -14614,7 +14614,7 @@ function renderTotalsBreakdown(opts) {
             <div class="label" style="margin-bottom:2px;">Consumable Cost</div>
             <div style="margin-left:10px;">
               ${opts.otherCostItems.map((item) => `
-              <div style="display:flex;justify-content:space-between;font-size:11.4px;opacity:.8;padding:1px 0;">
+              <div style="display:flex;justify-content:space-between;font-size:calc(11.4px * var(--fs-desk,1));opacity:.8;padding:1px 0;">
                 <span>${item.label}${item.note ? ` <span style="opacity:.7;">(${item.note})</span>` : ""}</span>
                 <span>-${fmt(item.value)} ${FLOWER_ICON}</span>
               </div>`).join("")}
@@ -14664,7 +14664,7 @@ function renderAnimalFeedByLevelBlock(type, currentLevel) {
   return `
     <div class="anim-lvl-toggle" data-anim-lvl-type="${type}" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding:6px 0;border-top:1px dashed var(--line);">
       <div class="lib-section-title" style="margin:0;">\u{1F33E} Feed by Level (1\u201315)</div>
-      <span class="anim-lvl-chev" style="font-size:12px;color:var(--ink-soft);transition:transform .25s ease;transform:rotate(${expanded ? 180 : 0}deg);">\u25BE</span>
+      <span class="anim-lvl-chev" style="font-size:calc(12px * var(--fs-desk,1));color:var(--ink-soft);transition:transform .25s ease;transform:rotate(${expanded ? 180 : 0}deg);">\u25BE</span>
     </div>
     <div class="anim-lvl-details" style="display:${expanded ? "block" : "none"};margin-top:4px;">
       ${rows}
@@ -14708,7 +14708,7 @@ function renderAnimalFeedConsumptionBlock(type, opts) {
   return `
     <div class="anim-feedcon-toggle" data-anim-feedcon-type="${type}" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding:6px 0;border-top:1px dashed var(--line);">
       <div class="lib-section-title" style="margin:0;">${icon} Total Feed Consumed (${fmt(opts.headsCount)} heads)</div>
-      <span class="anim-feedcon-chev" style="font-size:12px;color:var(--ink-soft);transition:transform .25s ease;transform:rotate(${expanded ? 180 : 0}deg);">\u25BE</span>
+      <span class="anim-feedcon-chev" style="font-size:calc(12px * var(--fs-desk,1));color:var(--ink-soft);transition:transform .25s ease;transform:rotate(${expanded ? 180 : 0}deg);">\u25BE</span>
     </div>
     <div class="anim-feedcon-details" style="display:${expanded ? "block" : "none"};margin-top:4px;">
       ${rows}
@@ -14842,7 +14842,7 @@ function renderAnimalCard(type) {
           <div class="lib-item-name">${row3.name} \xD7${fmt(row3.qty)}</div>
           <div class="lib-item-meta">Cost @ 1${GEM_ICON}/u \u2248 ${fmt(row3.unitCost / coinPerFlower)}${FLOWER_ICON}/u</div>
         </div>
-        <span style="font-size:9.6px;opacity:.6;">${GEM_ICON} gem-only</span>
+        <span style="font-size:calc(9.6px * var(--fs-desk,1));opacity:.6;">${GEM_ICON} gem-only</span>
       </div>`;
     }
     const displayPrice = row3.mode === "buy" ? row3.unitCost / coinPerFlower : row3.unitCost;
@@ -14855,8 +14855,8 @@ function renderAnimalCard(type) {
         <div class="lib-item-meta">${row3.mode === "collect" ? "Collect" : "Buy"} @ ${fmt(displayPrice)}${displayUnit}/u</div>
       </div>
       <div style="display:flex;gap:2px;">
-        <button class="btn btn-ghost animal-mode-btn" data-mat="${row3.name}" data-mode="collect" style="padding:4px 6px;font-size:9.6px;${row3.mode === "collect" ? "border-color:var(--profit);color:var(--profit);" : ""}">Collect</button>
-        <button class="btn btn-ghost animal-mode-btn" data-mat="${row3.name}" data-mode="buy" style="padding:4px 6px;font-size:9.6px;${row3.mode === "buy" ? "border-color:var(--flower);color:var(--flower);" : ""}">Buy</button>
+        <button class="btn btn-ghost animal-mode-btn" data-mat="${row3.name}" data-mode="collect" style="padding:4px 6px;font-size:calc(9.6px * var(--fs-desk,1));${row3.mode === "collect" ? "border-color:var(--profit);color:var(--profit);" : ""}">Collect</button>
+        <button class="btn btn-ghost animal-mode-btn" data-mat="${row3.name}" data-mode="buy" style="padding:4px 6px;font-size:calc(9.6px * var(--fs-desk,1));${row3.mode === "buy" ? "border-color:var(--flower);color:var(--flower);" : ""}">Buy</button>
       </div>
     </div>`;
   }).join("");
@@ -15224,7 +15224,7 @@ function getIcon(name) {
     } else {
       const emoji = ICONS[name] || Object.entries(ICONS).find(([k]) => k.toLowerCase() === name.trim().toLowerCase())?.[1];
       if (emoji) {
-        result = `<span style="font-size:19.2px;line-height:1;">${emoji}</span>`;
+        result = `<span style="font-size:calc(19.2px * var(--fs-desk,1));line-height:1;">${emoji}</span>`;
       } else {
         result = `<img src="${IMAGE_ICON_FALLBACK}" alt="${escapeHtml(name)}" width="16" height="16" decoding="async" style="width:16px;height:16px;image-rendering:pixelated;vertical-align:middle;">`;
       }
@@ -16058,7 +16058,7 @@ function renderBaseCoinAnimalRow(type) {
   const meta = `Feed: ${fmt(fig.effectiveFeedQty)} ${escapeHtml(fig.feedNameUsed)} (Lv.${fig.level}) \u2192 yields ${productNote}${boostNames.length ? ` \xB7 \u26A1 ${boostNames.join(", ")}` : ""}`;
   return `
   <div class="lib-item-row" data-search="${escapeHtml(cfg.label.toLowerCase())}">
-    <span class="lib-item-icon"><span style="font-size:19.2px;line-height:1;">${getIcon(cfg.label)}</span></span>
+    <span class="lib-item-icon"><span style="font-size:calc(19.2px * var(--fs-desk,1));line-height:1;">${getIcon(cfg.label)}</span></span>
     <div class="lib-item-main">
       <div class="lib-item-name">${escapeHtml(cfg.label)}</div>
       <div class="lib-item-meta">${meta}</div>
@@ -16321,8 +16321,8 @@ function renderResourceCard(name) {
             <div class="lib-item-meta">${row3.mode === "collect" ? "Collect" : "Buy"} @ ${fmt(displayPrice)}${displayUnit}/u</div>
           </div>
           <div style="display:flex;gap:2px;">
-            ${row3.name.toLowerCase() === "oil" ? `<span style="font-size:9.6px;opacity:.6;padding:4px 6px;">\u{1F6AB} not tradable</span>` : `<button class="btn btn-ghost mode-btn" data-res="${name}" data-mat="${row3.name}" data-mode="collect" style="padding:4px 6px;font-size:9.6px;${row3.mode === "collect" ? "border-color:var(--profit);color:var(--profit);" : ""}">Collect</button>
-            <button class="btn btn-ghost mode-btn" data-res="${name}" data-mat="${row3.name}" data-mode="buy" style="padding:4px 6px;font-size:9.6px;${row3.mode === "buy" ? "border-color:var(--flower);color:var(--flower);" : ""}">Buy</button>`}
+            ${row3.name.toLowerCase() === "oil" ? `<span style="font-size:calc(9.6px * var(--fs-desk,1));opacity:.6;padding:4px 6px;">\u{1F6AB} not tradable</span>` : `<button class="btn btn-ghost mode-btn" data-res="${name}" data-mat="${row3.name}" data-mode="collect" style="padding:4px 6px;font-size:calc(9.6px * var(--fs-desk,1));${row3.mode === "collect" ? "border-color:var(--profit);color:var(--profit);" : ""}">Collect</button>
+            <button class="btn btn-ghost mode-btn" data-res="${name}" data-mat="${row3.name}" data-mode="buy" style="padding:4px 6px;font-size:calc(9.6px * var(--fs-desk,1));${row3.mode === "buy" ? "border-color:var(--flower);color:var(--flower);" : ""}">Buy</button>`}
           </div>
         </div>`;
   }).join("")}
@@ -16344,7 +16344,7 @@ function renderObsidianSeasonCard(season) {
   return `
   <div class="ob-season-card${isCurrent ? " is-current" : ""}" style="${isCurrent ? `border-color:${SEASON_ACCENT[season]};` : ""}">
     <div class="ob-season-head">
-      <span style="font-size:19.2px;">${SEASON_EMOJI[season]}</span>
+      <span style="font-size:calc(19.2px * var(--fs-desk,1));">${SEASON_EMOJI[season]}</span>
       <div>
         <div class="ob-season-name">${season}</div>
         <div class="ob-season-sub">${getIcon("Obsidian")} Lava Pit recipe</div>
@@ -16391,8 +16391,8 @@ function renderObsidianSeasonCard(season) {
           <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;">
             <div class="lib-item-price">${fmt(row3.lineCost)}<small>${COIN_ICON}</small></div>
             <div style="display:flex;gap:2px;">
-              ${row3.name.toLowerCase() === "oil" ? `<span style="font-size:9.6px;opacity:.6;padding:4px 6px;">\u{1F6AB} not tradable</span>` : `<button class="btn btn-ghost mode-btn" data-res="Obsidian_${season}" data-mat="${row3.name}" data-mode="collect" style="padding:4px 6px;font-size:9.6px;${row3.mode === "collect" ? "border-color:var(--profit);color:var(--profit);" : ""}">Collect</button>
-              <button class="btn btn-ghost mode-btn" data-res="Obsidian_${season}" data-mat="${row3.name}" data-mode="buy" style="padding:4px 6px;font-size:9.6px;${row3.mode === "buy" ? "border-color:var(--flower);color:var(--flower);" : ""}">Buy</button>`}
+              ${row3.name.toLowerCase() === "oil" ? `<span style="font-size:calc(9.6px * var(--fs-desk,1));opacity:.6;padding:4px 6px;">\u{1F6AB} not tradable</span>` : `<button class="btn btn-ghost mode-btn" data-res="Obsidian_${season}" data-mat="${row3.name}" data-mode="collect" style="padding:4px 6px;font-size:calc(9.6px * var(--fs-desk,1));${row3.mode === "collect" ? "border-color:var(--profit);color:var(--profit);" : ""}">Collect</button>
+              <button class="btn btn-ghost mode-btn" data-res="Obsidian_${season}" data-mat="${row3.name}" data-mode="buy" style="padding:4px 6px;font-size:calc(9.6px * var(--fs-desk,1));${row3.mode === "buy" ? "border-color:var(--flower);color:var(--flower);" : ""}">Buy</button>`}
             </div>
           </div>
         </div>`;
@@ -16442,14 +16442,14 @@ function renderObsidianSection() {
     ${weeklyBox}
     <div class="card-details">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">
-        <span style="font-size:9.6px;color:var(--ink-soft);">Showing ${SEASON_ORDER.length} seasonal recipes</span>
+        <span style="font-size:calc(9.6px * var(--fs-desk,1));color:var(--ink-soft);">Showing ${SEASON_ORDER.length} seasonal recipes</span>
         <button type="button" class="ob-inputs-toggle" id="obsidianInputsToggle">${obsidianInputsHidden ? "Show Inputs" : "Hide Inputs"}</button>
       </div>
       <div class="ob-summary-box" style="margin-bottom:6px;">
         \u{1F30B} Lava Pits: <b>${fmt(getNodeCount("Lava Pit"))}</b> \xB7
         Produced/week: <b>${fmt(weekly.produced)}</b> \xB7
         Sellable (cap ${OBSIDIAN_WEEKLY_SELL_CAP}): <b>${fmt(weekly.sellable)}</b>
-        <div style="font-size:7.8px;margin-top:3px;opacity:.8;">Only ${OBSIDIAN_WEEKLY_SELL_CAP} obsidian can be listed/sold per player per week on the Marketplace (any season) \u2014 24h profit doesn't apply here. Buying is capped separately at ${OBSIDIAN_WEEKLY_PURCHASE_CAP}/week.</div>
+        <div style="font-size:calc(7.8px * var(--fs-desk,1));margin-top:3px;opacity:.8;">Only ${OBSIDIAN_WEEKLY_SELL_CAP} obsidian can be listed/sold per player per week on the Marketplace (any season) \u2014 24h profit doesn't apply here. Buying is capped separately at ${OBSIDIAN_WEEKLY_PURCHASE_CAP}/week.</div>
       </div>
       ${renderBoostAppliedList(currentFig.activeBoosts, "Obsidian")}
       ${(() => {
@@ -16673,7 +16673,7 @@ function renderFruitCard(name) {
       <div class="card-name-row">
         <span class="card-icon">${getIcon(name)}</span>
         <div>
-          <div class="card-name">${name} ${renderFruitSeasonBadges(name)}${d.moonOnly ? ` <span style="font-size:10.8px;font-weight:700;color:${isFullMoonToday() ? "var(--profit)" : "var(--ink-soft)"};">\u{1F315} ${isFullMoonToday() ? `Full Moon today \u2014 ${fmt(fullMoonSeedStockQty(name))} seed${fullMoonSeedStockQty(name) === 1 ? "" : "s"} buyable!` : `Moon-fruit \u2014 Betty sells ${fmt(fullMoonSeedStockQty(name))} seed${fullMoonSeedStockQty(name) === 1 ? "" : "s"} on a real Full Moon Day`}</span>` : ""}</div>
+          <div class="card-name">${name} ${renderFruitSeasonBadges(name)}${d.moonOnly ? ` <span style="font-size:calc(10.8px * var(--fs-desk,1));font-weight:700;color:${isFullMoonToday() ? "var(--profit)" : "var(--ink-soft)"};">\u{1F315} ${isFullMoonToday() ? `Full Moon today \u2014 ${fmt(fullMoonSeedStockQty(name))} seed${fullMoonSeedStockQty(name) === 1 ? "" : "s"} buyable!` : `Moon-fruit \u2014 Betty sells ${fmt(fullMoonSeedStockQty(name))} seed${fullMoonSeedStockQty(name) === 1 ? "" : "s"} on a real Full Moon Day`}</span>` : ""}</div>
           <div class="card-type">${fmt(costCoins)}${COIN_ICON} tool cost / unit</div>
         </div>
       </div>
@@ -16748,8 +16748,8 @@ function renderFruitCard(name) {
           <div class="lib-item-meta">Worth ${fmt(woodDisplayPrice)}${woodDisplayUnit}/u \u2014 subtracted as a rebate</div>
         </div>
         <div style="display:flex;gap:2px;">
-          <button class="btn btn-ghost fruit-mode-btn" data-fruit="${name}" data-mode="collect" style="padding:4px 6px;font-size:9.6px;${mode === "collect" ? "border-color:var(--profit);color:var(--profit);" : ""}">Use</button>
-          <button class="btn btn-ghost fruit-mode-btn" data-fruit="${name}" data-mode="buy" style="padding:4px 6px;font-size:9.6px;${mode === "buy" ? "border-color:var(--flower);color:var(--flower);" : ""}">Sell</button>
+          <button class="btn btn-ghost fruit-mode-btn" data-fruit="${name}" data-mode="collect" style="padding:4px 6px;font-size:calc(9.6px * var(--fs-desk,1));${mode === "collect" ? "border-color:var(--profit);color:var(--profit);" : ""}">Use</button>
+          <button class="btn btn-ghost fruit-mode-btn" data-fruit="${name}" data-mode="buy" style="padding:4px 6px;font-size:calc(9.6px * var(--fs-desk,1));${mode === "buy" ? "border-color:var(--flower);color:var(--flower);" : ""}">Sell</button>
         </div>
       </div>
     </div>
@@ -16812,7 +16812,7 @@ function renderGreenhouseCard(name) {
       <div class="card-name-row">
         <span class="card-icon">${getIcon(name)}</span>
         <div>
-          <div class="card-name">${name} <span style="font-size:10.8px;font-weight:700;color:var(--ink-soft);">\u{1F33F} Greenhouse</span></div>
+          <div class="card-name">${name} <span style="font-size:calc(10.8px * var(--fs-desk,1));font-weight:700;color:var(--ink-soft);">\u{1F33F} Greenhouse</span></div>
           <div class="card-type">${fmt(costCoins)}${COIN_ICON} seed + oil cost</div>
         </div>
       </div>
@@ -17087,7 +17087,7 @@ function renderCmSelectedDetail() {
     <div class="lib-item-row" style="margin-top:6px;">
       <span class="lib-item-icon">${getIcon(name)}</span>
       <div class="lib-item-main">
-        <div class="lib-item-name">${escapeHtml(name)} Seed <span style="font-weight:400;color:var(--ink-soft);font-size:10.8px;">Max ${fmt(getCropMachinePackMax(name))}/pack</span></div>
+        <div class="lib-item-name">${escapeHtml(name)} Seed <span style="font-weight:400;color:var(--ink-soft);font-size:calc(10.8px * var(--fs-desk,1));">Max ${fmt(getCropMachinePackMax(name))}/pack</span></div>
         <div class="lib-item-meta">Qty ${fmt(cmQty)} \xB7 Yield ${fmt(b.yieldQty)} \xB7 Time ${formatDuration(b.timeSec)} \xB7 Oil ${fmt(b.oilQty)}</div>
         ${packsSoFar > 0 ? `<div class="lib-item-meta" style="color:var(--ink-soft);">Already queued: ${fmt(queuedSoFar)} across ${packsSoFar} pack${packsSoFar === 1 ? "" : "s"} of ${name}</div>` : ""}
         ${ri.gemsTotal > 0 ? `<div class="lib-item-meta" style="color:#b45309;">${GEM_ICON} ${fmt(ri.restocksNeeded)} seed restock${ri.restocksNeeded === 1 ? "" : "s"} for this crop's total so far \xB7 ${fmt(ri.gemsTotal)} ${GEM_ICON} Gems \u2248 ${fmt(ri.flowerCost)} ${FLOWER_ICON}</div>` : ""}
@@ -17112,12 +17112,12 @@ function renderCmPacksGrid() {
       const packProfit = b.profitFlower >= 0;
       slots.push(`<div class="cm-pack-slot filled" data-cm-pack-idx="${i}">
         <button type="button" class="cm-pack-remove" data-cm-remove="${i}"><span class="cm-pack-cancel-icon">${getCancelIcon()}</span></button>
-        <div style="font-size:19.2px;">${getIcon(pack.name)}</div>
+        <div style="font-size:calc(19.2px * var(--fs-desk,1));">${getIcon(pack.name)}</div>
         <div style="font-weight:700;">${fmt(pack.qty)}</div>
         <div class="cm-pack-meta-line">${fmt(b.yieldQty)} yield</div>
         <div class="cm-pack-meta-line">${fmt(b.oilQty)}<span class="cm-pack-meta-icon">${getIcon("Oil")}</span> oil</div>
         <div class="cm-pack-meta-line">${formatDuration(b.timeSec)} <span class="cm-pack-meta-icon">${getTimerIcon()}</span></div>
-        <div style="margin-top:3px;font-size:8.4px;line-height:1.4;color:var(--ink-soft);">
+        <div style="margin-top:3px;font-size:calc(8.4px * var(--fs-desk,1));line-height:1.4;color:var(--ink-soft);">
           <div>${FLOWER_ICON}${fmt(b.costFlower)} cost</div>
           <div>${FLOWER_ICON}${fmt(b.revenueFlower)} sell</div>
           <div style="font-weight:700;color:${packProfit ? "var(--profit)" : "var(--loss)"};">${packProfit ? "+" : ""}${fmt(b.profitFlower)} profit</div>
@@ -17202,7 +17202,7 @@ function renderCmSummary() {
     sub: "Runtime"
   }, {
     label: "Oil needed",
-    value: `${fmt(oilNeeded)} <span style="font-size:9.6px;color:${oilCovered ? "var(--profit)" : "var(--loss)"};">${oilCovered ? "\u2713 covered" : "\u2717 short"}</span>`,
+    value: `${fmt(oilNeeded)} <span style="font-size:calc(9.6px * var(--fs-desk,1));color:${oilCovered ? "var(--profit)" : "var(--loss)"};">${oilCovered ? "\u2713 covered" : "\u2717 short"}</span>`,
     sub: `Tank: ${fmt(cmOilTank)}`
   }, {
     label: "Restock",
@@ -17305,7 +17305,7 @@ function renderFlowerCard(name, noActive) {
   const yieldChanged = Math.abs(boosted.expectedYield - 1) > 1e-4;
   const seedIconHtml = seedIconHtmlFor(seedKey);
   const ingIconHtml = getIcon(ing.name);
-  const resultIconHtml = IMAGE_ICONS[name] ? getIcon(name) : `<span style="font-size:19.2px;">${v.icon || "\u{1F337}"}</span>`;
+  const resultIconHtml = IMAGE_ICONS[name] ? getIcon(name) : `<span style="font-size:calc(19.2px * var(--fs-desk,1));">${v.icon || "\u{1F337}"}</span>`;
   const chain = computeFlowerChainTime(name);
   const chainTimeSec = chain.totalSec;
   const chainBaseSec = chain.baseTotalSec;
@@ -17326,8 +17326,8 @@ function renderFlowerCard(name, noActive) {
       <div class="flower-fold-seasons">${seasonIconsHtml}</div>
       <div class="flower-fold-head">
         <div class="card-name-row">
-          <span class="card-icon">${IMAGE_ICONS[name] ? getIcon(name) : `<span style="font-size:19.2px;">${v.icon || "\u{1F337}"}</span>`}</span>
-          <div class="card-name">${name}${isActive ? ` <span style="color:var(--profit);font-size:10.8px;font-weight:700;">\u2605 ACTIVE</span>` : ""}</div>
+          <span class="card-icon">${IMAGE_ICONS[name] ? getIcon(name) : `<span style="font-size:calc(19.2px * var(--fs-desk,1));">${v.icon || "\u{1F337}"}</span>`}</span>
+          <div class="card-name">${name}${isActive ? ` <span style="color:var(--profit);font-size:calc(10.8px * var(--fs-desk,1));font-weight:700;">\u2605 ACTIVE</span>` : ""}</div>
         </div>
         <div class="card-collapsed-profit">
           ${boosted.activeBoosts.length ? `<span class="boost-badge">\u26A1${boosted.activeBoosts.length}</span>` : ""}
@@ -17354,13 +17354,13 @@ function renderFlowerCard(name, noActive) {
 
         <div class="stat"><span class="label">Ingredient qty</span><span class="value">
           <input type="number" min="0" step="1" class="flower-variety-ingredient-qty-input" data-variety="${name}" value="${ing.qty}"
-            style="width:50px;font-family:'JetBrains Mono',monospace;font-size:12.6px;border:1.25px solid var(--line);border-radius:6px;padding:3px 4px;"> \xD7 ${fmt(ingUnitCoins)}${COIN_ICON}/u</span></div>
+            style="width:50px;font-family:'JetBrains Mono',monospace;font-size:calc(12.6px * var(--fs-desk,1));border:1.25px solid var(--line);border-radius:6px;padding:3px 4px;"> \xD7 ${fmt(ingUnitCoins)}${COIN_ICON}/u</span></div>
 
 
 
         <div class="stat"><span class="label">${seedKey} Seed cost (coins)</span><span class="value">
           <input type="number" min="0" step="0.01" class="flower-seedtype-cost-input" data-seed="${seedKey}" value="${seedCoinCost}"
-            style="width:70px;font-family:'JetBrains Mono',monospace;font-size:12.6px;border:1.25px solid var(--line);border-radius:6px;padding:3px 4px;">${COIN_ICON}</span></div>
+            style="width:70px;font-family:'JetBrains Mono',monospace;font-size:calc(12.6px * var(--fs-desk,1));border:1.25px solid var(--line);border-radius:6px;padding:3px 4px;">${COIN_ICON}</span></div>
 
         <div class="stat"><span class="label">${GEM_ICON} Seed Restock Cost / flower</span><span class="value" style="${restockCostPerFlower > 0 ? "color:#c9821a;" : ""}">${restockCostPerFlower > 0 ? `+${fmt(restockCostPerFlower)}` : "0"} ${FLOWER_ICON}</span></div>
 
@@ -17453,9 +17453,9 @@ function renderFinder() {
       return `
       <div class="card" style="padding:8px 10px;margin-bottom:6px;">
         <div class="card-name-row">
-          <span class="card-icon">${IMAGE_ICONS[match] ? getIcon(match) : `<span style="font-size:19.2px;">${v.icon}</span>`}</span>
+          <span class="card-icon">${IMAGE_ICONS[match] ? getIcon(match) : `<span style="font-size:calc(19.2px * var(--fs-desk,1));">${v.icon}</span>`}</span>
           <div>
-            <div class="card-name">\u2192 ${match}${locked ? ` <span style="color:var(--loss);font-size:10.8px;font-weight:700;">\u{1F512} locked this season</span>` : ""}</div>
+            <div class="card-name">\u2192 ${match}${locked ? ` <span style="color:var(--loss);font-size:calc(10.8px * var(--fs-desk,1));font-weight:700;">\u{1F512} locked this season</span>` : ""}</div>
             <div class="card-type">${fmt(costCoins)}${COIN_ICON} = ${fmt(costFlower)} ${FLOWER_ICON} FLOWER per flower <span style="color:var(--ink-soft);">(using its saved pairing in the list below)</span></div>
           </div>
         </div>
@@ -17524,7 +17524,7 @@ function renderHoneySummaryCard() {
             <select id="swarmCropSelect" style="display:none;">
               ${Object.keys(BASE_CROPS).map((n) => `<option value="${escapeHtml(n)}" ${n === selectedSwarmCrop ? "selected" : ""}>${escapeHtml(n)}</option>`).join("")}
             </select>
-            <button type="button" class="seed-picker-btn" id="swarmCropPickerBtn" style="width:100%;font-size:12px;padding:2px 4px;">${getIcon(selectedSwarmCrop)}<span class="seed-picker-label">${escapeHtml(selectedSwarmCrop)}</span><span class="seed-picker-chev">\u25BE</span></button>
+            <button type="button" class="seed-picker-btn" id="swarmCropPickerBtn" style="width:100%;font-size:calc(12px * var(--fs-desk,1));padding:2px 4px;">${getIcon(selectedSwarmCrop)}<span class="seed-picker-label">${escapeHtml(selectedSwarmCrop)}</span><span class="seed-picker-chev">\u25BE</span></button>
             <div class="seed-picker-menu" id="swarmCropPickerMenu" style="display:none;">
               ${Object.keys(BASE_CROPS).map((n) => `<div class="seed-picker-option${n === selectedSwarmCrop ? " active" : ""}" data-crop="${escapeHtml(n)}">${getIcon(n)}<span class="seed-picker-label">${escapeHtml(n)}</span></div>`).join("")}
             </div>
@@ -17535,8 +17535,8 @@ function renderHoneySummaryCard() {
       </div>
     </div>
     <div style="margin-top:8px;">
-      <div class="lib-section-title" style="font-size:12px;">\u{1F3B2} Swarm Distribution (today, ${fmt(econ.swarmTrialsPerDay)} rolls across ${fmt(econ.hives)} hives)</div>
-      <table style="width:100%;border-collapse:collapse;font-size:11.4px;margin-top:4px;">
+      <div class="lib-section-title" style="font-size:calc(12px * var(--fs-desk,1));">\u{1F3B2} Swarm Distribution (today, ${fmt(econ.swarmTrialsPerDay)} rolls across ${fmt(econ.hives)} hives)</div>
+      <table style="width:100%;border-collapse:collapse;font-size:calc(11.4px * var(--fs-desk,1));margin-top:4px;">
         <thead>
           <tr style="border-bottom:1.5px solid var(--line);">
             <th style="text-align:left;padding:3px 4px;color:var(--ink-soft);">Swarms</th>
@@ -17827,10 +17827,10 @@ function refreshFlowerComboIfVisible() {
 function renderPlotNodeInputs() {
   const cropWrap = $("cropPlotInputs");
   cropWrap.innerHTML = `
-    <label style="font-size:11.4px;color:var(--ink-soft);">${getIcon("Crop Plot")} Crop plots (applies to ALL crops)</label>
+    <label style="font-size:calc(11.4px * var(--fs-desk,1));color:var(--ink-soft);">${getIcon("Crop Plot")} Crop plots (applies to ALL crops)</label>
     <input type="number" min="0" step="1" id="globalCropPlotInput"
       value="${globalPlotCount || ""}" placeholder="0"
-      style="width:100%;font-family:'JetBrains Mono',monospace;font-size:12.6px;border:1.25px solid var(--line);border-radius:6px;padding:4px 5px;">
+      style="width:100%;font-family:'JetBrains Mono',monospace;font-size:calc(12.6px * var(--fs-desk,1));border:1.25px solid var(--line);border-radius:6px;padding:4px 5px;">
   `;
   $("globalCropPlotInput").addEventListener("input", (e) => {
     setPlotCount(e.target.value);
@@ -17854,36 +17854,36 @@ function renderPlotNodeInputs() {
       const tiers = RESOURCE_NODE_TIERS[name];
       const t = getNodeTierCounts(name);
       const rows = tiers.map((tier) => `
-        <label style="font-size:10.8px;color:var(--ink-soft);">${getIcon(tier.displayLabel || tier.label)} ${tier.displayLabel || tier.label}${tier.yieldAdd ? ` <span style="color:var(--profit);font-weight:700;">+${fmt(tier.yieldAdd)}</span>` : ""}</label>
-        <span style="text-align:center;font-size:10.8px;color:var(--ink-soft);">\xD7${tier.mult}</span>
+        <label style="font-size:calc(10.8px * var(--fs-desk,1));color:var(--ink-soft);">${getIcon(tier.displayLabel || tier.label)} ${tier.displayLabel || tier.label}${tier.yieldAdd ? ` <span style="color:var(--profit);font-weight:700;">+${fmt(tier.yieldAdd)}</span>` : ""}</label>
+        <span style="text-align:center;font-size:calc(10.8px * var(--fs-desk,1));color:var(--ink-soft);">\xD7${tier.mult}</span>
         <input type="number" min="0" step="1" class="res-tier-input" data-res="${name}" data-tier="${tier.key}"
           value="${t[tier.key] || ""}" placeholder="0"
-          style="width:100%;font-family:'JetBrains Mono',monospace;font-size:12.6px;border:1.25px solid var(--line);border-radius:6px;padding:4px 5px;">
+          style="width:100%;font-family:'JetBrains Mono',monospace;font-size:calc(12.6px * var(--fs-desk,1));border:1.25px solid var(--line);border-radius:6px;padding:4px 5px;">
       `).join("");
       return `
       <div style="grid-column:1 / -1;border:1.25px solid var(--line);border-radius:8px;padding:6px 8px;margin-bottom:2px;background:rgba(255,255,255,0.35);">
-        <div style="font-size:11.4px;font-weight:700;color:var(--ink);margin-bottom:4px;">${getIcon(nodeLabelOverrides[name] || name)} ${name} Nodes</div>
+        <div style="font-size:calc(11.4px * var(--fs-desk,1));font-weight:700;color:var(--ink);margin-bottom:4px;">${getIcon(nodeLabelOverrides[name] || name)} ${name} Nodes</div>
         <div style="display:grid;grid-template-columns:1fr 34px 70px;gap:4px 8px;align-items:center;">
-          <div></div><div style="font-size:8.4px;color:var(--ink-soft);text-align:center;">TOOLS</div><div style="font-size:8.4px;color:var(--ink-soft);text-align:center;">QTY</div>
+          <div></div><div style="font-size:calc(8.4px * var(--fs-desk,1));color:var(--ink-soft);text-align:center;">TOOLS</div><div style="font-size:calc(8.4px * var(--fs-desk,1));color:var(--ink-soft);text-align:center;">QTY</div>
           ${rows}
         </div>
       </div>`;
     }
     return `
-    <label style="font-size:11.4px;color:var(--ink-soft);">${getIcon(nodeLabelOverrides[name] || name)} ${nodeLabelOverrides[name] || name}</label>
+    <label style="font-size:calc(11.4px * var(--fs-desk,1));color:var(--ink-soft);">${getIcon(nodeLabelOverrides[name] || name)} ${nodeLabelOverrides[name] || name}</label>
     <input type="number" min="0" step="1" class="res-node-input" data-res="${name}"
       value="${getNodeCount(name) || ""}" placeholder="0"
-      style="width:100%;font-family:'JetBrains Mono',monospace;font-size:12.6px;border:1.25px solid var(--line);border-radius:6px;padding:4px 5px;">
+      style="width:100%;font-family:'JetBrains Mono',monospace;font-size:calc(12.6px * var(--fs-desk,1));border:1.25px solid var(--line);border-radius:6px;padding:4px 5px;">
   `;
   }).join("") + `
-    <label style="font-size:11.4px;color:var(--ink-soft);">${getIcon("Lava Pit")} Lava Pit</label>
+    <label style="font-size:calc(11.4px * var(--fs-desk,1));color:var(--ink-soft);">${getIcon("Lava Pit")} Lava Pit</label>
     <input type="number" min="0" step="1" class="res-node-input" data-res="Lava Pit"
       value="${getNodeCount("Lava Pit") || ""}" placeholder="0"
-      style="width:100%;font-family:'JetBrains Mono',monospace;font-size:12.6px;border:1.25px solid var(--line);border-radius:6px;padding:4px 5px;">
-    <label style="font-size:11.4px;color:var(--ink-soft);">${getIcon("Salt")} Salt (rocks, max ${farmLevelMaxNodes()} at Farm Level ${saltFarmLevel})</label>
+      style="width:100%;font-family:'JetBrains Mono',monospace;font-size:calc(12.6px * var(--fs-desk,1));border:1.25px solid var(--line);border-radius:6px;padding:4px 5px;">
+    <label style="font-size:calc(11.4px * var(--fs-desk,1));color:var(--ink-soft);">${getIcon("Salt")} Salt (rocks, max ${farmLevelMaxNodes()} at Farm Level ${saltFarmLevel})</label>
     <input type="number" min="0" max="${farmLevelMaxNodes()}" step="1" class="res-node-input" data-res="Salt"
       value="${getNodeCount("Salt") || ""}" placeholder="0"
-      style="width:100%;font-family:'JetBrains Mono',monospace;font-size:12.6px;border:1.25px solid var(--line);border-radius:6px;padding:4px 5px;">
+      style="width:100%;font-family:'JetBrains Mono',monospace;font-size:calc(12.6px * var(--fs-desk,1));border:1.25px solid var(--line);border-radius:6px;padding:4px 5px;">
   `;
   resWrap.querySelectorAll(".res-node-input").forEach((inp) => {
     inp.addEventListener("input", () => {
@@ -17910,10 +17910,10 @@ function renderPlotNodeInputs() {
   });
   const fruitWrap = $("fruitNodeInputs");
   fruitWrap.innerHTML = Object.keys(BASE_FRUITS).map((name) => `
-    <label style="font-size:11.4px;color:var(--ink-soft);">${getIcon(name)} ${name}</label>
+    <label style="font-size:calc(11.4px * var(--fs-desk,1));color:var(--ink-soft);">${getIcon(name)} ${name}</label>
     <input type="number" min="0" step="1" class="fruit-node-input" data-fruit="${name}"
       value="${getFruitCount(name) || ""}" placeholder="0"
-      style="width:100%;font-family:'JetBrains Mono',monospace;font-size:12.6px;border:1.25px solid var(--line);border-radius:6px;padding:4px 5px;">
+      style="width:100%;font-family:'JetBrains Mono',monospace;font-size:calc(12.6px * var(--fs-desk,1));border:1.25px solid var(--line);border-radius:6px;padding:4px 5px;">
   `).join("");
   fruitWrap.querySelectorAll(".fruit-node-input").forEach((inp) => {
     inp.addEventListener("input", () => {
@@ -17926,10 +17926,10 @@ function renderPlotNodeInputs() {
   });
   const greenhouseWrap = $("greenhouseNodeInputs");
   greenhouseWrap.innerHTML = Object.keys(BASE_GREENHOUSE).map((name) => `
-    <label style="font-size:11.4px;color:var(--ink-soft);">${getIcon(name)} ${name}</label>
+    <label style="font-size:calc(11.4px * var(--fs-desk,1));color:var(--ink-soft);">${getIcon(name)} ${name}</label>
     <input type="number" min="0" step="1" class="greenhouse-node-input" data-greenhouse="${name}"
       value="${getGreenhouseCount(name) || ""}" placeholder="0"
-      style="width:100%;font-family:'JetBrains Mono',monospace;font-size:12.6px;border:1.25px solid var(--line);border-radius:6px;padding:4px 5px;">
+      style="width:100%;font-family:'JetBrains Mono',monospace;font-size:calc(12.6px * var(--fs-desk,1));border:1.25px solid var(--line);border-radius:6px;padding:4px 5px;">
   `).join("");
   greenhouseWrap.querySelectorAll(".greenhouse-node-input").forEach((inp) => {
     inp.addEventListener("input", () => {
@@ -17948,15 +17948,15 @@ function renderPlotNodeInputs() {
 function renderAnimalCountInputs() {
   const wrap = $("animalCountInputs");
   if (!wrap) return;
-  wrap.innerHTML = `<div></div><div style="font-size:8.4px;color:var(--ink-soft);text-align:center;">LEVEL</div><div style="font-size:8.4px;color:var(--ink-soft);text-align:center;">HEADS</div>` + Object.keys(ANIMAL_DATA).map((type) => {
+  wrap.innerHTML = `<div></div><div style="font-size:calc(8.4px * var(--fs-desk,1));color:var(--ink-soft);text-align:center;">LEVEL</div><div style="font-size:calc(8.4px * var(--fs-desk,1));color:var(--ink-soft);text-align:center;">HEADS</div>` + Object.keys(ANIMAL_DATA).map((type) => {
     const cfg = ANIMAL_DATA[type];
     const c = getAnimalCount(type);
     return `
-      <label style="font-size:11.4px;color:var(--ink-soft);">${getIcon(cfg.label)} ${cfg.label}</label>
+      <label style="font-size:calc(11.4px * var(--fs-desk,1));color:var(--ink-soft);">${getIcon(cfg.label)} ${cfg.label}</label>
       <input type="number" min="1" max="15" step="1" class="animal-level-input" data-type="${type}" value="${c.level || 1}"
-        style="width:100%;font-family:'JetBrains Mono',monospace;font-size:12.6px;border:1.25px solid var(--line);border-radius:6px;padding:4px 5px;">
+        style="width:100%;font-family:'JetBrains Mono',monospace;font-size:calc(12.6px * var(--fs-desk,1));border:1.25px solid var(--line);border-radius:6px;padding:4px 5px;">
       <input type="number" min="0" step="1" class="animal-qty-input" data-type="${type}" value="${c.qty || 0}"
-        style="width:100%;font-family:'JetBrains Mono',monospace;font-size:12.6px;border:1.25px solid var(--line);border-radius:6px;padding:4px 5px;">`;
+        style="width:100%;font-family:'JetBrains Mono',monospace;font-size:calc(12.6px * var(--fs-desk,1));border:1.25px solid var(--line);border-radius:6px;padding:4px 5px;">`;
   }).join("");
   wrap.querySelectorAll(".animal-level-input").forEach((inp) => {
     inp.addEventListener("input", () => {
@@ -17985,15 +17985,15 @@ function renderAnimalCuresInputs() {
     const headsHint = qty > 0 ? `out of ${fmt(qty)} heads` : "set heads above first";
     return `
     <div class="sickness-row" data-type="${type}" style="grid-column:1 / -1;background:rgba(255,255,255,0.35);border:1.25px solid var(--line);border-radius:8px;padding:6px 8px;margin-bottom:6px;">
-      <div style="font-size:11.4px;color:var(--ink);font-weight:700;margin-bottom:5px;">${getIcon(cfg.label)} ${cfg.label} \u2014 ${headsHint}</div>
+      <div style="font-size:calc(11.4px * var(--fs-desk,1));color:var(--ink);font-weight:700;margin-bottom:5px;">${getIcon(cfg.label)} ${cfg.label} \u2014 ${headsHint}</div>
       <div style="display:grid;grid-template-columns:1fr 70px;gap:4px 8px;align-items:center;margin-bottom:4px;">
-        <label style="font-size:10.8px;color:var(--ink-soft);">Heads that usually get sick /day</label>
+        <label style="font-size:calc(10.8px * var(--fs-desk,1));color:var(--ink-soft);">Heads that usually get sick /day</label>
         <input type="number" min="0" step="1" class="sick-heads-input" data-type="${type}" value="${est.sickHeads || 0}"
-          style="width:100%;font-family:'JetBrains Mono',monospace;font-size:12.6px;border:1.25px solid var(--line);border-radius:6px;padding:4px 5px;">
+          style="width:100%;font-family:'JetBrains Mono',monospace;font-size:calc(12.6px * var(--fs-desk,1));border:1.25px solid var(--line);border-radius:6px;padding:4px 5px;">
       </div>
       <div style="display:grid;grid-template-columns:1fr 70px;gap:4px 8px;align-items:center;">
-        <label style="font-size:10.8px;color:var(--ink-soft);">Cures each sick head needs</label>
-        <span style="width:100%;display:block;text-align:center;font-family:'JetBrains Mono',monospace;font-size:12.6px;color:var(--ink-soft);border:1.25px solid var(--line);border-radius:6px;padding:4px 5px;background:rgba(0,0,0,0.04);">1 (fixed)</span>
+        <label style="font-size:calc(10.8px * var(--fs-desk,1));color:var(--ink-soft);">Cures each sick head needs</label>
+        <span style="width:100%;display:block;text-align:center;font-family:'JetBrains Mono',monospace;font-size:calc(12.6px * var(--fs-desk,1));color:var(--ink-soft);border:1.25px solid var(--line);border-radius:6px;padding:4px 5px;background:rgba(0,0,0,0.04);">1 (fixed)</span>
       </div>
     </div>`;
   }).join("");
@@ -18511,14 +18511,14 @@ function renderTicketCalc() {
         </div>
         <div class="tc-npc-total" id="npcTotal-${s}">${fmt(r.total)}</div>
         <div class="tc-npc-skip" style="flex-basis:100%;display:flex;align-items:center;gap:8px;margin-top:6px;">
-          <label style="font-size:11.4px;color:var(--ink-soft);flex:1;">Skip days (days not delivered)</label>
+          <label style="font-size:calc(11.4px * var(--fs-desk,1));color:var(--ink-soft);flex:1;">Skip days (days not delivered)</label>
           <input type="number" min="0" step="1" class="npc-skip-input" data-npc="${r.npc}" value="${skipVal}"
-            style="width:64px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:13.2px;border:2px solid var(--ink);border-radius:0;padding:5px 2px;background:#fff;color:var(--ink);" />
+            style="width:64px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:calc(13.2px * var(--fs-desk,1));border:2px solid var(--ink);border-radius:0;padding:5px 2px;background:#fff;color:var(--ink);" />
         </div>
         <div class="tc-npc-flower" style="flex-basis:100%;display:flex;align-items:center;gap:8px;margin-top:6px;">
-          <label style="font-size:11.4px;color:var(--ink-soft);flex:1;">${FLOWER_ICON} FLOWER cost per delivery</label>
+          <label style="font-size:calc(11.4px * var(--fs-desk,1));color:var(--ink-soft);flex:1;">${FLOWER_ICON} FLOWER cost per delivery</label>
           <input type="number" min="0" step="1" class="npc-flower-input" data-npc="${r.npc}" value="${flowerVal}"
-            style="width:64px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:13.2px;border:2px solid var(--ink);border-radius:0;padding:5px 2px;background:#fff;color:var(--ink);" />
+            style="width:64px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:calc(13.2px * var(--fs-desk,1));border:2px solid var(--ink);border-radius:0;padding:5px 2px;background:#fff;color:var(--ink);" />
         </div>
       </div>
     `;
@@ -19067,7 +19067,7 @@ function renderCalcIngredients() {
           <div class="calc-ing-meta">Cost @ 1${GEM_ICON}/u \u2248 ${fmt(coinsToFlower(r.unitCost))}${FLOWER_ICON}/u</div>
         </div>
         <div class="calc-ing-toggle">
-          <span style="font-size:9.6px;opacity:.6;">${GEM_ICON} gem-only</span>
+          <span style="font-size:calc(9.6px * var(--fs-desk,1));opacity:.6;">${GEM_ICON} gem-only</span>
         </div>
       </div>`;
     }
@@ -19081,7 +19081,7 @@ function renderCalcIngredients() {
         <div class="calc-ing-meta">${r.mode === "collect" ? "Collect" : "Buy"} @ ${fmt(displayPrice)}${displayUnit}/u</div>
       </div>
       <div class="calc-ing-toggle">
-        ${r.name.toLowerCase() === "oil" ? `<span style="font-size:9.6px;opacity:.6;">\u{1F6AB} not tradable</span>` : `<button type="button" class="calc-mode-btn" data-key="${r.key}" data-mat="${escapeHtml(r.name)}" data-mode="collect" style="${r.mode === "collect" ? "border-color:var(--profit);color:var(--profit);" : ""}">Collect</button>
+        ${r.name.toLowerCase() === "oil" ? `<span style="font-size:calc(9.6px * var(--fs-desk,1));opacity:.6;">\u{1F6AB} not tradable</span>` : `<button type="button" class="calc-mode-btn" data-key="${r.key}" data-mat="${escapeHtml(r.name)}" data-mode="collect" style="${r.mode === "collect" ? "border-color:var(--profit);color:var(--profit);" : ""}">Collect</button>
         <button type="button" class="calc-mode-btn" data-key="${r.key}" data-mat="${escapeHtml(r.name)}" data-mode="buy" style="${r.mode === "buy" ? "border-color:var(--flower);color:var(--flower);" : ""}">Buy</button>`}
       </div>
     </div>`;
@@ -20404,12 +20404,12 @@ function renderSeaBlessedAverageHtml(fig) {
   const statusLine = sb.active ? `Active: Rank ${sb.rank}/${sb.maxRank} \xB7 ${fmt(sb.chancePct)}% chance \xB7 ${fmtInt(sb.targets)} node${sb.targets === 1 ? "" : "s"} restored per proc` : `Skill not selected \u2014 Salt/day above excludes it. Ranks below show what each would add.`;
   const rows = sb.ranks.map((r) => {
     const isCurrent = sb.active && r.rank === sb.rank;
-    return `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:10.8px;padding:3px 0;border-bottom:1px dashed var(--line, rgba(0,0,0,.12));${isCurrent ? "font-weight:700;color:var(--profit);" : ""}"><span>Rank ${r.rank} \xB7 ${fmt(r.chancePct)}%${isCurrent ? " \u2713" : ""}</span><span style="font-family:'JetBrains Mono',monospace;text-align:right;">\xD7${fx(r.harvestMult)} harvests \xB7 +${f2(r.bonusSaltPerDay)} ${getIcon("Salt")}/day</span></div>`;
+    return `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:calc(10.8px * var(--fs-desk,1));padding:3px 0;border-bottom:1px dashed var(--line, rgba(0,0,0,.12));${isCurrent ? "font-weight:700;color:var(--profit);" : ""}"><span>Rank ${r.rank} \xB7 ${fmt(r.chancePct)}%${isCurrent ? " \u2713" : ""}</span><span style="font-family:'JetBrains Mono',monospace;text-align:right;">\xD7${fx(r.harvestMult)} harvests \xB7 +${f2(r.bonusSaltPerDay)} ${getIcon("Salt")}/day</span></div>`;
   }).join("");
   const title = "Sea Blessed rolls once on every Salt harvest. A proc gives +1 charge to up to 4 Salt Nodes below max, and each restored charge is harvested too, so it rolls again. Average harvests per natural charge = 1 / (1 \u2212 nodes restored \xD7 chance).";
   return `
       <div class="lib-section-title" style="margin-top:10px;" title="${escapeHtml(title)}">\u26A1 Sea Blessed \u2014 average per day</div>
-      <div style="font-size:10.2px;color:${sb.active ? "var(--profit)" : "var(--ink-soft)"};font-weight:600;margin-bottom:4px;">${statusLine}</div>
+      <div style="font-size:calc(10.2px * var(--fs-desk,1));color:${sb.active ? "var(--profit)" : "var(--ink-soft)"};font-weight:600;margin-bottom:4px;">${statusLine}</div>
       <div class="card-grid">
         <div class="stat"><span class="label">Natural harvests/day</span><span class="value">${f2(sb.naturalHarvestsPerDay)}</span></div>
         <div class="stat"><span class="label">Avg harvests/day</span><span class="value">${f2(sb.harvestsPerDay)}</span></div>
@@ -20417,7 +20417,7 @@ function renderSeaBlessedAverageHtml(fig) {
         <div class="stat"><span class="label">Bonus Salt/day</span><span class="value">+${f2(sb.bonusSaltPerDay)}</span></div>
       </div>
       <div style="margin-top:4px;">${rows}</div>
-      <div style="font-size:9px;color:var(--ink-soft);margin-top:5px;">Every harvest rolls Sea Blessed, including the ones it restores, so procs chain: each charge is worth 1 \xF7 (1 \u2212 ${fmtInt(sb.targets)} node${sb.targets === 1 ? "" : "s"} \xD7 chance) harvests on average. Assumes you harvest each charge as it becomes ready, and every extra harvest uses an extra Salt Rake (already in the rake and restock cost).</div>`;
+      <div style="font-size:calc(9px * var(--fs-desk,1));color:var(--ink-soft);margin-top:5px;">Every harvest rolls Sea Blessed, including the ones it restores, so procs chain: each charge is worth 1 \xF7 (1 \u2212 ${fmtInt(sb.targets)} node${sb.targets === 1 ? "" : "s"} \xD7 chance) harvests on average. Assumes you harvest each charge as it becomes ready, and every extra harvest uses an extra Salt Rake (already in the rake and restock cost).</div>`;
 }
 function renderSaltFarmCard() {
   const fig = computeSaltFarmFigures();
@@ -20438,11 +20438,11 @@ function renderSaltFarmCard() {
     </div>
     <div class="card-details" style="display:block;max-height:none;padding-top:0;">
       <div style="display:grid;grid-template-columns:1fr 130px;gap:6px 8px;align-items:center;margin:6px 0 8px;">
-        <label style="font-size:11.4px;color:var(--ink-soft);">${getIcon("Salt")} Farm level (1\u2013${FARM_LEVEL_NODES.length})</label>
+        <label style="font-size:calc(11.4px * var(--fs-desk,1));color:var(--ink-soft);">${getIcon("Salt")} Farm level (1\u2013${FARM_LEVEL_NODES.length})</label>
         ${stepperHtml("farmLevelInput", saltFarmLevel, 1, FARM_LEVEL_NODES.length)}
       </div>
       <div style="display:grid;grid-template-columns:1fr 130px;gap:6px 8px;align-items:center;margin:0 0 8px;">
-        <label style="font-size:11.4px;color:var(--ink-soft);">${getIcon("Salt")} Salt Nodes owned (max ${farmLevelMaxNodes()} at this level)</label>
+        <label style="font-size:calc(11.4px * var(--fs-desk,1));color:var(--ink-soft);">${getIcon("Salt")} Salt Nodes owned (max ${farmLevelMaxNodes()} at this level)</label>
         ${stepperHtml("saltNodeInput", fig.nodeCount, 0, farmLevelMaxNodes())}
       </div>
       <div class="card-grid">
@@ -20466,20 +20466,20 @@ function renderSaltFarmCard() {
         <span class="plabel">Profit / day (${fmt(fig.nodeCount)} node${fig.nodeCount === 1 ? "" : "s"})</span>
         <span class="pvalue ${isProfit ? "is-profit" : "is-loss"}">${isProfit ? "+" : ""}${fmt(fig.dailyProfit)} ${FLOWER_ICON} FLOWER</span>
       </div>
-      <div style="font-size:9px;color:var(--ink-soft);margin-top:5px;">Salt Rake cost is read live from \u{1F6D2} Marketplace Prices \u2192 Base Coin Cost \u2192 Tools \u2192 Salt Rake (${fmt(fig.rakeCoinCost)}${COIN_ICON} per rake, after Sculpture's Salt Rake discount) \u2014 edit it there, not here. Each stored charge yields ${SALT_BASE_YIELD} Salt base; boosts in \u26A1 Boosts \u2192 \u{1F9C2} Salt add flat bonus Salt/harvest on top. Edit Salt's sell price in \u{1F6D2} Marketplace Prices.</div>
+      <div style="font-size:calc(9px * var(--fs-desk,1));color:var(--ink-soft);margin-top:5px;">Salt Rake cost is read live from \u{1F6D2} Marketplace Prices \u2192 Base Coin Cost \u2192 Tools \u2192 Salt Rake (${fmt(fig.rakeCoinCost)}${COIN_ICON} per rake, after Sculpture's Salt Rake discount) \u2014 edit it there, not here. Each stored charge yields ${SALT_BASE_YIELD} Salt base; boosts in \u26A1 Boosts \u2192 \u{1F9C2} Salt add flat bonus Salt/harvest on top. Edit Salt's sell price in \u{1F6D2} Marketplace Prices.</div>
       ${renderSaltBoostAppliedList(fig.activeBoosts)}${renderSeaBlessedAverageHtml(fig)}
       ${(() => {
     const next = computeFarmLevelNextCost();
     return next ? `
       <div class="lib-section-title" style="margin-top:10px;">Cost to reach Farm Level ${saltFarmLevel + 1}</div>
       <div style="display:flex;flex-direction:column;gap:2px;margin-bottom:6px;">
-        ${next.lines.map((l) => `<div style="display:flex;justify-content:space-between;font-size:10.8px;"><span>${escapeHtml(l.label)} \xD7${fmt(l.qty)}</span><span style="font-family:'JetBrains Mono',monospace;">${fmt(l.flower)} ${FLOWER_ICON} FLOWER</span></div>`).join("")}
+        ${next.lines.map((l) => `<div style="display:flex;justify-content:space-between;font-size:calc(10.8px * var(--fs-desk,1));"><span>${escapeHtml(l.label)} \xD7${fmt(l.qty)}</span><span style="font-family:'JetBrains Mono',monospace;">${fmt(l.flower)} ${FLOWER_ICON} FLOWER</span></div>`).join("")}
       </div>
       <div class="profit-banner">
         <span class="plabel">Total to next level</span>
         <span class="pvalue is-loss">${fmt(next.total)} ${FLOWER_ICON} FLOWER</span>
       </div>
-      <div style="font-size:9px;color:var(--ink-soft);margin-top:5px;">One-time upgrade cost \u2014 not included in the Salt/day profit above.</div>` : `<div style="font-size:10.8px;color:var(--profit);font-weight:700;margin-top:8px;">\u{1F3C6} Max Farm level reached (Level ${FARM_LEVEL_NODES.length})</div>`;
+      <div style="font-size:calc(9px * var(--fs-desk,1));color:var(--ink-soft);margin-top:5px;">One-time upgrade cost \u2014 not included in the Salt/day profit above.</div>` : `<div style="font-size:calc(10.8px * var(--fs-desk,1));color:var(--profit);font-weight:700;margin-top:8px;">\u{1F3C6} Max Farm level reached (Level ${FARM_LEVEL_NODES.length})</div>`;
   })()}
     </div>
   </div>`;
@@ -20500,21 +20500,21 @@ function renderSculptureCard() {
     </div>
     <div class="card-details" style="display:block;max-height:none;padding-top:0;">
       <div style="display:grid;grid-template-columns:1fr 130px;gap:6px 8px;align-items:center;margin:6px 0 8px;">
-        <label style="font-size:11.4px;color:var(--ink-soft);"><img src="data:image/webp;base64,UklGRn4BAABXRUJQVlA4THIBAAAvLsAIEEegKrIN6qZ48G2U0V0BYdRQEwAEw7t3/1ACURIADUMFFP4Eon+P6RFk21Rs9Ad7AOD/z0p93milUqEcze4BJGnb2yb/RCdIXTfYd/bE3y/YMtavYZv2hQMwmAM03duyBDeI6P8EiIhc3VbK4NXhxMITT7cDLWMJI6PLXLGKD5kDGc2CZWFGmhORKxyjAoqsAeZ5LyINvQIImWAAToxO5MCIQgOAQDq5IhVfqRg48UGuAHylSgB30jIi1T4HRncgv1LqSn9TOpK9lLry3/Q28FnRFXS1v72W8bOqe2V0DdDVPwGuIf/gTO+m5EcdufgfVp2H3muOvXZHsOLsj3xx7dyTLDqTfmGusRNJT4KkP9KTpKlrwpzkkYVHcmFwDWxHz4oXhVvC5ruasemFyFZtPhuPH2fj8XiM8fhxbKojkaUGVSAoABgQYLgUEdkCCsB62lOMestcKLmQ7BbVo9xyW7OWweW66GItpevSkWQB" style="width:11px;height:11px;vertical-align:-2px;image-rendering:pixelated;"> Sculpture level (0\u2013${SCULPTURE_LEVELS.length})</label>
+        <label style="font-size:calc(11.4px * var(--fs-desk,1));color:var(--ink-soft);"><img src="data:image/webp;base64,UklGRn4BAABXRUJQVlA4THIBAAAvLsAIEEegKrIN6qZ48G2U0V0BYdRQEwAEw7t3/1ACURIADUMFFP4Eon+P6RFk21Rs9Ad7AOD/z0p93milUqEcze4BJGnb2yb/RCdIXTfYd/bE3y/YMtavYZv2hQMwmAM03duyBDeI6P8EiIhc3VbK4NXhxMITT7cDLWMJI6PLXLGKD5kDGc2CZWFGmhORKxyjAoqsAeZ5LyINvQIImWAAToxO5MCIQgOAQDq5IhVfqRg48UGuAHylSgB30jIi1T4HRncgv1LqSn9TOpK9lLry3/Q28FnRFXS1v72W8bOqe2V0DdDVPwGuIf/gTO+m5EcdufgfVp2H3muOvXZHsOLsj3xx7dyTLDqTfmGusRNJT4KkP9KTpKlrwpzkkYVHcmFwDWxHz4oXhVvC5ruasemFyFZtPhuPH2fj8XiM8fhxbKojkaUGVSAoABgQYLgUEdkCCsB62lOMestcKLmQ7BbVo9xyW7OWweW66GItpevSkWQB" style="width:11px;height:11px;vertical-align:-2px;image-rendering:pixelated;"> Sculpture level (0\u2013${SCULPTURE_LEVELS.length})</label>
         ${stepperHtml("sculptureLevelInput", eff.level, 0, SCULPTURE_LEVELS.length)}
       </div>
       <div style="display:flex;flex-direction:column;gap:3px;margin-bottom:8px;">
-        ${SCULPTURE_EFFECTS_LIST.map((e, i) => `<div style="font-size:10.8px;${i < eff.level ? "color:var(--profit);font-weight:700;" : "color:var(--ink-soft);opacity:.6;"}">${i < eff.level ? "\u2705" : "\u2B1C"} Lv.${i + 1} \u2014 ${e}</div>`).join("")}
+        ${SCULPTURE_EFFECTS_LIST.map((e, i) => `<div style="font-size:calc(10.8px * var(--fs-desk,1));${i < eff.level ? "color:var(--profit);font-weight:700;" : "color:var(--ink-soft);opacity:.6;"}">${i < eff.level ? "\u2705" : "\u2B1C"} Lv.${i + 1} \u2014 ${e}</div>`).join("")}
       </div>
       ${next ? `
       <div class="lib-section-title" style="margin-top:0;">Cost to reach Level ${eff.level + 1}</div>
       <div style="display:flex;flex-direction:column;gap:2px;margin-bottom:6px;">
-        ${next.lines.map((l) => `<div style="display:flex;justify-content:space-between;font-size:10.8px;"><span>${escapeHtml(l.label)} \xD7${fmt(l.qty)}</span><span style="font-family:'JetBrains Mono',monospace;">${fmt(l.flower)} ${FLOWER_ICON} FLOWER</span></div>`).join("")}
+        ${next.lines.map((l) => `<div style="display:flex;justify-content:space-between;font-size:calc(10.8px * var(--fs-desk,1));"><span>${escapeHtml(l.label)} \xD7${fmt(l.qty)}</span><span style="font-family:'JetBrains Mono',monospace;">${fmt(l.flower)} ${FLOWER_ICON} FLOWER</span></div>`).join("")}
       </div>
       <div class="profit-banner">
         <span class="plabel">Total to next level</span>
         <span class="pvalue is-loss">${fmt(next.total)} ${FLOWER_ICON} FLOWER</span>
-      </div>` : `<div style="font-size:10.8px;color:var(--profit);font-weight:700;">\u{1F3C6} Max level reached (Level 6)</div>`}
+      </div>` : `<div style="font-size:calc(10.8px * var(--fs-desk,1));color:var(--profit);font-weight:700;">\u{1F3C6} Max level reached (Level 6)</div>`}
     </div>
   </div>`;
 }
@@ -20539,11 +20539,11 @@ function renderVegCard() {
         </div>
       </div>
       <div style="text-align:right;flex-shrink:0;">
-        <div style="font-size:11.4px;font-weight:700;color:var(--loss);">${fmt(entry.cost)}</div>
-        <div style="font-size:9px;color:var(--ink-soft);">${FLOWER_ICON} FLOWER \xB7 Output \xD7${fmt(entry.output)}</div>
+        <div style="font-size:calc(11.4px * var(--fs-desk,1));font-weight:700;color:var(--loss);">${fmt(entry.cost)}</div>
+        <div style="font-size:calc(9px * var(--fs-desk,1));color:var(--ink-soft);">${FLOWER_ICON} FLOWER \xB7 Output \xD7${fmt(entry.output)}</div>
       </div>
       <div class="calc-ing-toggle" style="width:100%;justify-content:flex-end;margin-top:4px;">
-        <span style="font-size:8.4px;color:var(--ink-soft);font-weight:600;margin-right:2px;align-self:center;">${getIconSmall(veg)} ${escapeHtml(veg)}:</span>
+        <span style="font-size:calc(8.4px * var(--fs-desk,1));color:var(--ink-soft);font-weight:600;margin-right:2px;align-self:center;">${getIconSmall(veg)} ${escapeHtml(veg)}:</span>
         <button type="button" class="calc-mode-btn veg-mode-btn" data-mat="${escapeHtml(veg)}" data-mode="collect" style="${entry.cropMode === "collect" ? "border-color:var(--profit);color:var(--profit);" : ""}">Collect</button>
         <button type="button" class="calc-mode-btn veg-mode-btn" data-mat="${escapeHtml(veg)}" data-mode="buy" style="${entry.cropMode === "buy" ? "border-color:var(--flower);color:var(--flower);" : ""}">Buy</button>
       </div>
@@ -20562,13 +20562,13 @@ function renderVegCard() {
     </div>
     <div class="card-details" style="display:block;max-height:none;padding-top:0;">
       <div class="calc-ing-toggle" style="width:100%;justify-content:flex-end;margin-bottom:6px;">
-        <span style="font-size:8.4px;color:var(--ink-soft);font-weight:600;margin-right:2px;align-self:center;">${getIconSmall("Salt")} Salt (applies to every Veg below):</span>
+        <span style="font-size:calc(8.4px * var(--fs-desk,1));color:var(--ink-soft);font-weight:600;margin-right:2px;align-self:center;">${getIconSmall("Salt")} Salt (applies to every Veg below):</span>
         <button type="button" class="calc-mode-btn veg-mode-btn" data-mat="Salt" data-mode="collect" style="${saltMode === "collect" ? "border-color:var(--profit);color:var(--profit);" : ""}">Collect</button>
         <button type="button" class="calc-mode-btn veg-mode-btn" data-mat="Salt" data-mode="buy" style="${saltMode === "buy" ? "border-color:var(--flower);color:var(--flower);" : ""}">Buy</button>
       </div>
       ${rows}
       ${renderSaltBoostAppliedList(vegActiveBoosts)}
-      <div style="font-size:9px;color:var(--ink-soft);margin-top:8px;">Each Pickled Veg = raw crop \xD7 its qty + a flat 5 Salt. <b>Collect</b> prices an ingredient off what it costs to grow/rake elsewhere in the app (for Salt, that's the Salt Rake coin cost \xF7 yield above); <b>Buy</b> prices it off the live \u{1F6D2} Marketplace price instead. Salt is currently costed at ${fmt(saltUnit)} ${FLOWER_ICON} FLOWER/unit (${saltMode}). Change any toggle, the Salt Rake cost, node count, or a crop's price, and these Vegs costs \u2014 plus every Bait/Fertiliser card below that uses them \u2014 update automatically.</div>
+      <div style="font-size:calc(9px * var(--fs-desk,1));color:var(--ink-soft);margin-top:8px;">Each Pickled Veg = raw crop \xD7 its qty + a flat 5 Salt. <b>Collect</b> prices an ingredient off what it costs to grow/rake elsewhere in the app (for Salt, that's the Salt Rake coin cost \xF7 yield above); <b>Buy</b> prices it off the live \u{1F6D2} Marketplace price instead. Salt is currently costed at ${fmt(saltUnit)} ${FLOWER_ICON} FLOWER/unit (${saltMode}). Change any toggle, the Salt Rake cost, node count, or a crop's price, and these Vegs costs \u2014 plus every Bait/Fertiliser card below that uses them \u2014 update automatically.</div>
     </div>
   </div>`;
 }
@@ -20594,21 +20594,21 @@ function renderBaitCard(name) {
     </div>
     <div class="card-details" style="display:block;max-height:none;padding-top:0;">
       <div style="display:flex;gap:6px;margin:6px 0 8px;">
-        <button type="button" class="mode-btn bait-quality-btn" data-bait="${escapeHtml(name)}" data-quality="aged" style="flex:1;padding:5px;font-size:10.8px;border-radius:6px;border:1.5px solid var(--line);cursor:pointer;background:${!fig.isPrime ? "var(--profit)" : "transparent"};color:${!fig.isPrime ? "#fff" : "var(--ink)"};">\u{1F948} Aged \xD7${fig.outputAgedBoosted}</button>
-        <button type="button" class="mode-btn bait-quality-btn" data-bait="${escapeHtml(name)}" data-quality="prime" style="flex:1;padding:5px;font-size:10.8px;border-radius:6px;border:1.5px solid var(--line);cursor:pointer;background:${fig.isPrime ? "var(--profit)" : "transparent"};color:${fig.isPrime ? "#fff" : "var(--ink)"};">\u{1F947} Prime \xD7${fig.outputPrimeBoosted}</button>
+        <button type="button" class="mode-btn bait-quality-btn" data-bait="${escapeHtml(name)}" data-quality="aged" style="flex:1;padding:5px;font-size:calc(10.8px * var(--fs-desk,1));border-radius:6px;border:1.5px solid var(--line);cursor:pointer;background:${!fig.isPrime ? "var(--profit)" : "transparent"};color:${!fig.isPrime ? "#fff" : "var(--ink)"};">\u{1F948} Aged \xD7${fig.outputAgedBoosted}</button>
+        <button type="button" class="mode-btn bait-quality-btn" data-bait="${escapeHtml(name)}" data-quality="prime" style="flex:1;padding:5px;font-size:calc(10.8px * var(--fs-desk,1));border-radius:6px;border:1.5px solid var(--line);cursor:pointer;background:${fig.isPrime ? "var(--profit)" : "transparent"};color:${fig.isPrime ? "#fff" : "var(--ink)"};">\u{1F947} Prime \xD7${fig.outputPrimeBoosted}</button>
       </div>
-      <div style="font-size:9px;color:var(--ink-soft);margin:-2px 0 8px;">Prime is a ${fmt(fig.primeChancePct)}% bonus-chance on the same recipe (same Salt cost) \u2014 it doesn't change what you spend, only how many bait you might get back. The toggle below just shows the math for a guaranteed Aged batch vs. a guaranteed Prime batch.</div>
-      ${typeof cookingGuaranteedCatchOn !== "undefined" && cookingGuaranteedCatchOn ? `<div style="font-size:9px;color:var(--ink-soft);margin:-6px 0 8px;">\u{1F3AF} Guaranteed Catch is on (set in \u{1F373} Cooking \u2192 Basic Fish) \u2014 fish cost above uses the Fish Market recipe cost instead of Rod + Bait + Chum.</div>` : ``}
+      <div style="font-size:calc(9px * var(--fs-desk,1));color:var(--ink-soft);margin:-2px 0 8px;">Prime is a ${fmt(fig.primeChancePct)}% bonus-chance on the same recipe (same Salt cost) \u2014 it doesn't change what you spend, only how many bait you might get back. The toggle below just shows the math for a guaranteed Aged batch vs. a guaranteed Prime batch.</div>
+      ${typeof cookingGuaranteedCatchOn !== "undefined" && cookingGuaranteedCatchOn ? `<div style="font-size:calc(9px * var(--fs-desk,1));color:var(--ink-soft);margin:-6px 0 8px;">\u{1F3AF} Guaranteed Catch is on (set in \u{1F373} Cooking \u2192 Basic Fish) \u2014 fish cost above uses the Fish Market recipe cost instead of Rod + Bait + Chum.</div>` : ``}
 
       <div style="margin-bottom:8px;">
-        <label style="font-size:10.2px;color:var(--ink-soft);display:block;margin-bottom:3px;">\u{1F41F} Fish (choose ingredient)</label>
+        <label style="font-size:calc(10.2px * var(--fs-desk,1));color:var(--ink-soft);display:block;margin-bottom:3px;">\u{1F41F} Fish (choose ingredient)</label>
         <button type="button" class="pixel-select-btn" id="${fishListId}" data-bait="${escapeHtml(name)}" data-role="fish">
           <span class="psb-label">${getFishIcon(fig.fish.name, fig.isPrime)} ${escapeHtml(fig.fish.name)} \u2014 ${fmt(fig.fishEffectiveSalt)} Salt (${fmt(fig.fishCost)} ${FLOWER_ICON} FLOWER)</span>
           <span class="psb-chevron">\u25BC</span>
         </button>
       </div>
       <div style="margin-bottom:8px;">
-        <label style="font-size:10.2px;color:var(--ink-soft);display:block;margin-bottom:3px;">\u{1F952} Pickled Veg (choose ingredient)</label>
+        <label style="font-size:calc(10.2px * var(--fs-desk,1));color:var(--ink-soft);display:block;margin-bottom:3px;">\u{1F952} Pickled Veg (choose ingredient)</label>
         <button type="button" class="pixel-select-btn" id="${vegListId}" data-bait="${escapeHtml(name)}" data-role="veg">
           <span class="psb-label">Pickled ${fig.veg ? escapeHtml(fig.veg.veg) : "?"} \u2014 ${fmt(fig.veg ? fig.veg.cost : 0)} ${FLOWER_ICON} FLOWER</span>
           <span class="psb-chevron">\u25BC</span>
@@ -20635,7 +20635,7 @@ function renderBaitCard(name) {
         <span class="plabel">Profit/unit (${fig.isPrime ? "Prime" : "Aged"})</span>
         <span class="pvalue ${isProfit ? "is-profit" : "is-loss"}">${isProfit ? "+" : ""}${fmt(fig.profitPerUnitSelected)} ${FLOWER_ICON} FLOWER</span>
       </div>
-      <div style="font-size:9px;color:var(--ink-soft);margin-top:5px;">Defaults to the cheapest fish &amp; cheapest Pickled Veg in this bait's tier \u2014 the wiki-recommended play \u2014 but you can pick any ingredient above to price out what you actually have. Edit ${escapeHtml(name)}'s sell price in \u{1F6D2} Marketplace Prices.</div>
+      <div style="font-size:calc(9px * var(--fs-desk,1));color:var(--ink-soft);margin-top:5px;">Defaults to the cheapest fish &amp; cheapest Pickled Veg in this bait's tier \u2014 the wiki-recommended play \u2014 but you can pick any ingredient above to price out what you actually have. Edit ${escapeHtml(name)}'s sell price in \u{1F6D2} Marketplace Prices.</div>
     </div>
   </div>`;
 }
@@ -20649,7 +20649,7 @@ function renderFertCard(name) {
       <div class="card-name-row">
         <span class="card-icon">${getIcon(name)}</span>
         <div>
-          <div class="card-name">${name} ${fig.applied ? '<span style="font-size:9.6px;color:var(--profit);font-weight:700;">\u25CF APPLYING</span>' : ""}</div>
+          <div class="card-name">${name} ${fig.applied ? '<span style="font-size:calc(9.6px * var(--fs-desk,1));color:var(--profit);font-weight:700;">\u25CF APPLYING</span>' : ""}</div>
           <div class="card-type">${escapeHtml(fig.effect)}</div>
         </div>
       </div>
@@ -20657,7 +20657,7 @@ function renderFertCard(name) {
     <div class="card-details" style="display:block;max-height:none;padding-top:0;">
       ${rec.vegOptions ? `
       <div style="margin-bottom:8px;">
-        <label style="font-size:10.2px;color:var(--ink-soft);display:block;margin-bottom:3px;">\u{1F952} Pickled Veg (choose ingredient)</label>
+        <label style="font-size:calc(10.2px * var(--fs-desk,1));color:var(--ink-soft);display:block;margin-bottom:3px;">\u{1F952} Pickled Veg (choose ingredient)</label>
         <button type="button" class="pixel-select-btn" id="${vegListId}" data-fert="${escapeHtml(name)}" data-role="fertveg">
           <span class="psb-label">Pickled ${fig.note ? escapeHtml(fig.note) : "?"} \u2014 ${fmt((fig.vegOptionsList.find((v) => v.isSelected) || {}).cost || 0)} ${FLOWER_ICON} FLOWER</span>
           <span class="psb-chevron">\u25BC</span>
@@ -20670,9 +20670,9 @@ function renderFertCard(name) {
       </div>
       ${renderSaltBoostAppliedList(fig.activeBoosts)}
       <div style="margin-top:8px;">
-        <button type="button" class="btn ${fig.applied ? "btn-outline" : ""}" data-boost-id="apply_${name.toLowerCase().replace(/\s+/g, "_")}" style="width:100%;padding:7px;font-size:11.4px;border-radius:8px;cursor:pointer;${fig.applied ? "" : "background:var(--profit);color:#fff;border:none;"}">${fig.applied ? "\u2B1C Turn off in Composter" : "\u2705 Apply (turns off classic fertiliser)"}</button>
+        <button type="button" class="btn ${fig.applied ? "btn-outline" : ""}" data-boost-id="apply_${name.toLowerCase().replace(/\s+/g, "_")}" style="width:100%;padding:7px;font-size:calc(11.4px * var(--fs-desk,1));border-radius:8px;cursor:pointer;${fig.applied ? "" : "background:var(--profit);color:#fff;border:none;"}">${fig.applied ? "\u2B1C Turn off in Composter" : "\u2705 Apply (turns off classic fertiliser)"}</button>
       </div>
-      <div style="font-size:9px;color:var(--ink-soft);margin-top:5px;">Not tradable \u2014 manage on/off in \u{1FAB1} Composter \u2192 \u26A1 Boost Settings, or tap above.</div>
+      <div style="font-size:calc(9px * var(--fs-desk,1));color:var(--ink-soft);margin-top:5px;">Not tradable \u2014 manage on/off in \u{1FAB1} Composter \u2192 \u26A1 Boost Settings, or tap above.</div>
     </div>
   </div>`;
 }
@@ -20692,8 +20692,8 @@ function renderSpiceCard(name) {
         <div class="calc-ing-meta">${ing.hasToggle ? ing.mode === "collect" ? "Owned" : "Buy" : "Recipe"} @ ${fmt(ing.unitCostFlower)} ${FLOWER_ICON} FLOWER/u</div>
       </div>
       <div style="text-align:right;flex-shrink:0;">
-        <div style="font-size:11.4px;font-weight:700;color:var(--loss);">${fmt(ing.cost)}</div>
-        <div style="font-size:9px;color:var(--ink-soft);">${fmt(ing.unitCostFlower)}</div>
+        <div style="font-size:calc(11.4px * var(--fs-desk,1));font-weight:700;color:var(--loss);">${fmt(ing.cost)}</div>
+        <div style="font-size:calc(9px * var(--fs-desk,1));color:var(--ink-soft);">${fmt(ing.unitCostFlower)}</div>
       </div>
       ${toggle}
     </div>`;
@@ -20884,7 +20884,7 @@ setTimeout(renderFarmPanelInfo, 0);
 function cookFoodIcon(name) {
   const imgSrc = COOKING_FOOD_IMAGES[name];
   if (imgSrc) return `<img src="${imgSrc}" alt="${escapeHtml(name)}" style="width:16px;height:16px;image-rendering:pixelated;vertical-align:middle;">`;
-  return `<span style="font-size:19.2px;line-height:1;">${COOKING_FOOD_EMOJI[name] || "\u{1F37D}\uFE0F"}</span>`;
+  return `<span style="font-size:calc(19.2px * var(--fs-desk,1));line-height:1;">${COOKING_FOOD_EMOJI[name] || "\u{1F37D}\uFE0F"}</span>`;
 }
 function cookingIngredientIcon(name) {
   return cookingFindRecipeForFood(name) ? cookFoodIcon(name) : getIcon(name);
@@ -21530,14 +21530,14 @@ function renderFishCatchCard(fishName, cat) {
         <div class="cook-ingredient-row ing-row-boxed"><span class="ing-name">\xF7 avg yield \xD7${fmt(fishYieldMult)}/rod</span><span class="ing-cost">= ${fmt(coinsToFlower(itemCostCoins))}${FLOWER_ICON}/u</span></div>
       `;
       ingredientTotalRows = fishIngTotalRowHtml(marketItem, 1, itemCostCoins, effectiveCount);
-      extraNote = `<div style="font-size:9px;color:var(--ink-soft);margin-top:2px;">Guaranteed Catch active \u2014 cost uses the Fish Market's ${escapeHtml(marketItem)} recipe cost divided by ${escapeHtml(fishName)}'s avg catch yield instead of Rod + Bait + Chum.</div>`;
+      extraNote = `<div style="font-size:calc(9px * var(--fs-desk,1));color:var(--ink-soft);margin-top:2px;">Guaranteed Catch active \u2014 cost uses the Fish Market's ${escapeHtml(marketItem)} recipe cost divided by ${escapeHtml(fishName)}'s avg catch yield instead of Rod + Bait + Chum.</div>`;
     } else if (cookingCostMode === "buy") {
       const buyCostCoins = getMaterialUnitCostCoins(fishName, "buy");
       ingredientRows = `
         <div class="cook-ingredient-row ing-row-boxed"><span>${getIcon(fishName)}</span><span class="ing-name">${escapeHtml(fishName)} \xD71</span><span class="ing-cost">${fmt(coinsToFlower(buyCostCoins))}${FLOWER_ICON}/u</span></div>
       `;
       ingredientTotalRows = fishIngTotalRowHtml(fishName, 1, buyCostCoins, effectiveCount);
-      extraNote = `<div style="font-size:9px;color:var(--ink-soft);margin-top:2px;">\u{1F6D2} Buy \u2014 cost uses the Marketplace price for ${escapeHtml(fishName)} instead of Rod + Bait + Chum.</div>`;
+      extraNote = `<div style="font-size:calc(9px * var(--fs-desk,1));color:var(--ink-soft);margin-top:2px;">\u{1F6D2} Buy \u2014 cost uses the Marketplace price for ${escapeHtml(fishName)} instead of Rod + Bait + Chum.</div>`;
     } else {
       const bf = computeBasicFishFigures(fishName, cookingCostMode);
       ingredientRows = `
@@ -21546,7 +21546,7 @@ function renderFishCatchCard(fishName, cat) {
         ${bf.chum ? `<div class="cook-ingredient-row ing-row-boxed"><span>${getIcon(bf.chum ? bf.chum.name : "")}</span><span class="ing-name">${escapeHtml(bf.chum ? bf.chum.name : "?")} \xD7${fmt(bf.chum ? bf.chum.qty : 0)}</span><span class="ing-cost">${fmt(coinsToFlower(bf.chumCost))}${FLOWER_ICON}/u</span></div>` : `<div class="cook-ingredient-row ing-row-boxed"><span class="ing-name">No chum</span></div>`}
       `;
       ingredientTotalRows = `${fishIngTotalRowHtml("Rod", 1, bf.rodCost, effectiveCount)}${fishIngTotalRowHtml(bf.bait ? bf.bait.name : "?", 1, bf.baitCost, effectiveCount)}${bf.chum ? fishIngTotalRowHtml(bf.chum.name, bf.chum.qty, bf.chumCost, effectiveCount) : ""}`;
-      extraNote = `<div style="font-size:9px;color:var(--ink-soft);margin-top:2px;">Tier: ${escapeHtml(FISH_TIER_LABEL[d.tier])}${fishCatchYieldMult(d.tier) !== 1 ? ` \xB7 avg yield \xD7${fmt(fishCatchYieldMult(d.tier))} (chance skill)` : ``}</div>${fishRivalNoteHtml(fishName, bf)}`;
+      extraNote = `<div style="font-size:calc(9px * var(--fs-desk,1));color:var(--ink-soft);margin-top:2px;">Tier: ${escapeHtml(FISH_TIER_LABEL[d.tier])}${fishCatchYieldMult(d.tier) !== 1 ? ` \xB7 avg yield \xD7${fmt(fishCatchYieldMult(d.tier))} (chance skill)` : ``}</div>${fishRivalNoteHtml(fishName, bf)}`;
     }
   } else {
     const af = computeAgedFishFigures(fishName, cookingCostMode);
@@ -21556,8 +21556,8 @@ function renderFishCatchCard(fishName, cat) {
     `;
     ingredientTotalRows = `${fishIngTotalRowHtml(fishName, 1, af.basicFishCost, effectiveCount)}${fishIngTotalRowHtml("Salt", af.saltQty, af.saltCostCoins, effectiveCount)}`;
     const agingInfo = fishAgingTimeInfo(fishName);
-    const agingLine = agingInfo ? `<div style="font-size:9px;color:var(--ink-soft);margin-top:2px;">\u23F3 Aging time: ${escapeHtml(formatDuration(agingInfo.sec))}${agingInfo.parts.length ? ` (base ${escapeHtml(formatDuration(agingInfo.baseSec))} \xB7 ${agingInfo.parts.map((p) => `${escapeHtml(p.name)} \xD7${p.mult}`).join(" \xB7 ")})` : ``}</div>` : ``;
-    extraNote = `${agingLine}${stage === "primeAged" ? `<div style="font-size:9px;color:var(--ink-soft);margin-top:2px;">Same recipe as Aged \u2014 Prime Aged is a bonus chance on the same batch, not an extra cost.</div>` : ``}${cookingGuaranteedCatchOn ? `<div style="font-size:9px;color:var(--ink-soft);margin-top:2px;">\u{1F3AF} Guaranteed Catch is on \u2014 the ${escapeHtml(fishName)} cost above already uses the Fish Market recipe cost instead of Rod + Bait + Chum.</div>` : ``}${cookingCostMode === "buy" ? `<div style="font-size:9px;color:var(--ink-soft);margin-top:2px;">\u{1F6D2} Buy \u2014 Salt priced at Marketplace rate.</div>` : ``}`;
+    const agingLine = agingInfo ? `<div style="font-size:calc(9px * var(--fs-desk,1));color:var(--ink-soft);margin-top:2px;">\u23F3 Aging time: ${escapeHtml(formatDuration(agingInfo.sec))}${agingInfo.parts.length ? ` (base ${escapeHtml(formatDuration(agingInfo.baseSec))} \xB7 ${agingInfo.parts.map((p) => `${escapeHtml(p.name)} \xD7${p.mult}`).join(" \xB7 ")})` : ``}</div>` : ``;
+    extraNote = `${agingLine}${stage === "primeAged" ? `<div style="font-size:calc(9px * var(--fs-desk,1));color:var(--ink-soft);margin-top:2px;">Same recipe as Aged \u2014 Prime Aged is a bonus chance on the same batch, not an extra cost.</div>` : ``}${cookingGuaranteedCatchOn ? `<div style="font-size:calc(9px * var(--fs-desk,1));color:var(--ink-soft);margin-top:2px;">\u{1F3AF} Guaranteed Catch is on \u2014 the ${escapeHtml(fishName)} cost above already uses the Fish Market recipe cost instead of Rod + Bait + Chum.</div>` : ``}${cookingCostMode === "buy" ? `<div style="font-size:calc(9px * var(--fs-desk,1));color:var(--ink-soft);margin-top:2px;">\u{1F6D2} Buy \u2014 Salt priced at Marketplace rate.</div>` : ``}`;
   }
   const fishYieldCount = d ? fishCatchYieldMult(d.tier) : 1;
   return `
@@ -21678,7 +21678,7 @@ function fishRivalNoteHtml(fishName, bf) {
   if (!bf || !bf.rivals || !bf.rivals.length || !bf.bait || !bf.chum) return "";
   const guaranteed = fishMarketItemForFish(fishName);
   const tail = guaranteed ? ` Use ${escapeHtml(guaranteed)} to guarantee ${escapeHtml(fishName)}.` : ``;
-  return `<div style="font-size:9px;color:var(--loss);margin-top:3px;">\u26A0 ${escapeHtml(bf.bait.name)} + ${escapeHtml(bf.chum.name)} is also matched by ${bf.rivals.map(escapeHtml).join(", ")} \u2014 the game can land that fish instead.${tail}</div>`;
+  return `<div style="font-size:calc(9px * var(--fs-desk,1));color:var(--loss);margin-top:3px;">\u26A0 ${escapeHtml(bf.bait.name)} + ${escapeHtml(bf.chum.name)} is also matched by ${bf.rivals.map(escapeHtml).join(", ")} \u2014 the game can land that fish instead.${tail}</div>`;
 }
 function fishGuaranteedBaitsForFish(fishName) {
   return Object.keys(FISH_MARKET_GUARANTEED_CATCH).filter((item) => FISH_MARKET_GUARANTEED_CATCH[item].includes(fishName));
@@ -21688,7 +21688,7 @@ function fishAltChumRowsHtml(fishName, bf, yieldMult) {
   const others = bf.chumOptions.filter((o) => o.name !== bf.chum.name);
   if (!others.length) return "";
   const rows = others.map((o) => `<div class="cook-ingredient-row"><span>${getIcon(o.name)}</span><span class="ing-name">${escapeHtml(o.name)} \xD7${fmt(o.qty)}</span><span class="ing-cost">${fmt(coinsToFlower(o.cost / yieldMult))}${FLOWER_ICON}/u</span></div>`).join("");
-  return `<div style="font-size:9px;color:var(--ink-soft);margin-top:4px;">Or use this chum instead of ${escapeHtml(bf.chum.name)}:</div>${rows}`;
+  return `<div style="font-size:calc(9px * var(--fs-desk,1));color:var(--ink-soft);margin-top:4px;">Or use this chum instead of ${escapeHtml(bf.chum.name)}:</div>${rows}`;
 }
 function fishAltSetupRowsHtml(fishName, bf, yieldMult) {
   if (!bf || !bf.altSetups || !bf.altSetups.length) return "";
@@ -21698,11 +21698,11 @@ function fishAltSetupRowsHtml(fishName, bf, yieldMult) {
   const otherChum = bf.altSetups.filter((alt) => (alt.chum ? alt.chum.name : null) !== mainChumName);
   let html = "";
   if (sameChum.length) {
-    html += `<div style="font-size:9px;color:var(--ink-soft);margin-top:4px;">Other baits that can catch ${escapeHtml(fishName)}${mainChumName ? ` with ${escapeHtml(mainChumName)}` : ""}:</div>${sameChum.map(baitRow).join("")}`;
+    html += `<div style="font-size:calc(9px * var(--fs-desk,1));color:var(--ink-soft);margin-top:4px;">Other baits that can catch ${escapeHtml(fishName)}${mainChumName ? ` with ${escapeHtml(mainChumName)}` : ""}:</div>${sameChum.map(baitRow).join("")}`;
   }
   otherChum.forEach((alt) => {
     const chumRow = alt.chum ? `<div class="cook-ingredient-row"><span>${getIcon(alt.chum.name)}</span><span class="ing-name">${escapeHtml(alt.chum.name)} \xD7${fmt(alt.chum.qty)}</span><span class="ing-cost">${fmt(coinsToFlower(alt.chum.cost / yieldMult))}${FLOWER_ICON}/u</span></div>` : `<div class="cook-ingredient-row"><span class="ing-name">No chum</span></div>`;
-    html += `<div style="font-size:9px;color:var(--ink-soft);margin-top:4px;">Or use this setup instead:</div>${baitRow(alt)}${chumRow}`;
+    html += `<div style="font-size:calc(9px * var(--fs-desk,1));color:var(--ink-soft);margin-top:4px;">Or use this setup instead:</div>${baitRow(alt)}${chumRow}`;
   });
   return html;
 }
@@ -21713,7 +21713,7 @@ function fishGuaranteedBaitRowsHtml(fishName) {
     const itemCoins = fishMarketItemCostCoins(item, "collect", previewSeason);
     return `<div class="cook-ingredient-row"><span>${getIcon(item)}</span><span class="ing-name">${escapeHtml(item)} \xD71</span><span class="ing-cost">${fmt(coinsToFlower(itemCoins))}${FLOWER_ICON}/u</span></div>`;
   }).join("");
-  return `<div class="cook-ing-label">\u{1F3AF} Guaranteed Bait</div>${rows}<div style="font-size:9px;color:var(--ink-soft);margin-top:2px;">Using ${baits.map(escapeHtml).join(" or ")} guarantees a ${escapeHtml(fishName)} catch.</div>`;
+  return `<div class="cook-ing-label">\u{1F3AF} Guaranteed Bait</div>${rows}<div style="font-size:calc(9px * var(--fs-desk,1));color:var(--ink-soft);margin-top:2px;">Using ${baits.map(escapeHtml).join(" or ")} guarantees a ${escapeHtml(fishName)} catch.</div>`;
 }
 function fishGuaranteedBaitBadgeHtml(fishName) {
   const baits = fishGuaranteedBaitsForFish(fishName);
@@ -21743,7 +21743,7 @@ function renderFishingTierCard(fishName) {
       <div class="cook-ingredient-row"><span>${getIcon("Rod")}</span><span class="ing-name">Rod \xD71</span><span class="ing-cost">${bf.rodCost === 0 ? fishRodFreeCostLabel() : `${fmt(coinsToFlower(bf.rodCost / yieldMult))}${FLOWER_ICON}/u`}</span></div>
       <div class="cook-ingredient-row"><span>${getIcon(bf.bait ? bf.bait.name : "")}</span><span class="ing-name">${escapeHtml(bf.bait ? bf.bait.name : "?")} \xD71</span><span class="ing-cost">${fmt(coinsToFlower(bf.baitCost / yieldMult))}${FLOWER_ICON}/u</span></div>
       ${bf.chum ? `<div class="cook-ingredient-row"><span>${getIcon(bf.chum.name)}</span><span class="ing-name">${escapeHtml(bf.chum.name)} \xD7${fmt(bf.chum.qty)}</span><span class="ing-cost">${fmt(coinsToFlower(bf.chumCost / yieldMult))}${FLOWER_ICON}/u</span></div>` : `<div class="cook-ingredient-row"><span class="ing-name">No chum</span></div>`}${fishAltChumRowsHtml(fishName, bf, yieldMult)}${fishAltSetupRowsHtml(fishName, bf, yieldMult)}
-      <div style="font-size:9px;color:var(--ink-soft);margin-top:2px;">Avg yield per rod: \xD7${fmt(yieldMult)}${yieldMult !== 1 ? ` (Fishy Chance/Roll/Gamble skill &amp; \u{1F3A3} Fishing boosts applied)` : ``}</div>${fishRivalNoteHtml(fishName, bf)}${fishGuaranteedBaitRowsHtml(fishName)}
+      <div style="font-size:calc(9px * var(--fs-desk,1));color:var(--ink-soft);margin-top:2px;">Avg yield per rod: \xD7${fmt(yieldMult)}${yieldMult !== 1 ? ` (Fishy Chance/Roll/Gamble skill &amp; \u{1F3A3} Fishing boosts applied)` : ``}</div>${fishRivalNoteHtml(fishName, bf)}${fishGuaranteedBaitRowsHtml(fishName)}
     </div>
   </div>`;
 }
@@ -21764,7 +21764,7 @@ function renderCrabTierCard() {
     <div class="cook-food-details">
       <div class="cook-food-cost-line">${fmt(totalFlower)} ${FLOWER_ICON} FLOWER \u2014 cost per crab</div>
       <div class="cook-ingredient-row"><span>${getIcon("Rod")}</span><span class="ing-name">Rod \xD71</span><span class="ing-cost">${fig.rodCost === 0 ? fishRodFreeCostLabel() : `${fmt(coinsToFlower(fig.rodCost / fig.yieldMult))}${FLOWER_ICON}/u`}</span></div>
-      <div style="font-size:9px;color:var(--ink-soft);margin-top:2px;">1 Rod = 1 Crab, no bait or chum needed.${fig.yieldMult !== 1 ? ` Boosted by \u{1F3A3} Fishing boosts (e.g. Crab Hat).` : ` Turn on \u{1F3A3} Fishing boosts (e.g. Crab Hat) to boost Crab yield.`}</div>
+      <div style="font-size:calc(9px * var(--fs-desk,1));color:var(--ink-soft);margin-top:2px;">1 Rod = 1 Crab, no bait or chum needed.${fig.yieldMult !== 1 ? ` Boosted by \u{1F3A3} Fishing boosts (e.g. Crab Hat).` : ` Turn on \u{1F3A3} Fishing boosts (e.g. Crab Hat) to boost Crab yield.`}</div>
     </div>
   </div>`;
 }
@@ -21785,7 +21785,7 @@ function renderSeaweedTierCard() {
     <div class="cook-food-details">
       <div class="cook-food-cost-line">${fmt(totalFlower)} ${FLOWER_ICON} FLOWER \u2014 cost per seaweed</div>
       <div class="cook-ingredient-row"><span>${getIcon("Rod")}</span><span class="ing-name">Rod \xD71</span><span class="ing-cost">${fig.rodCost === 0 ? fishRodFreeCostLabel() : `${fmt(coinsToFlower(fig.rodCost / fig.yieldMult))}${FLOWER_ICON}/u`}</span></div>
-      <div style="font-size:9px;color:var(--ink-soft);margin-top:2px;">1 Rod = 1 Seaweed, no bait or chum needed.${fig.yieldMult !== 1 ? ` Boosted by \u{1F3A3} Fishing boosts (e.g. Crab Hat).` : ` Turn on \u{1F3A3} Fishing boosts (e.g. Crab Hat) to boost Seaweed yield.`}</div>
+      <div style="font-size:calc(9px * var(--fs-desk,1));color:var(--ink-soft);margin-top:2px;">1 Rod = 1 Seaweed, no bait or chum needed.${fig.yieldMult !== 1 ? ` Boosted by \u{1F3A3} Fishing boosts (e.g. Crab Hat).` : ` Turn on \u{1F3A3} Fishing boosts (e.g. Crab Hat) to boost Seaweed yield.`}</div>
     </div>
   </div>`;
 }
@@ -21860,7 +21860,7 @@ function renderCrustaceanCard(name) {
   const isExpanded = crustaceanExpanded.has(name);
   const totalFlower = coinsToFlower(fig.costCoins);
   const optionsHtml = fig.options.map((o) => renderCrustaceanOptionRow(name, o, o.chum === fig.selectedChum, fig.yieldMult)).join("");
-  const boostNote = fig.yieldMult !== 1 || fig.hours !== fig.baseHours ? `<div style="font-size:9px;color:var(--ink-soft);margin-top:2px;">Base ${fmt(fig.baseHours)}h trap time \u2014 boosted to ${fmt(fig.hours)}h with avg yield \xD7${fmt(fig.yieldMult)} (\u{1F3A3} Fishing boosts applied).</div>` : `<div style="font-size:9px;color:var(--ink-soft);margin-top:2px;">Turn on \u{1F3A3} Fishing boosts (Crab House, Pistol Shrimp, Royal Crab Pot, Crystal Altar, Speed Trap) to see them applied here.</div>`;
+  const boostNote = fig.yieldMult !== 1 || fig.hours !== fig.baseHours ? `<div style="font-size:calc(9px * var(--fs-desk,1));color:var(--ink-soft);margin-top:2px;">Base ${fmt(fig.baseHours)}h trap time \u2014 boosted to ${fmt(fig.hours)}h with avg yield \xD7${fmt(fig.yieldMult)} (\u{1F3A3} Fishing boosts applied).</div>` : `<div style="font-size:calc(9px * var(--fs-desk,1));color:var(--ink-soft);margin-top:2px;">Turn on \u{1F3A3} Fishing boosts (Crab House, Pistol Shrimp, Royal Crab Pot, Crystal Altar, Speed Trap) to see them applied here.</div>`;
   return `
   <div class="cook-food-card fishmarket-card${isExpanded ? " expanded" : ""}" data-crust-item="${escapeHtml(name)}">
     <div class="cook-food-toggle">
@@ -21973,7 +21973,7 @@ function getPetIcon(pet) {
   if (name && (IMAGE_ICONS[name] || Object.keys(IMAGE_ICONS).some((k) => k.toLowerCase() === String(name).trim().toLowerCase()))) {
     return getIcon(name);
   }
-  return `<span style="font-size:19.2px;line-height:1;">${pet && PET_TYPE_EMOJI[pet.petType] || "\u{1F43E}"}</span>`;
+  return `<span style="font-size:calc(19.2px * var(--fs-desk,1));line-height:1;">${pet && PET_TYPE_EMOJI[pet.petType] || "\u{1F43E}"}</span>`;
 }
 function getPetResourceIcon(name) {
   if (name && (IMAGE_ICONS[name] || Object.keys(IMAGE_ICONS).some((k) => k.toLowerCase() === String(name).trim().toLowerCase()))) {
@@ -22002,7 +22002,7 @@ function renderPetLevelPerksBlock() {
       </div>`;
     }).join("");
     const badge = pet.isNFT ? `${getIcon("NFT Pet")} NFT` : `${getIcon("Barkley")} Common`;
-    return `<div class="lib-section-title" style="margin-top:8px;font-size:12px;">${getPetIcon(pet)} ${escapeHtml(pet.petType)} [${escapeHtml(pet.name)}] \xB7 Lv${pet.level} \xB7 ${badge}</div>${rows}`;
+    return `<div class="lib-section-title" style="margin-top:8px;font-size:calc(12px * var(--fs-desk,1));">${getPetIcon(pet)} ${escapeHtml(pet.petType)} [${escapeHtml(pet.name)}] \xB7 Lv${pet.level} \xB7 ${badge}</div>${rows}`;
   }).join("");
 }
 function renderPetTotalYield() {
@@ -23922,7 +23922,7 @@ function renderShrineCostBlock(b) {
         <div class="lib-item-meta" style="font-weight:700;">\u{1F9FE} Total Cost: ${fmt(cost.totalCost)} ${FLOWER_ICON}</div>
         <div class="lib-item-meta" style="font-weight:700;">\u{1F4C5} Daily Cost (${fmt(cost.durationDays)}d): ${fmt(cost.dailyCost)} ${FLOWER_ICON}</div>
       </div>
-      <span class="shrine-cost-chev" style="font-size:12px;color:var(--ink-soft);transition:transform .25s ease;transform:rotate(${expanded ? 180 : 0}deg);">\u25BE</span>
+      <span class="shrine-cost-chev" style="font-size:calc(12px * var(--fs-desk,1));color:var(--ink-soft);transition:transform .25s ease;transform:rotate(${expanded ? 180 : 0}deg);">\u25BE</span>
     </div>
     <div class="shrine-cost-details" style="display:${expanded ? "block" : "none"};margin-top:4px;">
       ${ingredientRows}
@@ -26905,12 +26905,12 @@ function renderMedicineCostDisplay() {
   const baseFlower = computeMedicineCostFlower();
   const { cureFree, cureCostMult } = getGlobalCureModifiers();
   const boosted = cureFree ? 0 : baseFlower * cureCostMult;
-  const boostNote = cureFree ? `<div style="font-size:10.8px;color:var(--profit);margin-top:2px;">\u{1F193} Oracle Syringe active \u2014 cures are free</div>` : cureCostMult !== 1 ? `<div style="font-size:10.8px;color:var(--profit);margin-top:2px;">\u26A1 Medic Apron active \u2014 \xD7${fmt(cureCostMult)} cure cost</div>` : "";
+  const boostNote = cureFree ? `<div style="font-size:calc(10.8px * var(--fs-desk,1));color:var(--profit);margin-top:2px;">\u{1F193} Oracle Syringe active \u2014 cures are free</div>` : cureCostMult !== 1 ? `<div style="font-size:calc(10.8px * var(--fs-desk,1));color:var(--profit);margin-top:2px;">\u26A1 Medic Apron active \u2014 \xD7${fmt(cureCostMult)} cure cost</div>` : "";
   el.innerHTML = `
     <div style="background:rgba(255,255,255,0.35);border:1.25px solid var(--line);border-radius:8px;padding:7px 9px;">
       <div style="display:flex;justify-content:space-between;align-items:baseline;">
-        <span style="font-size:11.4px;color:var(--ink);">${getIcon("Barn Delight")} Barn Delight cost (auto)</span>
-        <span style="font-family:'JetBrains Mono',monospace;font-size:13.8px;font-weight:700;color:var(--ink);">${fmt(boosted)} ${FLOWER_ICON}</span>
+        <span style="font-size:calc(11.4px * var(--fs-desk,1));color:var(--ink);">${getIcon("Barn Delight")} Barn Delight cost (auto)</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:calc(13.8px * var(--fs-desk,1));font-weight:700;color:var(--ink);">${fmt(boosted)} ${FLOWER_ICON}</span>
       </div>
       ${boostNote}
     </div>`;
@@ -27415,7 +27415,7 @@ function renderFishMarketItemCard(itemName) {
         <span>Yield: <b>${fmt(meta.yield)}</b></span>
         <span>Time: <b>${fmt(meta.hours)}h</b></span>
       </div>
-      <div style="font-size:9px;color:var(--ink-soft);margin-top:2px;">${meta.yieldMult !== 1 || meta.timeMult !== 1 ? `Base ${fmt(meta.baseYield)} yield / ${fmt(meta.baseHours)}h \u2014 boosted to ${fmt(meta.yield)} yield / ${fmt(meta.hours)}h (\u{1F3A3} Fishing boosts applied).` : `Base yield/time shown above \u2014 turn on \u{1F3A3} Fishing boosts (e.g. Bubble Aura) to see them applied here.`}</div>
+      <div style="font-size:calc(9px * var(--fs-desk,1));color:var(--ink-soft);margin-top:2px;">${meta.yieldMult !== 1 || meta.timeMult !== 1 ? `Base ${fmt(meta.baseYield)} yield / ${fmt(meta.baseHours)}h \u2014 boosted to ${fmt(meta.yield)} yield / ${fmt(meta.hours)}h (\u{1F3A3} Fishing boosts applied).` : `Base yield/time shown above \u2014 turn on \u{1F3A3} Fishing boosts (e.g. Bubble Aura) to see them applied here.`}</div>
     </div>
   </div>`;
 }
@@ -30878,7 +30878,7 @@ function farmPanelDetectActiveMutants(json) {
   return results;
 }
 function farmPanelRenderMutantAlertCard(entry) {
-  const icon = IMAGE_ICONS[entry.name] ? getIcon(entry.name) : `<span style="font-size:24px;">${MUTANT_TYPE_EMOJI[entry.type] || "\u2728"}</span>`;
+  const icon = IMAGE_ICONS[entry.name] ? getIcon(entry.name) : `<span style="font-size:calc(24px * var(--fs-desk,1));">${MUTANT_TYPE_EMOJI[entry.type] || "\u2728"}</span>`;
   const countNote = entry.count > 1 ? ` \xD7${entry.count}` : "";
   return `
   <div class="mutant-alert-card" data-search="mutant-${entry.type.toLowerCase()}">
@@ -35660,7 +35660,7 @@ function peteRewardIconHtml(name) {
     const base = name.replace(/ Seed$/, "");
     if (hasIcon(base)) return getIcon(base);
   }
-  if (/mushroom/i.test(name)) return '<span style="font-size:16px;line-height:1;">\u{1F344}</span>';
+  if (/mushroom/i.test(name)) return '<span style="font-size:calc(16px * var(--fs-desk,1));line-height:1;">\u{1F344}</span>';
   return "";
 }
 function peteParseReward(text) {
@@ -36963,7 +36963,7 @@ function farmPanelRenderCookingCard(row3) {
   const cookFee = cookGross * ((feePercent || 0) / 100);
   const valueBlockHtml = cookGross > 0 ? guroValueBlockHtml(cookGross, cookFee, fmt) : "";
   const buildingIconKey = (row3.cookingKind === "fermentation" || row3.cookingKind === "spice") && IMAGE_ICONS["Aging Shed"] ? "Aging Shed" : building;
-  const buildingIcon = IMAGE_ICONS[buildingIconKey] ? getIcon(buildingIconKey) : COOKING_BUILDING_ICONS[building] ? `<span style="font-size:19.2px;line-height:1;">${COOKING_BUILDING_ICONS[building]}</span>` : getIcon(building);
+  const buildingIcon = IMAGE_ICONS[buildingIconKey] ? getIcon(buildingIconKey) : COOKING_BUILDING_ICONS[building] ? `<span style="font-size:calc(19.2px * var(--fs-desk,1));line-height:1;">${COOKING_BUILDING_ICONS[building]}</span>` : getIcon(building);
   const searchKey = building.toLowerCase().replace(/\s+/g, "-");
   const expandedCls = farmPanelExpandedNames.has(searchKey) ? " expanded" : "";
   const growingCount = row3.slotCount - row3.readyCount;
@@ -42225,7 +42225,7 @@ function getNodeIconHtml(resourceName) {
   const info = RESOURCE_NODE_DISPLAY[resourceName];
   if (!info) return getIcon(resourceName);
   if (info.iconName) return getIcon(info.iconName);
-  return `<span style="font-size:19.2px;line-height:1;">${info.emoji}</span>`;
+  return `<span style="font-size:calc(19.2px * var(--fs-desk,1));line-height:1;">${info.emoji}</span>`;
 }
 function getNodeLabel(resourceName) {
   const info = RESOURCE_NODE_DISPLAY[resourceName];
@@ -56764,7 +56764,7 @@ function varietyIngredientOptions(varietyName, selectedName) {
 var finderSeed = localStorage.getItem("hl_finder_seed") || "Sunpetal";
 var finderIngredient = localStorage.getItem("hl_finder_ingredient") || "";
 function seedIconHtmlFor(s) {
-  return IMAGE_ICONS[s + " Seed"] ? getIcon(s + " Seed") : `<span style="font-size:16.8px;">${FLOWER_SEED_ICONS[s] || "\u{1F331}"}</span>`;
+  return IMAGE_ICONS[s + " Seed"] ? getIcon(s + " Seed") : `<span style="font-size:calc(16.8px * var(--fs-desk,1));">${FLOWER_SEED_ICONS[s] || "\u{1F331}"}</span>`;
 }
 var hiveCountInputEl = $("hiveCountInput");
 if (hiveCountInputEl) {
@@ -64591,7 +64591,7 @@ function deleteActiveTrade(id) {
   tradePendingDeleteType = "active";
   const fig = computeTradeFigures(t);
   $("deleteTradeConfirmItem").innerHTML = `
-    <span class="trade-card-icon" style="font-size:21.6px;">${getIcon(t.itemName)}</span>
+    <span class="trade-card-icon" style="font-size:calc(21.6px * var(--fs-desk,1));">${getIcon(t.itemName)}</span>
     <div>
       <div class="name">${escapeHtml(t.itemName)}</div>
       <div class="meta">${fmt(t.remainingQty)}\xD7 held \xB7 ${fmt(fig.costBasis)} ${FLOWER_ICON} FLOWER capital</div>
@@ -64604,7 +64604,7 @@ function deleteHistoryTrade(id) {
   tradePendingDeleteId = id;
   tradePendingDeleteType = "history";
   $("deleteTradeConfirmItem").innerHTML = `
-    <span class="trade-card-icon" style="font-size:21.6px;">${getIcon(t.itemName)}</span>
+    <span class="trade-card-icon" style="font-size:calc(21.6px * var(--fs-desk,1));">${getIcon(t.itemName)}</span>
     <div>
       <div class="name">${escapeHtml(t.itemName)}</div>
       <div class="meta">${fmt(t.qty)}\xD7 traded \xB7 ${fmt(t.qty * t.buyPrice)} ${FLOWER_ICON} FLOWER capital</div>
@@ -64655,7 +64655,7 @@ function tradePickItem(name) {
   tradePickedItemName = name;
   const price = tradeMarketPrice(name);
   $("tradeItemPickBtn").innerHTML = `
-    <span class="trade-card-icon" style="font-size:21.6px;">${getIcon(name)}</span>
+    <span class="trade-card-icon" style="font-size:calc(21.6px * var(--fs-desk,1));">${getIcon(name)}</span>
     <div>
       <div class="item-name">${escapeHtml(name)}</div>
       <div class="item-price">Market ${fmt(price)} ${FLOWER_ICON} FLOWER/u</div>
@@ -66097,7 +66097,7 @@ function gatherAllProfitItems() {
     items.push({
       name: fig.label,
       category: "Animal",
-      icon: getIcon(fig.label) || `<span style="font-size:16.8px;">${fig.emoji}</span>`,
+      icon: getIcon(fig.label) || `<span style="font-size:calc(16.8px * var(--fs-desk,1));">${fig.emoji}</span>`,
       boosts: getBuildDetailActiveEntries("animals", type),
       countLabel: "Head",
       count: qty,
@@ -67344,9 +67344,9 @@ function computeSpiceFigures(name) {
 }
 function stepperHtml(id, value, min, max) {
   return `<div class="stepper" data-stepper-id="${id}" data-min="${min}" data-max="${max}" style="display:flex;align-items:center;gap:6px;">
-    <button type="button" class="stepper-btn" data-stepper-id="${id}" data-dir="-1" style="width:28px;height:28px;flex:0 0 auto;border-radius:6px;border:1.5px solid var(--line);cursor:pointer;font-size:18px;line-height:1;background:#fff;color:var(--ink);">\u2212</button>
-    <div style="flex:1;text-align:center;font-family:'JetBrains Mono',monospace;font-size:14.4px;font-weight:700;border:1.5px solid var(--line);border-radius:6px;padding:6px 4px;background:#fff;">${fmt(value)}</div>
-    <button type="button" class="stepper-btn" data-stepper-id="${id}" data-dir="1" style="width:28px;height:28px;flex:0 0 auto;border-radius:6px;border:1.5px solid var(--line);cursor:pointer;font-size:18px;line-height:1;background:#fff;color:var(--ink);">+</button>
+    <button type="button" class="stepper-btn" data-stepper-id="${id}" data-dir="-1" style="width:28px;height:28px;flex:0 0 auto;border-radius:6px;border:1.5px solid var(--line);cursor:pointer;font-size:calc(18px * var(--fs-desk,1));line-height:1;background:#fff;color:var(--ink);">\u2212</button>
+    <div style="flex:1;text-align:center;font-family:'JetBrains Mono',monospace;font-size:calc(14.4px * var(--fs-desk,1));font-weight:700;border:1.5px solid var(--line);border-radius:6px;padding:6px 4px;background:#fff;">${fmt(value)}</div>
+    <button type="button" class="stepper-btn" data-stepper-id="${id}" data-dir="1" style="width:28px;height:28px;flex:0 0 auto;border-radius:6px;border:1.5px solid var(--line);cursor:pointer;font-size:calc(18px * var(--fs-desk,1));line-height:1;background:#fff;color:var(--ink);">+</button>
   </div>`;
 }
 function getIconSmall(name) {
@@ -67354,7 +67354,7 @@ function getIconSmall(name) {
   const imgSrc = IMAGE_ICONS[name] || Object.entries(IMAGE_ICONS).find(([k]) => k.toLowerCase() === name.trim().toLowerCase())?.[1];
   if (imgSrc) return `<img src="${imgSrc}" alt="${escapeHtml(name)}" style="width:11px;height:11px;image-rendering:pixelated;vertical-align:-2px;">`;
   const emoji = ICONS[name] || Object.entries(ICONS).find(([k]) => k.toLowerCase() === name.trim().toLowerCase())?.[1];
-  return `<span style="font-size:13.2px;line-height:1;">${emoji || "\u{1F33E}"}</span>`;
+  return `<span style="font-size:calc(13.2px * var(--fs-desk,1));line-height:1;">${emoji || "\u{1F33E}"}</span>`;
 }
 function runDeferredInitialRender() {
   const steps = [updateSettingsSummary, renderSeasonToggle, renderBoostPanel, renderLibraryLists, renderMarketList, renderResourceList, renderHoneyList, renderAnimalsList, applyCalcModeVisibility, updateCalcSelectedDisplay, updateCalcSummary, initLivePricesOnLoad, renderBettyShop, farmPanelLoadCachedGameState, renderFarmPanelTabContent];
@@ -80127,6 +80127,7 @@ export {
   farmPanelGetMarketPriceFlower,
   farmPanelDetectActiveMutants,
   farmPanelDetectMoneyTreeBonus,
+  farmPanelFilterCategories,
   inprogress_exports,
   stateLastSaved,
   stateSetCode,

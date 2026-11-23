@@ -11,7 +11,7 @@ import {
   toolRestockIconsHtml,
   toolRestockShareCount,
   unmountBeetlesCalculator
-} from "./chunk.4JWKYWSP.js";
+} from "./chunk.IQ7BWE6N.js";
 import {
   ANIMAL_DATA,
   ANIMAL_LOVE_ITEM_XP,
@@ -246,7 +246,7 @@ import {
   toast,
   updateCalcSummary,
   updateSkillSaveBarState
-} from "./chunk.Q6WIYO66.js";
+} from "./chunk.A4SO7UZT.js";
 import "./chunk.XKJMJZUJ.js";
 import "./chunk.LPEVZJ4B.js";
 import "./chunk.D3PHX6VZ.js";
@@ -7927,7 +7927,7 @@ function onImgError(e) {
   const t = e.target;
   if (!t || t.tagName !== "IMG" || t.getAttribute("alt") !== "Fossil Shell") return;
   const span = document.createElement("span");
-  span.style.fontSize = "19.2px";
+  span.style.fontSize = "calc(19.2px * var(--fs-desk, 1))";
   span.style.lineHeight = "1";
   span.textContent = PET_RESOURCE_ICON["Fossil Shell"];
   t.replaceWith(span);

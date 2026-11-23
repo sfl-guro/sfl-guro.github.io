@@ -1287,7 +1287,7 @@ function onImgError(e) {
   const t = e.target;
   if (!t || t.tagName !== "IMG" || t.getAttribute("alt") !== "Fossil Shell") return;
   const span = document.createElement("span");
-  span.style.fontSize = "19.2px";
+  span.style.fontSize = "calc(19.2px * var(--fs-desk, 1))";
   span.style.lineHeight = "1";
   span.textContent = calc.PET_RESOURCE_ICON["Fossil Shell"];
   t.replaceWith(span);
