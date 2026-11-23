@@ -272,41 +272,50 @@ function sunshowerGuardianWindows(g) {
   return mergeWindows(out);
 }
 
-export function cropPlotWindows(g) {
-  return [ ...boostWindowsFor(g, "Sparrow Shrine", CROP_PLOT_SPEED["Sparrow Shrine"]), ...boostWindowsFor(g, "Harvest Hourglass", CROP_PLOT_SPEED["Harvest Hourglass"]), ...mergedTotemWindows(g, CROP_PLOT_SPEED["Super Totem"]), ...powerHourWindows(g), ...sunshowerWindows(g), ...sunshowerGuardianWindows(g) ];
+function keepOf(extend) {
+  return name => !!extend && extend.has(name);
 }
 
-export function treeWindows(g) {
-  return [ ...mergedTotemWindows(g, TREE_SPEED.totem), ...boostWindowsFor(g, "Timber Hourglass", TREE_SPEED["Timber Hourglass"]), ...boostWindowsFor(g, "Badger Shrine", TREE_SPEED["Badger Shrine"]) ];
+export function cropPlotWindows(g, extend) {
+  const keep = keepOf(extend);
+  return [ ...boostWindowsFor(g, "Sparrow Shrine", CROP_PLOT_SPEED["Sparrow Shrine"], keep("Sparrow Shrine")), ...boostWindowsFor(g, "Harvest Hourglass", CROP_PLOT_SPEED["Harvest Hourglass"], keep("Harvest Hourglass")), ...mergedTotemWindows(g, CROP_PLOT_SPEED["Super Totem"], extend), ...powerHourWindows(g), ...sunshowerWindows(g), ...sunshowerGuardianWindows(g) ];
 }
 
-export function mineWindows(g, family) {
-  if (family === "crimstone") return boostWindowsFor(g, "Mole Shrine", MINE_SPEED["Mole Shrine"]);
+export function treeWindows(g, extend) {
+  const keep = keepOf(extend);
+  return [ ...mergedTotemWindows(g, TREE_SPEED.totem, extend), ...boostWindowsFor(g, "Timber Hourglass", TREE_SPEED["Timber Hourglass"], keep("Timber Hourglass")), ...boostWindowsFor(g, "Badger Shrine", TREE_SPEED["Badger Shrine"], keep("Badger Shrine")) ];
+}
+
+export function mineWindows(g, family, extend) {
+  const keep = keepOf(extend);
+  if (family === "crimstone") return boostWindowsFor(g, "Mole Shrine", MINE_SPEED["Mole Shrine"], keep("Mole Shrine"));
   if (family === "stone") {
-    return [ ...mergedTotemWindows(g, MINE_SPEED.totem), ...boostWindowsFor(g, "Ore Hourglass", MINE_SPEED["Ore Hourglass"]), ...boostWindowsFor(g, "Badger Shrine", MINE_SPEED["Badger Shrine"]) ];
+    return [ ...mergedTotemWindows(g, MINE_SPEED.totem, extend), ...boostWindowsFor(g, "Ore Hourglass", MINE_SPEED["Ore Hourglass"], keep("Ore Hourglass")), ...boostWindowsFor(g, "Badger Shrine", MINE_SPEED["Badger Shrine"], keep("Badger Shrine")) ];
   }
   if (family === "iron" || family === "gold") {
-    return [ ...mergedTotemWindows(g, MINE_SPEED.totem), ...boostWindowsFor(g, "Ore Hourglass", MINE_SPEED["Ore Hourglass"]), ...boostWindowsFor(g, "Mole Shrine", MINE_SPEED["Mole Shrine"]) ];
+    return [ ...mergedTotemWindows(g, MINE_SPEED.totem, extend), ...boostWindowsFor(g, "Ore Hourglass", MINE_SPEED["Ore Hourglass"], keep("Ore Hourglass")), ...boostWindowsFor(g, "Mole Shrine", MINE_SPEED["Mole Shrine"], keep("Mole Shrine")) ];
   }
   return [];
 }
 
-export function fruitWindows(g) {
-  return [ ...mergedTotemWindows(g, FRUIT_SPEED.totem), ...boostWindowsFor(g, "Orchard Hourglass", FRUIT_SPEED["Orchard Hourglass"]), ...boostWindowsFor(g, "Toucan Shrine", FRUIT_SPEED["Toucan Shrine"]) ];
+export function fruitWindows(g, extend) {
+  const keep = keepOf(extend);
+  return [ ...mergedTotemWindows(g, FRUIT_SPEED.totem, extend), ...boostWindowsFor(g, "Orchard Hourglass", FRUIT_SPEED["Orchard Hourglass"], keep("Orchard Hourglass")), ...boostWindowsFor(g, "Toucan Shrine", FRUIT_SPEED["Toucan Shrine"], keep("Toucan Shrine")) ];
 }
 
-export function flowerWindows(g) {
-  return [ ...boostWindowsFor(g, "Blossom Hourglass", FLOWER_SPEED["Blossom Hourglass"]), ...boostWindowsFor(g, "Moth Shrine", FLOWER_SPEED["Moth Shrine"]) ];
+export function flowerWindows(g, extend) {
+  const keep = keepOf(extend);
+  return [ ...boostWindowsFor(g, "Blossom Hourglass", FLOWER_SPEED["Blossom Hourglass"], keep("Blossom Hourglass")), ...boostWindowsFor(g, "Moth Shrine", FLOWER_SPEED["Moth Shrine"], keep("Moth Shrine")) ];
 }
 
-export function oilWindows(g) {
-  return boostWindowsFor(g, "Stag Shrine", OIL_SPEED["Stag Shrine"]);
+export function oilWindows(g, extend) {
+  return boostWindowsFor(g, "Stag Shrine", OIL_SPEED["Stag Shrine"], keepOf(extend)("Stag Shrine"));
 }
 
-export function animalWindows(g, animalType) {
+export function animalWindows(g, animalType, extend) {
   const name = ANIMAL_SLEEP_SHRINE[animalType];
   if (!name) return [];
-  return boostWindowsFor(g, name, ANIMAL_SPEED[name]);
+  return boostWindowsFor(g, name, ANIMAL_SPEED[name], keepOf(extend)(name));
 }
 
 export function cookingWindows(g, extend) {
@@ -314,13 +323,14 @@ export function cookingWindows(g, extend) {
   return [ ...mergedTotemWindows(g, COOKING_SPEED.totem, extend), ...boostWindowsFor(g, "Gourmet Hourglass", COOKING_SPEED["Gourmet Hourglass"], keep("Gourmet Hourglass")), ...boostWindowsFor(g, "Legendary Shrine", COOKING_SPEED["Legendary Shrine"], keep("Legendary Shrine")), ...boostWindowsFor(g, "Boar Shrine", COOKING_SPEED["Boar Shrine"], keep("Boar Shrine")) ];
 }
 
-export function greenhouseWindows(g, plantName) {
-  const shared = [ ...mergedTotemWindows(g, GREENHOUSE_SPEED.totem), ...boostWindowsFor(g, "Tortoise Shrine", GREENHOUSE_SPEED["Tortoise Shrine"]) ];
+export function greenhouseWindows(g, plantName, extend) {
+  const keep = keepOf(extend);
+  const shared = [ ...mergedTotemWindows(g, GREENHOUSE_SPEED.totem, extend), ...boostWindowsFor(g, "Tortoise Shrine", GREENHOUSE_SPEED["Tortoise Shrine"], keep("Tortoise Shrine")) ];
   if (plantName === "Rice" || plantName === "Olive") {
-    return shared.concat(boostWindowsFor(g, "Harvest Hourglass", GREENHOUSE_SPEED["Harvest Hourglass"]));
+    return shared.concat(boostWindowsFor(g, "Harvest Hourglass", GREENHOUSE_SPEED["Harvest Hourglass"], keep("Harvest Hourglass")));
   }
   if (plantName === "Grape") {
-    return shared.concat(boostWindowsFor(g, "Orchard Hourglass", GREENHOUSE_SPEED["Orchard Hourglass"]));
+    return shared.concat(boostWindowsFor(g, "Orchard Hourglass", GREENHOUSE_SPEED["Orchard Hourglass"], keep("Orchard Hourglass")));
   }
   return shared;
 }
@@ -628,6 +638,6 @@ export function cropMachineFuelAt({machine, windows, at}) {
   return Math.max((typeof machine.unallocatedOilTime === "number" ? machine.unallocatedOilTime : 0) - burned, 0);
 }
 
-export function cropMachineWindows(g) {
-  return boostWindowsFor(g, "Tortoise Shrine", CROP_MACHINE_SPEED["Tortoise Shrine"]);
+export function cropMachineWindows(g, extend) {
+  return boostWindowsFor(g, "Tortoise Shrine", CROP_MACHINE_SPEED["Tortoise Shrine"], keepOf(extend)("Tortoise Shrine"));
 }

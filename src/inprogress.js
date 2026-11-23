@@ -1,4 +1,6 @@
-import { withAnimalFeedContext, ANIMAL_FEED_CHOICES, ICONS, NPC_ICONS, ALL_ANIMAL_PRODUCTS, ANIMAL_BASE_CYCLE_SEC, ANIMAL_DATA, ANIMAL_XP_THRESHOLDS, ANIMAL_PRODUCT_LOOKUP, ASCENSION_RANK_DATA, BAIT_RECIPES, BASE_CROPS, BASE_FRUITS, BASE_GREENHOUSE, BASE_STOCK_TOOLS, BEE_SWARM_ICON, BOOSTS, CALENDAR_SEASONAL_BOOSTS, COIN_ICON, COOKING_BUILDINGS, COOKING_BUILDING_ICONS, COOKING_CAKE_DISHES, COOKING_FOOD_IMAGES, COOKING_RECIPES, CRIMSTONE_KNOWN_IDS, CROPS_GLOBAL_EXCLUDED_FROM_GREENHOUSE, CROP_AOE_RANKS, CROP_HARVEST_SEC, CROP_KNOWN_IDS, CROP_PRNG_EXCLUDE, FARM_LEVEL_NODES, FARM_PANEL_SCROLL_IDLE_MS, FEED_LABELS, FERMENTATION_BAIT_FAMILIES, FERMENTATION_SPICE_KNOWN_IDS, FERMENTATION_STATIC_RECIPES, FISH_AGING_KNOWN_IDS, FISH_SALT_DATA, FLOWER_ICON, FLOWER_SEEDS, FLOWER_VARIETIES, FOOD_KNOWN_IDS, FRUIT_KNOWN_IDS, FRUIT_PRNG_EXCLUDE, GAMESTATE_SECTION_KEYS, GEM_ICON, GOLD_KNOWN_IDS, IMAGE_ICONS, IRON_KNOWN_IDS, MUTANT_TYPE_EMOJI, OIL_BONUS_DROP_AMOUNT, OIL_SINGLE_HARVEST_BASE, PATCH_FRUIT_ONLY_GLOBAL_BOOSTS_EXCLUDED_FROM_GREENHOUSE, RCM_GREENHOUSE_ICON_HTML, REQUIRED_FOOD_QTY_MAP, RESOURCE_DATA, RESOURCE_NODE_TIERS, SALT_BASE_CHARGE_CAP, SALT_BASE_TIME_SEC, SALT_BASE_YIELD, SALT_KNOWN_ID, SPICE_RECIPES, SPICE_STATIC_RECIPES, STONE_KNOWN_IDS, SYNODIC_MONTH_DAYS, TREE_KNOWN_IDS, __farmPanelSaveGameStateHandle, __gameStateSectionLenSigs, __set___farmPanelSaveGameStateHandle, __set___gameStateSectionLenSigs, allResourceBudBoostEntries, applyFarmBoostsOnly, applyFarmSkillsOnly, coinPerFlower, coinsToFlower, computeAgedFishFigures, computeAnimalFeedFigures, computeAnimalRealProgress, computeAnimalTypeFigures, computeAnimalYieldsForLevel, computeBoostedCropStats, computeBoostedStock, computeBoostedFlowerVarietyStats, computeBoostedFruitStats, computeBoostedGreenhouseStats, computeBoostedLavaPitStats, computeBoostedResourceStats, computeComposterFigures, composterRollWorms, BASE_COMPOSTERS, previewSeason, computeDestroyedCropPlotIds, computeHiveStats, computeHoneyRestockBreakdown, computeQtyRestockGems, computeSpiceFigures, currentSeason, escapeHtml, farmIdPromptStartSync, farmSyncExtractBudTraits, farmSyncExtractGameState, farmSyncExtractPetTraits, farmSyncFindBagByNameHeuristic, farmSyncGetAnimalRecords, farmSyncGetCoords, farmSyncGetPetRecords, farmSyncPickActivePlacedInstances, feePercent, fmt, fmtAnimal, fmtAnimalCost, fullMoonSeedStockQty, getActiveAnimalBoosts, getActiveBoostsForHive, getActiveFeedInfo, getActiveSaltRechargeMult, getActiveSaltYieldBonus, getActiveSeasonGuardianName, getAnimalLevelFromXp, getAscensionRank, getBeeSwarmPerSwarmYield, getCurrentChapterMutantSet, getCurrentChapterName, getEffectiveYieldAdd, getNodeIconHtml, getNodeLabel, getPowerHourWindow, getSpiceLickDurationHarvests, getTruffleSeasoningSleeps, getSpiceEffectForAnimalType, isBoostActive, isCropInSeason, isOvernightGroundCrop, isSkillActive, onDeferredInitialRenderDone, parseYieldBoostAmount, resourceBuds, saltSculptureLevel, sculptureEffects, sflPrngChance, syncCookingCountsFromInventory } from "./calculator.js";
+import { withAnimalFeedContext, ANIMAL_FEED_CHOICES, ICONS, NPC_ICONS, ALL_ANIMAL_PRODUCTS, ANIMAL_BASE_CYCLE_SEC, ANIMAL_DATA, ANIMAL_XP_THRESHOLDS, ANIMAL_PRODUCT_LOOKUP, ASCENSION_RANK_DATA, BAIT_RECIPES, BASE_CROPS, BASE_FRUITS, BASE_GREENHOUSE, BASE_STOCK_TOOLS, BEE_SWARM_ICON, BOOSTS, CALENDAR_SEASONAL_BOOSTS, COIN_ICON, COOKING_BUILDINGS, COOKING_BUILDING_ICONS, COOKING_CAKE_DISHES, COOKING_FOOD_IMAGES, COOKING_RECIPES, CRIMSTONE_KNOWN_IDS, CROPS_GLOBAL_EXCLUDED_FROM_GREENHOUSE, CROP_AOE_RANKS, CROP_HARVEST_SEC, CROP_KNOWN_IDS, CROP_PRNG_EXCLUDE, FARM_LEVEL_NODES, FARM_PANEL_SCROLL_IDLE_MS, FEED_LABELS, FERMENTATION_BAIT_FAMILIES, FERMENTATION_SPICE_KNOWN_IDS, FERMENTATION_STATIC_RECIPES, FISH_AGING_KNOWN_IDS, FISH_SALT_DATA, FLOWER_ICON, FLOWER_SEEDS, FLOWER_VARIETIES, FOOD_KNOWN_IDS, FRUIT_KNOWN_IDS, FRUIT_PRNG_EXCLUDE, GAMESTATE_SECTION_KEYS, GEM_ICON, GOLD_KNOWN_IDS, IMAGE_ICONS, IRON_KNOWN_IDS, MUTANT_TYPE_EMOJI, OIL_BONUS_DROP_AMOUNT, OIL_SINGLE_HARVEST_BASE, PATCH_FRUIT_ONLY_GLOBAL_BOOSTS_EXCLUDED_FROM_GREENHOUSE, RCM_GREENHOUSE_ICON_HTML, REQUIRED_FOOD_QTY_MAP, RESOURCE_DATA, RESOURCE_NODE_TIERS, SALT_BASE_CHARGE_CAP, SALT_BASE_TIME_SEC, SALT_BASE_YIELD, SALT_KNOWN_ID, SPICE_RECIPES, SPICE_STATIC_RECIPES, STONE_KNOWN_IDS, SYNODIC_MONTH_DAYS, TREE_KNOWN_IDS, __farmPanelSaveGameStateHandle, __gameStateSectionLenSigs, __set___farmPanelSaveGameStateHandle, __set___gameStateSectionLenSigs, allResourceBudBoostEntries, applyFarmBoostsOnly, applyFarmSkillsOnly, coinPerFlower, coinsToFlower, computeAgedFishFigures, computeAnimalFeedFigures, computeAnimalRealProgress, computeAnimalTypeFigures, computeAnimalYieldsForLevel, computeBoostedCropStats, computeBoostedStock, computeBoostedFlowerVarietyStats, computeBoostedFruitStats, computeBoostedGreenhouseStats, computeBoostedLavaPitStats, computeBoostedResourceStats, computeComposterFigures, composterRollWorms, BASE_COMPOSTERS, previewSeason, computeDestroyedCropPlotIds, computeHiveStats, computeHoneyRestockBreakdown, computeQtyRestockGems, computeSpiceFigures, currentSeason, escapeHtml, farmIdPromptStartSync, farmSyncExtractBudTraits, farmSyncExtractGameState, farmSyncExtractPetTraits, farmSyncFindBagByNameHeuristic, farmSyncGetAnimalRecords, farmSyncGetCoords, farmSyncGetPetRecords, farmSyncPickActivePlacedInstances, feePercent, fmt, fmtAnimal, fmtAnimalCost, fullMoonSeedStockQty, getActiveAnimalBoosts, getActiveBoostsForHive, getActiveFeedInfo, getActiveSaltRechargeMult, getActiveSaltYieldBonus, getActiveSeasonGuardianName, getAnimalLevelFromXp, getAscensionRank, getBeeSwarmPerSwarmYield, getCurrentChapterMutantSet, getCurrentChapterName, getEffectiveYieldAdd, getNodeIconHtml, getNodeLabel, getPowerHourWindow, getSpiceLickDurationHarvests, getTruffleSeasoningSleeps, getSpiceEffectForAnimalType, isBoostActive, isCropInSeason, isOvernightGroundCrop, isSkillActive, onDeferredInitialRenderDone, parseYieldBoostAmount, resourceBuds, saltSculptureLevel, sculptureEffects, sflPrngChance, syncCookingCountsFromInventory, withBoostEvalAt } from "./calculator.js";
+
+import { CONFIRM_ICON } from "./confirm_icon.js";
 
 import { findLivePriceForName, SFL_COMMUNITY_PROXY_BASE, SFL_NFT_PRICE_API, SFL_PROXY_BASE, computeRestockCost24h, cookingCostMode, cookingIngredientUnitCostCoins, fishSaltCostFlower, getActiveShrineDailyCostStable, getItemCostByName, getRestockGemCost, restocksForMode, getSpiceCostPerUseFlower, hasFreeSaltRakeCost, honeyCostFlowerForSpiceRack, marketItems, pickledVegCost, refinedSaltUnitCostFlower, saltCostFlowerForSpiceRack } from "./prices.js";
 
@@ -1662,13 +1664,9 @@ function farmPanelIsPlanted(job, kind) {
 
 function farmPanelWindowedRemainingSec(g, kind, job, plot, refTime, now) {
   if (!g || !job || typeof job.baseDurationMs !== "number") return null;
-  let windows;
-  if (kind === "crop") windows = cropPlotWindows(g).concat(cropFertiliserWindows(plot && plot.fertiliser)); else if (kind === "fruit") windows = fruitWindows(g).concat(turbofruitWindows(plot && plot.fertiliser)); else if (kind === "greenhouse") windows = greenhouseWindows(g, job.name).concat(greenhouseGlowWindows(plot && plot.fertiliser)); else if (kind === "flower") windows = flowerWindows(g); else return null;
-  const readyAt = computeReadyAt({
-    startedAt: refTime,
-    baseDurationMs: job.baseDurationMs,
-    windows: windows
-  });
+  let windowsFn;
+  if (kind === "crop") windowsFn = set => cropPlotWindows(g, set).concat(cropFertiliserWindows(plot && plot.fertiliser)); else if (kind === "fruit") windowsFn = set => fruitWindows(g, set).concat(turbofruitWindows(plot && plot.fertiliser)); else if (kind === "greenhouse") windowsFn = set => greenhouseWindows(g, job.name, set).concat(greenhouseGlowWindows(plot && plot.fertiliser)); else if (kind === "flower") windowsFn = set => flowerWindows(g, set); else return null;
+  const readyAt = fpLimitedReadyAt(kind, refTime, job.baseDurationMs, windowsFn);
   return Math.max(0, (readyAt - now) / 1e3);
 }
 
@@ -2356,13 +2354,10 @@ function farmPanelMapPos(id, node, defW, defH) {
 
 function farmPanelNodeWindowedRemainingSec(g, resourceName, job, ts, now) {
   if (!g || !job || typeof job.baseDurationMs !== "number" || !ts) return null;
-  let windows;
-  if (resourceName === "Wood") windows = treeWindows(g); else if (resourceName === "Oil") windows = oilWindows(g); else windows = mineWindows(g, String(resourceName).toLowerCase());
-  const readyAt = computeReadyAt({
-    startedAt: ts,
-    baseDurationMs: job.baseDurationMs,
-    windows: windows
-  });
+  const family = String(resourceName).toLowerCase();
+  const scope = resourceName === "Wood" ? "wood" : resourceName === "Oil" ? "oil" : family;
+  const windowsFn = set => resourceName === "Wood" ? treeWindows(g, set) : resourceName === "Oil" ? oilWindows(g, set) : mineWindows(g, family, set);
+  const readyAt = fpLimitedReadyAt(scope, ts, job.baseDurationMs, windowsFn);
   return Math.max(0, (readyAt - now) / 1e3);
 }
 
@@ -2511,7 +2506,7 @@ function farmPanelComputeInProgressRaw(json, opts) {
         } ];
       } else if (kind === "flower") {
         try {
-          const r = farmPanelComputeExactFlowerYield(job);
+          const r = fpYieldAt("flower", remainingSec != null ? now + remainingSec * 1e3 : now, () => farmPanelComputeExactFlowerYield(job));
           exactAmount = r.amount;
           exactBoosts = r.boosts;
         } catch (e) {
@@ -2526,11 +2521,11 @@ function farmPanelComputeInProgressRaw(json, opts) {
           let r = null;
           if (kind === "crop") {
             const predictedReadyAt = remainingSec != null ? now + remainingSec * 1e3 : now;
-            r = farmPanelComputeExactCropYield(json, g, name, plot, counter, false, predictedReadyAt);
+            r = fpYieldAt("crop", predictedReadyAt, () => farmPanelComputeExactCropYield(json, g, name, plot, counter, false, predictedReadyAt));
           } else if (kind === "fruit") {
-            r = farmPanelComputeExactFruitYield(json, g, name, counter, false, plot && plot.fertiliser && plot.fertiliser.name);
+            r = fpYieldAt("fruit", remainingSec != null ? now + remainingSec * 1e3 : now, () => farmPanelComputeExactFruitYield(json, g, name, counter, false, plot && plot.fertiliser && plot.fertiliser.name));
           } else if (kind === "greenhouse") {
-            r = farmPanelComputeExactGreenhouseYield(json, g, name, counter, plot && plot.fertiliser && plot.fertiliser.name, remainingSec != null ? now + remainingSec * 1e3 : now);
+            r = fpYieldAt("greenhouse", remainingSec != null ? now + remainingSec * 1e3 : now, () => farmPanelComputeExactGreenhouseYield(json, g, name, counter, plot && plot.fertiliser && plot.fertiliser.name, remainingSec != null ? now + remainingSec * 1e3 : now));
           }
           if (r) {
             exactAmount = r.amount;
@@ -2720,9 +2715,9 @@ function farmPanelComputeInProgressRaw(json, opts) {
         mapProcsForRow = farmPanelCollectMapProcs(chain);
         const woodGainRec = new Map;
         if (chain && chain.length) {
-          exactAmount = chain.reduce((sum, roll) => sum + farmPanelComputeExactWoodYieldForNode(node, treeType, roll, woodGainRec), 0);
+          exactAmount = fpYieldAt("wood", predictedMineAt, () => chain.reduce((sum, roll) => sum + farmPanelComputeExactWoodYieldForNode(node, treeType, roll, woodGainRec), 0));
         } else {
-          exactAmount = farmPanelComputeExactWoodYieldForNode(node, treeType, critRolls, woodGainRec);
+          exactAmount = fpYieldAt("wood", predictedMineAt, () => farmPanelComputeExactWoodYieldForNode(node, treeType, critRolls, woodGainRec));
         }
         if (exactAmount != null) exactBoosts = farmPanelGainsToBoosts(woodGainRec);
       } else if (storedAmount == null && resourceName === "Stone" && stoneRockName) {
@@ -2732,7 +2727,7 @@ function farmPanelComputeInProgressRaw(json, opts) {
         if (critRolls) sequentialIndexByType[stoneRockName] = idx + 1;
         mapProcsForRow = farmPanelCollectMapProcs(critRolls);
         const stoneGainRec = new Map;
-        exactAmount = farmPanelComputeExactStoneYieldForNode(json, node, stoneRockName, critRolls, predictedMineAt, stoneGainRec);
+        exactAmount = fpYieldAt("stone", predictedMineAt, () => farmPanelComputeExactStoneYieldForNode(json, node, stoneRockName, critRolls, predictedMineAt, stoneGainRec));
         if (exactAmount != null) exactBoosts = farmPanelGainsToBoosts(stoneGainRec);
       } else if (storedAmount == null && resourceName === "Iron" && ironRockName) {
         const idx = mapMode ? mapNodePositions.get(node) || 0 : sequentialIndexByType[ironRockName] || 0;
@@ -2866,7 +2861,9 @@ function farmPanelComputeInProgressRaw(json, opts) {
         exactOilBoosts = null;
         oilMinesUntilBonus = null;
       } else {
-        const exact = farmPanelComputeExactOilYield(hasBonus);
+        const oilYieldTs = job && job.drilledAt;
+        const oilYieldWait = oilYieldTs ? farmPanelNodeWindowedRemainingSec(g, "Oil", job, oilYieldTs, now) : null;
+        const exact = fpYieldAt("oil", oilYieldWait != null ? now + oilYieldWait * 1e3 : now, () => farmPanelComputeExactOilYield(hasBonus));
         oilQtyPerNode = exact.amount;
         exactOilBoosts = exact.boosts;
         oilMinesUntilBonus = (2 - drilledCount % 3 + 3) % 3 + 1;
@@ -3108,11 +3105,8 @@ function farmPanelComputeInProgressRaw(json, opts) {
         if (!animal || typeof animal !== "object") return;
         const toTs = v => typeof v === "number" ? v : typeof v === "string" && v.trim() && !isNaN(Number(v)) ? Number(v) : null;
         const asleepAt = toTs(animal.asleepAt ?? animal.sleepAt ?? animal.wentToSleepAt);
-        const awakeAt = typeof animal.baseDurationMs === "number" && asleepAt != null ? computeReadyAt({
-          startedAt: asleepAt,
-          baseDurationMs: animal.baseDurationMs,
-          windows: animalWindows(g, String(animal.type || type).replace(/^./, c => c.toUpperCase()))
-        }) : toTs(animal.awakeAt);
+        const animalTypeName = String(animal.type || type).replace(/^./, c => c.toUpperCase());
+        const awakeAt = typeof animal.baseDurationMs === "number" && asleepAt != null ? fpLimitedReadyAt(animalTypeName.toLowerCase(), asleepAt, animal.baseDurationMs, set => animalWindows(g, animalTypeName, set)) : toTs(animal.awakeAt);
         const stateStr = typeof animal.state === "string" ? animal.state.toLowerCase() : "";
         const sick = animal.sick === true || stateStr === "sick" || typeof animal.sickenedAt === "number";
         const xpRaw = animal.experience ?? animal.exp ?? animal.xp;
@@ -3816,7 +3810,138 @@ function cookingQueueHorizon(g, extendSet) {
   return horizon;
 }
 
-function cookingCollectibleEntry(g, def, extendSet) {
+const FP_SHRINE_EXTENSION_COST = {
+  "Legendary Shrine": {
+    coins: 0,
+    items: {
+      Acorn: 15,
+      Moonfur: 10,
+      Obsidian: 1
+    }
+  },
+  "Obsidian Shrine": {
+    coins: 0,
+    items: {
+      Acorn: 15,
+      Moonfur: 3,
+      Obsidian: 1
+    }
+  },
+  "Trading Shrine": {
+    coins: 0,
+    items: {
+      Acorn: 15,
+      Moonfur: 5,
+      Obsidian: 3
+    }
+  },
+  "Bear Shrine": {
+    coins: 0,
+    items: {
+      Acorn: 15,
+      "Chewed Bone": 10,
+      Ruffroot: 10
+    }
+  },
+  "Moth Shrine": {
+    coins: 0,
+    items: {
+      Acorn: 15,
+      "Frost Pebble": 10,
+      Ribbon: 10
+    }
+  },
+  "Tortoise Shrine": {
+    coins: 0,
+    items: {
+      Acorn: 15,
+      "Wild Grass": 10,
+      "Chewed Bone": 10
+    }
+  },
+  "Toucan Shrine": {
+    coins: 0,
+    items: {
+      Acorn: 15,
+      "Heart leaf": 10,
+      "Frost Pebble": 10
+    }
+  },
+  "Stag Shrine": {
+    coins: 0,
+    items: {
+      Acorn: 15,
+      "Heart leaf": 10,
+      "Wild Grass": 10
+    }
+  },
+  "Mole Shrine": {
+    coins: 0,
+    items: {
+      Acorn: 15,
+      Dewberry: 10,
+      Ribbon: 10
+    }
+  },
+  "Sparrow Shrine": {
+    coins: 0,
+    items: {
+      Acorn: 15,
+      "Wild Grass": 10,
+      Ruffroot: 10
+    }
+  },
+  "Badger Shrine": {
+    coins: 0,
+    items: {
+      Acorn: 15,
+      Dewberry: 10,
+      "Heart leaf": 10
+    }
+  },
+  "Boar Shrine": {
+    coins: 0,
+    items: {
+      Acorn: 15
+    }
+  },
+  "Hound Shrine": {
+    coins: 0,
+    items: {
+      Acorn: 50
+    }
+  },
+  "Bantam Shrine": {
+    coins: 0,
+    items: {
+      Acorn: 15,
+      Ruffroot: 10,
+      Dewberry: 10
+    }
+  },
+  "Collie Shrine": {
+    coins: 0,
+    items: {
+      Acorn: 15,
+      "Frost Pebble": 10,
+      "Chewed Bone": 10
+    }
+  }
+};
+
+const FP_SHRINE_MAX_ACTIVE_MS = 30 * 24 * 60 * 60 * 1e3;
+
+const FP_TOTEM_PAIR = {
+  "Super Totem": "Time Warp Totem",
+  "Time Warp Totem": "Super Totem"
+};
+
+function fpCoinsHave(g) {
+  const raw = Number(farmPanelField(g, "coins"));
+  return Number.isFinite(raw) && raw > 0 ? raw : 0;
+}
+
+function cookingCollectibleEntry(g, def, extendSet, horizonFn) {
   const now = Date.now();
   const duration = BOOST_EXPIRY_MS[def.name];
   const placed = placementsOf(g, def.name).filter(p => p && typeof p.createdAt === "number" && p.coordinates && typeof p.removedAt !== "number");
@@ -3825,23 +3950,64 @@ function cookingCollectibleEntry(g, def, extendSet) {
     expiresAt = Math.max(expiresAt, collectibleExpiry(def.name, p));
   });
   const status = !placed.length ? "missing" : expiresAt > now ? "active" : "expired";
-  let needed = 0;
+  let requiredMs = 0;
   if (status === "active") {
     const probe = new Set(extendSet);
     probe.add(def.name);
-    const horizon = cookingQueueHorizon(g, probe);
-    needed = horizon > expiresAt ? Math.ceil((horizon - expiresAt) / duration) : 0;
+    const horizon = horizonFn ? horizonFn(probe) : cookingQueueHorizon(g, probe);
+    requiredMs = horizon > expiresAt ? horizon - expiresAt : 0;
   }
-  const costItems = Object.keys(def.cost).map(item => ({
-    item: item,
-    qty: def.cost[item] * needed,
-    unit: def.cost[item],
-    have: cookingInventoryCount(g, item)
-  }));
+  const shrine = FP_SHRINE_EXTENSION_COST[def.name] || null;
+  const otherTotem = FP_TOTEM_PAIR[def.name] || null;
+  let needed = requiredMs > 0 ? Math.ceil(requiredMs / duration) : 0;
+  let costItems;
+  let capHit = false;
+  if (otherTotem) {
+    const haveOwn = cookingInventoryCount(g, def.name);
+    const haveOther = cookingInventoryCount(g, otherTotem);
+    const durOther = BOOST_EXPIRY_MS[otherTotem];
+    const useOwn = Math.min(needed, haveOwn);
+    const remaining = requiredMs - useOwn * duration;
+    const useOther = remaining > 0 ? Math.ceil(remaining / durOther) : 0;
+    needed = useOwn + useOther;
+    costItems = [ {
+      item: def.name,
+      qty: useOwn,
+      unit: 1,
+      have: haveOwn
+    } ];
+    if (useOther > 0) costItems.push({
+      item: otherTotem,
+      qty: useOther,
+      unit: 1,
+      have: haveOther
+    });
+  } else if (shrine) {
+    costItems = Object.keys(shrine.items).map(item => ({
+      item: item,
+      qty: shrine.items[item] * needed,
+      unit: shrine.items[item],
+      have: cookingInventoryCount(g, item)
+    }));
+    if (shrine.coins > 0) costItems.push({
+      item: "Coins",
+      qty: shrine.coins * needed,
+      unit: shrine.coins,
+      have: fpCoinsHave(g)
+    });
+    capHit = needed > 0 && expiresAt + needed * duration - now > FP_SHRINE_MAX_ACTIVE_MS;
+  } else {
+    costItems = Object.keys(def.cost).map(item => ({
+      item: item,
+      qty: def.cost[item] * needed,
+      unit: def.cost[item],
+      have: cookingInventoryCount(g, item)
+    }));
+  }
   const short = costItems.filter(c => c.qty > 0 && c.have < c.qty);
-  let canExtend = status === "active" && !short.length;
+  let canExtend = status === "active" && !short.length && !capHit;
   let reason = "";
-  if (status === "missing") reason = "Not placed on your farm"; else if (status === "expired") reason = "Expired — renew it in game first"; else if (short.length) reason = `Missing ${short.map(c => `${fmt(c.qty - c.have)} ${c.item}`).join(", ")}`; else if (needed === 0) reason = "Already covers the whole queue"; else reason = `Uses ${costItems.map(c => `${fmt(c.qty)} ${c.item}`).join(" + ")}`;
+  if (status === "missing") reason = "Not placed on your farm"; else if (status === "expired") reason = "Expired — renew it in game first"; else if (capHit) reason = "Shrines can only run 30 days ahead — extend again later"; else if (short.length) reason = `Missing ${short.map(c => `${fmt(c.qty - c.have)} ${c.item}`).join(", ")}`; else if (needed === 0) reason = "Already covers everything here"; else reason = `Uses ${costItems.filter(c => c.qty > 0).map(c => `${fmt(c.qty)} ${c.item}`).join(" + ")}`;
   return {
     key: def.name,
     name: def.name,
@@ -3900,6 +4066,152 @@ function cookingLimitedEntries(g, building, instances, extendSet) {
   const entries = COOKING_LIMITED_BOOSTS.map(def => cookingCollectibleEntry(g, def, extendSet));
   entries.push(cookingOilEntry(g, building, instances, extendSet));
   return entries;
+}
+
+const FP_LIMITED_SCOPES = {
+  crop: [ "Sparrow Shrine", "Harvest Hourglass", "Legendary Shrine", "Super Totem", "Time Warp Totem" ],
+  fruit: [ "Orchard Hourglass", "Toucan Shrine", "Legendary Shrine", "Super Totem", "Time Warp Totem" ],
+  greenhouse: [ "Tortoise Shrine", "Harvest Hourglass", "Orchard Hourglass", "Legendary Shrine", "Super Totem", "Time Warp Totem" ],
+  flower: [ "Blossom Hourglass", "Moth Shrine", "Legendary Shrine" ],
+  wood: [ "Timber Hourglass", "Badger Shrine", "Legendary Shrine", "Super Totem", "Time Warp Totem" ],
+  stone: [ "Ore Hourglass", "Badger Shrine", "Legendary Shrine", "Super Totem", "Time Warp Totem" ],
+  iron: [ "Ore Hourglass", "Mole Shrine", "Super Totem", "Time Warp Totem" ],
+  gold: [ "Ore Hourglass", "Mole Shrine", "Super Totem", "Time Warp Totem" ],
+  crimstone: [ "Mole Shrine" ],
+  oil: [ "Stag Shrine" ],
+  chicken: [ "Bantam Shrine" ],
+  cow: [ "Collie Shrine" ],
+  sheep: [ "Collie Shrine" ],
+  cropmachine: [ "Tortoise Shrine", "Legendary Shrine" ]
+};
+
+let fpLimitedJobs = {};
+
+let fpLimitedEffective = {};
+
+let fpLimitedEntries = {};
+
+function fpLimitedStoredSet(scope) {
+  const set = new Set;
+  (FP_LIMITED_SCOPES[scope] || []).forEach(name => {
+    if (farmPanelCookingExtend[name]) set.add(name);
+  });
+  return set;
+}
+
+function fpLimitedExt(scope) {
+  return fpLimitedEffective[scope] || fpLimitedStoredSet(scope);
+}
+
+function fpLimitedLog(scope, job) {
+  if (!FP_LIMITED_SCOPES[scope]) return;
+  if (!fpLimitedJobs[scope]) fpLimitedJobs[scope] = [];
+  fpLimitedJobs[scope].push(job);
+}
+
+function fpYieldAt(scope, atMs, fn) {
+  const now = Date.now();
+  return withBoostEvalAt(typeof atMs === "number" && atMs > now ? atMs : now, fpLimitedExt(scope), fn);
+}
+
+function fpLimitedReadyAt(scope, startedAt, baseDurationMs, windowsFn) {
+  fpLimitedLog(scope, {
+    startedAt: startedAt,
+    baseDurationMs: baseDurationMs,
+    windowsFn: windowsFn
+  });
+  return computeReadyAt({
+    startedAt: startedAt,
+    baseDurationMs: baseDurationMs,
+    windows: windowsFn(fpLimitedExt(scope))
+  });
+}
+
+function fpLimitedHorizon(scope, set) {
+  let horizon = 0;
+  (fpLimitedJobs[scope] || []).forEach(j => {
+    const t = j.horizonFn ? j.horizonFn(set) : computeReadyAt({
+      startedAt: j.startedAt,
+      baseDurationMs: j.baseDurationMs,
+      windows: j.windowsFn(set)
+    });
+    if (typeof t === "number" && t > horizon) horizon = t;
+  });
+  return horizon;
+}
+
+function fpLimitedDef(name) {
+  return {
+    name: name,
+    cost: {
+      [name]: 1
+    }
+  };
+}
+
+function fpLimitedBuildEntries(g, scope, set) {
+  return (FP_LIMITED_SCOPES[scope] || []).map(name => cookingCollectibleEntry(g, fpLimitedDef(name), set, probe => fpLimitedHorizon(scope, probe)));
+}
+
+function fpLimitedSameSet(a, b) {
+  if (a.size !== b.size) return false;
+  for (const v of a) if (!b.has(v)) return false;
+  return true;
+}
+
+function fpLimitedResolve(json) {
+  let g;
+  try {
+    g = farmSyncExtractGameState(json);
+  } catch (e) {
+    return false;
+  }
+  if (!g) return false;
+  let changed = false;
+  const entries = {};
+  Object.keys(fpLimitedJobs).forEach(scope => {
+    const stored = fpLimitedStoredSet(scope);
+    const current = fpLimitedEffective[scope] || stored;
+    const probeEntries = fpLimitedBuildEntries(g, scope, current);
+    const next = new Set;
+    probeEntries.forEach(e => {
+      if (stored.has(e.name) && e.canExtend) next.add(e.name);
+    });
+    if (!fpLimitedSameSet(current, next)) changed = true;
+    fpLimitedEffective[scope] = next;
+    entries[scope] = fpLimitedBuildEntries(g, scope, next).map(e => ({
+      ...e,
+      extended: next.has(e.name)
+    }));
+  });
+  fpLimitedEntries = entries;
+  return changed;
+}
+
+function fpLimitedScopeOfRow(row) {
+  if (!row) return "";
+  if (row.isCropMachineCard) return "cropmachine";
+  if (row.isAnimalMerged) return String(row.typeKey || "").toLowerCase();
+  if (row.isComposterCard || row.isHoneyCard || row.isCookingCard || row.isMycoCard || row.isPeteQuestCard || row.isFloatingIslandCard || row.isFishingCard || row.isPowerSkillCard) return "";
+  const name = row.name;
+  if (name === "Wood") return "wood";
+  if (name === "Oil") return "oil";
+  if (name === "Stone") return "stone";
+  if (name === "Iron") return "iron";
+  if (name === "Gold") return "gold";
+  if (name === "Crimstone") return "crimstone";
+  if (BASE_GREENHOUSE[name]) return "greenhouse";
+  if (FLOWER_VARIETIES[name]) return "flower";
+  if (BASE_CROPS[name]) return "crop";
+  if (BASE_FRUITS[name]) return "fruit";
+  return "";
+}
+
+function fpLimitedBlockHtml(row) {
+  const scope = fpLimitedScopeOfRow(row);
+  const list = scope ? fpLimitedEntries[scope] : null;
+  if (!list || !list.length) return "";
+  return farmPanelRenderLimitedBlock(list, `ltd:${scope}`, "until everything here finishes");
 }
 
 function farmPanelBuildCookingBuildingCard(building, instances, farmActivity, g) {
@@ -4850,6 +5162,18 @@ export function farmPanelComputeMapNodes(json, picks) {
 }
 
 export function farmPanelComputeInProgress(json) {
+  fpLimitedEffective = {};
+  fpLimitedEntries = {};
+  let cards = [];
+  for (let pass = 0; pass < 3; pass++) {
+    fpLimitedJobs = {};
+    cards = farmPanelComputeInProgressOnce(json);
+    if (!fpLimitedResolve(json)) break;
+  }
+  return cards;
+}
+
+function farmPanelComputeInProgressOnce(json) {
   try {
     applyFarmSkillsOnly(json, json);
   } catch (e) {}
@@ -5423,12 +5747,12 @@ export function farmPanelCropMachinePackYield(g, pack, startCounter, atTime, far
     });
     let v = cache[key];
     if (v === undefined) {
-      const r = farmPanelComputeExactCropYield(null, g, pack.crop, null, startCounter + i, false, atTime, {
+      const r = fpYieldAt("cropmachine", atTime, () => farmPanelComputeExactCropYield(null, g, pack.crop, null, startCounter + i, false, atTime, {
         noSeedDrop: true,
         machine: true,
         crits: fired,
         farmId: fid
-      });
+      }));
       v = {
         amount: r.amount,
         gains: (r.boosts || []).filter(b => !(b.timeMult && b.timeMult !== 1)).map(b => ({
@@ -5456,7 +5780,7 @@ function farmPanelCropMachineLogProvider(g, fid) {
   const machines = farmPanelMachineList(g);
   if (!machines.length) return null;
   const now = Date.now();
-  const windows = cropMachineWindows(g);
+  const windows = cropMachineWindows(g, fpLimitedExt("cropmachine"));
   const packs = [];
   machines.forEach(m => {
     farmPanelMachineResolvePacks(m, windows, now).packs.forEach(p => {
@@ -5489,7 +5813,17 @@ export function farmPanelComputeCropMachineCards(json) {
     const machines = farmPanelMachineList(g).filter(m => Array.isArray(m.queue) && m.queue.length);
     if (!machines.length) return [];
     const now = Date.now();
-    const windows = cropMachineWindows(g);
+    const windows = cropMachineWindows(g, fpLimitedExt("cropmachine"));
+    fpLimitedLog("cropmachine", {
+      horizonFn: set => {
+        const w = cropMachineWindows(g, set);
+        let latest = 0;
+        machines.forEach(m => farmPanelMachineResolvePacks(m, w, now).packs.forEach(p => {
+          if (typeof p.readyAt === "number" && p.readyAt > latest) latest = p.readyAt;
+        }));
+        return latest;
+      }
+    });
     const farmId = Number(farmPanelGetLastInfo().id);
     const farmIdOk = Number.isFinite(farmId) && farmId > 0;
     const activity = farmPanelField(g, "farmActivity") || {};
@@ -5697,6 +6031,7 @@ export function farmPanelRenderCropMachineCard(row) {
       </div>
       ${netHtml}
       ${boostHtml}
+      ${fpLimitedBlockHtml(row)}
       <div class="boost-mult-note" style="margin-top:8px;">${noteText}</div>
     </div>
   </div>`;
@@ -6059,7 +6394,7 @@ function farmPanelRenderAnimalMergedCard(card) {
   const productDetailRows = card.products.map(p => renderAnimalCardProductDetailRow(getIcon(p.name), p.name, p.totalYield, p.grossRevenue, p.feeAmount)).join("");
   const yieldBoostListHtml = farmPanelRenderAnimalYieldBoostList(card.yieldBoosts, card.productNames, card.products, card.count, card.spiceBuffCards, card.timeBoosts, card.costBoosts, card.cycleTimeSec);
   const animalYieldGroupsHtml = renderAnimalYieldGroupsList(card);
-  return `\n  <div class="card animal-merged-card${isProfit ? " is-profit" : " is-loss"}${expandedCls}" data-search="${card.searchKey}" data-fp-category="animals">\n    <div class="card-toggle">\n      <div class="card-name-row">\n        <span class="card-icon">${animalIcon}</span>\n        <div>\n          <div class="card-name">${escapeHtml(card.typeLabel)}${farmPanelAnimalFeedIconsHtml(card)}</div>\n          <div class="card-type-row">\n            <span class="card-type">${card.count} animal${card.count === 1 ? "" : "s"}</span>\n            ${badgeHtml}\n          </div>\n          <div class="animal-fold-row">${productChipsHtml}</div>${valueBlockHtml}\n        </div>\n      </div>\n      <div class="card-collapsed-profit">\n        <span class="harvest-stack">${dailyBadgeHtml}${statusBadgeHtml}</span>\n        <span class="chev">▾</span>\n      </div>\n      ${statusFoldHtml}\n    </div>\n    <div class="card-details">\n      <div class="animal-detail-grid">\n        ${productDetailRows}\n        <div class="animal-detail-stat"><span class="label">Market Price/Unit</span><span class="value">${fmtAnimalCost(card.avgPricePerUnit)} ${FLOWER_ICON}</span></div>\n        <div class="animal-detail-stat"><span class="label">Market Value</span><span class="value">${fmtAnimal(card.gross)} ${FLOWER_ICON}</span></div>\n        <div class="animal-detail-stat"><span class="label">Tax</span><span class="value">${card.sellFee > 0 ? `-${fmtAnimalCost(card.sellFee)}` : "0"} ${FLOWER_ICON}</span></div>\n      </div>\n      <div class="animal-net-row2">\n        <span class="label">Net</span>\n        <span class="value ${isProfit ? "is-profit" : "is-loss"}">${fmtAnimal(cardNet)} ${FLOWER_ICON}</span>\n      </div>\n      ${farmPanelAnimalFeedPickerHtml(card)}\n      ${animalYieldGroupsHtml}\n      ${yieldBoostListHtml}\n    </div>\n  </div>`;
+  return `\n  <div class="card animal-merged-card${isProfit ? " is-profit" : " is-loss"}${expandedCls}" data-search="${card.searchKey}" data-fp-category="animals">\n    <div class="card-toggle">\n      <div class="card-name-row">\n        <span class="card-icon">${animalIcon}</span>\n        <div>\n          <div class="card-name">${escapeHtml(card.typeLabel)}${farmPanelAnimalFeedIconsHtml(card)}</div>\n          <div class="card-type-row">\n            <span class="card-type">${card.count} animal${card.count === 1 ? "" : "s"}</span>\n            ${badgeHtml}\n          </div>\n          <div class="animal-fold-row">${productChipsHtml}</div>${valueBlockHtml}\n        </div>\n      </div>\n      <div class="card-collapsed-profit">\n        <span class="harvest-stack">${dailyBadgeHtml}${statusBadgeHtml}</span>\n        <span class="chev">▾</span>\n      </div>\n      ${statusFoldHtml}\n    </div>\n    <div class="card-details">\n      <div class="animal-detail-grid">\n        ${productDetailRows}\n        <div class="animal-detail-stat"><span class="label">Market Price/Unit</span><span class="value">${fmtAnimalCost(card.avgPricePerUnit)} ${FLOWER_ICON}</span></div>\n        <div class="animal-detail-stat"><span class="label">Market Value</span><span class="value">${fmtAnimal(card.gross)} ${FLOWER_ICON}</span></div>\n        <div class="animal-detail-stat"><span class="label">Tax</span><span class="value">${card.sellFee > 0 ? `-${fmtAnimalCost(card.sellFee)}` : "0"} ${FLOWER_ICON}</span></div>\n      </div>\n      <div class="animal-net-row2">\n        <span class="label">Net</span>\n        <span class="value ${isProfit ? "is-profit" : "is-loss"}">${fmtAnimal(cardNet)} ${FLOWER_ICON}</span>\n      </div>\n      ${farmPanelAnimalFeedPickerHtml(card)}\n      ${animalYieldGroupsHtml}\n      ${yieldBoostListHtml}\n      ${fpLimitedBlockHtml(card)}\n    </div>\n  </div>`;
 }
 
 function farmPanelRenderHoneyCard(row) {
@@ -6187,7 +6522,11 @@ function farmPanelRenderCookingQueueList(row) {
 function farmPanelRenderCookingLimitedBoosts(row) {
   const list = Array.isArray(row.limitedBoosts) ? row.limitedBoosts : [];
   if (!list.length) return "";
-  const building = row.cookingBuilding;
+  return farmPanelRenderLimitedBlock(list, row.cookingBuilding, "through the queue");
+}
+
+function farmPanelRenderLimitedBlock(list, openKey, runsText) {
+  const building = openKey;
   const open = !!farmPanelCookingLimitedOpen[building];
   const extendedCount = list.filter(e => e.extended).length;
   const rowsHtml = list.map(e => {
@@ -6204,11 +6543,11 @@ function farmPanelRenderCookingLimitedBoosts(row) {
     } else {
       badgeHtml = `<span class="hive-time-pill guro-frame is-idle">Not placed</span>`;
     }
-    const subText = e.extended ? "Extended — keeps running through the queue" : e.reason;
+    const subText = e.extended ? `Extended — keeps running ${runsText}` : e.reason;
     const subCls = !e.canExtend && e.status !== "missing" && e.status !== "expired" ? " is-short" : "";
     const disabled = !e.canExtend ? " disabled" : "";
     const on = e.extended ? " is-on" : "";
-    return `<div class="fp-ext-row"><div class="fp-ext-main"><span class="fp-ext-icon">${icon}</span><div class="fp-ext-text"><span class="fp-ext-name">${escapeHtml(e.name)}</span><span class="fp-ext-sub${subCls}">${escapeHtml(subText)}</span></div></div><div class="fp-ext-side"><span class="hive-time">${badgeHtml}</span><button type="button" class="fp-ext-switch guro-frame${on}" role="switch" aria-checked="${e.extended ? "true" : "false"}" data-fp-ext-key="${escapeHtml(e.key)}"${disabled}><span class="fp-ext-switch-label">Extend</span><span class="fp-ext-knob"></span></button></div></div>`;
+    return `<div class="fp-ext-row"><div class="fp-ext-main"><span class="fp-ext-icon">${icon}</span><div class="fp-ext-text"><span class="fp-ext-name">${escapeHtml(e.name)}</span><span class="fp-ext-sub${subCls}">${escapeHtml(subText)}</span></div></div><div class="fp-ext-side"><span class="hive-time">${badgeHtml}</span><button type="button" class="fp-ext-switch guro-frame${on}" role="switch" aria-checked="${e.extended ? "true" : "false"}" data-fp-ext-key="${escapeHtml(e.key)}"${disabled}><span class="fp-ext-switch-label">Extend</span><span class="fp-ext-knob guro-frame">${e.extended ? CONFIRM_ICON : ""}</span></button></div></div>`;
   }).join("");
   const countHtml = extendedCount ? `<span class="fp-ext-count">${extendedCount} extended</span>` : "";
   return `<div class="fp-ext-block"><button type="button" class="fp-ext-head guro-frame${open ? " is-open" : ""}" data-fp-ext-open="${escapeHtml(building)}" aria-expanded="${open ? "true" : "false"}"><span class="fp-ext-title">Limited Time Boosts</span>${countHtml}<span class="chev">▾</span></button>${open ? `<div class="fp-ext-list">${rowsHtml}</div>` : ""}</div>`;
@@ -6694,7 +7033,7 @@ export function farmPanelRenderInProgressRow(row) {
       saltProjectedHtml = `<div class="salt-section-label">Projected Harvest</div>\n          <div class="animal-fold-row">${projectedChipHtml}</div>\n          ${projectedChainNote}`;
     }
   }
-  return `\n  <div class="card animal-merged-card${isProfit ? " is-profit" : " is-loss"}${expandedCls}" data-search="${row.name.toLowerCase()}" data-fp-category="${farmPanelCardCategory(row)}">\n    <div class="card-toggle">\n      <div class="card-name-row">\n        <span class="card-icon">${nodeIcon}</span>\n        <div>\n          <div class="card-name">${escapeHtml(nodeLabel)}</div>\n          <div class="card-type-row">\n            <span class="card-type">${row.displayNodeCount} node${row.displayNodeCount === 1 ? "" : "s"}${tierNote}</span>\n            ${badgeHtml}\n          </div>\n          ${saltReadyLabelHtml}<div class="animal-fold-row">${productChipHtml}${woodChipHtml}${moneyTreeBadgeHtml}</div>${valueBlockHtml}\n          ${saltProjectedHtml}${seaBlessedBoostHtml}${turnaroundBoostHtml}${goldInstantMineBoostHtml}${crimstoneInstantMineBoostHtml}\n        </div>\n      </div>\n      <div class="card-collapsed-profit">\n        <span class="harvest-stack">${dailyBadgeHtml}${statusBadgeHtml}</span>\n        <span class="chev">▾</span>\n      </div>\n      ${statusFoldHtml}\n    </div>\n    <div class="card-details">\n      <div class="animal-detail-grid">\n        ${productDetailRow}${woodDetailRowHtml}\n        <div class="animal-detail-stat"><span class="label">Market Price/Unit</span><span class="value">${fmt(row.price)} ${FLOWER_ICON}</span></div>\n        <div class="animal-detail-stat"><span class="label">Market Value</span><span class="value">${fmt(totalGross)} ${FLOWER_ICON}</span></div>\n        <div class="animal-detail-stat"><span class="label">Tax</span><span class="value">${totalFee > 0 ? `-${fmt(totalFee)}` : "0"} ${FLOWER_ICON}</span></div>\n      </div>\n      <div class="animal-net-row2">\n        <span class="label">Net</span>\n        <span class="value ${isProfit ? "is-profit" : "is-loss"}">${fmt(totalGross - totalFee)} ${FLOWER_ICON}</span>\n      </div>\n      ${harvestsLeftHtml}\n      ${tierYieldListHtml}\n      ${boostListHtml}\n    </div>\n  </div>`;
+  return `\n  <div class="card animal-merged-card${isProfit ? " is-profit" : " is-loss"}${expandedCls}" data-search="${row.name.toLowerCase()}" data-fp-category="${farmPanelCardCategory(row)}">\n    <div class="card-toggle">\n      <div class="card-name-row">\n        <span class="card-icon">${nodeIcon}</span>\n        <div>\n          <div class="card-name">${escapeHtml(nodeLabel)}</div>\n          <div class="card-type-row">\n            <span class="card-type">${row.displayNodeCount} node${row.displayNodeCount === 1 ? "" : "s"}${tierNote}</span>\n            ${badgeHtml}\n          </div>\n          ${saltReadyLabelHtml}<div class="animal-fold-row">${productChipHtml}${woodChipHtml}${moneyTreeBadgeHtml}</div>${valueBlockHtml}\n          ${saltProjectedHtml}${seaBlessedBoostHtml}${turnaroundBoostHtml}${goldInstantMineBoostHtml}${crimstoneInstantMineBoostHtml}\n        </div>\n      </div>\n      <div class="card-collapsed-profit">\n        <span class="harvest-stack">${dailyBadgeHtml}${statusBadgeHtml}</span>\n        <span class="chev">▾</span>\n      </div>\n      ${statusFoldHtml}\n    </div>\n    <div class="card-details">\n      <div class="animal-detail-grid">\n        ${productDetailRow}${woodDetailRowHtml}\n        <div class="animal-detail-stat"><span class="label">Market Price/Unit</span><span class="value">${fmt(row.price)} ${FLOWER_ICON}</span></div>\n        <div class="animal-detail-stat"><span class="label">Market Value</span><span class="value">${fmt(totalGross)} ${FLOWER_ICON}</span></div>\n        <div class="animal-detail-stat"><span class="label">Tax</span><span class="value">${totalFee > 0 ? `-${fmt(totalFee)}` : "0"} ${FLOWER_ICON}</span></div>\n      </div>\n      <div class="animal-net-row2">\n        <span class="label">Net</span>\n        <span class="value ${isProfit ? "is-profit" : "is-loss"}">${fmt(totalGross - totalFee)} ${FLOWER_ICON}</span>\n      </div>\n      ${harvestsLeftHtml}\n      ${tierYieldListHtml}\n      ${boostListHtml}\n      ${fpLimitedBlockHtml(row)}\n    </div>\n  </div>`;
 }
 
 export function farmPanelRenderStockRow(row) {

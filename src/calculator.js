@@ -12239,7 +12239,42 @@ function boostById(id) {
   return __boostIdMap.get(id);
 }
 
+let boostEvalAt = null;
+
+let boostEvalExtend = null;
+
+export function withBoostEvalAt(at, extend, fn) {
+  const prevAt = boostEvalAt;
+  const prevExtend = boostEvalExtend;
+  boostEvalAt = typeof at === "number" ? at : null;
+  boostEvalExtend = extend || null;
+  try {
+    return fn();
+  } finally {
+    boostEvalAt = prevAt;
+    boostEvalExtend = prevExtend;
+  }
+}
+
+function temporaryBoostExpiredAt(id, at) {
+  const boost = boostById(id);
+  const bare = boost && boost.limitedBoostName;
+  if (!bare) return false;
+  const entry = LIMITED_TIME_BOOSTS_BY_NAME[bare];
+  if (!entry || entry.group === "Buff") return false;
+  if (boostEvalExtend && boostEvalExtend.has(bare)) return false;
+  const st = limitedBoostActiveState[bare];
+  if (!st || !st.active || !st.expiresAt) return false;
+  return at >= st.expiresAt;
+}
+
 export function isBoostActive(id) {
+  if (!isBoostActiveNow(id)) return false;
+  if (boostEvalAt !== null && temporaryBoostExpiredAt(id, boostEvalAt)) return false;
+  return true;
+}
+
+function isBoostActiveNow(id) {
   if (id === "gnome" && farmPanelGameState && !farmPanelGnomeComboPresent()) return false;
   if ((id === "power_hour" || id === "power_hour_greenhouse") && isPowerHourExpiredSinceSync()) return false;
   if (ALWAYS_ON_BOOST_IDS.has(id)) return true;
@@ -15754,7 +15789,8 @@ function farmSyncIsTradingShrineActive(g) {
     for (const inst of arr) {
       if (!inst || typeof inst !== "object" || inst.removedAt) continue;
       const createdAt = typeof inst.createdAt === "number" ? inst.createdAt : 0;
-      if (createdAt + TRADING_SHRINE_COOLDOWN_MS > now) return true;
+      const extendedMs = typeof inst.extendedMs === "number" ? inst.extendedMs : 0;
+      if (createdAt + TRADING_SHRINE_COOLDOWN_MS + extendedMs > now) return true;
     }
   }
   return false;

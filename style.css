@@ -16324,11 +16324,11 @@ html body .fp-ext-head.is-open .chev{ transform:rotate(180deg); }
 .fp-ext-sub{ font-size:10px; font-weight:700; color:var(--ink-soft); line-height:1.2; }
 .fp-ext-sub.is-short{ color:#c0392b; }
 .fp-ext-side{ display:flex; flex-direction:column; align-items:flex-end; gap:6px; flex:0 0 auto; }
-html body .fp-ext-switch{ appearance:none; -webkit-appearance:none; box-sizing:border-box; margin:0; cursor:pointer; position:relative; display:flex; align-items:center; gap:8px; padding:4px 36px 4px 8px; min-height:26px; background:var(--parchment, #f2d9a0); color:inherit; touch-action:manipulation; }
+html body .fp-ext-switch{ appearance:none; -webkit-appearance:none; box-sizing:border-box; margin:0; cursor:pointer; position:relative; display:flex; align-items:center; gap:8px; padding:4px 34px 4px 8px; min-height:26px; background:var(--parchment, #f2d9a0); color:inherit; touch-action:manipulation; }
 html body .fp-ext-switch .fp-ext-switch-label{ font-family:var(--pixel-font); font-size:9px; text-transform:uppercase; letter-spacing:.3px; }
-html body .fp-ext-switch .fp-ext-knob{ position:absolute; right:22px; top:50%; width:12px; height:12px; margin-top:-6px; background:var(--ink-soft); transition:right .15s ease, background .15s ease; }
+html body .fp-ext-switch .fp-ext-knob{ position:absolute; right:8px; top:50%; box-sizing:border-box; width:18px; height:18px; margin-top:-9px; display:flex; align-items:center; justify-content:center; background:var(--parchment, #f2d9a0); image-rendering:pixelated; }
 html body .fp-ext-switch.is-on{ background:var(--sun-deep); }
-html body .fp-ext-switch.is-on .fp-ext-knob{ right:6px; width:12px; height:11px; margin-top:-5px; background:var(--parchment, #f2d9a0) var(--guro-confirm-icon) no-repeat center / 12px 11px; image-rendering:pixelated; }
+html body .fp-ext-switch .fp-ext-knob .guro-confirm-icon{ width:12px; height:11px; }
 html body .fp-ext-switch:disabled{ cursor:not-allowed; opacity:.5; }
 html body.sfl-theme .fp-ext-switch.is-on{
   background-color:var(--sfl-outer) !important; background-image:none !important;
