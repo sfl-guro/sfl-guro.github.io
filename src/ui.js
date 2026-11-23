@@ -7011,7 +7011,7 @@ function cookingFoodDetailsHtml(building, name, plan) {
   } else if (count > 0) {
     const syncedRow = synced > 0 ? `\n      <div class="cook-food-cost-line cook-plan-row"><span>Already cooked (synced)</span><span>${fmt(Math.min(synced, count))}× ${foodIconHtml}</span></div>` : "";
     if (planned > 0) {
-      const igRow = skipped > 0 ? `\n      <div class="cook-food-cost-line cook-plan-row"><span>⚡ Instant Gratification</span><span>${fmt(skipped)}× instant · saves ${formatCookSpan(skipped * boostedTime)}</span></div>` : "";
+      const igRow = skipped > 0 ? `\n      <div class="cook-food-cost-line cook-plan-row"><span>${getIcon("Instant Gratification")} Instant Gratification</span><span>${fmt(skipped)}× instant · saves ${formatCookSpan(skipped * boostedTime)}</span></div>` : "";
       timeSection = `${syncedRow}\n      <div class="cook-food-cost-line cook-plan-row"><span>Planned to cook</span><span>${fmt(planned)}× ${foodIconHtml}</span></div>\n      <div class="cook-food-cost-line cook-total-cost-line cook-total-time-line">\n        <span class="cook-total-cost-label">Total Time for ${fmt(planned)}× ${foodIconHtml}</span>\n        <span class="cook-total-cost-value cook-time-value">${formatCookSpanHtml(cardSecs)}</span>\n      </div>${igRow}`;
     } else {
       timeSection = `${syncedRow}\n      <div class="cook-food-cost-line cook-plan-row"><span>Planned to cook</span><span>0 — everything is already cooked</span></div>`;
@@ -7038,7 +7038,7 @@ function cookingPlanSummaryHtml(building, plan) {
   if (plan.ig) {
     const cd = formatCookSpan(plan.ig.cooldownSecs);
     const avail = plan.ig.delaySecs > 0 ? ` · ready again in ${formatCookSpan(plan.ig.delaySecs)}` : " · ready now";
-    igHtml = `<div class="cook-food-cost-line cook-plan-row"><span>⚡ Instant Gratification (cooldown ${cd}${avail})</span><span>${fmt(plan.uses)} use${plan.uses === 1 ? "" : "s"} · −${formatCookSpan(plan.savedSecs)}</span></div><div class="cook-plan-note">Each use finishes the food being cooked at once, so it is counted as the longest remaining dish. The oil that dish would have burned is still spent.</div>`;
+    igHtml = `<div class="cook-food-cost-line cook-plan-row"><span>${getIcon("Instant Gratification")} Instant Gratification (cooldown ${cd}${avail})</span><span>${fmt(plan.uses)} use${plan.uses === 1 ? "" : "s"} · −${formatCookSpan(plan.savedSecs)}</span></div><div class="cook-plan-note">Each use finishes the food being cooked at once, so it is counted as the longest remaining dish. The oil that dish would have burned is still spent.</div>`;
   }
   const oilHtml = plan.oilOn ? `<div class="cook-food-cost-line cook-total-cost-line cook-oil-line"><span class="cook-total-cost-label">Oil needed for the planned food</span><span class="cook-total-cost-value">${cookingIngredientIcon("Oil")} ${fmt(plan.oilTotal)} · ${fmt(coinsToFlower(cookingOilCostCoins(plan.oilTotal)))}${flowerIcon}</span></div>` : "";
   const unknown = plan.unknownTime ? `<div class="cook-plan-note">Some planned dishes have no known cooking time and are not counted.</div>` : "";

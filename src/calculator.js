@@ -845,6 +845,10 @@ Object.keys(GAME_ICON_DATA).forEach(name => {
   if (!BOOST_ICON_OVERRIDES[name] && !IMAGE_ICONS[name]) BOOST_ICON_OVERRIDES[name] = GAME_ICON_DATA[name];
 });
 
+[ "Instant Growth", "Tree Blitz", "Barnyard Rouse", "Greenhouse Guru", "Instant Gratification", "Petal Blessed", "Grease Lightning", "Salt Surge" ].forEach(name => {
+  if (GAME_ICON_DATA[name]) IMAGE_ICONS[name] = GAME_ICON_DATA[name];
+});
+
 Object.keys(FLOATING_ISLAND_ICON_DATA).forEach(name => {
   if (!IMAGE_ICONS[name]) IMAGE_ICONS[name] = FLOATING_ISLAND_ICON_DATA[name];
 });

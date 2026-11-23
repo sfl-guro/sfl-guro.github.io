@@ -1120,7 +1120,7 @@ var T17 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAA
 var T18 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAA3UlEQVR42mNgGAUjHTDikyy2s/xPDUt6Dx3HaQ/TQIcA06CLAuRg11SVhIuLPPgKZ5uJC2E17NTLd3D2GwVuOPv67ec4o2M0CljQg93f3QCrQpXvH7CK/3v4GhE18qJw9h0lAThbTUkcWct/5OgYjQIWfJK37r1ERAEDO5z94Q4iVQuoSBLUixYFowUR8VGAEnRXP2ANduRcwISUC/AF+2gU4I2Cb6+e4yjnv2OtC5CDHbku4BD9PhoFlOeC+y8RVbAkkluRg5oYvYri3KNRQF6LiBZgtEU0CkYBOgAAScpCebpO7/QAAAAASUVORK5CYII=";
 var T19 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABAklEQVR42mNgGAWjgEhg1+nx367T4z+1zWUaaI8xEuNzBgYGBlU7VgYGBgaG24d+MzAwMDAcKt/ByMDAwKCm7YI1VG5d3cM4JEKAhVifw8CLy78YkH3uxKvBwMDAwOArIcPAwMDAYJzOB9FfwvCfmJAYvCEA8yl63DOcx+7mwtt7IIySIZYLWAgpODz1K4rP+1Vd0OJ6HQMlaWHwhsCtJfsYsaV2GDg78xNegwnJD/4QwFXCbX7xBK+BhOQHfwigx3lDvRZKascF9n2+MTRrQ4LlAHpqxp3fySsPBn8IEErVlJYHgy8E4HGkzfCfkpAhtjwY/G1CYktIQmDQ1oajYBQAAKpdZjMSNlz0AAAAAElFTkSuQmCC";
 var T20 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACGElEQVR42tWXT0hUQRzHP2OLK3kxWVsIw5ByxQxMUtBLBXVRpI6RLogHxUARivDiJXAJOhh10otEEUG3PFVCkrCLJuVB/P+n8KDhP7x4MZwOsyPNY3Z928Xxd3nMm5n3+Hx/399v3hMkQ0rJvyGEwE/U3mqV6ebjwwMi3fOzOOYI/O9GTX7hUvERKw8Vskp68hT42tsuAcbO1qdd9+P7lK/nuauA17WjsQcSoPTOTQBK2bPue5U4DcDVynIAfi4su62ASEXsJS+pvGInOB+y3r/bNQzA8uSXKMDaxvwbJ/uA8JvzVHGwumkoocmvLY0BUBHMxtYHWma/nZA+oAlT5V5fpx73AtD8W1VB3bkCAPJrqwF4N/TZ2hHdVUC7fvplv3W+rKPNmF/PUXUf2J83yLfj4wDca7htVcKdKnh0vcaYqMvdkwD3x1XHe1utcusdP5w5AKAjmGOQekMr8WlrV1eBcNYDEmAxEgFgpXwCgNf75rjp46kkebZBrkm9HtDkTleBBOhqU14InLkIQM/TVeWR7hsAbO0UAlD/YdSac7/kTiogABqfjEiAqnAiSR41NySVAaVA8eB7ACYiReoMmPsFQCyUl5bc3U5YFQ4a5H92Fg1yPZ4Oq60x8oxc+yV3twpS5VyTP+9PGIRaiWcj8Yxe3OLsn1FFtE+5+kWDcnXnkOp8l0MZ5dZvOHkayqPW2iJTDzjzVfwXoq63oz/KUS0AAAAASUVORK5CYII=";
-var U0 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABDklEQVR42u2VPQrCMBTH/6nVUZdCnZxSiogHcOns4hE8hqdw8wpeorOT6CgiYlycLBSkoxWJg0brx5KkVZD8ppCP/t57eaSAwWD4B1yHctehXOWslYd82T8rn7d05WxU1UrA+qVcOQDXoXw76wAAjvMDWuMSopiRrwQg5Hy6zKURiUoAYpy9AtVKSFcgihl5lQi5CrZu9kLuD+h1YQguUwVbRi4k6yF7k3tB+baTSgVhy8iFxAuaoL0VgId8MzkBAPaLtJgryH7YC8rwB/Q+J+SF94DgVZgNLgl3yL0HopgRhOBA42m+3q5gv0iRhLvnvUVU4BHElVq38b5e9Ev46Q3Qhej8jHSzNxgMBgC4AHODhF7YUGp1AAAAAElFTkSuQmCC";
+var U0 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA0AAAARBAMAAAD00TuvAAAAGFBMVEUAAAAXFCQ+iUgmXELzpjLscSFjx0303l0UFO8xAAAAAXRSTlMAQObYZgAAAFtJREFUCNdjAAFBBjBgDITQIhCa0QVCi7sKgLklroICIFrQBSgAkQfRgiKuQopAnpJIoFqSAINQWqJQkrIAg7BSkpESmFYyMjYEyhsbKwuC1QsDRUEARjOCrAcAqlAKmc9mF0gAAAAASUVORK5CYII=";
 var U1 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABV0lEQVR42mNkIBFI2tj9xyf//MghRlLMY2IYYMBIqo/zq4Xxqp/Y+pakEBm8IQDzOczHh57/YGBgYGD48hpvEmDgEYUYaSfJgRIiuEJi8IUAus+3XfrOwMDAwPDi8i+SDJbQZWNgYGBg8NLjxBsSgycEqOVzUkNiwEOABZcEus8vz93LwMDAwMAG8RDDL7SAQRfXTXZGMeeQKOMgLQfQ437e0o8oCm4u3kuRBeqxzij8pGh+lLQweNMALhCeDMkdi6dzoojHZkLEV87lZBhStSELuRphqZ5SMHRC4PNnSC3YUA7x+tPn/1DkYeIwdby8jEMkBGBl8sRW7OXBhoOHGBgYGBicjWwZGBgYGJYfno7XwNKwbAYGBgaGurlT8Ob/wV8XwGqx8jmNkPzvEAjJ5wfWE2UwTB3MnKHTJhy5LSJCIQEDsBDBBWA+Ru8nDJ1W8WjPaMT1jgH2CZkIM+e9YwAAAABJRU5ErkJggg==";
 var U2 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABz0lEQVR42u2VPUjrUBiGnxQRLW4GkklRiIiI2CsVZ2nBDB0VfxZRcHALDsJ1vohToYOD6J3s5VoFB8EOgjqKFoSiHVrQRbBCulWvuMRBIm2tNj9V75B3Cjnn5Hl5v5zvA0+ePH2zBDeHZVExzOe8nhO+1IAsKsbCchSAgd0lJk8fHJnwuYUH+7tZb59wnKLPLXzt9w4Aw6OzZSX51AQq4aacmHBkYGB36Q0cIPCjl7/JpC0TPrvx/xn0s3/v5+Zw6w38vRtSFwOyqBhHM20AnOYfyRaKHG5vlMGD/d2MqyqpWIRULGLJRIMd+O2Fzv69n2xBJxWLcHX9j7HoBnMzSQDGVZWEFrJVzga78M1LnfTxL57SJ3R2NJPQQoypKgAJLURnRzMAjX1DwJ67RlQN3tXaQlBqYnFV4yl9UvVcY98QK/NR4hm9ZnMSrP50JvznSDsH53cALK5qVc+tzL/0iXBAYjp++aEJwWq/z+s5QRYVY6pHfF07u3skKDWV7a98VyuFmrcgr+eE0g/EM/oryFQ4IBEOSGUmSve6vgWVEy+ewQDoam2pui9bKJItFC0NJ9fjuLQkViKv2ywwEymN2S68bpJFxXAyCT158vRf6Bk3nc5/DN0boQAAAABJRU5ErkJggg==";
 var U3 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABnElEQVR42u2Vv0sDMRiGnxano5sZzsUOcqVIwWqp4CJYJ7s5CCpO+heIIkgXF3ES96I3iSgWurVb62zxx1BU1KkIOpxb6Wicrlzb0+Yo6JJnOpIved98X/IdaDQazT8TUgkyhSXd7w/nJTRoXCADprDk2bTBzeI+AIe7m76bm8KSWwdHAKSKOVavW0omwiouj6MrpJNxALYOjjpO2i2eTsY5jq4olyDc7/SZpQ0A8nbB10S3eN4uAJBZ2ugxGsiAV9zFa6Ibr7iLionwT+Ln5TKTU4meubxdIFXMdYylirkecYDJqQTn5fKvJvregW4Tb5ULSk2Ds2mjfUFLTYO3ysWv6wK/AjcLtfsnAO5u61QuTwCIDUfYG/tiJCGYsxvEhiM8fzbbaXfF08k4ywsLyk/S18RV7VVe1V6lN42msOT27IysZCfk4858z5zfmoH6gLexmMKS1fVR5uwGa+OCbKTVzoQ3RrUZhYJmpLo+ynvdodQ0OH1wfjShylDQsnjFP5yX0OkDknFBtu78zc/DFJb064Qq9dZoNBqNH9+oer7jsuA66gAAAABJRU5ErkJggg==";
@@ -21272,7 +21272,7 @@ function cookingFoodDetailsHtml(building, name, plan) {
       <div class="cook-food-cost-line cook-plan-row"><span>Already cooked (synced)</span><span>${fmt(Math.min(synced, count))}\xD7 ${foodIconHtml}</span></div>` : "";
     if (planned > 0) {
       const igRow = skipped > 0 ? `
-      <div class="cook-food-cost-line cook-plan-row"><span>\u26A1 Instant Gratification</span><span>${fmt(skipped)}\xD7 instant \xB7 saves ${formatCookSpan(skipped * boostedTime)}</span></div>` : "";
+      <div class="cook-food-cost-line cook-plan-row"><span>${getIcon("Instant Gratification")} Instant Gratification</span><span>${fmt(skipped)}\xD7 instant \xB7 saves ${formatCookSpan(skipped * boostedTime)}</span></div>` : "";
       timeSection = `${syncedRow}
       <div class="cook-food-cost-line cook-plan-row"><span>Planned to cook</span><span>${fmt(planned)}\xD7 ${foodIconHtml}</span></div>
       <div class="cook-food-cost-line cook-total-cost-line cook-total-time-line">
@@ -21331,7 +21331,7 @@ function cookingPlanSummaryHtml(building, plan) {
   if (plan.ig) {
     const cd = formatCookSpan(plan.ig.cooldownSecs);
     const avail = plan.ig.delaySecs > 0 ? ` \xB7 ready again in ${formatCookSpan(plan.ig.delaySecs)}` : " \xB7 ready now";
-    igHtml = `<div class="cook-food-cost-line cook-plan-row"><span>\u26A1 Instant Gratification (cooldown ${cd}${avail})</span><span>${fmt(plan.uses)} use${plan.uses === 1 ? "" : "s"} \xB7 \u2212${formatCookSpan(plan.savedSecs)}</span></div><div class="cook-plan-note">Each use finishes the food being cooked at once, so it is counted as the longest remaining dish. The oil that dish would have burned is still spent.</div>`;
+    igHtml = `<div class="cook-food-cost-line cook-plan-row"><span>${getIcon("Instant Gratification")} Instant Gratification (cooldown ${cd}${avail})</span><span>${fmt(plan.uses)} use${plan.uses === 1 ? "" : "s"} \xB7 \u2212${formatCookSpan(plan.savedSecs)}</span></div><div class="cook-plan-note">Each use finishes the food being cooked at once, so it is counted as the longest remaining dish. The oil that dish would have burned is still spent.</div>`;
   }
   const oilHtml = plan.oilOn ? `<div class="cook-food-cost-line cook-total-cost-line cook-oil-line"><span class="cook-total-cost-label">Oil needed for the planned food</span><span class="cook-total-cost-value">${cookingIngredientIcon("Oil")} ${fmt(plan.oilTotal)} \xB7 ${fmt(coinsToFlower(cookingOilCostCoins(plan.oilTotal)))}${flowerIcon}</span></div>` : "";
   const unknown = plan.unknownTime ? `<div class="cook-plan-note">Some planned dishes have no known cooking time and are not counted.</div>` : "";
@@ -29192,12 +29192,12 @@ function farmPanelComputePowerSkillCards(json) {
 function span(ms) {
   return escapeHtml(formatDuration(Math.round(ms / 1e3)));
 }
-function boostRow(name, text) {
-  return `<div class="boost-applied-row is-yield">${getBoostIcon(name)}<b>${escapeHtml(name)}</b> <span class="boost-total-value">${escapeHtml(text)}</span></div>`;
+function boostRow(name, text, iconName) {
+  return `<div class="boost-applied-row is-yield">${getBoostIcon(iconName || name)}<b>${escapeHtml(name)}</b> <span class="boost-total-value">${escapeHtml(text)}</span></div>`;
 }
 function appliedBoostHtml(row3) {
   const rows = [];
-  if (row3.rankMs < row3.baseMs) rows.push(boostRow(`${row3.name} Lv ${row3.level}`, `${formatDuration(Math.round(row3.baseMs / 1e3))} \u2192 ${formatDuration(Math.round(row3.rankMs / 1e3))}`));
+  if (row3.rankMs < row3.baseMs) rows.push(boostRow(`${row3.name} Lv ${row3.level}`, `${formatDuration(Math.round(row3.baseMs / 1e3))} \u2192 ${formatDuration(Math.round(row3.rankMs / 1e3))}`, row3.name));
   row3.wearables.forEach((w) => rows.push(boostRow(w.name, `\xD7${w.mult} cooldown`)));
   if (!rows.length) return "";
   return `<div class="section-badge is-boost-label">\u26A1 Applied Boost</div>${rows.join("")}`;
@@ -36385,6 +36385,10 @@ function farmPanelRenderComposterCard(row3) {
     </div>
   </div>`;
 }
+function fmtCookQty(n) {
+  const r = Math.round(n * 1e6) / 1e6;
+  return Number.isInteger(r) ? r.toLocaleString() : fmt(n);
+}
 function cookingFoodOrFishIcon(name) {
   if (COOKING_FOOD_IMAGES[name]) return cookFoodIcon(name);
   return getIcon(name);
@@ -36412,8 +36416,7 @@ function farmPanelRenderCookingQueueList(row3) {
     const itemName = row3.cookingKind === "aging" && s.outputName ? s.outputName : s.name;
     const isReady = !(s.readyAt > now);
     const timeHtml = isReady ? `<span class="hive-time-pill guro-frame is-ready">Ready</span>` : `<span class="hive-time-pill guro-frame farm-countdown" data-base="${(s.readyAt - now) / 1e3}">${guroCountdownText((s.readyAt - now) / 1e3)}</span><span class="hive-time-clock">${cookingQueueClockText(s.readyAt)}</span>`;
-    const primeNote = row3.cookingKind === "aging" && s.isPrime ? ` <span style="color:#c9821a;font-weight:700;">(Prime!)</span>` : "";
-    return `<div class="guro-queue-row"><span class="guro-queue-item"><span class="guro-queue-yield">+${fmt(s.amount)}</span>${cookingFoodOrFishIcon(itemName)}<span class="guro-queue-name">${escapeHtml(itemName)}${primeNote}</span></span><span class="guro-queue-time hive-time">${timeHtml}</span></div>`;
+    return `<div class="guro-queue-row"><span class="guro-queue-item"><span class="guro-queue-yield">+${fmtCookQty(s.amount)}</span>${cookingFoodOrFishIcon(itemName)}<span class="guro-queue-name">${escapeHtml(itemName)}</span></span><span class="guro-queue-time hive-time">${timeHtml}</span></div>`;
   }).join("");
   return `<div class="lib-section-title" style="margin-top:10px;">${escapeHtml(row3.cookingBuilding)} Queue</div><div class="guro-queue-list">${rowsHtml}</div>`;
 }
@@ -36447,7 +36450,7 @@ function farmPanelRenderCookingLimitedBoosts(row3) {
   return `<div class="fp-ext-block"><button type="button" class="fp-ext-head guro-frame${open ? " is-open" : ""}" data-fp-ext-open="${escapeHtml(building)}" aria-expanded="${open ? "true" : "false"}"><span class="fp-ext-title">Limited Time Boosts</span>${countHtml}<span class="chev">\u25BE</span></button>${open ? `<div class="fp-ext-list">${rowsHtml}</div>` : ""}</div>`;
 }
 function farmPanelRenderCookingBoostList(row3) {
-  const yieldHtmlParts = (row3.yieldBoostTotals || []).map((b) => `<div class="boost-applied-row is-yield">${getBoostIcon(b.name)}<b>${escapeHtml(b.name)}</b> <span class="boost-total-value">+${fmt(b.total)}</span></div>`);
+  const yieldHtmlParts = (row3.yieldBoostTotals || []).map((b) => `<div class="boost-applied-row is-yield">${getBoostIcon(b.name)}<b>${escapeHtml(b.name)}</b> <span class="boost-total-value">+${fmtCookQty(b.total)}</span></div>`);
   const chanceHtmlParts = (row3.chanceBoosts || []).map((b) => `<div class="boost-applied-row is-yield">${getBoostIcon(b.name)}<b>${escapeHtml(b.name)}</b> <span class="boost-mult-note">(${escapeHtml(b.note)})</span></div>`);
   const timeHtmlParts = (row3.timeBoosts || []).map((b) => {
     const boostIcon = getBoostIcon(b.name);
@@ -36645,7 +36648,7 @@ function farmPanelRenderCookingCard(row3) {
   const dailyBadgeHtml = dailyHarvestBadgeHtml(building, "cooking", buildingIcon, farmPanelDailyFarmId());
   const productChipHtml = row3.productGroups.map((p) => `
       <span class="animal-produce-chip">
-        <span class="produce-yield">+${fmt(p.amount)}</span>
+        <span class="produce-yield">+${fmtCookQty(p.amount)}</span>
         <span class="produce-icon">${cookingFoodOrFishIcon(p.name)}</span>
         <span class="produce-name">${escapeHtml(p.name)}</span>
       </span>`).join("");
@@ -39032,6 +39035,9 @@ var BOOST_ICON_OVERRIDES = {
 var COIN_ICON = '<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAQBAMAAADUulMJAAAAIGNIUk0AAHomAACAhAAA+gAAAIDoAAB1MAAA6mAAADqYAAAXcJy6UTwAAAAVUExURQAAAAAAAK9IMf6uNP7nYfd2Iv///8kLUD8AAAACdFJOUwAzyUOsLgAAAAFiS0dEBmFmuH0AAAAHdElNRQfoBAMBCyeWyjz2AAAAW0lEQVQI103N0RGAIAwD0OgE4ASSygIWFrBMgPvvYuuP9if3LncpAKwk4mTYHmzazkhTvT6T3k/XOLUTYmrkxKHa5OfaRpdewFsnmVDJWjKwuZOvLWR5v+UcfADJng8ZS5A75AAAACV0RVh0ZGF0ZTpjcmVhdGUAMjAyNC0wNC0wM1QwMToxMTozOCswMDowMN4naB0AAAAldEVYdGRhdGU6bW9kaWZ5ADIwMjQtMDQtMDNUMDE6MTE6MzgrMDA6MDCvetChAAAAKHRFWHRkYXRlOnRpbWVzdGFtcAAyMDI0LTA0LTAzVDAxOjExOjM5KzAwOjAwXhj6ygAAAABJRU5ErkJggg==" alt="Coins" style="width:14px;height:14px;vertical-align:-2px;image-rendering:pixelated;">';
 Object.keys(GAME_ICON_DATA).forEach((name) => {
   if (!BOOST_ICON_OVERRIDES[name] && !IMAGE_ICONS[name]) BOOST_ICON_OVERRIDES[name] = GAME_ICON_DATA[name];
+});
+["Instant Growth", "Tree Blitz", "Barnyard Rouse", "Greenhouse Guru", "Instant Gratification", "Petal Blessed", "Grease Lightning", "Salt Surge"].forEach((name) => {
+  if (GAME_ICON_DATA[name]) IMAGE_ICONS[name] = GAME_ICON_DATA[name];
 });
 Object.keys(FLOATING_ISLAND_ICON_DATA).forEach((name) => {
   if (!IMAGE_ICONS[name]) IMAGE_ICONS[name] = FLOATING_ISLAND_ICON_DATA[name];
