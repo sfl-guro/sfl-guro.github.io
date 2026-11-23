@@ -202,7 +202,7 @@ export function farmPanelRenderFloatingIslandCard(row, expanded) {
   const shopHtml = row.shop.length ? `<div class="fi-shop-head"><span class="fi-shop-title">ISLAND SHOP</span><span class="fi-balance">${fiIconHtml(CURRENCY, 14)}<span>${row.balance.toLocaleString("en-US")}</span></span></div><div class="fi-shop-list">${row.shop.map(fiShopRowHtml).join("")}</div>` : "";
   const emptyHtml = row.entries.length ? "" : `<div class="fi-empty">No island is scheduled right now.</div>`;
   return `
-  <div class="card animal-merged-card${row.isLive ? " is-profit" : ""}${expanded ? " expanded" : ""}" data-search="floating-island" data-fp-category="floating">
+  <div class="card animal-merged-card${row.isLive ? " is-profit" : ""}${expanded ? " expanded" : ""}" data-search="floating-island" data-fp-category="pete">
     <div class="card-toggle">
       <div class="card-name-row">
         <span class="card-icon">${floatingIslandMiniIconHtml(22)}</span>

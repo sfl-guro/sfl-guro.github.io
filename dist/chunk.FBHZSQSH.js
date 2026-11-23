@@ -10,6 +10,7 @@ import {
   COIN_ICON,
   FLOWER_ICON,
   SEASON_ORDER,
+  VIP_BEETLE_BONUS_CHANCE,
   coinsToFlower,
   computeBoostedStock,
   discardSkillBoostDrafts,
@@ -18,6 +19,7 @@ import {
   farmPanelGetMarketPriceFlower,
   farmSyncCollectEquippedAndPlacedNames,
   farmSyncExtractGameState,
+  farmSyncHasVipBeetleBonus,
   feePercent,
   findLivePriceForName,
   formatDuration,
@@ -46,7 +48,7 @@ import {
   skillCategory,
   toast,
   updateSkillSaveBarState
-} from "./chunk.4GBG4OBT.js";
+} from "./chunk.RUFZJDTZ.js";
 
 // src/rescalc_shared.js
 var FLOWER_SEED_SEASONS = {
@@ -347,6 +349,15 @@ function effectiveBins() {
   if (state.bins > 0) return Math.min(state.bins, MAX_BINS);
   return Math.max(1, syncedBins());
 }
+function vipBeetleChance() {
+  try {
+    if (!farmPanelGameState) return 0;
+    const g = farmSyncExtractGameState(farmPanelGameState);
+    return farmSyncHasVipBeetleBonus(g, Date.now()) ? VIP_BEETLE_BONUS_CHANCE / 100 : 0;
+  } catch (e) {
+    return 0;
+  }
+}
 function mushroomBoosts() {
   const out = {
     wild: 0,
@@ -474,6 +485,7 @@ function compute(forceRecipe) {
   const fungal = skillValue(SKILLS.fungal, 0);
   const keep = skillValue(SKILLS.shovel, 0);
   const twin = skillValue(SKILLS.twin, 0);
+  const vipBeetle = vipBeetleChance();
   const rareLevel = level(SKILLS.rare);
   const weights = rareLevel ? RARE_WEIGHTS[rareLevel - 1] : BASE_WEIGHTS;
   const mush = mushroomBoosts();
@@ -497,7 +509,7 @@ function compute(forceRecipe) {
   const dugMud = uTiles * fracOther;
   const shovels = manualShovels ? manualShovels : Math.ceil(dugTiles * (1 - keep) - 1e-9);
   const estShovels = Math.ceil(estDigs * (1 - keep) - 1e-9);
-  const beetleTotal = bTiles * (1 + twin);
+  const beetleTotal = bTiles * (1 + twin + vipBeetle);
   const items = [];
   BEETLES.forEach((b, i) => {
     items.push({
@@ -596,6 +608,7 @@ function compute(forceRecipe) {
     shovels,
     keep,
     twin,
+    vipBeetle,
     weights,
     rareLevel,
     lean,
@@ -830,6 +843,7 @@ function appliedSkillsHtml(r) {
   add(SKILLS.shovel, `${pct(r.keep * 100)} keep shovel`);
   add(SKILLS.rare, `Odds ${r.weights.join("/")}`);
   add(SKILLS.twin, `${pct(r.twin * 100)} extra Beetle`);
+  if (r.vipBeetle) rows.push(`<div class="rc-boost-row">${getBoostIconAnyFallback("VIP Access")}<span class="rc-boost-name">VIP Access</span><span class="rc-boost-eff">${esc(pct(r.vipBeetle * 100))} extra Beetle</span></div>`);
   r.mushroomBoosts.forEach((b) => rows.push(`<div class="rc-boost-row">${getBoostIconAnyFallback(b.name)}<span class="rc-boost-name">${esc(b.name)}</span><span class="rc-boost-eff">${esc(b.value)}</span></div>`));
   return `<div class="rc-group"><div class="rc-comp-sub">Applied Skills & Boosts</div>${rows.length ? rows.join("") : `<div class="rc-boost-none">No skill applied</div>`}</div>`;
 }

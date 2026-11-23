@@ -220,6 +220,7 @@ __export(calculator_exports, {
   TREE_KNOWN_IDS: () => TREE_KNOWN_IDS,
   TRUFFLE_SEASONING_SLEEPS: () => TRUFFLE_SEASONING_SLEEPS,
   TRUFFLE_SEASONING_TIME_MULT: () => TRUFFLE_SEASONING_TIME_MULT,
+  VIP_BEETLE_BONUS_CHANCE: () => VIP_BEETLE_BONUS_CHANCE,
   WEARABLE_MARKET_NAMES: () => WEARABLE_MARKET_NAMES,
   __boostedCropStatsMemo: () => __boostedCropStatsMemo,
   __boostedFruitStatsMemo: () => __boostedFruitStatsMemo,
@@ -533,6 +534,7 @@ __export(calculator_exports, {
   farmSyncGetFactionPetInfo: () => farmSyncGetFactionPetInfo,
   farmSyncGetLimitedTimeBoostStatus: () => farmSyncGetLimitedTimeBoostStatus,
   farmSyncGetPetRecords: () => farmSyncGetPetRecords,
+  farmSyncHasVipBeetleBonus: () => farmSyncHasVipBeetleBonus,
   farmSyncPickActivePlacedInstances: () => farmSyncPickActivePlacedInstances,
   feePercent: () => feePercent,
   fertilizerTierScope: () => fertilizerTierScope,
@@ -2100,7 +2102,9 @@ __export(inprogress_exports, {
   farmPanelStateIsCached: () => farmPanelStateIsCached,
   farmPanelSyncInFlight: () => farmPanelSyncInFlight,
   farmPanelTabContentDirty: () => farmPanelTabContentDirty,
-  setFarmPanelAnimalFeedChoice: () => setFarmPanelAnimalFeedChoice
+  setFarmPanelAnimalFeedChoice: () => setFarmPanelAnimalFeedChoice,
+  toggleFarmPanelCookingExtend: () => toggleFarmPanelCookingExtend,
+  toggleFarmPanelCookingLimitedOpen: () => toggleFarmPanelCookingLimitedOpen
 });
 
 // src/prices.js
@@ -7186,8 +7190,8 @@ function factionSubSetOpen(key, open, syncRoute) {
 }
 function factionSubKeyFromLocation() {
   if (typeof window === "undefined") return null;
-  const slug2 = window.location.pathname.replace(/^\/+|\/+$/g, "").toLowerCase();
-  const key = slug2.indexOf("faction/") === 0 ? slug2.slice("faction/".length) : null;
+  const slug3 = window.location.pathname.replace(/^\/+|\/+$/g, "").toLowerCase();
+  const key = slug3.indexOf("faction/") === 0 ? slug3.slice("faction/".length) : null;
   return key && FACTION_SUB_PANELS[key] ? key : null;
 }
 var factionDeliveryWeekMode = "this";
@@ -15697,7 +15701,7 @@ function renderFarmPanelTabContentAnchored(btn) {
   const wrap = $("farmPanelTabContent");
   const card2 = btn.closest(".card[data-search]");
   const key = card2 ? card2.getAttribute("data-search") : null;
-  const anchor = card2 ? card2.querySelector(".fp-feed-pick") : null;
+  const anchor = card2 ? card2.querySelector(".fp-feed-pick, .fp-ext-block") : null;
   const before = anchor ? anchor.getBoundingClientRect().top : 0;
   const parents = wrap ? farmPanelScrollParents(wrap) : [];
   const tops = parents.map((p) => p.scrollTop);
@@ -15708,7 +15712,7 @@ function renderFarmPanelTabContentAnchored(btn) {
   });
   if (wrap && key != null && parents.length) {
     const next = Array.from(wrap.querySelectorAll(".card[data-search]")).find((c) => c.getAttribute("data-search") === key);
-    const nextAnchor = next ? next.querySelector(".fp-feed-pick") : null;
+    const nextAnchor = next ? next.querySelector(".fp-feed-pick, .fp-ext-block") : null;
     if (nextAnchor) {
       const delta = nextAnchor.getBoundingClientRect().top - before;
       if (Math.abs(delta) > 0.5) parents[0].scrollTop += delta;
@@ -15721,6 +15725,21 @@ function attachFarmPanelCardToggles(wrap) {
     btn.onclick = (e) => {
       e.stopPropagation();
       setFarmPanelAnimalFeedChoice(btn.getAttribute("data-fp-feed-type"), btn.getAttribute("data-fp-feed"));
+      renderFarmPanelTabContentAnchored(btn);
+    };
+  });
+  wrap.querySelectorAll(".fp-ext-switch").forEach((btn) => {
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      if (btn.disabled) return;
+      toggleFarmPanelCookingExtend(btn.getAttribute("data-fp-ext-key"));
+      renderFarmPanelTabContentAnchored(btn);
+    };
+  });
+  wrap.querySelectorAll(".fp-ext-head").forEach((btn) => {
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      toggleFarmPanelCookingLimitedOpen(btn.getAttribute("data-fp-ext-open"));
       renderFarmPanelTabContentAnchored(btn);
     };
   });
@@ -19583,7 +19602,7 @@ var VIEW_URL_SLUGS = {
   map: "map"
 };
 var IN_PROGRESS_ROUTE_PREFIX = "in_progress";
-var IN_PROGRESS_FILTER_IDS = /* @__PURE__ */ new Set(["all", "crops", "resources", "greenhouse", "beehive", "fruits", "animals", "composters", "cooking", "myco", "pete", "floating", "fishing"]);
+var IN_PROGRESS_FILTER_IDS = /* @__PURE__ */ new Set(["all", "crops", "resources", "greenhouse", "beehive", "fruits", "animals", "composters", "cooking", "myco", "pete"]);
 function setInProgressRouteUrl(filter, history_ = "push") {
   if (history_ === "none" || typeof window === "undefined" || !window.history) return;
   const cat = filter && IN_PROGRESS_FILTER_IDS.has(filter) ? filter : "all";
@@ -19607,6 +19626,7 @@ function syncInProgressFilterRoute(filter) {
   setInProgressRouteUrl(filter, "push");
 }
 function openInProgressFromRoute(filter, historyMode) {
+  if (filter === "floating" || filter === "fishing") filter = "pete";
   const cat = filter && IN_PROGRESS_FILTER_IDS.has(filter) ? filter : "all";
   setFarmPanelTab("inprogress");
   __set_farmPanelInProgressCategoryFilter(cat);
@@ -19624,9 +19644,9 @@ var DEFAULT_BOOST_CATEGORY = "crops";
 function boostCategoryToRouteSlug(cat) {
   return BOOST_CATEGORY_ROUTE_SLUGS[cat] || cat;
 }
-function boostCategoryFromRouteSlug(slug2) {
-  const entry = Object.keys(BOOST_CATEGORY_ROUTE_SLUGS).find((k) => BOOST_CATEGORY_ROUTE_SLUGS[k] === slug2);
-  return entry || slug2;
+function boostCategoryFromRouteSlug(slug3) {
+  const entry = Object.keys(BOOST_CATEGORY_ROUTE_SLUGS).find((k) => BOOST_CATEGORY_ROUTE_SLUGS[k] === slug3);
+  return entry || slug3;
 }
 function boostRoutePathForCategory(cat) {
   const c = BOOST_CATEGORY_IDS.indexOf(cat) !== -1 ? cat : DEFAULT_BOOST_CATEGORY;
@@ -19698,37 +19718,37 @@ function syncFactionSubRoute(sub) {
 function viewToSlug(view) {
   return VIEW_URL_SLUGS[view] || view;
 }
-function slugToView(slug2) {
-  const entry = Object.keys(VIEW_URL_SLUGS).find((v) => VIEW_URL_SLUGS[v] === slug2);
-  return entry || slug2;
+function slugToView(slug3) {
+  const entry = Object.keys(VIEW_URL_SLUGS).find((v) => VIEW_URL_SLUGS[v] === slug3);
+  return entry || slug3;
 }
 var routeSyncSuspended = true;
-function syncModalRoute(slug2, isOpen) {
+function syncModalRoute(slug3, isOpen) {
   if (routeSyncSuspended) return;
   const currentSlug = slugFromLocation();
   if (isOpen) {
-    if (currentSlug !== slug2) setRouteUrl(slug2, "push");
-  } else if (currentSlug === slug2) {
+    if (currentSlug !== slug3) setRouteUrl(slug3, "push");
+  } else if (currentSlug === slug3) {
     setRouteUrl(null, "push");
   }
 }
 function closeAllModalRoutes() {
-  Object.keys(MODAL_ROUTE_MAP).forEach((slug2) => {
-    const overlay = $(MODAL_ROUTE_MAP[slug2].overlayId);
-    if (overlay && overlay.classList.contains("show")) MODAL_ROUTE_MAP[slug2].close();
+  Object.keys(MODAL_ROUTE_MAP).forEach((slug3) => {
+    const overlay = $(MODAL_ROUTE_MAP[slug3].overlayId);
+    if (overlay && overlay.classList.contains("show")) MODAL_ROUTE_MAP[slug3].close();
   });
 }
 function initModalRouteSync() {
-  Object.keys(MODAL_ROUTE_MAP).forEach((slug2) => {
-    const overlay = $(MODAL_ROUTE_MAP[slug2].overlayId);
+  Object.keys(MODAL_ROUTE_MAP).forEach((slug3) => {
+    const overlay = $(MODAL_ROUTE_MAP[slug3].overlayId);
     if (!overlay) return;
     const observer = new MutationObserver(() => {
       if (routeSyncSuspended) return;
       const isShowing = overlay.classList.contains("show");
       const currentSlug = slugFromLocation();
       if (isShowing) {
-        if (currentSlug !== slug2) setRouteUrl(slug2, "push");
-      } else if (currentSlug === slug2) {
+        if (currentSlug !== slug3) setRouteUrl(slug3, "push");
+      } else if (currentSlug === slug3) {
         setRouteUrl(null, "push");
       }
     });
@@ -19762,18 +19782,18 @@ function renderMainViewContent(view) {
   if (view === "sflbubbles" && typeof renderSflBubblesPanel === "function") renderSflBubblesPanel();
   if (view === "dailyprofit") renderDailyProfitCard();
 }
-function setRouteUrl(slug2, history_ = "push") {
+function setRouteUrl(slug3, history_ = "push") {
   if (history_ === "none" || typeof window === "undefined" || !window.history) return;
-  const path = slug2 ? `/${slug2}` : "/";
+  const path = slug3 ? `/${slug3}` : "/";
   if (window.location.pathname === path) return;
   const url = path + window.location.search + window.location.hash;
   if (history_ === "replace") {
     window.history.replaceState({
-      view: slug2 || null
+      view: slug3 || null
     }, "", url);
   } else {
     window.history.pushState({
-      view: slug2 || null
+      view: slug3 || null
     }, "", url);
   }
 }
@@ -19847,21 +19867,21 @@ function applyRouteFromLocation(historyMode = "none") {
     closeFarmPanel();
     openBoostFromRoute(sub, cat, historyMode);
   } else {
-    const slug2 = FACTION_SUB_SLUGS.indexOf(rawSlug) !== -1 ? "faction" : slugToView(rawSlug);
-    if (slug2 && MAIN_VIEW_PANEL_MAP[slug2]) {
+    const slug3 = FACTION_SUB_SLUGS.indexOf(rawSlug) !== -1 ? "faction" : slugToView(rawSlug);
+    if (slug3 && MAIN_VIEW_PANEL_MAP[slug3]) {
       closeAllModalRoutes();
       closeFarmPanel();
       closeBoostPanelIfOpen();
-      openMainViewPanel(slug2, {
+      openMainViewPanel(slug3, {
         historyMode
       });
-    } else if (slug2 && MODAL_ROUTE_MAP[slug2]) {
+    } else if (slug3 && MODAL_ROUTE_MAP[slug3]) {
       closeAllMainViewPanels();
       closeAllModalRoutes();
       closeFarmPanel();
       closeBoostPanelIfOpen();
-      MODAL_ROUTE_MAP[slug2].open();
-      setRouteUrl(slug2, historyMode);
+      MODAL_ROUTE_MAP[slug3].open();
+      setRouteUrl(slug3, historyMode);
     } else {
       closeAllMainViewPanels();
       closeAllModalRoutes();
@@ -28385,11 +28405,11 @@ function getPumpkinPeteQuest(rawName) {
   if (PUMPKIN_PETE_QUESTS[trimmed]) {
     return PUMPKIN_PETE_QUESTS[trimmed];
   }
-  const slug2 = trimmed.toLowerCase().replace(/['’]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-  if (PUMPKIN_PETE_QUESTS[slug2]) {
-    return PUMPKIN_PETE_QUESTS[slug2];
+  const slug3 = trimmed.toLowerCase().replace(/['’]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+  if (PUMPKIN_PETE_QUESTS[slug3]) {
+    return PUMPKIN_PETE_QUESTS[slug3];
   }
-  const aliasKey = PUMPKIN_PETE_QUEST_ALIASES[slug2] || PUMPKIN_PETE_QUEST_ALIASES[trimmed.toLowerCase()];
+  const aliasKey = PUMPKIN_PETE_QUEST_ALIASES[slug3] || PUMPKIN_PETE_QUEST_ALIASES[trimmed.toLowerCase()];
   if (aliasKey && PUMPKIN_PETE_QUESTS[aliasKey]) {
     return PUMPKIN_PETE_QUESTS[aliasKey];
   }
@@ -28579,7 +28599,7 @@ function farmPanelRenderFloatingIslandCard(row3, expanded) {
   const shopHtml = row3.shop.length ? `<div class="fi-shop-head"><span class="fi-shop-title">ISLAND SHOP</span><span class="fi-balance">${fiIconHtml(CURRENCY, 14)}<span>${row3.balance.toLocaleString("en-US")}</span></span></div><div class="fi-shop-list">${row3.shop.map(fiShopRowHtml).join("")}</div>` : "";
   const emptyHtml = row3.entries.length ? "" : `<div class="fi-empty">No island is scheduled right now.</div>`;
   return `
-  <div class="card animal-merged-card${row3.isLive ? " is-profit" : ""}${expanded ? " expanded" : ""}" data-search="floating-island" data-fp-category="floating">
+  <div class="card animal-merged-card${row3.isLive ? " is-profit" : ""}${expanded ? " expanded" : ""}" data-search="floating-island" data-fp-category="pete">
     <div class="card-toggle">
       <div class="card-name-row">
         <span class="card-icon">${floatingIslandMiniIconHtml(22)}</span>
@@ -29081,6 +29101,137 @@ function caveBuriedCounts(batch) {
   };
 }
 
+// src/power_skills.js
+var HOUR = 3600 * 1e3;
+var POWER_SKILL_DEFS = [{
+  name: "Instant Growth",
+  ranks: [72 * HOUR, 60 * HOUR, 48 * HOUR]
+}, {
+  name: "Tree Blitz",
+  ranks: [24 * HOUR, 18 * HOUR, 12 * HOUR]
+}, {
+  name: "Barnyard Rouse",
+  ranks: [120 * HOUR, 96 * HOUR, 84 * HOUR]
+}, {
+  name: "Greenhouse Guru",
+  ranks: [96 * HOUR, 84 * HOUR, 72 * HOUR]
+}, {
+  name: "Instant Gratification",
+  ranks: [96 * HOUR, 84 * HOUR, 72 * HOUR]
+}, {
+  name: "Petal Blessed",
+  ranks: [96 * HOUR, 84 * HOUR, 72 * HOUR]
+}, {
+  name: "Grease Lightning",
+  ranks: [96 * HOUR, 84 * HOUR, 72 * HOUR]
+}, {
+  name: "Salt Surge",
+  ranks: [72 * HOUR, 60 * HOUR, 48 * HOUR]
+}];
+var COOLDOWN_WEARABLES = [{
+  name: "Luna's Crescent",
+  mult: 0.5
+}, {
+  name: "Ascension Staff",
+  mult: 0.9
+}];
+function skillLevelOf(skills, name, max) {
+  if (!skills || typeof skills !== "object") return 0;
+  const key = Object.keys(skills).find((k) => k.trim().toLowerCase() === name.toLowerCase());
+  if (!key) return 0;
+  const lv = Math.round(Number(skills[key]));
+  if (!isFinite(lv) || lv < 1) return 0;
+  return Math.min(lv, max);
+}
+function slug2(name) {
+  return "power-" + name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+}
+function farmPanelComputePowerSkillCards(json) {
+  try {
+    const g = farmSyncExtractGameState(json);
+    const bumpkin = g && g.bumpkin && typeof g.bumpkin === "object" ? g.bumpkin : null;
+    if (!bumpkin) return [];
+    const skills = bumpkin.skills && typeof bumpkin.skills === "object" ? bumpkin.skills : {};
+    const used = bumpkin.previousPowerUseAt && typeof bumpkin.previousPowerUseAt === "object" ? bumpkin.previousPowerUseAt : {};
+    const worn = farmSyncCollectEquippedAndPlacedNames(g);
+    const wearables = COOLDOWN_WEARABLES.filter((w) => worn.has(w.name));
+    const now = Date.now();
+    const rows = [];
+    POWER_SKILL_DEFS.forEach((def) => {
+      const level = skillLevelOf(skills, def.name, def.ranks.length);
+      if (!level) return;
+      const baseMs = def.ranks[0];
+      const rankMs = def.ranks[level - 1];
+      const finalMs = wearables.reduce((ms, w) => ms * w.mult, rankMs);
+      const rawLast = Number(used[def.name]);
+      const lastUsedAt = isFinite(rawLast) && rawLast > 0 ? rawLast : 0;
+      const readyAt = lastUsedAt ? lastUsedAt + finalMs : 0;
+      const isReady = readyAt <= now;
+      rows.push({
+        isPowerSkillCard: true,
+        name: def.name,
+        searchKey: slug2(def.name),
+        profit: 0,
+        level,
+        maxLevel: def.ranks.length,
+        baseMs,
+        rankMs,
+        finalMs,
+        wearables,
+        lastUsedAt,
+        readyAt,
+        isReady,
+        remainingSec: isReady ? 0 : (readyAt - now) / 1e3
+      });
+    });
+    return rows;
+  } catch (e) {
+    return [];
+  }
+}
+function span(ms) {
+  return escapeHtml(formatDuration(Math.round(ms / 1e3)));
+}
+function boostRow(name, text) {
+  return `<div class="boost-applied-row is-yield">${getBoostIcon(name)}<b>${escapeHtml(name)}</b> <span class="boost-total-value">${escapeHtml(text)}</span></div>`;
+}
+function appliedBoostHtml(row3) {
+  const rows = [];
+  if (row3.rankMs < row3.baseMs) rows.push(boostRow(`${row3.name} Lv ${row3.level}`, `${formatDuration(Math.round(row3.baseMs / 1e3))} \u2192 ${formatDuration(Math.round(row3.rankMs / 1e3))}`));
+  row3.wearables.forEach((w) => rows.push(boostRow(w.name, `\xD7${w.mult} cooldown`)));
+  if (!rows.length) return "";
+  return `<div class="section-badge is-boost-label">\u26A1 Applied Boost</div>${rows.join("")}`;
+}
+function farmPanelRenderPowerSkillCard(row3, expanded, statusFoldHtml) {
+  const badgeHtml = row3.isReady ? `<span class="harvest-badge is-ready">\u2705 Ready</span>` : `<span class="harvest-badge is-growing">\u23F3 Cooldown</span>`;
+  const line = (label, val) => `<div class="dig-total-row"><span class="dig-total-label">${label}</span><span class="dig-total-val">${val}</span></div>`;
+  const lastLine = row3.lastUsedAt ? line("Last Used", escapeHtml(hiveClockText(row3.lastUsedAt))) : "";
+  const readyLine = row3.readyAt && !row3.isReady ? line("Ready At", escapeHtml(hiveClockText(row3.readyAt))) : "";
+  return `
+  <div class="card animal-merged-card${row3.isReady ? " is-profit" : ""}${expanded ? " expanded" : ""}" data-search="${row3.searchKey}" data-fp-category="pete">
+    <div class="card-toggle">
+      <div class="card-name-row">
+        <span class="card-icon">${getIcon(row3.name)}</span>
+        <div>
+          <div class="card-name">${escapeHtml(row3.name)}</div>
+          <div class="card-type-row">
+            <span class="card-type">Power Skill \xB7 Lv ${row3.level}/${row3.maxLevel}</span>
+            ${badgeHtml}
+          </div>
+        </div>
+      </div>
+      <div class="card-collapsed-profit">
+        <span class="chev">\u25BE</span>
+      </div>
+      ${statusFoldHtml}
+    </div>
+    <div class="card-details">
+      <div class="dig-totals">${line("Base Cooldown", span(row3.baseMs))}${line("New Cooldown", span(row3.finalMs))}${lastLine}${readyLine}</div>
+      ${appliedBoostHtml(row3)}
+    </div>
+  </div>`;
+}
+
 // src/cave_track.js
 var STORE_PREFIX = "guro_cave_track_v2_";
 var KEEP_DAYS = 14;
@@ -29187,6 +29338,7 @@ function emptyDay() {
     items: {},
     tiles: 0,
     twin: 0,
+    vip: 0,
     used: {
       "Sand Shovel": 0,
       "Sand Drill": 0
@@ -29270,8 +29422,18 @@ function caveTrackFromState(g, farmId) {
           chance: twinRank,
           criticalHitName: "Twin Beetles"
         })) {
-          amount = 2;
+          amount += 1;
           bucket.twin += 1;
+        }
+        if (counters && farmSyncHasVipBeetleBonus(g, t.dugAt) && sflPrngChance({
+          farmId: farmNum,
+          itemId: ITEM_IDS[name],
+          counter: counters[i],
+          chance: VIP_BEETLE_BONUS_CHANCE,
+          criticalHitName: "VIP Access"
+        })) {
+          amount += 1;
+          bucket.vip = (bucket.vip || 0) + 1;
         }
       }
       const slot = bucket.items[name] || (bucket.items[name] = {
@@ -29351,7 +29513,7 @@ var FISH_SKILL_BOOSTS = [{
   ranks: [1, 2, 3],
   text: (v) => `+${v} fish during Fish Frenzy`
 }];
-function skillLevelOf(g, name, max) {
+function skillLevelOf2(g, name, max) {
   const skills = g && g.bumpkin && g.bumpkin.skills && typeof g.bumpkin.skills === "object" ? g.bumpkin.skills : {};
   return Math.min(Number(skills[name]) || 0, max);
 }
@@ -29540,7 +29702,7 @@ function farmPanelComputeFishingCard(json, farmId, now) {
     const reelsLeft = Math.max(0, limit - attempts) + extra;
     const skillBoosts = [];
     FISH_SKILL_BOOSTS.forEach((def) => {
-      const level = skillLevelOf(g, def.name, def.ranks.length);
+      const level = skillLevelOf2(g, def.name, def.ranks.length);
       if (level > 0) skillBoosts.push({
         name: def.name,
         text: def.text(def.ranks[level - 1])
@@ -29585,16 +29747,16 @@ function farmPanelComputeFishingCard(json, farmId, now) {
 function fishingStatusFoldHtml(row3) {
   return `<div class="guro-status-fold"><span class="guro-status-label">RESETS IN</span><span class="guro-status-stack"><span class="guro-status-value fi-countdown" data-fi-at="${row3.targetAt}">${fishingClock(row3.remainingSec)}</span><span class="guro-status-clock">${escapeHtml(hiveClockText(row3.targetAt))}</span></span></div>`;
 }
-function boostRow(name, text) {
+function boostRow2(name, text) {
   return `<div class="boost-applied-row is-yield">${getBoostIcon(name)}<b>${escapeHtml(name)}</b> <span class="boost-total-value">${escapeHtml(text)}</span></div>`;
 }
-function appliedBoostHtml(row3) {
+function appliedBoostHtml2(row3) {
   const rows = [];
   const day = row3.day;
-  row3.limitParts.forEach((p) => rows.push(boostRow(p.name, `+${fishDigFmt(p.add)} daily reels`)));
-  row3.skillBoosts.forEach((b) => rows.push(boostRow(b.name, b.text)));
-  if (row3.harpoon || day.free > 0) rows.push(boostRow("Harpoon", `${fishDigFmt(day.free)}\xD7 free reel (${fishDigFmt(day.casts)} casts)`));
-  if (row3.ancientRod || day.rodsFree > 0) rows.push(boostRow("Ancient Rod", `${fishDigFmt(day.rodsFree)}\xD7 free Rod`));
+  row3.limitParts.forEach((p) => rows.push(boostRow2(p.name, `+${fishDigFmt(p.add)} daily reels`)));
+  row3.skillBoosts.forEach((b) => rows.push(boostRow2(b.name, b.text)));
+  if (row3.harpoon || day.free > 0) rows.push(boostRow2("Harpoon", `${fishDigFmt(day.free)}\xD7 free reel (${fishDigFmt(day.casts)} casts)`));
+  if (row3.ancientRod || day.rodsFree > 0) rows.push(boostRow2("Ancient Rod", `${fishDigFmt(day.rodsFree)}\xD7 free Rod`));
   const bonus = Math.max(0, row3.fishQty - day.casts);
   if (row3.yieldBoosts.length && day.casts > 0) {
     const icons = row3.yieldBoosts.map((name) => getBoostIcon(name)).join("");
@@ -29608,7 +29770,7 @@ function fishRowHtml(r) {
   return `<div class="fh-row"><span class="fh-qty">\xD7${fishDigFmt(r.qty)}</span><span class="fh-ico">${getIcon(r.name)}</span><span class="fh-name" title="${escapeHtml(r.name)}">${escapeHtml(r.name)}</span>${val}</div>`;
 }
 function treasureRowHtml(r) {
-  return `<div class="fh-trow"><div class="fh-trow-top"><span class="fh-qty">\xD7${fishDigFmt(r.qty)}</span><span class="fh-ico">${getIcon(r.name)}</span><span class="fh-name" title="${escapeHtml(r.name)}">${escapeHtml(r.name)}</span></div><div class="fh-trow-bot"><span class="fh-each">${fishDigFmt(r.each)}${COIN_ICON}<small>/ item</small></span><span class="fh-tot">${pairText(r.coins)}</span></div></div>`;
+  return `<div class="fh-trow"><div class="fh-trow-top"><span class="fh-qty">\xD7${fishDigFmt(r.qty)}</span><span class="fh-ico">${getIcon(r.name)}</span><span class="fh-name" title="${escapeHtml(r.name)}">${escapeHtml(r.name)}</span><span class="fh-each">${fishDigFmt(r.each)}${COIN_ICON}<small>/ item</small></span><span class="fh-tot">${pairText(r.coins)}</span></div></div>`;
 }
 function totalsHtml(row3) {
   const grossCoins = row3.fishCoins + row3.treasureCoins;
@@ -29625,7 +29787,7 @@ function farmPanelRenderFishingCard(row3, expanded) {
   const treasureHtml = row3.treasureRows.length ? row3.treasureRows.map(treasureRowHtml).join("") : `<div class="fh-empty">No treasures caught yet.</div>`;
   const noteHtml = row3.tracked ? "" : `<div class="fh-empty">Catches are counted from your first sync. Sync again after fishing to see them here.</div>`;
   return `
-  <div class="card animal-merged-card fh-card${row3.isReady ? " is-profit" : ""}${expanded ? " expanded" : ""}" data-search="fishing" data-fp-category="fishing">
+  <div class="card animal-merged-card fh-card${row3.isReady ? " is-profit" : ""}${expanded ? " expanded" : ""}" data-search="fishing" data-fp-category="pete">
     <div class="card-toggle">
       <div class="card-name-row">
         <span class="card-icon">${fishingMiniIconHtml(22)}</span>
@@ -29652,7 +29814,7 @@ function farmPanelRenderFishingCard(row3, expanded) {
       <div class="dig-data-label fh-label">Materials Used</div>
       <div class="fh-tool">${fishRodUsageHtml(row3.rodsUsed)}</div>
       ${totalsHtml(row3)}
-      ${appliedBoostHtml(row3)}
+      ${appliedBoostHtml2(row3)}
     </div>
   </div>`;
 }
@@ -29817,10 +29979,12 @@ function collectibleExpiry(name, placed) {
   const dur = BOOST_EXPIRY_MS[name];
   return (typeof placed.createdAt === "number" ? placed.createdAt : 0) + (dur || 0) + (typeof placed.extendedMs === "number" ? placed.extendedMs : 0);
 }
-function boostWindowsFor(g, name, speed) {
+function boostWindowsFor(g, name, speed, extend) {
+  const now = Date.now();
   const live = placementsOf(g, name).filter((p) => typeof p.createdAt === "number").map((p) => {
     const expiry = collectibleExpiry(name, p);
-    const to = typeof p.removedAt === "number" ? Math.min(expiry, p.removedAt) : expiry;
+    const keepAlive = !!extend && expiry > now && typeof p.removedAt !== "number" && !!p.coordinates;
+    const to = keepAlive ? Number.MAX_SAFE_INTEGER : typeof p.removedAt === "number" ? Math.min(expiry, p.removedAt) : expiry;
     return {
       from: p.createdAt,
       to,
@@ -29839,8 +30003,8 @@ function boostHistoryOf(g, name) {
   const arr = h && h[name];
   return Array.isArray(arr) ? arr.filter((w) => w && typeof w.from === "number" && typeof w.to === "number") : [];
 }
-function mergedTotemWindows(g, speed) {
-  return mergeWindows(boostWindowsFor(g, "Super Totem", speed).concat(boostWindowsFor(g, "Time Warp Totem", speed)));
+function mergedTotemWindows(g, speed, extend) {
+  return mergeWindows(boostWindowsFor(g, "Super Totem", speed, extend && extend.has("Super Totem")).concat(boostWindowsFor(g, "Time Warp Totem", speed, extend && extend.has("Time Warp Totem"))));
 }
 function powerHourWindows(g) {
   const speed = CROP_PLOT_SPEED["Power hour"];
@@ -29930,8 +30094,9 @@ function animalWindows(g, animalType) {
   if (!name) return [];
   return boostWindowsFor(g, name, ANIMAL_SPEED[name]);
 }
-function cookingWindows(g) {
-  return [...mergedTotemWindows(g, COOKING_SPEED.totem), ...boostWindowsFor(g, "Gourmet Hourglass", COOKING_SPEED["Gourmet Hourglass"]), ...boostWindowsFor(g, "Legendary Shrine", COOKING_SPEED["Legendary Shrine"]), ...boostWindowsFor(g, "Boar Shrine", COOKING_SPEED["Boar Shrine"])];
+function cookingWindows(g, extend) {
+  const keep = (name) => !!extend && extend.has(name);
+  return [...mergedTotemWindows(g, COOKING_SPEED.totem, extend), ...boostWindowsFor(g, "Gourmet Hourglass", COOKING_SPEED["Gourmet Hourglass"], keep("Gourmet Hourglass")), ...boostWindowsFor(g, "Legendary Shrine", COOKING_SPEED["Legendary Shrine"], keep("Legendary Shrine")), ...boostWindowsFor(g, "Boar Shrine", COOKING_SPEED["Boar Shrine"], keep("Boar Shrine"))];
 }
 function greenhouseWindows(g, plantName) {
   const shared = [...mergedTotemWindows(g, GREENHOUSE_SPEED.totem), ...boostWindowsFor(g, "Tortoise Shrine", GREENHOUSE_SPEED["Tortoise Shrine"])];
@@ -30020,9 +30185,14 @@ var COOKING_OIL_CLOCK_RATE = {
   Bakery: 15.5,
   Deli: 20
 };
-function resolveCookingQueue({ crafting, windows, oil, buildingName }) {
+function resolveCookingQueue({ crafting, windows, oil, buildingName, extendOil, report }) {
   let previousReadyAt;
-  let tank = oil ? Math.max(oil.tank, 0) : 0;
+  let tank = oil ? extendOil ? 1e12 : Math.max(oil.tank, 0) : 0;
+  const note = (used, emptyAt) => {
+    if (!report) return;
+    report.oilUsed = (report.oilUsed || 0) + used;
+    if (emptyAt !== void 0 && report.oilEmptyAt === void 0) report.oilEmptyAt = emptyAt;
+  };
   const clockRate = COOKING_OIL_CLOCK_RATE[buildingName] || 0;
   return crafting.map((recipe) => {
     const baseDurationMs = recipe.baseDurationMs;
@@ -30061,7 +30231,11 @@ function resolveCookingQueue({ crafting, windows, oil, buildingName }) {
       });
       previousReadyAt = readyAt2;
       const to2 = Math.min(readyAt2, fuelled.to);
-      if (to2 > from) tank -= (to2 - from) / DAY_MS * clockRate;
+      if (to2 > from) {
+        const burned = (to2 - from) / DAY_MS * clockRate;
+        tank -= burned;
+        note(burned, !extendOil && fuelled.to <= readyAt2 ? fuelled.to : void 0);
+      }
       return {
         startedAt,
         readyAt: readyAt2
@@ -30116,7 +30290,13 @@ function resolveCookingQueue({ crafting, windows, oil, buildingName }) {
       }]
     });
     previousReadyAt = readyAt;
-    tank -= fuelledWork / DAY_MS * oilRate;
+    const burnedWork = fuelledWork / DAY_MS * oilRate;
+    tank -= burnedWork;
+    note(burnedWork, !extendOil && fuelledWork < baseDurationMs - workAccruedAt({
+      startedAt,
+      at: from,
+      windows
+    }) - 1e-6 ? to : void 0);
     return {
       startedAt,
       readyAt
@@ -30343,7 +30523,11 @@ var farmPanelCookingCards = () => [...COOKING_BUILDINGS, "Fish Market", "Aging S
 function farmPanelLoadHiddenCards() {
   try {
     const raw = JSON.parse(localStorage.getItem(FARM_PANEL_HIDDEN_CARDS_KEY) || "[]");
-    return new Set(Array.isArray(raw) ? raw.filter((k) => typeof k === "string") : []);
+    const legacy = {
+      "floating:floating": "pete:floating",
+      "fishing:fishing": "pete:fishing"
+    };
+    return new Set(Array.isArray(raw) ? raw.filter((k) => typeof k === "string").map((k) => legacy[k] || k) : []);
   } catch (e) {
     return /* @__PURE__ */ new Set();
   }
@@ -30401,21 +30585,23 @@ function farmPanelCardCatalog() {
       label: "Myco Bins",
       icon: getIcon("Myco Bin")
     }];
-    if (id === "floating") return [{
-      id: "floating",
-      label: "Floating Island",
-      icon: floatingIslandMiniIconHtml(16)
-    }];
-    if (id === "fishing") return [{
-      id: "fishing",
-      label: "Fishing",
-      icon: fishingMiniIconHtml(16)
-    }];
     return [{
       id: "pete",
       label: "Pumpkin Pete Quest",
       icon: farmPanelPeteIconHtml()
-    }];
+    }, {
+      id: "floating",
+      label: "Floating Island",
+      icon: floatingIslandMiniIconHtml(16)
+    }, {
+      id: "fishing",
+      label: "Fishing",
+      icon: fishingMiniIconHtml(16)
+    }].concat(POWER_SKILL_DEFS.map((d) => ({
+      id: d.name,
+      label: d.name,
+      icon: getIcon(d.name)
+    })));
   };
   return cats.map((c) => ({
     id: c.id,
@@ -33646,21 +33832,247 @@ function cookingIsWearableEquipped(g, wearableName) {
   }
   return false;
 }
+var farmPanelCookingExtend = (() => {
+  try {
+    const v = JSON.parse(localStorage.getItem("fp_cooking_extend") || "{}");
+    return v && typeof v === "object" ? v : {};
+  } catch (e) {
+    return {};
+  }
+})();
+var farmPanelCookingLimitedOpen = (() => {
+  try {
+    const v = JSON.parse(localStorage.getItem("fp_cooking_limited_open") || "{}");
+    return v && typeof v === "object" ? v : {};
+  } catch (e) {
+    return {};
+  }
+})();
+function toggleFarmPanelCookingExtend(key) {
+  if (!key) return;
+  if (farmPanelCookingExtend[key]) delete farmPanelCookingExtend[key];
+  else farmPanelCookingExtend[key] = true;
+  try {
+    localStorage.setItem("fp_cooking_extend", JSON.stringify(farmPanelCookingExtend));
+  } catch (e) {
+  }
+}
+function toggleFarmPanelCookingLimitedOpen(building) {
+  if (!building) return;
+  if (farmPanelCookingLimitedOpen[building]) delete farmPanelCookingLimitedOpen[building];
+  else farmPanelCookingLimitedOpen[building] = true;
+  try {
+    localStorage.setItem("fp_cooking_limited_open", JSON.stringify(farmPanelCookingLimitedOpen));
+  } catch (e) {
+  }
+}
+var COOKING_LIMITED_BOOSTS = [{
+  name: "Time Warp Totem",
+  cost: {
+    "Time Warp Totem": 1
+  }
+}, {
+  name: "Super Totem",
+  cost: {
+    "Super Totem": 1
+  }
+}, {
+  name: "Gourmet Hourglass",
+  cost: {
+    "Gourmet Hourglass": 1
+  }
+}, {
+  name: "Legendary Shrine",
+  cost: {
+    Obsidian: 1,
+    Moonfur: 10,
+    Acorn: 15
+  }
+}, {
+  name: "Boar Shrine",
+  cost: {
+    Acorn: 15
+  }
+}];
+function cookingInventoryCount(g, name) {
+  const inv = farmPanelField(g, "inventory");
+  const raw = inv && typeof inv === "object" ? Number(inv[name]) : 0;
+  const owned = Number.isFinite(raw) && raw > 0 ? raw : 0;
+  if (BOOST_EXPIRY_MS[name]) {
+    const placed = placementsOf(g, name).filter((p) => p && p.coordinates).length;
+    return Math.max(0, owned - placed);
+  }
+  return owned;
+}
+function cookingProjectBuilding(g, building, instances, extendSet, extendOil) {
+  const windows = cookingWindows(g, extendSet);
+  const out = [];
+  instances.forEach((inst, instIdx) => {
+    const crafting = Array.isArray(inst.crafting) ? inst.crafting : [];
+    if (!crafting.length) return;
+    const hasOil = inst.oilSettledAt !== void 0;
+    const tank = typeof inst.oil === "number" ? inst.oil : 0;
+    const report = {};
+    const resolved = resolveCookingQueue({
+      crafting,
+      windows,
+      oil: hasOil ? {
+        tank,
+        settledAt: inst.oilSettledAt
+      } : void 0,
+      buildingName: building,
+      extendOil: !!extendOil && hasOil,
+      report
+    });
+    out.push({
+      instIdx,
+      readyAts: resolved.map((t) => t.readyAt),
+      oilUsed: report.oilUsed || 0,
+      oilEmptyAt: report.oilEmptyAt,
+      tank,
+      hasOil
+    });
+  });
+  return out;
+}
+function cookingExtendSetFromState() {
+  const set = /* @__PURE__ */ new Set();
+  COOKING_LIMITED_BOOSTS.forEach((b) => {
+    if (farmPanelCookingExtend[b.name]) set.add(b.name);
+  });
+  return set;
+}
+function cookingOilExtendFor(building) {
+  return !!farmPanelCookingExtend[`Oil|${building}`];
+}
+function cookingQueueHorizon(g, extendSet) {
+  const buildings = farmPanelField(g, "buildings");
+  let horizon = 0;
+  COOKING_BUILDINGS.forEach((b) => {
+    const instances = buildings && Array.isArray(buildings[b]) ? buildings[b] : null;
+    if (!instances || !instances.length) return;
+    cookingProjectBuilding(g, b, instances, extendSet, cookingOilExtendFor(b)).forEach((p) => {
+      p.readyAts.forEach((t) => {
+        if (typeof t === "number" && t > horizon) horizon = t;
+      });
+    });
+  });
+  return horizon;
+}
+function cookingCollectibleEntry(g, def, extendSet) {
+  const now = Date.now();
+  const duration = BOOST_EXPIRY_MS[def.name];
+  const placed = placementsOf(g, def.name).filter((p) => p && typeof p.createdAt === "number" && p.coordinates && typeof p.removedAt !== "number");
+  let expiresAt = 0;
+  placed.forEach((p) => {
+    expiresAt = Math.max(expiresAt, collectibleExpiry(def.name, p));
+  });
+  const status = !placed.length ? "missing" : expiresAt > now ? "active" : "expired";
+  let needed = 0;
+  if (status === "active") {
+    const probe = new Set(extendSet);
+    probe.add(def.name);
+    const horizon = cookingQueueHorizon(g, probe);
+    needed = horizon > expiresAt ? Math.ceil((horizon - expiresAt) / duration) : 0;
+  }
+  const costItems = Object.keys(def.cost).map((item) => ({
+    item,
+    qty: def.cost[item] * needed,
+    unit: def.cost[item],
+    have: cookingInventoryCount(g, item)
+  }));
+  const short = costItems.filter((c) => c.qty > 0 && c.have < c.qty);
+  let canExtend = status === "active" && !short.length;
+  let reason = "";
+  if (status === "missing") reason = "Not placed on your farm";
+  else if (status === "expired") reason = "Expired \u2014 renew it in game first";
+  else if (short.length) reason = `Missing ${short.map((c) => `${fmt(c.qty - c.have)} ${c.item}`).join(", ")}`;
+  else if (needed === 0) reason = "Already covers the whole queue";
+  else reason = `Uses ${costItems.map((c) => `${fmt(c.qty)} ${c.item}`).join(" + ")}`;
+  return {
+    key: def.name,
+    name: def.name,
+    kind: "collectible",
+    status,
+    expiresAt,
+    remainingSec: status === "active" ? (expiresAt - now) / 1e3 : 0,
+    needed,
+    costItems,
+    canExtend,
+    reason
+  };
+}
+function cookingOilEntry(g, building, instances, extendSet) {
+  const now = Date.now();
+  const base = cookingProjectBuilding(g, building, instances, extendSet, false);
+  const full = cookingProjectBuilding(g, building, instances, extendSet, true);
+  const supported = base.length > 0 && base.every((p) => p.hasOil);
+  let needed = 0;
+  full.forEach((p) => {
+    needed += Math.max(0, p.oilUsed - p.tank);
+  });
+  needed = Math.ceil(needed * 100) / 100;
+  const tankTotal = base.reduce((sum, p) => sum + p.tank, 0);
+  let emptyAt = 0;
+  base.forEach((p) => {
+    if (typeof p.oilEmptyAt === "number" && (!emptyAt || p.oilEmptyAt < emptyAt)) emptyAt = p.oilEmptyAt;
+  });
+  const have = cookingInventoryCount(g, "Oil");
+  let status;
+  if (!supported) status = "missing";
+  else if (emptyAt > now) status = "active";
+  else if (tankTotal > 0 && !emptyAt) status = "enough";
+  else status = "empty";
+  const canExtend = supported && needed <= have + 1e-9;
+  let reason;
+  if (!supported) reason = "Oil is not tracked for this building yet";
+  else if (!canExtend) reason = `Missing ${fmt(Math.ceil((needed - have) * 100) / 100)} Oil`;
+  else if (needed <= 0) reason = "Tank already covers the whole queue";
+  else reason = `Uses ${fmt(needed)} Oil`;
+  return {
+    key: `Oil|${building}`,
+    name: "Oil",
+    kind: "oil",
+    status,
+    expiresAt: emptyAt,
+    remainingSec: status === "active" ? (emptyAt - now) / 1e3 : 0,
+    needed,
+    costItems: [{
+      item: "Oil",
+      qty: needed,
+      unit: 1,
+      have
+    }],
+    canExtend,
+    reason
+  };
+}
+function cookingLimitedEntries(g, building, instances, extendSet) {
+  const entries = COOKING_LIMITED_BOOSTS.map((def) => cookingCollectibleEntry(g, def, extendSet));
+  entries.push(cookingOilEntry(g, building, instances, extendSet));
+  return entries;
+}
 function farmPanelBuildCookingBuildingCard(building, instances, farmActivity, g) {
+  const storedSet = cookingExtendSetFromState();
+  const storedEntries = cookingLimitedEntries(g, building, instances, storedSet);
+  const effectiveSet = /* @__PURE__ */ new Set();
+  storedEntries.forEach((e) => {
+    if (e.kind === "collectible" && farmPanelCookingExtend[e.key] && e.canExtend) effectiveSet.add(e.name);
+  });
+  const limitedBoosts = cookingLimitedEntries(g, building, instances, effectiveSet).map((e) => ({
+    ...e,
+    extended: !!farmPanelCookingExtend[e.key] && e.canExtend
+  }));
+  const oilEntry = limitedBoosts.find((e) => e.kind === "oil");
+  const extendOil = !!oilEntry && oilEntry.extended;
+  const projection = cookingProjectBuilding(g, building, instances, effectiveSet, extendOil);
   const allSlots = [];
   instances.forEach((inst, instIdx) => {
     const crafting = Array.isArray(inst.crafting) ? inst.crafting : [];
     if (!crafting.length) return;
     const yields = cookingComputeQueueYields(building, crafting, farmActivity);
-    const windowedReadyAts = resolveCookingQueue({
-      crafting,
-      windows: cookingWindows(g),
-      oil: inst.oilSettledAt !== void 0 ? {
-        tank: typeof inst.oil === "number" ? inst.oil : 0,
-        settledAt: inst.oilSettledAt
-      } : void 0,
-      buildingName: building
-    }).map((t) => t.readyAt);
+    const proj = projection.find((p) => p.instIdx === instIdx);
+    const windowedReadyAts = proj ? proj.readyAts : [];
     yields.forEach((y, yi) => {
       const readyAt = typeof windowedReadyAts[yi] === "number" ? windowedReadyAts[yi] : typeof y.recipe.readyAt === "number" ? y.recipe.readyAt : 0;
       allSlots.push({
@@ -33722,6 +34134,7 @@ function farmPanelBuildCookingBuildingCard(building, instances, farmActivity, g)
     })),
     timeBoosts: Array.from(timeBoostSeen.values()),
     productGroups,
+    limitedBoosts,
     profit: -totalCostFlower
   };
 }
@@ -34890,6 +35303,7 @@ function farmPanelComputeInProgress(json) {
   if (floatingIslandCard) allCards.push(floatingIslandCard);
   const fishingCard = farmPanelComputeFishingCard(json, String(json && json.id || farmPanelGetLastInfo().id || ""));
   if (fishingCard) allCards.push(fishingCard);
+  farmPanelComputePowerSkillCards(json).forEach((card2) => allCards.push(card2));
   return allCards;
 }
 var PETE_QUEST_LINK = "https://github.com/01101010110/Pumpkin-Pete-Quests/blob/main/Quests.md";
@@ -34994,6 +35408,7 @@ function farmPanelComputeMycoCard(json) {
         fungalLevel: skillLevel("Fungal Harvest"),
         muddyLevel: skillLevel("Muddy Bounty"),
         twinLevel: skillLevel("Twin Beetles"),
+        vipBeetle: farmSyncHasVipBeetleBonus(g, Date.now()) ? VIP_BEETLE_BONUS_CHANCE / 100 : 0,
         binId: id,
         name: "Myco Bin " + id,
         searchKey: "myco-bin-" + id,
@@ -35609,8 +36024,7 @@ function farmPanelCardCategory(row3) {
   if (row3.isCropMachineCard) return "crops";
   if (row3.isMycoCard) return "myco";
   if (row3.isPeteQuestCard) return "pete";
-  if (row3.isFloatingIslandCard) return "floating";
-  if (row3.isFishingCard) return "fishing";
+  if (row3.isFloatingIslandCard || row3.isFishingCard || row3.isPowerSkillCard) return "pete";
   if (row3.isAnimalMerged) return "animals";
   if (row3.isComposterCard) return "composters";
   if (row3.isHoneyCard) return "beehive";
@@ -35623,7 +36037,7 @@ function farmPanelCardCategory(row3) {
 }
 function farmPanelRowIsReady(row3) {
   if (!row3) return false;
-  if (row3.isPeteQuestCard || row3.isFloatingIslandCard || row3.isFishingCard) return !!row3.isReady;
+  if (row3.isPeteQuestCard || row3.isFloatingIslandCard || row3.isFishingCard || row3.isPowerSkillCard) return !!row3.isReady;
   return (row3.readyCount || 0) > 0;
 }
 function guroCountdownText(sec) {
@@ -35695,19 +36109,9 @@ function farmPanelFilterCategories() {
     icon: getIcon("Myco Bin")
   }, {
     id: "pete",
-    label: "Pumpkin Pete Quest",
-    name: "Pete's Quest",
+    label: "Other",
+    name: "Other",
     icon: farmPanelPeteIconHtml()
-  }, {
-    id: "floating",
-    label: "Floating Island",
-    name: "Floating Island",
-    icon: floatingIslandMiniIconHtml(16)
-  }, {
-    id: "fishing",
-    label: "Fishing",
-    name: "Fishing",
-    icon: fishingMiniIconHtml(16)
   }];
   return cats;
 }
@@ -35985,6 +36389,63 @@ function cookingFoodOrFishIcon(name) {
   if (COOKING_FOOD_IMAGES[name]) return cookFoodIcon(name);
   return getIcon(name);
 }
+function cookingQueueClockText(ms) {
+  const d = new Date(ms);
+  const today = /* @__PURE__ */ new Date();
+  const dayStart = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const diffDays = Math.round((dayStart(d) - dayStart(today)) / 864e5);
+  let h = d.getHours();
+  const ampm = h >= 12 ? "PM" : "AM";
+  h = h % 12 || 12;
+  const time = `${h}:${String(d.getMinutes()).padStart(2, "0")} ${ampm}`;
+  if (diffDays <= 0) return time;
+  if (diffDays === 1) return `tomorrow ${time}`;
+  return `${d.toLocaleDateString(void 0, {
+    weekday: "short"
+  })} ${time}`;
+}
+function farmPanelRenderCookingQueueList(row3) {
+  const slots = Array.isArray(row3.slots) ? row3.slots : [];
+  if (!slots.length) return "";
+  const now = Date.now();
+  const rowsHtml = slots.map((s) => {
+    const itemName = row3.cookingKind === "aging" && s.outputName ? s.outputName : s.name;
+    const isReady = !(s.readyAt > now);
+    const timeHtml = isReady ? `<span class="hive-time-pill guro-frame is-ready">Ready</span>` : `<span class="hive-time-pill guro-frame farm-countdown" data-base="${(s.readyAt - now) / 1e3}">${guroCountdownText((s.readyAt - now) / 1e3)}</span><span class="hive-time-clock">${cookingQueueClockText(s.readyAt)}</span>`;
+    const primeNote = row3.cookingKind === "aging" && s.isPrime ? ` <span style="color:#c9821a;font-weight:700;">(Prime!)</span>` : "";
+    return `<div class="guro-queue-row"><span class="guro-queue-item"><span class="guro-queue-yield">+${fmt(s.amount)}</span>${cookingFoodOrFishIcon(itemName)}<span class="guro-queue-name">${escapeHtml(itemName)}${primeNote}</span></span><span class="guro-queue-time hive-time">${timeHtml}</span></div>`;
+  }).join("");
+  return `<div class="lib-section-title" style="margin-top:10px;">${escapeHtml(row3.cookingBuilding)} Queue</div><div class="guro-queue-list">${rowsHtml}</div>`;
+}
+function farmPanelRenderCookingLimitedBoosts(row3) {
+  const list = Array.isArray(row3.limitedBoosts) ? row3.limitedBoosts : [];
+  if (!list.length) return "";
+  const building = row3.cookingBuilding;
+  const open = !!farmPanelCookingLimitedOpen[building];
+  const extendedCount = list.filter((e) => e.extended).length;
+  const rowsHtml = list.map((e) => {
+    const icon = e.kind === "oil" ? getIcon("Oil") : getBoostIcon(e.name);
+    let badgeHtml;
+    if (e.status === "active") {
+      badgeHtml = `<span class="hive-time-pill guro-frame farm-countdown" data-base="${e.remainingSec}">${guroCountdownText(e.remainingSec)}</span><span class="hive-time-clock">${cookingQueueClockText(e.expiresAt)}</span>`;
+    } else if (e.status === "enough") {
+      badgeHtml = `<span class="hive-time-pill guro-frame is-ready">Enough</span>`;
+    } else if (e.status === "expired") {
+      badgeHtml = `<span class="hive-time-pill guro-frame is-idle">Expired</span>`;
+    } else if (e.status === "empty") {
+      badgeHtml = `<span class="hive-time-pill guro-frame is-idle">No oil</span>`;
+    } else {
+      badgeHtml = `<span class="hive-time-pill guro-frame is-idle">Not placed</span>`;
+    }
+    const subText = e.extended ? "Extended \u2014 keeps running through the queue" : e.reason;
+    const subCls = !e.canExtend && e.status !== "missing" && e.status !== "expired" ? " is-short" : "";
+    const disabled = !e.canExtend ? " disabled" : "";
+    const on = e.extended ? " is-on" : "";
+    return `<div class="fp-ext-row"><div class="fp-ext-main"><span class="fp-ext-icon">${icon}</span><div class="fp-ext-text"><span class="fp-ext-name">${escapeHtml(e.name)}</span><span class="fp-ext-sub${subCls}">${escapeHtml(subText)}</span></div></div><div class="fp-ext-side"><span class="hive-time">${badgeHtml}</span><button type="button" class="fp-ext-switch guro-frame${on}" role="switch" aria-checked="${e.extended ? "true" : "false"}" data-fp-ext-key="${escapeHtml(e.key)}"${disabled}><span class="fp-ext-switch-label">Extend</span><span class="fp-ext-knob"></span></button></div></div>`;
+  }).join("");
+  const countHtml = extendedCount ? `<span class="fp-ext-count">${extendedCount} extended</span>` : "";
+  return `<div class="fp-ext-block"><button type="button" class="fp-ext-head guro-frame${open ? " is-open" : ""}" data-fp-ext-open="${escapeHtml(building)}" aria-expanded="${open ? "true" : "false"}"><span class="fp-ext-title">Limited Time Boosts</span>${countHtml}<span class="chev">\u25BE</span></button>${open ? `<div class="fp-ext-list">${rowsHtml}</div>` : ""}</div>`;
+}
 function farmPanelRenderCookingBoostList(row3) {
   const yieldHtmlParts = (row3.yieldBoostTotals || []).map((b) => `<div class="boost-applied-row is-yield">${getBoostIcon(b.name)}<b>${escapeHtml(b.name)}</b> <span class="boost-total-value">+${fmt(b.total)}</span></div>`);
   const chanceHtmlParts = (row3.chanceBoosts || []).map((b) => `<div class="boost-applied-row is-yield">${getBoostIcon(b.name)}<b>${escapeHtml(b.name)}</b> <span class="boost-mult-note">(${escapeHtml(b.note)})</span></div>`);
@@ -36013,6 +36474,7 @@ function farmPanelMycoBuriedFigures(row3) {
   const fungal = row3.fungalLevel ? MYCO_FUNGAL_BONUS[row3.fungalLevel - 1] : 0;
   const muddy = row3.muddyLevel ? MYCO_MUDDY_BONUS[row3.muddyLevel - 1] : 0;
   const twin = row3.twinLevel ? MYCO_TWIN_CHANCE[row3.twinLevel - 1] : 0;
+  const vipBeetle = row3.vipBeetle || 0;
   const mushroomQty = buried.Mushroom * (1 + fungal);
   const beetleQty = buried.Beetle;
   const mudQty = buried.Mud * (buried.mudPerTile || 1) * (1 + muddy);
@@ -36040,7 +36502,8 @@ function farmPanelMycoBuriedFigures(row3) {
     fee,
     fungal,
     muddy,
-    twin
+    twin,
+    vipBeetle
   };
 }
 function farmPanelMycoBoostListHtml(row3, fig) {
@@ -36053,6 +36516,7 @@ function farmPanelMycoBoostListHtml(row3, fig) {
   if (fig && fig.fungal) parts.push(rowHtml("Fungal Harvest", `+${fig.fungal} per Mushroom`));
   if (fig && fig.muddy) parts.push(rowHtml("Muddy Bounty", `x${Math.round((1 + fig.muddy) * 100) / 100} Mud`));
   if (fig && fig.twin) parts.push(rowHtml("Twin Beetles", `${Math.round(fig.twin * 100)}% chance of +1 Beetle`));
+  if (fig && fig.vipBeetle) parts.push(rowHtml("VIP Access", `${Math.round(fig.vipBeetle * 100)}% chance of +1 Beetle`));
   if (!parts.length) return "";
   return `<div class="section-badge is-boost-label">\u26A1 Applied Boost</div><div class="lib-section-title" style="margin-top:10px;">YIELD</div>${parts.join("")}`;
 }
@@ -36185,16 +36649,9 @@ function farmPanelRenderCookingCard(row3) {
         <span class="produce-icon">${cookingFoodOrFishIcon(p.name)}</span>
         <span class="produce-name">${escapeHtml(p.name)}</span>
       </span>`).join("");
-  const yieldLabel = `${building} Yield`;
-  const yieldRows = row3.slots.map((s) => {
-    if (row3.cookingKind === "aging") {
-      const primeNote = s.isPrime ? ` <span style="color:#c9821a;font-weight:700;">(Prime!)</span>` : "";
-      return `<div class="boost-applied-row is-yield">${cookingFoodOrFishIcon(s.outputName)}<b>${escapeHtml(s.outputName)}</b> <span class="boost-total-value">${fmt(s.amount)}</span>${primeNote}</div>`;
-    }
-    return `<div class="boost-applied-row is-yield">${cookingFoodOrFishIcon(s.name)}<b>${escapeHtml(s.name)}</b> <span class="boost-total-value">${fmt(s.amount)}</span></div>`;
-  }).join("");
-  const yieldListHtml = `<div class="lib-section-title" style="margin-top:10px;">${escapeHtml(yieldLabel)}</div>${yieldRows}`;
   const boostListHtml = farmPanelRenderCookingBoostList(row3);
+  const queueListHtml = farmPanelRenderCookingQueueList(row3);
+  const limitedHtml = farmPanelRenderCookingLimitedBoosts(row3);
   return `
   <div class="card animal-merged-card${isProfit ? " is-profit" : " is-loss"}${expandedCls}" data-search="${searchKey}" data-fp-category="cooking">
     <div class="card-toggle">
@@ -36216,8 +36673,9 @@ function farmPanelRenderCookingCard(row3) {
       ${statusFoldHtml}
     </div>
     <div class="card-details">
-      ${yieldListHtml}
+      ${queueListHtml}
       ${boostListHtml}
+      ${limitedHtml}
     </div>
   </div>`;
 }
@@ -36403,6 +36861,7 @@ function farmPanelRenderInProgressRow(row3) {
   if (row3.isPeteQuestCard) return farmPanelRenderPeteQuestCard(row3);
   if (row3.isFloatingIslandCard) return farmPanelRenderFloatingIslandCard(row3, farmPanelExpandedNames.has("floating-island"));
   if (row3.isFishingCard) return farmPanelRenderFishingCard(row3, farmPanelExpandedNames.has("fishing"));
+  if (row3.isPowerSkillCard) return farmPanelRenderPowerSkillCard(row3, farmPanelExpandedNames.has(row3.searchKey), row3.isReady ? "" : guroStatusFoldHtml("Ready", row3.remainingSec));
   const baseStatus = row3.readyCount > 0 ? row3.readyCount === row3.count ? "\u2705 All ready" : `\u2705 ${row3.readyCount} ready \xB7 \u23F3 ${row3.count - row3.readyCount} growing` : "\u23F3 Growing";
   const showCountdown = row3.soonestSec != null && row3.readyCount < row3.count;
   const noEtaGrowing = !showCountdown && row3.readyCount < row3.count && row3.noEtaCount > 0;
@@ -38601,14 +39060,14 @@ function cookGetLevelInfo(experience) {
   const isMax = level >= maxLevel;
   const curFloor = COOK_LEVEL_XP[level - 1];
   const nextCeil = isMax ? curFloor : COOK_LEVEL_XP[level];
-  const span = isMax ? COOK_LEVEL_XP[maxLevel - 1] - COOK_LEVEL_XP[maxLevel - 2] : nextCeil - curFloor;
+  const span2 = isMax ? COOK_LEVEL_XP[maxLevel - 1] - COOK_LEVEL_XP[maxLevel - 2] : nextCeil - curFloor;
   const progress = experience - curFloor;
   return {
     level,
     isMax,
     curFloor,
     nextCeil,
-    span,
+    span: span2,
     progress
   };
 }
@@ -38656,13 +39115,13 @@ function getAscensionLevelInfo(experience, ascensionLevel) {
   }
   const band = ascensionBandXp(ascensionLevel);
   if (experience >= baseline + band) {
-    const span = ascensionLevelXp(ascensionLevel, ASCENSION_LEVEL_UPS);
+    const span2 = ascensionLevelXp(ascensionLevel, ASCENSION_LEVEL_UPS);
     return {
       ascension: ascensionLevel,
       level: ASCENSION_LEVELS_PER_BAND,
       isReadyToAscend: true,
-      currentExperienceProgress: span,
-      experienceToNextLevel: span
+      currentExperienceProgress: span2,
+      experienceToNextLevel: span2
     };
   }
   let level = 1;
@@ -52637,6 +53096,20 @@ function farmSyncGetVipStatus(g) {
     lifetime: false
   };
 }
+var VIP_BEETLE_BONUS_CHANCE = 10;
+var VIP_TRIAL_PERIOD_MS = 7 * 24 * 60 * 60 * 1e3;
+var VIP_BEETLE_WINDOW_START = Date.UTC(2026, 10, 9);
+var VIP_BEETLE_WINDOW_END = Date.UTC(2027, 1, 1);
+function farmSyncHasVipBeetleBonus(g, at) {
+  if (!g || typeof g !== "object") return false;
+  const now = typeof at === "number" && isFinite(at) ? at : Date.now();
+  if (!(now > VIP_BEETLE_WINDOW_START && now < VIP_BEETLE_WINDOW_END)) return false;
+  const vip = g.vip && typeof g.vip === "object" ? g.vip : null;
+  const trialStartedAt = vip && typeof vip.trialStartedAt === "number" ? vip.trialStartedAt : 0;
+  if (trialStartedAt && trialStartedAt > now - VIP_TRIAL_PERIOD_MS) return true;
+  if (vip && typeof vip.expiresAt === "number" && vip.expiresAt > now) return true;
+  return farmSyncHasLifetimeFarmerBanner(g);
+}
 var TRADING_SHRINE_COOLDOWN_MS = 30 * 24 * 60 * 60 * 1e3;
 function farmSyncIsTradingShrineActive(g) {
   const asObj2 = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : null;
@@ -62106,7 +62579,7 @@ function esAscensionNodeTotal(node, ascLevel) {
   return esAscensionCumulativeNodes(node, ascLevel) - esAscensionCumulativeNodes(node, ascLevel - 1);
 }
 function esBuildAscensionSchedule(ascLevel) {
-  const span = ES_SWAMP_EXPANSIONS_PER_ASCENSION;
+  const span2 = ES_SWAMP_EXPANSIONS_PER_ASCENSION;
   const items = [];
   ES_SWAMP_NODE_ORDER.forEach((node, t) => {
     if (node === "Flower Bed") return;
@@ -62122,9 +62595,9 @@ function esBuildAscensionSchedule(ascLevel) {
   });
   items.sort((a, b) => a.pos - b.pos || a.tie - b.tie);
   const schedule = [];
-  for (let s = 0; s < span; s++) schedule.push({});
+  for (let s = 0; s < span2; s++) schedule.push({});
   items.forEach((item, k) => {
-    const slot = Math.floor(k * span / items.length);
+    const slot = Math.floor(k * span2 / items.length);
     schedule[slot][item.node] = (schedule[slot][item.node] || 0) + 1;
     if (item.node === "Beehive") {
       schedule[slot]["Flower Bed"] = (schedule[slot]["Flower Bed"] || 0) + 1;
@@ -79442,6 +79915,8 @@ export {
   computeAnimalWeeklyFigures,
   farmSyncExtractGameState,
   farmSyncCollectEquippedAndPlacedNames,
+  VIP_BEETLE_BONUS_CHANCE,
+  farmSyncHasVipBeetleBonus,
   FARM_LEVEL_NODES,
   MUTANT_TYPE_EMOJI,
   setSkillCategory,

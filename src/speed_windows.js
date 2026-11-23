@@ -181,10 +181,12 @@ export function collectibleExpiry(name, placed) {
   return (typeof placed.createdAt === "number" ? placed.createdAt : 0) + (dur || 0) + (typeof placed.extendedMs === "number" ? placed.extendedMs : 0);
 }
 
-export function boostWindowsFor(g, name, speed) {
+export function boostWindowsFor(g, name, speed, extend) {
+  const now = Date.now();
   const live = placementsOf(g, name).filter(p => typeof p.createdAt === "number").map(p => {
     const expiry = collectibleExpiry(name, p);
-    const to = typeof p.removedAt === "number" ? Math.min(expiry, p.removedAt) : expiry;
+    const keepAlive = !!extend && expiry > now && typeof p.removedAt !== "number" && !!p.coordinates;
+    const to = keepAlive ? Number.MAX_SAFE_INTEGER : typeof p.removedAt === "number" ? Math.min(expiry, p.removedAt) : expiry;
     return {
       from: p.createdAt,
       to: to,
@@ -205,8 +207,8 @@ function boostHistoryOf(g, name) {
   return Array.isArray(arr) ? arr.filter(w => w && typeof w.from === "number" && typeof w.to === "number") : [];
 }
 
-function mergedTotemWindows(g, speed) {
-  return mergeWindows(boostWindowsFor(g, "Super Totem", speed).concat(boostWindowsFor(g, "Time Warp Totem", speed)));
+function mergedTotemWindows(g, speed, extend) {
+  return mergeWindows(boostWindowsFor(g, "Super Totem", speed, extend && extend.has("Super Totem")).concat(boostWindowsFor(g, "Time Warp Totem", speed, extend && extend.has("Time Warp Totem"))));
 }
 
 export function powerHourWindows(g) {
@@ -307,8 +309,9 @@ export function animalWindows(g, animalType) {
   return boostWindowsFor(g, name, ANIMAL_SPEED[name]);
 }
 
-export function cookingWindows(g) {
-  return [ ...mergedTotemWindows(g, COOKING_SPEED.totem), ...boostWindowsFor(g, "Gourmet Hourglass", COOKING_SPEED["Gourmet Hourglass"]), ...boostWindowsFor(g, "Legendary Shrine", COOKING_SPEED["Legendary Shrine"]), ...boostWindowsFor(g, "Boar Shrine", COOKING_SPEED["Boar Shrine"]) ];
+export function cookingWindows(g, extend) {
+  const keep = name => !!extend && extend.has(name);
+  return [ ...mergedTotemWindows(g, COOKING_SPEED.totem, extend), ...boostWindowsFor(g, "Gourmet Hourglass", COOKING_SPEED["Gourmet Hourglass"], keep("Gourmet Hourglass")), ...boostWindowsFor(g, "Legendary Shrine", COOKING_SPEED["Legendary Shrine"], keep("Legendary Shrine")), ...boostWindowsFor(g, "Boar Shrine", COOKING_SPEED["Boar Shrine"], keep("Boar Shrine")) ];
 }
 
 export function greenhouseWindows(g, plantName) {
@@ -433,9 +436,14 @@ export const COOKING_OIL_CLOCK_RATE = {
   Deli: 20
 };
 
-export function resolveCookingQueue({crafting, windows, oil, buildingName}) {
+export function resolveCookingQueue({crafting, windows, oil, buildingName, extendOil, report}) {
   let previousReadyAt;
-  let tank = oil ? Math.max(oil.tank, 0) : 0;
+  let tank = oil ? extendOil ? 1e12 : Math.max(oil.tank, 0) : 0;
+  const note = (used, emptyAt) => {
+    if (!report) return;
+    report.oilUsed = (report.oilUsed || 0) + used;
+    if (emptyAt !== undefined && report.oilEmptyAt === undefined) report.oilEmptyAt = emptyAt;
+  };
   const clockRate = COOKING_OIL_CLOCK_RATE[buildingName] || 0;
   return crafting.map(recipe => {
     const baseDurationMs = recipe.baseDurationMs;
@@ -474,7 +482,11 @@ export function resolveCookingQueue({crafting, windows, oil, buildingName}) {
       });
       previousReadyAt = readyAt;
       const to = Math.min(readyAt, fuelled.to);
-      if (to > from) tank -= (to - from) / DAY_MS * clockRate;
+      if (to > from) {
+        const burned = (to - from) / DAY_MS * clockRate;
+        tank -= burned;
+        note(burned, !extendOil && fuelled.to <= readyAt ? fuelled.to : undefined);
+      }
       return {
         startedAt: startedAt,
         readyAt: readyAt
@@ -529,7 +541,13 @@ export function resolveCookingQueue({crafting, windows, oil, buildingName}) {
       } ]
     });
     previousReadyAt = readyAt;
-    tank -= fuelledWork / DAY_MS * oilRate;
+    const burnedWork = fuelledWork / DAY_MS * oilRate;
+    tank -= burnedWork;
+    note(burnedWork, !extendOil && fuelledWork < baseDurationMs - workAccruedAt({
+      startedAt: startedAt,
+      at: from,
+      windows: windows
+    }) - 1e-6 ? to : undefined);
     return {
       startedAt: startedAt,
       readyAt: readyAt

@@ -15717,6 +15717,25 @@ function farmSyncGetVipStatus(g) {
   };
 }
 
+export const VIP_BEETLE_BONUS_CHANCE = 10;
+
+const VIP_TRIAL_PERIOD_MS = 7 * 24 * 60 * 60 * 1e3;
+
+const VIP_BEETLE_WINDOW_START = Date.UTC(2026, 10, 9);
+
+const VIP_BEETLE_WINDOW_END = Date.UTC(2027, 1, 1);
+
+export function farmSyncHasVipBeetleBonus(g, at) {
+  if (!g || typeof g !== "object") return false;
+  const now = typeof at === "number" && isFinite(at) ? at : Date.now();
+  if (!(now > VIP_BEETLE_WINDOW_START && now < VIP_BEETLE_WINDOW_END)) return false;
+  const vip = g.vip && typeof g.vip === "object" ? g.vip : null;
+  const trialStartedAt = vip && typeof vip.trialStartedAt === "number" ? vip.trialStartedAt : 0;
+  if (trialStartedAt && trialStartedAt > now - VIP_TRIAL_PERIOD_MS) return true;
+  if (vip && typeof vip.expiresAt === "number" && vip.expiresAt > now) return true;
+  return farmSyncHasLifetimeFarmerBanner(g);
+}
+
 const TRADING_SHRINE_COOLDOWN_MS = 30 * 24 * 60 * 60 * 1e3;
 
 function farmSyncIsTradingShrineActive(g) {
