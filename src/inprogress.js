@@ -18,6 +18,8 @@ import { potionTrackFromState, digStreakTrackFromState, farmSyncHasVipBeetleBonu
 
 import { caveTrackFromState } from "./cave_track.js";
 
+import { farmPanelComputeCaveMerchantCard, farmPanelRenderCaveMerchantCard, caveMerchantMiniIconHtml, caveMerchantClock } from "./cave_merchant_card.js";
+
 import { farmPanelComputeFishingCard, farmPanelRenderFishingCard, fishingMiniIconHtml, fishTrackFromState } from "./fishing_card.js";
 import { dailyHarvestTrack, dailyHarvestBadgeHtml, dailyHarvestSetYield, dailyHarvestSetResolver, dailyHarvestSetAnimalYieldProvider, dailyHarvestSetCookingProvider, dailyHarvestSetMachineProvider, dailyHarvestSetIconProvider, dailyHarvestSetToolProvider, dailyHarvestSetPriceProvider, dailyHarvestNodeToolMult } from "./daily_harvest.js";
 
@@ -269,6 +271,10 @@ export function farmPanelCardCatalog() {
       id: "fishing",
       label: "Fishing",
       icon: fishingMiniIconHtml(16)
+    }, {
+      id: "caveMerchant",
+      label: "Cave Merchant",
+      icon: caveMerchantMiniIconHtml(16)
     } ].concat(POWER_SKILL_DEFS.map(d => ({
       id: d.name,
       label: d.name,
@@ -304,7 +310,7 @@ export function farmPanelCategoryVisible(id) {
 export function farmPanelRowCardKey(row) {
   const cat = farmPanelRowFilterCategory(row);
   let id = row.name;
-  if (row.isAnimalMerged) id = row.typeKey; else if (row.isComposterCard) id = row.composterName; else if (row.isCookingCard) id = row.cookingBuilding; else if (row.isCropMachineCard) id = "Crop Machine"; else if (row.isMycoCard) id = "myco"; else if (row.isPeteQuestCard) id = "pete"; else if (row.isFloatingIslandCard) id = "floating"; else if (row.isFishingCard) id = "fishing";
+  if (row.isAnimalMerged) id = row.typeKey; else if (row.isComposterCard) id = row.composterName; else if (row.isCookingCard) id = row.cookingBuilding; else if (row.isCropMachineCard) id = "Crop Machine"; else if (row.isMycoCard) id = "myco"; else if (row.isPeteQuestCard) id = "pete"; else if (row.isFloatingIslandCard) id = "floating"; else if (row.isFishingCard) id = "fishing"; else if (row.isCaveMerchantCard) id = "caveMerchant";
   return `${cat}:${id}`;
 }
 
@@ -4184,7 +4190,7 @@ function fpLimitedScopeOfRow(row) {
   if (!row) return "";
   if (row.isCropMachineCard) return "cropmachine";
   if (row.isAnimalMerged) return String(row.typeKey || "").toLowerCase();
-  if (row.isComposterCard || row.isHoneyCard || row.isCookingCard || row.isMycoCard || row.isPeteQuestCard || row.isFloatingIslandCard || row.isFishingCard || row.isPowerSkillCard) return "";
+  if (row.isComposterCard || row.isHoneyCard || row.isCookingCard || row.isMycoCard || row.isPeteQuestCard || row.isFloatingIslandCard || row.isFishingCard || row.isCaveMerchantCard || row.isPowerSkillCard) return "";
   const name = row.name;
   if (name === "Wood") return "wood";
   if (name === "Oil") return "oil";
@@ -5484,6 +5490,8 @@ function farmPanelComputeInProgressOnce(json) {
   if (floatingIslandCard) allCards.push(floatingIslandCard);
   const fishingCard = farmPanelComputeFishingCard(json, String(json && json.id || farmPanelGetLastInfo().id || ""));
   if (fishingCard) allCards.push(fishingCard);
+  const caveMerchantCard = farmPanelComputeCaveMerchantCard(json);
+  if (caveMerchantCard) allCards.push(caveMerchantCard);
   farmPanelComputePowerSkillCards(json).forEach(card => allCards.push(card));
   return allCards;
 }
@@ -6230,7 +6238,7 @@ function farmPanelCardCategory(row) {
   if (row.isCropMachineCard) return "crops";
   if (row.isMycoCard) return "myco";
   if (row.isPeteQuestCard) return "pete";
-  if (row.isFloatingIslandCard || row.isFishingCard || row.isPowerSkillCard) return "pete";
+  if (row.isFloatingIslandCard || row.isFishingCard || row.isCaveMerchantCard || row.isPowerSkillCard) return "pete";
   if (row.isAnimalMerged) return "animals";
   if (row.isComposterCard) return "composters";
   if (row.isHoneyCard) return "beehive";
@@ -6244,7 +6252,7 @@ function farmPanelCardCategory(row) {
 
 export function farmPanelRowIsReady(row) {
   if (!row) return false;
-  if (row.isPeteQuestCard || row.isFloatingIslandCard || row.isFishingCard || row.isPowerSkillCard) return !!row.isReady;
+  if (row.isPeteQuestCard || row.isFloatingIslandCard || row.isFishingCard || row.isCaveMerchantCard || row.isPowerSkillCard) return !!row.isReady;
   return (row.readyCount || 0) > 0;
 }
 
@@ -6950,6 +6958,7 @@ export function farmPanelRenderInProgressRow(row) {
   if (row.isPeteQuestCard) return farmPanelRenderPeteQuestCard(row);
   if (row.isFloatingIslandCard) return farmPanelRenderFloatingIslandCard(row, farmPanelExpandedNames.has("floating-island"));
   if (row.isFishingCard) return farmPanelRenderFishingCard(row, farmPanelExpandedNames.has("fishing"));
+  if (row.isCaveMerchantCard) return farmPanelRenderCaveMerchantCard(row, farmPanelExpandedNames.has("cave-merchant"));
   if (row.isPowerSkillCard) return farmPanelRenderPowerSkillCard(row, farmPanelExpandedNames.has(row.searchKey), row.isReady ? "" : guroStatusFoldHtml("Ready", row.remainingSec));
   const baseStatus = row.readyCount > 0 ? row.readyCount === row.count ? "✅ All ready" : `✅ ${row.readyCount} ready · ⏳ ${row.count - row.readyCount} growing` : "⏳ Growing";
   const showCountdown = row.soonestSec != null && row.readyCount < row.count;
@@ -7063,11 +7072,20 @@ function farmPanelTickCountdowns() {
   if (farmPanelUserScrolling) return;
   const wrap = $("farmPanelTabContent");
   if (!wrap) return;
-  const els = wrap.querySelectorAll(".farm-countdown[data-base], .fp-quest-countdown[data-ready-at], .fi-countdown[data-fi-at]");
+  const els = wrap.querySelectorAll(".farm-countdown[data-base], .fp-quest-countdown[data-ready-at], .fi-countdown[data-fi-at], .cm-countdown[data-cm-at]");
   if (!els.length) return;
   const elapsedSec = (Date.now() - farmPanelRenderAtMs) / 1e3;
   let anyFinished = false;
   els.forEach(el => {
+    if (el.hasAttribute("data-cm-at")) {
+      const merchantRemaining = (parseFloat(el.getAttribute("data-cm-at")) - Date.now()) / 1e3;
+      if (merchantRemaining <= 0) {
+        anyFinished = true;
+        return;
+      }
+      el.textContent = caveMerchantClock(merchantRemaining);
+      return;
+    }
     if (el.hasAttribute("data-fi-at")) {
       const islandRemaining = (parseFloat(el.getAttribute("data-fi-at")) - Date.now()) / 1e3;
       if (islandRemaining <= 0) {

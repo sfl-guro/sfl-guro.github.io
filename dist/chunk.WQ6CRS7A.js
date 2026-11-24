@@ -2225,8 +2225,8 @@ function collectibleBags(g) {
   const interior = asObj(g && g.interior);
   if (interior) {
     Object.keys(interior).forEach((k) => {
-      const level = asObj(interior[k]);
-      const b = level && asObj(level.collectibles);
+      const level2 = asObj(interior[k]);
+      const b = level2 && asObj(level2.collectibles);
       if (b) bags.push(b);
     });
   }
@@ -4838,7 +4838,7 @@ async function sflbBuildCatalogFromWorker(items, range) {
     if (!name) return;
     if (sflbIsNonTradable(name)) return;
     if (!it.price) return;
-    const pct = range === "7d" ? it.pct7d : it.pct24h;
+    const pct2 = range === "7d" ? it.pct7d : it.pct24h;
     const pctHidden = range === "7d" ? it.pct7dHidden : it.pct24hHidden;
     const key = it.collection + "-" + it.id;
     const rangeVolume = range === "7d" ? typeof it.volume7d === "number" ? it.volume7d : null : typeof it.volume24h === "number" ? it.volume24h : null;
@@ -4850,7 +4850,7 @@ async function sflbBuildCatalogFromWorker(items, range) {
       name,
       icon: getIcon(name),
       price: it.price,
-      pct: pct || 0,
+      pct: pct2 || 0,
       pctHidden: !!pctHidden,
       isResource: it.category === "resources",
       volume: rangeVolume,
@@ -4910,7 +4910,7 @@ async function sflbBuildPriceCatalog(range, forceFresh) {
     const rangeTrades = prevTrades !== null && curTrades >= prevTrades ? curTrades - prevTrades : null;
     const prevPrice = sflbCurrentPrice(prevEntry, isResource);
     const pctHidden = !(prevPrice > 0);
-    const pct = pctHidden ? 0 : (price - prevPrice) / prevPrice * 100;
+    const pct2 = pctHidden ? 0 : (price - prevPrice) / prevPrice * 100;
     const rangeHigh = prevPrice > 0 ? Math.max(price, prevPrice) : price;
     const rangeLow = prevPrice > 0 ? Math.min(price, prevPrice) : price;
     list.push({
@@ -4920,7 +4920,7 @@ async function sflbBuildPriceCatalog(range, forceFresh) {
       name,
       icon: getIcon(name),
       price,
-      pct,
+      pct: pct2,
       pctHidden,
       isResource,
       volume: rangeVolume,
@@ -5493,11 +5493,11 @@ function sflbRenderPriceDetail(b, allTime) {
   const low = isWeek ? b.sevenDayLow : b.oneDayLow;
   const volume = isWeek ? b.volume7d : b.volume24h;
   const trades = isWeek ? b.trades7d : b.trades24h;
-  const pct = b.pct || 0;
+  const pct2 = b.pct || 0;
   const rangeLabel = isWeek ? "7D" : "24hrs";
   const rangeLabelShort = isWeek ? "7D" : "24hr";
   const rangeWords = isWeek ? "7 days" : "24 hours";
-  const pctClass = pct >= 0 ? "up" : "down";
+  const pctClass = pct2 >= 0 ? "up" : "down";
   const hasAllTime = !!allTime;
   const allTimeHighText = hasAllTime ? sflbFmtFlower(allTime.high) + " " + FLOWER_ICON : "Loading\u2026";
   const allTimeLowText = hasAllTime ? sflbFmtFlower(allTime.low) + " " + FLOWER_ICON : "Loading\u2026";
@@ -5509,8 +5509,8 @@ function sflbRenderPriceDetail(b, allTime) {
   if (typeof low === "number") points.push({ v: low });
   if (typeof high === "number") points.push({ v: high });
   points.push({ v: currentPrice });
-  const noteHtml = '<div class="sfl-bub-detail-note"><div class="sfl-bub-detail-note-label">Price Change</div><div class="sfl-bub-detail-note-text">The <span class="sfl-bub-detail-note-pct ' + pctClass + '">' + sflbFmtPct(pct) + '</span> reports the <span class="sfl-bub-detail-note-range">' + rangeWords + '</span> price change of the <span class="sfl-bub-detail-note-item"><span class="sfl-bub-detail-note-icon">' + b.icon + "</span>" + escapeHtml(b.name) + '</span>.</div><div class="sfl-bub-detail-note-explain">This compares the current price to the price ' + rangeWords + " ago.</div></div>";
-  const html = '<div class="sfl-bub-detail-head"><span class="sfl-bub-detail-icon">' + b.icon + '</span><span class="sfl-bub-detail-name">' + escapeHtml(b.name) + '</span></div><div class="sfl-bub-detail-pct ' + pctClass + '">' + sflbFmtPct(pct) + " (" + rangeLabel + ')</div><div class="sfl-bub-detail-grid"><div class="sfl-bub-detail-row"><span>' + rangeLabelShort + " High</span><span>" + highText + '</span></div><div class="sfl-bub-detail-row"><span>' + rangeLabelShort + " Low</span><span>" + lowText + '</span></div><div class="sfl-bub-detail-row"><span>Current Price</span><span>' + sflbFmtFlower(currentPrice) + " " + FLOWER_ICON + '</span></div><div class="sfl-bub-detail-row"><span>Trading Volume</span><span>' + volumeText + '</span></div><div class="sfl-bub-detail-row"><span>' + rangeLabelShort + " Trades</span><span>" + tradesText + '</span></div><div class="sfl-bub-detail-row"><span>All Time High</span><span>' + allTimeHighText + '</span></div><div class="sfl-bub-detail-row"><span>All Time Low</span><span>' + allTimeLowText + '</span></div></div><canvas class="sfl-bub-detail-chart" id="sflBubDetailChart"></canvas>' + noteHtml;
+  const noteHtml = '<div class="sfl-bub-detail-note"><div class="sfl-bub-detail-note-label">Price Change</div><div class="sfl-bub-detail-note-text">The <span class="sfl-bub-detail-note-pct ' + pctClass + '">' + sflbFmtPct(pct2) + '</span> reports the <span class="sfl-bub-detail-note-range">' + rangeWords + '</span> price change of the <span class="sfl-bub-detail-note-item"><span class="sfl-bub-detail-note-icon">' + b.icon + "</span>" + escapeHtml(b.name) + '</span>.</div><div class="sfl-bub-detail-note-explain">This compares the current price to the price ' + rangeWords + " ago.</div></div>";
+  const html = '<div class="sfl-bub-detail-head"><span class="sfl-bub-detail-icon">' + b.icon + '</span><span class="sfl-bub-detail-name">' + escapeHtml(b.name) + '</span></div><div class="sfl-bub-detail-pct ' + pctClass + '">' + sflbFmtPct(pct2) + " (" + rangeLabel + ')</div><div class="sfl-bub-detail-grid"><div class="sfl-bub-detail-row"><span>' + rangeLabelShort + " High</span><span>" + highText + '</span></div><div class="sfl-bub-detail-row"><span>' + rangeLabelShort + " Low</span><span>" + lowText + '</span></div><div class="sfl-bub-detail-row"><span>Current Price</span><span>' + sflbFmtFlower(currentPrice) + " " + FLOWER_ICON + '</span></div><div class="sfl-bub-detail-row"><span>Trading Volume</span><span>' + volumeText + '</span></div><div class="sfl-bub-detail-row"><span>' + rangeLabelShort + " Trades</span><span>" + tradesText + '</span></div><div class="sfl-bub-detail-row"><span>All Time High</span><span>' + allTimeHighText + '</span></div><div class="sfl-bub-detail-row"><span>All Time Low</span><span>' + allTimeLowText + '</span></div></div><canvas class="sfl-bub-detail-chart" id="sflBubDetailChart"></canvas>' + noteHtml;
   sflbShowDetailContent(html);
   requestAnimationFrame(() => sflbDrawChart($("sflBubDetailChart"), points));
 }
@@ -6640,7 +6640,7 @@ function factionDeliveryPetSectionHtml(factionKey, record) {
   const goalXP = hasPetData ? record.goalXP : hasCommunityData ? community.goalXP : 0;
   const streak = hasPetData ? record.streak : hasCommunityData ? community.streak : 0;
   const nextWeekGoalXP = community ? community.nextWeekGoalXP : null;
-  const pct = goalXP > 0 ? Math.min(100, totalXP / goalXP * 100) : 0;
+  const pct2 = goalXP > 0 ? Math.min(100, totalXP / goalXP * 100) : 0;
   const caption = hasAnyData ? `${fmtInt(totalXP)} / ${fmtInt(goalXP)} XP` : "No sync data yet";
   const metaParts = [];
   if (hasAnyData && streak > 0) metaParts.push(`${fmtInt(streak)} week streak`);
@@ -6650,8 +6650,8 @@ function factionDeliveryPetSectionHtml(factionKey, record) {
   return `<div class="fd-pet-row">
     <div class="fp-icon-frame fd-pet-icon">${iconHtml2}</div>
     <div class="fd-pet-bar-wrap">
-      <div class="fp-bar-track"><div class="fp-bar-fill" style="width:${pct}%;"></div></div>
-      <div class="fp-bar-caption"><span>${caption}</span><span>${Number(pct.toFixed(2))}%</span></div>
+      <div class="fp-bar-track"><div class="fp-bar-fill" style="width:${pct2}%;"></div></div>
+      <div class="fp-bar-caption"><span>${caption}</span><span>${Number(pct2.toFixed(2))}%</span></div>
       ${metaHtml}
     </div>
   </div>`;
@@ -6791,12 +6791,12 @@ var FACTION_LEADERBOARD_TTL_MS = 3 * 60 * 1e3;
 var FACTION_LEADERBOARD_LEVEL_XP = [0, 2, 22, 205, 555, 1155, 2155, 3405, 5405, 7905, 10905, 14405, 18405, 22905, 27905, 33655, 40155, 47405, 55405, 64155, 73905, 84655, 96405, 109155, 122905, 137405, 152905, 169405, 186905, 205405, 225405, 246905, 269905, 294405, 320405, 348405, 378405, 410405, 444405, 480405, 518905, 559905, 603405, 649405, 697905, 749405, 803905, 861405, 921905, 985405, 1053905, 1127405, 1205905, 1289405, 1377905, 1476405, 1584905, 1703405, 1831905, 1970405, 2128905, 2287405, 2485905, 2704405, 2942905, 3221405, 3539905, 3898405, 4296905, 4735405, 5233905, 5743905, 6263905, 6793905, 7333905, 7883905, 8443905, 9013905, 9593905, 10183905, 10783905, 11393905, 12013905, 12643905, 13283905, 13933905, 14593905, 15263905, 15943905, 16633905, 17333905, 18043905, 18763905, 19493905, 20233905, 20983905, 21743905, 22513905, 23293905, 24083905, 24893905, 25723905, 26573905, 27443905, 28333905, 29243905, 30173905, 31123905, 32093905, 33083905, 34093905, 35123905, 36173905, 37243905, 38333905, 39443905, 40573905, 41723905, 42893905, 44083905, 45293905, 46523905, 47773905, 49043905, 50333905, 51653905, 53003905, 54383905, 55793905, 57233905, 58708905, 60218905, 61763905, 63343905, 64958905, 66613905, 68308905, 70043905, 71818905, 73633905, 75493905, 77398905, 79348905, 81343905, 83383905, 85473905, 87613905, 89803905, 92043905, 94333905];
 function factionLeaderboardLevelFromXp(xp) {
   if (xp == null || isNaN(xp)) return null;
-  let level = 1;
+  let level2 = 1;
   for (let i = 0; i < FACTION_LEADERBOARD_LEVEL_XP.length; i++) {
-    if (xp >= FACTION_LEADERBOARD_LEVEL_XP[i]) level = i + 1;
+    if (xp >= FACTION_LEADERBOARD_LEVEL_XP[i]) level2 = i + 1;
     else break;
   }
-  return level;
+  return level2;
 }
 var factionLeaderboardActiveFaction = null;
 var factionLeaderboardData = null;
@@ -6857,9 +6857,9 @@ function factionLeaderboardIsOwnRow(row3, farmId, username) {
   return false;
 }
 function factionLeaderboardRowMetaHtml(row3) {
-  const level = factionLeaderboardLevelFromXp(row3.experience);
+  const level2 = factionLeaderboardLevelFromXp(row3.experience);
   const parts = [];
-  if (level != null) parts.push(`Lv. ${fmtInt(level)}`);
+  if (level2 != null) parts.push(`Lv. ${fmtInt(level2)}`);
   if (row3.experience != null) parts.push(`${fmtInt(Math.floor(row3.experience))} EXP`);
   if (row3.ascensionLevel != null) parts.push(`Asc. ${fmtInt(row3.ascensionLevel)}`);
   const metaText = parts.join(" \xB7 ");
@@ -8842,11 +8842,11 @@ function handleGuideClick(e, refresh) {
   simRefresh = refresh;
   const closer = e.target.closest("[data-bg-close]");
   if (closer && (closer.tagName === "BUTTON" || e.target === closer)) {
-    const host = scrollHostOf(closer);
-    const top = host.scrollTop;
+    const host2 = scrollHostOf(closer);
+    const top = host2.scrollTop;
     simOpen[closer.dataset.bgClose] = false;
     refresh();
-    host.scrollTop = top;
+    host2.scrollTop = top;
     return true;
   }
   const petBtn = e.target.closest("[data-bg-pet]");
@@ -8870,30 +8870,30 @@ function handleGuideClick(e, refresh) {
     const picked = Number(p[2]) || 1;
     const suggested = Number(p[3]) || 1;
     const ownedAt = Number(p[4]) || 0;
-    const host = scrollHostOf(rankBtn);
-    const top = host.scrollTop;
+    const host2 = scrollHostOf(rankBtn);
+    const top = host2.scrollTop;
     const d = simDraft(rkey);
     d.s = d.s.filter((t) => t[0] !== rid);
     if (!(ownedAt && picked <= ownedAt)) d.s.push([rid, simClampRank(rid, picked, suggested)]);
     refresh();
-    if (host.isConnected) host.scrollTop = top;
+    if (host2.isConnected) host2.scrollTop = top;
     return true;
   }
   const prev = e.target.closest("[data-bg-prev]");
   if (prev) {
-    const host = scrollHostOf(prev);
-    const top = host.scrollTop;
+    const host2 = scrollHostOf(prev);
+    const top = host2.scrollTop;
     simOpen[prev.dataset.bgPrev] = true;
     refresh();
-    host.scrollTop = top;
+    host2.scrollTop = top;
     return true;
   }
   const save = e.target.closest("[data-bg-save]");
   if (save) {
     const key = save.dataset.bgSave;
     if (save.disabled || !simDirty(key)) return true;
-    const host = scrollHostOf(save);
-    const top = host.scrollTop;
+    const host2 = scrollHostOf(save);
+    const top = host2.scrollTop;
     const chip = document.createElement("div");
     chip.className = "bg-sim-saving";
     chip.innerHTML = `<span class="bg-sim-spin"></span><span class="bg-sim-saving-text">Saving...</span>`;
@@ -8903,7 +8903,7 @@ function handleGuideClick(e, refresh) {
     setTimeout(() => {
       simCommit(key);
       refresh();
-      host.scrollTop = top;
+      host2.scrollTop = top;
       chip.classList.add("is-done");
       chip.innerHTML = `<span class="bg-sim-tick">\u2713</span><span class="bg-sim-saving-text">Saved</span>`;
       setTimeout(() => chip.remove(), 900);
@@ -8918,14 +8918,14 @@ function handleGuideClick(e, refresh) {
     if (mode !== "collect" && mode !== "buy") return true;
     const modal = modeBtn.closest(".bg-sim-modal");
     const modalTop = modal ? modal.scrollTop : 0;
-    const host = scrollHostOf(modeBtn);
-    const top = host.scrollTop;
+    const host2 = scrollHostOf(modeBtn);
+    const top = host2.scrollTop;
     matModes[mkey] = mode;
     persistMatModes();
     refresh();
     const nextModal = document.querySelector(".bg-sim-modal");
     if (nextModal) nextModal.scrollTop = modalTop;
-    if (host.isConnected) host.scrollTop = top;
+    if (host2.isConnected) host2.scrollTop = top;
     return true;
   }
   const matBtn = e.target.closest("[data-bg-mat]");
@@ -9223,8 +9223,8 @@ function boostFxHtml(b, key) {
   const e = effectiveBoost(b, key);
   let note = b.note || "";
   const cap = Number(e.plotCap) || 0;
-  const side = Math.round(Math.sqrt(cap));
-  if (cap && side * side === cap) note = note.replace(/\d+x\d+, \d+ plots/, `${side}x${side}, ${cap} plots`);
+  const side2 = Math.round(Math.sqrt(cap));
+  if (cap && side2 * side2 === cap) note = note.replace(/\d+x\d+, \d+ plots/, `${side2}x${side2}, ${cap} plots`);
   return `${boostEffectHtml(e)}<span class="bg-why">${escapeHtml(note)}</span>`;
 }
 function refreshBoostFx(key) {
@@ -10109,8 +10109,8 @@ function islandIndex(id) {
   const idx = BG_ISLANDS.findIndex((i) => i.id === id);
   return idx < 0 ? 0 : idx;
 }
-function levelXp(level) {
-  const l = Math.max(1, Math.min(COOK_LEVEL_XP.length, Math.floor(Number(level) || 1)));
+function levelXp(level2) {
+  const l = Math.max(1, Math.min(COOK_LEVEL_XP.length, Math.floor(Number(level2) || 1)));
   return COOK_LEVEL_XP[l - 1];
 }
 function levelOfXp(xp) {
@@ -10121,7 +10121,7 @@ function readSynced() {
   const g = profileGetG();
   if (!info.id || !g) return null;
   const exp = Number(info.experience) || 0;
-  const level = Number(info.level) || levelOfXp(exp);
+  const level2 = Number(info.level) || levelOfXp(exp);
   const type = g.island && typeof g.island.type === "string" ? g.island.type : "basic";
   const known = BG_ISLANDS.some((i) => i.id === type);
   const land = known ? type : "volcano";
@@ -10133,7 +10133,7 @@ function readSynced() {
     g,
     info,
     exp,
-    level,
+    level: level2,
     land,
     expansion,
     name: apiName || rawName || `Farm #${info.id}`,
@@ -10185,7 +10185,7 @@ function resolveState() {
     bgState.expansion = synced.expansion;
     bgState.land = synced.land;
   }
-  const level = Math.max(0, Math.min(150, Math.floor(Number(bgState.level) || 0)));
+  const level2 = Math.max(0, Math.min(150, Math.floor(Number(bgState.level) || 0)));
   const land = islandById(bgState.land).id;
   const expansion = Math.max(0, Math.floor(Number(bgState.expansion) || 0));
   const mode = bgState.mode === "free" ? "free" : "invested";
@@ -10193,8 +10193,8 @@ function resolveState() {
   const nodes = esGetNodesAt(land, expansion) || {};
   const plots = nodes["Crop Plot"] || 0;
   const crystals = nodes["Ascension Crystal"] || 0;
-  let exp = levelXp(level);
-  if (synced && synced.level === level && synced.exp >= exp) exp = synced.exp;
+  let exp = levelXp(level2);
+  if (synced && synced.level === level2 && synced.exp >= exp) exp = synced.exp;
   const owned = /* @__PURE__ */ new Set(["Fire Pit"]);
   const skills = /* @__PURE__ */ new Set();
   const ranks = {};
@@ -10237,7 +10237,7 @@ function resolveState() {
       used: shardsUsed,
       left: Math.max(0, shardsTotal - shardsUsed)
     },
-    level,
+    level: level2,
     land,
     expansion,
     exp,
@@ -10956,14 +10956,14 @@ function scoreFish(r, st, ranks, fx) {
     costPerXp: cost / xp
   };
 }
-function ranksAt(path, st, level) {
+function ranksAt(path, st, level2) {
   const R = Object.assign({}, st.useSynced ? st.ranks : {});
   path.forEach((it) => {
-    if (it.needLevel <= level) R[it.id] = Math.max(R[it.id] || 0, it.rank);
+    if (it.needLevel <= level2) R[it.id] = Math.max(R[it.id] || 0, it.rank);
   });
   return R;
 }
-function scoreAll(raw, st, ranks, level, fx) {
+function scoreAll(raw, st, ranks, level2, fx) {
   const oilUnit = st.oil ? oilUnitCost(st) : 0;
   const cook = [];
   raw.cook.forEach((r) => {
@@ -10972,7 +10972,7 @@ function scoreAll(raw, st, ranks, level, fx) {
   });
   const fish = [];
   raw.fish.forEach((r) => {
-    if (r.tier === "advanced" && level < BG_ADV_FISH_LEVEL || r.tier === "expert" && level < BG_EXPERT_FISH_LEVEL) return;
+    if (r.tier === "advanced" && level2 < BG_ADV_FISH_LEVEL || r.tier === "expert" && level2 < BG_EXPERT_FISH_LEVEL) return;
     const c = scoreFish(r, st, ranks, fx);
     if (c) fish.push(c);
   });
@@ -10982,14 +10982,14 @@ function scoreAll(raw, st, ranks, level, fx) {
     ranks
   };
 }
-function availableAt(candidates, owned, level, allowBuild, onlyPlan) {
+function availableAt(candidates, owned, level2, allowBuild, onlyPlan) {
   return candidates.filter((c) => {
     if (onlyPlan && !c.planOk) return false;
-    if (c.kind === "fish" && level < BG_FISH_LEVEL) return false;
-    if (c.seedLevel && level < c.seedLevel) return false;
+    if (c.kind === "fish" && level2 < BG_FISH_LEVEL) return false;
+    if (c.seedLevel && level2 < c.seedLevel) return false;
     for (const b of c.chain) {
       const unlock = BG_BUILD_LEVEL[b] == null ? 999 : BG_BUILD_LEVEL[b];
-      if (level < unlock) return false;
+      if (level2 < unlock) return false;
       if (owned.has(b)) continue;
       if (allowBuild) continue;
       return false;
@@ -11010,9 +11010,9 @@ function pickBest(list, ranks) {
   }
   return pool[0];
 }
-function bestPlan(cands, owned, level, allowBuild, onlyPlan) {
-  const cook = pickBest(availableAt(cands.cook, owned, level, allowBuild, onlyPlan), cands.ranks);
-  const fish = pickBest(availableAt(cands.fish, owned, level, allowBuild, onlyPlan), cands.ranks);
+function bestPlan(cands, owned, level2, allowBuild, onlyPlan) {
+  const cook = pickBest(availableAt(cands.cook, owned, level2, allowBuild, onlyPlan), cands.ranks);
+  const fish = pickBest(availableAt(cands.fish, owned, level2, allowBuild, onlyPlan), cands.ranks);
   return composePlan(cook, fish);
 }
 function composePlan(cook, fish) {
@@ -11099,15 +11099,15 @@ function simulate(ctx, st, builds, days) {
   const limit = days || 1500;
   let totalCost = 0;
   while (xp < goalXp && day < limit) {
-    const level = levelOfXp(xp);
+    const level2 = levelOfXp(xp);
     builds.forEach((b) => {
-      if (level >= b.unlock) owned.add(b.building);
+      if (level2 >= b.unlock) owned.add(b.building);
     });
-    if (cache.level !== level || cache.ownedSize !== owned.size) {
+    if (cache.level !== level2 || cache.ownedSize !== owned.size) {
       cache = {
-        level,
+        level: level2,
         ownedSize: owned.size,
-        plan: bestPlan(ctx.candsAt(level), owned, level, false, true)
+        plan: bestPlan(ctx.candsAt(level2), owned, level2, false, true)
       };
     }
     const plan = cache.plan;
@@ -11116,12 +11116,12 @@ function simulate(ctx, st, builds, days) {
     if (!last || last.label !== plan.label) segments.push({
       label: plan.label,
       plan,
-      fromLevel: level,
+      fromLevel: level2,
       fromDay: day,
       days: 0
     });
     segments[segments.length - 1].days++;
-    segments[segments.length - 1].toLevel = level;
+    segments[segments.length - 1].toLevel = level2;
     xp += plan.xpDay;
     totalCost += plan.costDay;
     day++;
@@ -11690,9 +11690,9 @@ function instructionHtml(a) {
   const plan = a.plan;
   const steps = [];
   const nextInfo = levelOfXp(st.exp) >= BG_GOAL_LEVEL ? null : cookGetLevelInfo(st.exp);
-  const pct = nextInfo && nextInfo.span ? Math.min(100, Math.floor(nextInfo.progress / nextInfo.span * 100)) : 100;
+  const pct2 = nextInfo && nextInfo.span ? Math.min(100, Math.floor(nextInfo.progress / nextInfo.span * 100)) : 100;
   const head = `<div class="bg-hello">Hello <strong class="bg-hl">${escapeHtml(st.name.toUpperCase())}</strong>,</div>
-    <div class="bg-sub">You are <strong>Level ${fmtInt(st.level)}</strong>${nextInfo ? ` (${pct}% to the next level)` : ""} on the <strong>${escapeHtml(islandById(st.land).label)}</strong> island with <strong>${fmtInt(st.expansion)}</strong> expansions.</div>`;
+    <div class="bg-sub">You are <strong>Level ${fmtInt(st.level)}</strong>${nextInfo ? ` (${pct2}% to the next level)` : ""} on the <strong>${escapeHtml(islandById(st.land).label)}</strong> island with <strong>${fmtInt(st.expansion)}</strong> expansions.</div>`;
   if (!st.useSynced) steps.push(`<li class="bg-note">Simulating a fresh <strong>Level ${fmtInt(st.level)}</strong> farm: only the Fire Pit, no skills and no VIP.${st.synced ? " Press Use synced farm values to use your real buildings and skills." : " Sync your farm for exact advice."}</li>`);
   steps.push(`<li><span class="bg-step-tag">MODE</span> <strong>${st.mode === "free" ? "Free to Play" : "Invested"}</strong> \xB7 <strong>${BG_STRATS[st.strategy].label}</strong>: ${st.mode === "free" ? `no VIP, no Gem restocks, only the free daily shipment; your ${fmtInt(st.plots)} crop plots limit how much you can grow.` : "VIP and Gem restocks are allowed."} ${strategyNote(st)}</li>`);
   steps.push(`<li><span class="bg-step-tag">REP</span> <strong class="bg-hl">${escapeHtml(st.rep.name)}</strong> (${fmtInt(st.rep.points)} pts): ${escapeHtml(st.rep.listings)}. ${st.rep.canBuy ? "You can buy ingredients from the market." : `You cannot buy ingredients yet, so grow them yourself${st.rep.next ? ` (next tier: ${escapeHtml(st.rep.next[1])} at ${fmtInt(st.rep.next[0])} pts)` : ""}.`}</li>`);
@@ -12347,7 +12347,7 @@ function factionHtml(st) {
   const info = farmSyncGetFactionPetInfo(g);
   const name = FACTION_DISPLAY_NAMES[faction.name] || faction.name;
   const icon = FACTION_PET_HAPPY_ICONS[faction.name] ? `<img class="bg-title-icon" src="${FACTION_PET_HAPPY_ICONS[faction.name]}" alt="">` : "";
-  const pct = info.goalXP > 0 ? Math.min(100, Math.floor(info.totalXP / info.goalXP * 100)) : 0;
+  const pct2 = info.goalXP > 0 ? Math.min(100, Math.floor(info.totalXP / info.goalXP * 100)) : 0;
   const tier = factionPetGetActiveTier(info.lastWeekStreak);
   const nextTier = FACTION_PET_BOOST_TIERS.find((t) => t.streak > info.streak);
   const pet = farmSyncAsObj(faction.pet);
@@ -12361,7 +12361,7 @@ function factionHtml(st) {
   const status = info.isContributingMember ? `<div class="bg-mini"><strong>You are a contributing member.</strong> Keep delivering the pet requests every week to keep your streak.</div>` : `<div class="bg-mini"><strong>You are not contributing yet.</strong> Deliver the pet requests below this week. If the pet's weekly goal is reached, you get the bonus EXP next week.</div>`;
   const bonus = `<div class="fd-stat"><span class="fd-stat-label">Bonus EXP now</span><span class="fd-stat-value">${info.qualifiesForBoost && tier ? `+${fmtInt(tier.boost * 100)}%` : "None"}</span></div><div class="fd-stat"><span class="fd-stat-label">Streak</span><span class="fd-stat-value">${fmtInt(info.streak)} week${info.streak === 1 ? "" : "s"}</span></div>`;
   const nextLine = nextTier ? `<div class="bg-mini">Reach a ${fmtInt(nextTier.streak)} week streak for +${fmtInt(nextTier.boost * 100)}% EXP (${escapeHtml(nextTier.weeksNote)}).</div>` : `<div class="bg-mini">You are at the highest streak bonus.</div>`;
-  return `<div class="fd-container fdm-gap bg-faction">${head}<div class="bg-hello">${icon} ${escapeHtml(name)} pet${info.sleeping ? " (sleeping)" : ""}</div>${info.hasPetData ? `<div class="bg-mini">Weekly goal: ${fmtInt(info.totalXP)} / ${fmtInt(info.goalXP)} XP (${pct}%)${info.goalReached ? " \xB7 goal reached" : ""}</div><div class="bg-bar"><span style="width:${pct}%"></span></div>` : ""}${bonus}${nextLine}${status}${rows ? `<div class="fd-section-label">Pet requests</div>${rows}` : ""}</div>`;
+  return `<div class="fd-container fdm-gap bg-faction">${head}<div class="bg-hello">${icon} ${escapeHtml(name)} pet${info.sleeping ? " (sleeping)" : ""}</div>${info.hasPetData ? `<div class="bg-mini">Weekly goal: ${fmtInt(info.totalXP)} / ${fmtInt(info.goalXP)} XP (${pct2}%)${info.goalReached ? " \xB7 goal reached" : ""}</div><div class="bg-bar"><span style="width:${pct2}%"></span></div>` : ""}${bonus}${nextLine}${status}${rows ? `<div class="fd-section-label">Pet requests</div>${rows}` : ""}</div>`;
 }
 function refreshGuide() {
   inGuideScope(refreshGuideInner);
@@ -14751,22 +14751,22 @@ function renderSpiceRackAnimalToggles() {
     An animal can only carry ONE of these at a time, so ticking Honey Treat for Chickens after Salt Lick was already on for Chickens switches Salt Lick off for Chickens (other types are unaffected). Truffle Seasoning halves the sleep it is spent on, so with it on the animal is counted at twice as many cycles per day.
   </div></div></div>
   ${cards.map((c) => {
-    const state = spiceUsage[c.key];
+    const state2 = spiceUsage[c.key];
     const perUse = getSpiceCostPerUseFlower(c.key);
     const dur = c.key === "truffleSeasoning" ? seasoningSleeps : durationHarvests;
     const durUnit = c.key === "truffleSeasoning" ? dur === 1 ? "sleep" : "sleeps" : "harvests";
-    return `<div class="lib-item-row" data-spice-master="${c.key}" style="cursor:pointer;${state.active ? "outline:2px solid var(--profit);" : ""}">
-      <span class="lib-item-icon">${state.active ? "\u2705" : "\u2B1C"}</span>
+    return `<div class="lib-item-row" data-spice-master="${c.key}" style="cursor:pointer;${state2.active ? "outline:2px solid var(--profit);" : ""}">
+      <span class="lib-item-icon">${state2.active ? "\u2705" : "\u2B1C"}</span>
       <div class="lib-item-main">
-        <div class="lib-item-name">${getIcon(c.name)} ${c.name} <span style="font-weight:400;color:var(--ink-soft);">${state.active ? "\u2014 enabled" : "\u2014 disabled"}</span></div>
+        <div class="lib-item-name">${getIcon(c.name)} ${c.name} <span style="font-weight:400;color:var(--ink-soft);">${state2.active ? "\u2014 enabled" : "\u2014 disabled"}</span></div>
         <div class="lib-item-meta">${c.effectLabel} \xB7 ${c.desc}</div>
         <div class="lib-item-meta" style="color:var(--sun-deep);font-weight:700;">${fmt(perUse)} ${FLOWER_ICON} FLOWER / item (live) \xB7 lasts ${dur} ${durUnit}</div>
       </div>
     </div>
-    ${state.active ? `<div style="margin:0 0 10px 10px;padding-left:10px;border-left:2px dashed var(--line);">
+    ${state2.active ? `<div style="margin:0 0 10px 10px;padding-left:10px;border-left:2px dashed var(--line);">
       ${SPICE_ANIMAL_TYPES.map((type) => {
       const cfg = ANIMAL_DATA[type];
-      const on = state[type];
+      const on = state2[type];
       const otherKeyOn = SPICE_KEYS.find((k2) => k2 !== c.key && spiceUsage[k2][type]);
       const otherOn = !!otherKeyOn;
       const headCost = getSpiceHeadCost(c.key, type);
@@ -15034,7 +15034,7 @@ function buildCostNetBreakdownHtml(opts) {
   const yieldLabelPlain = opts.yieldLabel ? String(opts.yieldLabel).replace(/<[^>]+>/g, "") : "";
   const hasYield = totalYield != null && totalYield > 1e-9;
   const avgPrice = hasYield ? gross / totalYield : null;
-  const costPerUnit = hasYield ? baseCost / totalYield : null;
+  const costPerUnit2 = hasYield ? baseCost / totalYield : null;
   const feePct = gross > 1e-9 ? sellFee / gross * 100 : 0;
   const section = (icon, label, body, explain) => `
     <div class="cost-net-section">
@@ -15055,7 +15055,7 @@ function buildCostNetBreakdownHtml(opts) {
   const costLabel = opts.costSectionLabel || "Total Cost";
   const costExplain = `Everything it costs to produce this yield, before restocking, Shrines, or the sell fee are added in.`;
   const unitCostChain = opts.unitCost != null && hasYield ? `<div class="cost-net-calc-line"><span>Cost / Unit</span><span>${fmt(opts.unitCost)} ${FLOWER_ICON}</span></div><div class="cost-net-calc-line"><span>Total Yield</span><span>${fmt(totalYield)}${yieldLabelPlain ? ` ${escapeHtml(yieldLabelPlain)}` : ""}</span></div><div class="cost-net-calc-formula">${fmt(opts.unitCost)} ${FLOWER_ICON} \xD7 ${fmt(totalYield)}${yieldLabelPlain ? ` ${escapeHtml(yieldLabelPlain)}` : ""} = <b>${costLabel} = -${fmt(baseCost)} ${FLOWER_ICON}</b></div>` : `<div class="cost-net-calc-formula">${costLabel} = <b>-${fmt(baseCost)} ${FLOWER_ICON}</b></div>`;
-  const costPerUnitChain = costPerUnit != null ? `<div class="cost-net-calc-formula">Cost per unit = ${fmt(baseCost)} ${FLOWER_ICON} \xF7 ${fmt(totalYield)}${yieldLabelPlain ? ` ${escapeHtml(yieldLabelPlain)}` : ""} = <b>${fmt(costPerUnit)} ${FLOWER_ICON}/unit</b></div>` : "";
+  const costPerUnitChain = costPerUnit2 != null ? `<div class="cost-net-calc-formula">Cost per unit = ${fmt(baseCost)} ${FLOWER_ICON} \xF7 ${fmt(totalYield)}${yieldLabelPlain ? ` ${escapeHtml(yieldLabelPlain)}` : ""} = <b>${fmt(costPerUnit2)} ${FLOWER_ICON}/unit</b></div>` : "";
   const costBody = `${costLines}${unitCostChain}${costPerUnitChain}`;
   let restockBody;
   let restockExplain = "";
@@ -15273,16 +15273,16 @@ function renderAnimalFeedByLevelBlock(type, currentLevel) {
   feedMultTotal *= spice.feedMultAll;
   const requiredQtyPerFeed = REQUIRED_FOOD_QTY_MAP[type];
   const rows = cfg.levels.map((lvlData, idx) => {
-    const level = idx + 1;
-    const isCurrent = level === currentLevel;
-    const feedFig = computeAnimalFeedFigures(type, level);
+    const level2 = idx + 1;
+    const isCurrent = level2 === currentLevel;
+    const feedFig = computeAnimalFeedFigures(type, level2);
     const feedName = FEED_LABELS[feedFig.feedKeyUsed];
     const boostedQty = Math.max(0, feedFig.noOfFeeds * getFeedQtyPerFeed(type, feedFig.feedKeyUsed, feedMultTotal));
     return `
     <div class="lib-item-row" style="margin:0 0 3px;padding:4px 8px;${isCurrent ? "border:1.5px solid var(--sun-deep);background:var(--paper-dim);" : ""}">
       <span class="lib-item-icon">${getIcon(feedName)}</span>
       <div class="lib-item-main">
-        <div class="lib-item-name">Lv${level}${isCurrent ? " (current)" : ""} \u2014 ${feedName}</div>
+        <div class="lib-item-name">Lv${level2}${isCurrent ? " (current)" : ""} \u2014 ${feedName}</div>
       </div>
       <div class="lib-item-price">\xD7${fmt(boostedQty)}</div>
     </div>`;
@@ -15907,7 +15907,7 @@ function getMutantFishIcon(name, sizePx) {
   return `<img src="${src}" alt="${escapeHtml(name)}" style="width:${size}px;height:${size}px;image-rendering:pixelated;vertical-align:middle;">`;
 }
 function renderFarmPanelInfo() {
-  const { id, level, time, vipActive, vipExpiresAt, vipLifetime, factionName, factionIsMember, experience, ascensionLevel } = farmPanelGetLastInfo();
+  const { id, level: level2, time, vipActive, vipExpiresAt, vipLifetime, factionName, factionIsMember, experience, ascensionLevel } = farmPanelGetLastInfo();
   const displayName = id ? farmSyncGetApiUsername(id) : null;
   $("farmPanelName").textContent = displayName ? displayName.toUpperCase() : id ? `Farm #${id}` : "No farm synced";
   $("farmPanelId").innerHTML = guroProfileLineHtml("Farm ID", escapeHtml(id || "\u2014"));
@@ -15915,7 +15915,7 @@ function renderFarmPanelInfo() {
     $("farmPanelLevel").textContent = "Bumpkin Level: \u2014";
   } else {
     const levelInfo = cookGetLevelInfo(experience);
-    $("farmPanelLevel").textContent = levelInfo.isMax ? `Bumpkin Level: ${level || levelInfo.level} (MAX)` : `Bumpkin Level: ${level || levelInfo.level} \u2014 ${fmt(levelInfo.progress)} XP/${fmt(levelInfo.span)} XP`;
+    $("farmPanelLevel").textContent = levelInfo.isMax ? `Bumpkin Level: ${level2 || levelInfo.level} (MAX)` : `Bumpkin Level: ${level2 || levelInfo.level} \u2014 ${fmt(levelInfo.progress)} XP/${fmt(levelInfo.span)} XP`;
   }
   const ascEl = $("farmPanelAscension");
   if (ascEl) {
@@ -15953,12 +15953,12 @@ function renderFarmPanelInfo() {
   $("farmPanelStatus").textContent = time ? `Last synced ${new Date(time).toLocaleString()}` : "Not synced yet";
   if (typeof renderFactionPetHeader === "function") renderFactionPetHeader();
   renderGuroBumpkin();
-  renderGuroProfileStats(id, level, experience);
+  renderGuroProfileStats(id, level2, experience);
 }
 function guroProfileLineHtml(label, valueHtml) {
   return `<span class="guro-profile-label">${label}:</span><span class="guro-profile-val">${valueHtml}</span>`;
 }
-function renderGuroProfileStats(id, level, experience) {
+function renderGuroProfileStats(id, level2, experience) {
   const levelEl = document.getElementById("guroProfileLevel");
   const expEl = document.getElementById("guroProfileExpansion");
   const balEl = document.getElementById("guroProfileBalance");
@@ -15985,7 +15985,7 @@ function renderGuroProfileStats(id, level, experience) {
     return;
   }
   const levelInfo = cookGetLevelInfo(experience);
-  levelEl.innerHTML = guroProfileLineHtml("Bumpkin Level", escapeHtml(String(level || levelInfo.level)));
+  levelEl.innerHTML = guroProfileLineHtml("Bumpkin Level", escapeHtml(String(level2 || levelInfo.level)));
   vipLineEl.innerHTML = guroProfileLineHtml("VIP", escapeHtml(profileVipHtml()));
   if (g) {
     const exp = profileGetExpansionInfo(g);
@@ -16194,7 +16194,7 @@ function renderAnimalYieldGroupsList(card2) {
     summaryHtml = `<div class="lib-section-title" style="margin-top:10px;">Feeds Needed \xB7 All Animals</div><div class="ay-summary guro-frame"><div class="ay-sum-row"><span class="ay-sum-name">No feed needed right now</span></div></div>`;
   }
   const rows = animals.map((a) => {
-    const pct = a.nextThreshold > 0 ? Math.max(0, Math.min(100, a.xpNow / a.nextThreshold * 100)) : 0;
+    const pct2 = a.nextThreshold > 0 ? Math.max(0, Math.min(100, a.xpNow / a.nextThreshold * 100)) : 0;
     const xpTag = a.isMaxCycle ? `<span class="tier-tag">MAX</span>` : `<span class="tier-tag">XP ${num(a.xpNow)}/${num(a.nextThreshold)}</span>`;
     const lvlTag = needsFeed(a) && !a.isMaxCycle ? `LVL ${a.level} \u2192 ${Math.max(a.level + 1, a.claimLevel)}` : `LVL ${a.level}`;
     const feedIcon = a.feedToNextName ? getIcon(a.feedToNextName) : "";
@@ -16214,7 +16214,7 @@ function renderAnimalYieldGroupsList(card2) {
       const val = a.yields[idx] || 0;
       return `<div class="animal-yield-subline"><span class="sublabel">${getIcon(pname)} ${escapeHtml(pname)}</span><span class="value">${fmtAnimal(val)}</span></div>`;
     }).join("");
-    return `<div class="boost-applied-row is-yield animal-yield-group-row ay-animal"><div class="animal-yield-group-head">${animalIcon} <b>${escapeHtml(card2.typeLabel)} #${a.number}</b><span class="ay-id">${escapeHtml(a.shortId)}</span>${xpTag}<span class="tier-tag">${lvlTag}</span></div>${projHtml}<div class="ay-bar"><div class="ay-fill" style="width:${pct.toFixed(1)}%;height:6px;background:#7bc65a;flex:none"></div></div>${needHtml}<div class="animal-yield-sublines">${productLines}</div></div>`;
+    return `<div class="boost-applied-row is-yield animal-yield-group-row ay-animal"><div class="animal-yield-group-head">${animalIcon} <b>${escapeHtml(card2.typeLabel)} #${a.number}</b><span class="ay-id">${escapeHtml(a.shortId)}</span>${xpTag}<span class="tier-tag">${lvlTag}</span></div>${projHtml}<div class="ay-bar"><div class="ay-fill" style="width:${pct2.toFixed(1)}%;height:6px;background:#7bc65a;flex:none"></div></div>${needHtml}<div class="animal-yield-sublines">${productLines}</div></div>`;
   }).join("");
   return `${summaryHtml}<div class="lib-section-title" style="margin-top:10px;">Animal Yield \xB7 Each Animal</div>${rows}`;
 }
@@ -17777,8 +17777,8 @@ function renderCmOilTank() {
   readout.textContent = `${fmt(cmOilTank)} oil`;
   const oilNeeded = cmQueue.reduce((s, pack) => s + computeCropMachineBatch(pack.name, pack.qty).oilQty, 0);
   const oilRemaining = Math.max(0, cmOilTank - oilNeeded);
-  const pct = getCropMachineOilCap() > 0 ? oilRemaining / getCropMachineOilCap() * 100 : 0;
-  if (fill) fill.style.width = pct + "%";
+  const pct2 = getCropMachineOilCap() > 0 ? oilRemaining / getCropMachineOilCap() * 100 : 0;
+  if (fill) fill.style.width = pct2 + "%";
   if (marks) marks.innerHTML = ["0s", "6h", "12h", "18h", "1d", "1d 6h", "1d 12h", "1d 18h", "2d"].map((s) => `<span>${s}</span>`).join("");
 }
 function renderCmSummary() {
@@ -19578,11 +19578,11 @@ function renderPickerList() {
   } else {
     const list = marketItems.filter((m) => !m.isNftCollectible && !m.isWearable);
     wrap.innerHTML = list.length ? list.map((m) => {
-      const costPerUnit = coinsToFlower(getMarketItemCostCoins(m.id));
+      const costPerUnit2 = coinsToFlower(getMarketItemCostCoins(m.id));
       return `<div class="picker-item" data-id="${m.id}" data-search="${escapeHtml((m.name || "").toLowerCase())}">
         <div>
           <div class="pname">${getIcon(m.name)} ${escapeHtml(m.name)}</div>
-          <div class="pmeta">Cost ${fmt(costPerUnit)} ${FLOWER_ICON}/u \xB7 Sells ${fmt(m.flowerPrice || 0)} ${FLOWER_ICON}/u</div>
+          <div class="pmeta">Cost ${fmt(costPerUnit2)} ${FLOWER_ICON}/u \xB7 Sells ${fmt(m.flowerPrice || 0)} ${FLOWER_ICON}/u</div>
         </div>
         <div class="pprice">${fmt(m.flowerPrice || 0)} ${FLOWER_ICON}</div>
       </div>`;
@@ -19754,13 +19754,13 @@ function blComputeLevelTabRows(experience, ascensionLevel) {
   for (let i = 1; i <= PRE_ASCENSION_MAX_LEVEL; i++) {
     const startXp = COOK_LEVEL_XP[i - 1];
     const cap = i > 1 ? COOK_LEVEL_XP[i - 1] - COOK_LEVEL_XP[i - 2] : 0;
-    let state = "future";
+    let state2 = "future";
     let running = 0;
     if (ascensionLevel > 0 || i <= info.level) {
-      state = "passed";
+      state2 = "passed";
       running = cap;
     } else if (i === info.level + 1) {
-      state = "current";
+      state2 = "current";
       running = Math.min(info.progress, cap);
     }
     rows.push({
@@ -19769,7 +19769,7 @@ function blComputeLevelTabRows(experience, ascensionLevel) {
       cap,
       cumSkill: i,
       totalExp: startXp,
-      state
+      state: state2
     });
   }
   return rows;
@@ -19782,17 +19782,17 @@ function blComputeAscensionTabRows(ascension, experience, ascensionLevel) {
     const cap = n > 1 ? ascensionLevelXp(ascension, n - 1) : 0;
     cum += cap;
     const totalExp = cum;
-    let state = "future";
+    let state2 = "future";
     let running = 0;
     if (ascensionLevel > ascension) {
-      state = "passed";
+      state2 = "passed";
       running = cap;
     } else if (ascensionLevel === ascension && ascInfo) {
       if (n <= ascInfo.level) {
-        state = "passed";
+        state2 = "passed";
         running = cap;
       } else if (n === ascInfo.level + 1) {
-        state = "current";
+        state2 = "current";
         running = Math.min(ascInfo.currentExperienceProgress, cap);
       }
     }
@@ -19802,7 +19802,7 @@ function blComputeAscensionTabRows(ascension, experience, ascensionLevel) {
       cap,
       cumSkill: PRE_ASCENSION_MAX_LEVEL + (ascension - 1) * ASCENSION_LEVELS_PER_BAND + n,
       totalExp,
-      state
+      state: state2
     });
   }
   return rows;
@@ -20289,15 +20289,15 @@ function setBoostRouteUrl(sub, history_ = "push") {
   const path = sub === SKILL_TREE_SUB_SLUG ? `/${BOOST_SKILL_TREE_PATH}` : boostRoutePathForCategory(boostCategory);
   if (window.location.pathname === path) return;
   const url = path + window.location.search + window.location.hash;
-  const state = {
+  const state2 = {
     view: BOOST_ROUTE_SLUG,
     sub: sub === SKILL_TREE_SUB_SLUG ? SKILL_TREE_SUB_SLUG : null,
     cat: sub === SKILL_TREE_SUB_SLUG ? null : boostCategory
   };
   if (history_ === "replace") {
-    window.history.replaceState(state, "", url);
+    window.history.replaceState(state2, "", url);
   } else {
-    window.history.pushState(state, "", url);
+    window.history.pushState(state2, "", url);
   }
 }
 function currentPathIsBoostRoute() {
@@ -21528,7 +21528,7 @@ function renderFactionPetHeader() {
   const iconHtml2 = isMember && factionName && FACTION_PET_HAPPY_ICONS[factionName] ? `<img src="${FACTION_PET_HAPPY_ICONS[factionName]}" alt="${escapeHtml(petLabel)}">` : `<span class="fp-icon-unknown">\u2753</span>`;
   const goalXP = hasPetData ? info.factionGoalXP : 0;
   const totalXP = hasPetData ? info.factionTotalXP : 0;
-  const pct = goalXP > 0 ? Math.min(100, totalXP / goalXP * 100) : 0;
+  const pct2 = goalXP > 0 ? Math.min(100, totalXP / goalXP * 100) : 0;
   const barCaption = hasPetData ? `${fmt(totalXP)} / ${fmt(goalXP)} XP` : `No sync data yet`;
   const streak = factionPetGetEffectiveStreak();
   const tier = factionPetGetActiveTier(streak);
@@ -21577,7 +21577,7 @@ function renderFactionPetHeader() {
         <span class="fp-chev">\u25BE</span>
       </div>
       <div class="fp-progress-wrap">
-        <div class="fp-bar-track"><div class="fp-bar-fill" style="width:${pct}%;"></div></div>
+        <div class="fp-bar-track"><div class="fp-bar-fill" style="width:${pct2}%;"></div></div>
         <div class="fp-bar-caption"><span>${barCaption}</span><span id="fpBarStreakText">${streak > 0 ? `\u{1F525} Streak ${streak}` : ""}</span></div>
       </div>
       ${statusHtml}
@@ -22812,7 +22812,7 @@ function renderPetAddForm() {
   }
   const createBtn = $("petAddCreateBtn");
   if (createBtn) createBtn.onclick = () => {
-    const level = Math.max(1, parseInt($("petAddLevel").value) || 1);
+    const level2 = Math.max(1, parseInt($("petAddLevel").value) || 1);
     const cat = PET_CATEGORIES[petAddType];
     const name = petAddIsNFT ? ($("petAddNftName").value || "").trim() || "Pet #" + Math.floor(1e3 + Math.random() * 9e3) : petAddName;
     const pet = {
@@ -22820,7 +22820,7 @@ function renderPetAddForm() {
       isNFT: petAddIsNFT,
       petType: petAddType,
       name,
-      level,
+      level: level2,
       categories: cat,
       aura: petAddIsNFT ? petAddAuraValue : "No Aura",
       bib: petAddIsNFT ? petAddBibValue : "No Bib"
@@ -23084,11 +23084,11 @@ function renderDigCellHtml(cell, farmId, pctMap) {
     label = "No clue nearby yet";
   }
   if (pctMap && !cell.dug) {
-    let pct = pctMap[cell.y][cell.x];
-    if (manualStatus === "guaranteed") pct = 100;
-    else if (manualStatus === "empty") pct = 0;
-    icon = `<span class="dig-pct">${pct}%</span>`;
-    label = `${pct}% chance of treasure \xB7 ${label}`;
+    let pct2 = pctMap[cell.y][cell.x];
+    if (manualStatus === "guaranteed") pct2 = 100;
+    else if (manualStatus === "empty") pct2 = 0;
+    icon = `<span class="dig-pct">${pct2}%</span>`;
+    label = `${pct2}% chance of treasure \xB7 ${label}`;
   }
   let plBadge = "";
   let plAttr = "";
@@ -24430,11 +24430,11 @@ function getShrineIngredientCollectPrice(name) {
 }
 function getShrineIngredientPrice(name, mode) {
   mode = mode || shrineCostMode;
-  const marketPrice = getShrineIngredientMarketPrice(name);
+  const marketPrice2 = getShrineIngredientMarketPrice(name);
   if (name === "Acorn") return getShrineIngredientCollectPrice(name);
-  if (mode === "buy") return marketPrice;
+  if (mode === "buy") return marketPrice2;
   const collectPrice = getShrineIngredientCollectPrice(name);
-  return collectPrice > 0 ? collectPrice : marketPrice;
+  return collectPrice > 0 ? collectPrice : marketPrice2;
 }
 var shrineCostCache = {};
 function computeShrineCost(id, mode) {
@@ -29790,10 +29790,10 @@ function farmPanelComputePowerSkillCards(json) {
     const now = Date.now();
     const rows = [];
     POWER_SKILL_DEFS.forEach((def) => {
-      const level = skillLevelOf(skills, def.name, def.ranks.length);
-      if (!level) return;
+      const level2 = skillLevelOf(skills, def.name, def.ranks.length);
+      if (!level2) return;
       const baseMs = def.ranks[0];
-      const rankMs = def.ranks[level - 1];
+      const rankMs = def.ranks[level2 - 1];
       const finalMs = wearables.reduce((ms, w) => ms * w.mult, rankMs);
       const rawLast = Number(used[def.name]);
       const lastUsedAt = isFinite(rawLast) && rawLast > 0 ? rawLast : 0;
@@ -29804,7 +29804,7 @@ function farmPanelComputePowerSkillCards(json) {
         name: def.name,
         searchKey: slug2(def.name),
         profit: 0,
-        level,
+        level: level2,
         maxLevel: def.ranks.length,
         baseMs,
         rankMs,
@@ -30118,6 +30118,1442 @@ function caveDayTotals(farmId, now) {
   return day;
 }
 
+// src/goblin_merchant_icon.js
+var GOBLIN_MERCHANT_ICON = "data:image/webp;base64,UklGRnABAABXRUJQVlA4TGQBAAAvE8AGEBfBJgDAJHPfvWERtA1VyeKfw+dJ2Ea2rQR3d3eogHZ+jWg5GmpkIQzbyLaVfHfDCiAkJ6NI6qAXanDIXgPozH+EaVMJGhEQgRrYuBiPSb4ahz3JUgz2niHTLJPpnJTQL7UEWXrOqwgrMVrwF8L4LG4aXCszk6fxAjMeyFhKemx7W9XfKSvGquA0BgT0ajAyOGwjSZFmbn4Pnpl5849y7zGCroj+T0Aua1rIH9a0QPdeTduj/9Eb7Vfq9hvUX4H6K9Q9+e2wtgbPUtEVAeu2xtw8E00ROGzXmCtA1mSG4chOK2bW75lLOGiemMnkkkUmXDYpYOa9gbnMtUzLYqTb1QLcfPjiIj3lgSpzaVEtZmBnkzxOqTIPXXabwWmFH45S5I5i/9gP0sA1OhQNxYjHnvHJLyowDzQa89gp+X3qFhkP0NgYjUeVS30KTuZjRpg8S4C5kkkaM8pvNuTemrfyRw==";
+
+// src/rescalc_shared.js
+var FLOWER_SEED_SEASONS = {
+  Lavender: ["Spring"],
+  Gladiolus: ["Summer"],
+  Clover: ["Autumn"],
+  Edelweiss: ["Winter"]
+};
+function flowerSeedSeasons(name) {
+  return FLOWER_SEED_SEASONS[name] || SEASON_ORDER;
+}
+function normalizeSeason(season) {
+  return SEASON_ORDER.includes(season) ? season : previewSeason || SEASON_ORDER[0];
+}
+function restockSeedsForSeason(season) {
+  const s = normalizeSeason(season);
+  const stocked = (bag) => Object.keys(bag).filter((n) => (bag[n] || 0) > 0);
+  const crops = stocked(BASE_STOCK_CROPS).filter((n) => getCropSeasons(n).includes(s)).map((n) => ({
+    name: n,
+    icon: n
+  }));
+  const fruits = stocked(BASE_STOCK_FRUITS).filter((n) => !(BASE_FRUITS[n] && BASE_FRUITS[n].moonOnly) && getFruitSeasons(n).includes(s)).map((n) => ({
+    name: n,
+    icon: n
+  }));
+  const greenhouse = stocked(BASE_STOCK_GREENHOUSE).map((n) => ({
+    name: n,
+    icon: n
+  }));
+  const flowers = stocked(BASE_STOCK_FLOWERS).filter((n) => flowerSeedSeasons(n).includes(s)).map((n) => ({
+    name: n,
+    icon: `${n} Seed`
+  }));
+  return crops.concat(fruits, greenhouse, flowers);
+}
+function restockShareCount(season) {
+  return Math.max(1, restockSeedsForSeason(season).length);
+}
+function restockSeedIconsHtml(season) {
+  return `(${restockSeedsForSeason(season).map((s) => `<span class="rc-share-icon">${getIcon(s.icon)}</span>`).join("")})`;
+}
+function toolRestockShareCount() {
+  return Math.max(1, Object.keys(BASE_STOCK_TOOLS).filter((n) => (BASE_STOCK_TOOLS[n] || 0) > 0).length);
+}
+function toolRestockIconsHtml() {
+  const names = Object.keys(BASE_STOCK_TOOLS).filter((n) => (BASE_STOCK_TOOLS[n] || 0) > 0);
+  return `(${names.map((n) => `<span class="rc-share-icon">${getIcon(n)}</span>`).join("")})`;
+}
+
+// src/rescalc_beetles.js
+var STORE_KEY = "guro_rc_beetles_v1";
+var PATCH_TILES = 25;
+var BATCH_SEC = 12 * 3600;
+var MAX_BINS = 8;
+var SHOVEL_COINS = 20;
+var SHOVEL_MATERIALS = [{
+  name: "Wood",
+  qty: 2
+}, {
+  name: "Stone",
+  qty: 1
+}];
+var MAGIC_CHANCE2 = 0.1;
+var RECIPES = {
+  Mushroom: {
+    label: "Mushroom Mix",
+    icon: "Wild Mushroom",
+    mushroom: 6,
+    beetle: 2,
+    mudMult: 1
+  },
+  Beetle: {
+    label: "Beetle Mix",
+    icon: "Green Beetle",
+    mushroom: 3,
+    beetle: 5,
+    mudMult: 1
+  },
+  Mud: {
+    label: "Mud Mix",
+    icon: "Mud",
+    mushroom: 3,
+    beetle: 2,
+    mudMult: 2
+  }
+};
+var RECIPE_ORDER = ["Mushroom", "Beetle", "Mud"];
+var FIXED_INGREDIENTS = {
+  Mushroom: {
+    Wood: 10
+  },
+  Beetle: {
+    Egg: 30
+  }
+};
+var MUD_CROPS = {
+  Sunflower: 500,
+  Potato: 80,
+  Rhubarb: 40,
+  Pumpkin: 20,
+  Zucchini: 20,
+  Carrot: 10,
+  Yam: 10,
+  Cabbage: 5,
+  Broccoli: 5,
+  Soybean: 3,
+  Beetroot: 3,
+  Pepper: 3,
+  Cauliflower: 2,
+  Parsnip: 2,
+  Eggplant: 2,
+  Corn: 2,
+  Onion: 2,
+  Wheat: 2,
+  Turnip: 2,
+  Radish: 2,
+  Kale: 2,
+  Artichoke: 2,
+  Barley: 2,
+  Rice: 1,
+  Olive: 1
+};
+var BEETLES2 = ["Green Beetle", "Blue Beetle", "Pink Beetle", "Amber Beetle"];
+var BEETLE_XP_KEY = {
+  "Green Beetle": "beetleGreen",
+  "Blue Beetle": "beetleBlue",
+  "Pink Beetle": "beetlePink",
+  "Amber Beetle": "beetleAmber"
+};
+var BASE_WEIGHTS = [40, 30, 20, 10];
+var RARE_WEIGHTS = [[35, 35, 15, 15], [30, 30, 20, 20], [25, 25, 25, 25]];
+var SKILLS = {
+  lean: {
+    id: "skill_lean_compost",
+    name: "Lean Compost",
+    ranks: [0.95, 0.9, 0.85]
+  },
+  rapid: {
+    id: "skill_rapid_mycelium",
+    name: "Rapid Mycelium",
+    ranks: [0.95, 0.9, 0.85]
+  },
+  bloom: {
+    id: "skill_mushroom_bloom",
+    name: "Mushroom Bloom",
+    ranks: [1, 2, 3]
+  },
+  nest: {
+    id: "skill_beetle_nest",
+    name: "Beetle Nest",
+    ranks: [1, 2, 3]
+  },
+  muddy: {
+    id: "skill_muddy_bounty",
+    name: "Muddy Bounty",
+    ranks: [0.1, 0.2, 0.3]
+  },
+  fungal: {
+    id: "skill_fungal_harvest",
+    name: "Fungal Harvest",
+    ranks: [0.2, 0.3, 0.4]
+  },
+  shovel: {
+    id: "skill_sturdy_shovel",
+    name: "Sturdy Shovel",
+    ranks: [0.1, 0.2, 0.3]
+  },
+  rare: {
+    id: "skill_rare_breeds",
+    name: "Rare Breeds",
+    ranks: [1, 2, 3]
+  },
+  twin: {
+    id: "skill_twin_beetles",
+    name: "Twin Beetles",
+    ranks: [0.05, 0.1, 0.15]
+  }
+};
+var DIG_MODES = [{
+  id: "find",
+  label: "Until Beetles Found"
+}, {
+  id: "full",
+  label: "Clear Whole Patch"
+}];
+var VIEW_MODES = [{
+  id: "batch",
+  label: "Per Batch"
+}, {
+  id: "day",
+  label: "Per Day"
+}];
+var host = null;
+var state = null;
+var popup = null;
+var overlayEl = null;
+var promptEl = null;
+var restoreFns = [];
+var binsDraft = null;
+var listening = false;
+var detailsOpen = false;
+var savedSkillCategory = null;
+function esc(s) {
+  return escapeHtml(String(s));
+}
+function loadState2() {
+  const base = {
+    view: "day",
+    dig: "find",
+    recipe: "Beetle",
+    crop: "Carrot",
+    recipeManual: false,
+    cropManual: false,
+    digs: 0,
+    bins: 0
+  };
+  try {
+    const raw = JSON.parse(localStorage.getItem(STORE_KEY) || "null");
+    if (raw && typeof raw === "object") {
+      if (raw.view === "day" || raw.view === "batch") base.view = raw.view;
+      if (raw.dig === "full" || raw.dig === "find") base.dig = raw.dig;
+      if (RECIPES[raw.recipe]) base.recipe = raw.recipe;
+      if (Object.prototype.hasOwnProperty.call(MUD_CROPS, raw.crop)) base.crop = raw.crop;
+      base.recipeManual = raw.recipeManual === true;
+      base.cropManual = raw.cropManual === true;
+      const d = Math.floor(Number(raw.digs));
+      if (isFinite(d) && d > 0) base.digs = Math.min(d, PATCH_TILES);
+      const b = Math.floor(Number(raw.bins));
+      if (isFinite(b) && b > 0) base.bins = Math.min(b, MAX_BINS);
+    }
+  } catch (e) {
+  }
+  return base;
+}
+function saveState3() {
+  try {
+    localStorage.setItem(STORE_KEY, JSON.stringify(state));
+  } catch (e) {
+  }
+}
+function n2(n) {
+  if (!isFinite(n)) return "\u2014";
+  return n.toLocaleString(void 0, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2
+  });
+}
+function fl(n) {
+  if (!isFinite(n)) return "\u2014";
+  const a = Math.abs(n);
+  const max = a >= 1e3 ? 0 : a >= 1 ? 2 : 4;
+  return n.toLocaleString(void 0, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: max
+  });
+}
+function signed(n, f) {
+  const r = f(Math.abs(n));
+  if (n > 0 && r !== "0") return "+" + r;
+  if (n < 0 && r !== "0") return "-" + r;
+  return r;
+}
+function flowerSigned(n) {
+  return `${signed(n, fl)}${FLOWER_ICON}`;
+}
+function flowerHtml(n) {
+  return `${fl(n)}${FLOWER_ICON}`;
+}
+function pct(n) {
+  return `${n2(n)}%`;
+}
+function level(def) {
+  if (!isSkillActive(def.id)) return 0;
+  return Math.min(Math.max(getAscensionRank(def.id), 1), def.ranks.length);
+}
+function skillValue(def, fallback) {
+  const l = level(def);
+  return l ? def.ranks[l - 1] : fallback;
+}
+function priceOf(name) {
+  const m = farmPanelGetMarketPriceFlower(name);
+  if (m > 0) return m;
+  const live = findLivePriceForName(name);
+  return live != null && isFinite(live) && live > 0 ? live : 0;
+}
+function syncedBins() {
+  try {
+    if (!farmPanelGameState) return 0;
+    const g = farmSyncExtractGameState(farmPanelGameState);
+    const cave = g && g.cave;
+    if (!cave || !cave.machines || typeof cave.machines !== "object") return 0;
+    return Math.min(Object.keys(cave.machines).length, MAX_BINS);
+  } catch (e) {
+    return 0;
+  }
+}
+function effectiveBins() {
+  if (state.bins > 0) return Math.min(state.bins, MAX_BINS);
+  return Math.max(1, syncedBins());
+}
+function vipBeetleChance() {
+  try {
+    if (!farmPanelGameState) return 0;
+    const g = farmSyncExtractGameState(farmPanelGameState);
+    return farmSyncHasVipBeetleBonus(g, Date.now()) ? VIP_BEETLE_BONUS_CHANCE / 100 : 0;
+  } catch (e) {
+    return 0;
+  }
+}
+function mushroomBoosts() {
+  const out = {
+    wild: 0,
+    list: []
+  };
+  try {
+    if (!farmPanelGameState) return out;
+    const g = farmSyncExtractGameState(farmPanelGameState);
+    const placed = farmSyncCollectEquippedAndPlacedNames(g);
+    if (placed.has("Mushroom House")) {
+      out.wild += 0.2;
+      out.list.push({
+        name: "Mushroom House",
+        value: "+0.2 Wild Mushroom"
+      });
+    }
+    if (placed.has("Fairy Circle")) {
+      out.wild += 0.2;
+      out.list.push({
+        name: "Fairy Circle",
+        value: "+0.2 Wild Mushroom"
+      });
+    }
+    const equipped = g && g.bumpkin && g.bumpkin.equipped;
+    if (equipped && Object.values(equipped).includes("Mushroom Hat")) {
+      out.wild += 0.1;
+      out.list.push({
+        name: "Mushroom Hat",
+        value: "+0.1 Wild Mushroom"
+      });
+    }
+  } catch (e) {
+  }
+  return out;
+}
+function cheaperMode(name) {
+  if (name.toLowerCase() === "oil") return "collect";
+  const collect = getMaterialUnitCostCoins(name, "collect");
+  const buy = getMaterialUnitCostCoins(name, "buy");
+  if (!(buy > 0)) return "collect";
+  if (!(collect > 0)) return "collect";
+  return buy < collect ? "buy" : "collect";
+}
+function resKey(recipe) {
+  return "Cave_" + recipe;
+}
+function toolsKey() {
+  return "Cave_Tools";
+}
+function fixedIngredients(recipe) {
+  return FIXED_INGREDIENTS[recipe];
+}
+function refreshAutoModes() {
+  const map = {};
+  setAutoMaterialModes(map);
+  invalidateCostCache();
+  const add = (res, name) => {
+    if (hasManualMaterialMode(res, name)) return;
+    map[res + ":" + name] = cheaperMode(name);
+  };
+  Object.keys(FIXED_INGREDIENTS).forEach((r) => Object.keys(FIXED_INGREDIENTS[r]).forEach((n) => add(resKey(r), n)));
+  Object.keys(MUD_CROPS).forEach((n) => add(resKey("Mud"), n));
+  SHOVEL_MATERIALS.forEach((m) => add(toolsKey(), m.name));
+  setAutoMaterialModes(map);
+  invalidateCostCache();
+}
+function matUnit(res, name) {
+  return getMaterialUnitCostCoins(name, getMaterialMode(res, name));
+}
+function cheapestCrop() {
+  let best = null;
+  let bestCost = Infinity;
+  let fallback = null;
+  Object.keys(MUD_CROPS).forEach((name) => {
+    if (fallback == null) fallback = name;
+    const cost = MUD_CROPS[name] * matUnit(resKey("Mud"), name);
+    if (cost > 0 && cost < bestCost) {
+      bestCost = cost;
+      best = name;
+    }
+  });
+  return best || fallback;
+}
+function activeCrop() {
+  return state.cropManual ? state.crop : cheapestCrop();
+}
+function ingredientBase(recipe) {
+  if (recipe === "Mud") {
+    const o = {};
+    const crop = activeCrop();
+    o[crop] = MUD_CROPS[crop];
+    return o;
+  }
+  return fixedIngredients(recipe);
+}
+function recipeBaseCost(recipe) {
+  const base = ingredientBase(recipe);
+  return Object.keys(base).reduce((sum, name) => sum + base[name] * matUnit(resKey(recipe), name), 0);
+}
+function cheapestRecipe() {
+  let best = null;
+  let bestCost = Infinity;
+  RECIPE_ORDER.forEach((id) => {
+    const cost = recipeBaseCost(id);
+    if (cost > 0 && cost < bestCost) {
+      bestCost = cost;
+      best = id;
+    }
+  });
+  return best || RECIPE_ORDER[0];
+}
+function activeRecipe() {
+  return state.recipeManual ? state.recipe : cheapestRecipe();
+}
+function compute(forceRecipe) {
+  refreshAutoModes();
+  const recipeId = forceRecipe || activeRecipe();
+  const rec = RECIPES[recipeId];
+  const bins = effectiveBins();
+  const lean = skillValue(SKILLS.lean, 1);
+  const rapid = skillValue(SKILLS.rapid, 1);
+  const bloom = skillValue(SKILLS.bloom, 0);
+  const nest = recipeId === "Beetle" ? skillValue(SKILLS.nest, 0) : 0;
+  const muddy = skillValue(SKILLS.muddy, 0);
+  const fungal = skillValue(SKILLS.fungal, 0);
+  const keep = skillValue(SKILLS.shovel, 0);
+  const twin = skillValue(SKILLS.twin, 0);
+  const vipBeetle = vipBeetleChance();
+  const rareLevel = level(SKILLS.rare);
+  const weights = rareLevel ? RARE_WEIGHTS[rareLevel - 1] : BASE_WEIGHTS;
+  const mush = mushroomBoosts();
+  const mTiles = rec.mushroom + bloom;
+  const bTiles = rec.beetle + nest;
+  const uTiles = PATCH_TILES - mTiles - bTiles;
+  const full = state.dig === "full";
+  const estDigs = bTiles + (PATCH_TILES - bTiles) * bTiles / (bTiles + 1);
+  const manualShovels = !full && state.digs > 0 ? state.digs : 0;
+  const manualDigs = manualShovels ? Math.min(PATCH_TILES, Math.max(bTiles, manualShovels / (1 - keep))) : 0;
+  let fracOther = bTiles / (bTiles + 1);
+  let dugTiles = estDigs;
+  if (full) {
+    fracOther = 1;
+    dugTiles = PATCH_TILES;
+  } else if (manualDigs) {
+    dugTiles = manualDigs;
+    fracOther = PATCH_TILES > bTiles ? (manualDigs - bTiles) / (PATCH_TILES - bTiles) : 0;
+  }
+  const dugMushroom = mTiles * fracOther;
+  const dugMud = uTiles * fracOther;
+  const shovels = manualShovels ? manualShovels : Math.ceil(dugTiles * (1 - keep) - 1e-9);
+  const estShovels = Math.ceil(estDigs * (1 - keep) - 1e-9);
+  const beetleTotal = bTiles * (1 + twin + vipBeetle);
+  const items = [];
+  BEETLES2.forEach((b, i) => {
+    items.push({
+      name: b,
+      qty: beetleTotal * weights[i] / 100,
+      kind: "beetle"
+    });
+  });
+  const wildAmt = 1 + fungal + mush.wild;
+  const magicAmt = 1 + fungal;
+  items.push({
+    name: "Wild Mushroom",
+    qty: dugMushroom * (1 - MAGIC_CHANCE2) * wildAmt,
+    kind: "mushroom"
+  });
+  items.push({
+    name: "Magic Mushroom",
+    qty: dugMushroom * MAGIC_CHANCE2 * magicAmt,
+    kind: "mushroom"
+  });
+  items.push({
+    name: "Mud",
+    qty: dugMud * rec.mudMult * (1 + muddy),
+    kind: "mud"
+  });
+  const feeRate = (feePercent || 0) / 100;
+  let gross = 0;
+  let feedXp = 0;
+  items.forEach((it) => {
+    it.price = priceOf(it.name);
+    it.gross = it.qty * it.price;
+    gross += it.gross;
+    if (it.kind === "beetle") {
+      it.xp = it.qty * (BEETLE_FEED_XP[BEETLE_XP_KEY[it.name]] || 0);
+      feedXp += it.xp;
+    }
+  });
+  const res = resKey(recipeId);
+  let ingCoins = 0;
+  const ingredients = Object.keys(ingredientBase(recipeId)).map((name) => {
+    const qty = ingredientBase(recipeId)[name] * lean;
+    const mode = getMaterialMode(res, name);
+    const unitCost = getMaterialUnitCostCoins(name, mode);
+    const lineCost = unitCost * qty;
+    ingCoins += lineCost;
+    return {
+      name,
+      qty,
+      unitCost,
+      lineCost,
+      mode,
+      res
+    };
+  });
+  let shovelUnitCoins = SHOVEL_COINS;
+  const toolMats = SHOVEL_MATERIALS.map((m) => {
+    const mode = getMaterialMode(toolsKey(), m.name);
+    const unitCost = getMaterialUnitCostCoins(m.name, mode);
+    shovelUnitCoins += unitCost * m.qty;
+    return {
+      name: m.name,
+      qty: m.qty,
+      unitCost,
+      mode,
+      res: toolsKey()
+    };
+  });
+  const shovelCoins = shovels * shovelUnitCoins;
+  const batchSec = BATCH_SEC * rapid;
+  const perDay = 86400 / batchSec;
+  const scale = bins * (state.view === "day" ? perDay : 1);
+  const stockQty = computeBoostedStock(BASE_STOCK_TREASURE_TOOLS["Sand Shovel"], "tool", "Sand Shovel");
+  const gemPerRestock = getRestockGemCostIndividual("tool");
+  const shareCount = toolRestockShareCount();
+  const restockFlowerEach = stockQty > 0 ? gemsToFlower(gemPerRestock) / Math.max(1, shareCount) / stockQty : 0;
+  const binRestockCost = shovels * restockFlowerEach;
+  const binGross = gross;
+  const binCost = coinsToFlower(ingCoins + shovelCoins) + binRestockCost;
+  const out = {
+    recipeId,
+    rec,
+    bins,
+    items,
+    tiles: {
+      mushroom: mTiles,
+      beetle: bTiles,
+      mud: uTiles
+    },
+    full,
+    manualDigs,
+    manualShovels,
+    estDigs,
+    estShovels,
+    crop: activeCrop(),
+    dugTiles,
+    shovels,
+    keep,
+    twin,
+    vipBeetle,
+    weights,
+    rareLevel,
+    lean,
+    rapid,
+    batchSec,
+    perDay,
+    scale,
+    view: state.view,
+    feeRate,
+    ingredients,
+    toolMats,
+    shovelUnitCoins,
+    binGross,
+    binCost,
+    binIngCost: coinsToFlower(ingCoins),
+    binShovelCost: coinsToFlower(shovelCoins),
+    binRestockCost,
+    stockQty,
+    gemPerRestock,
+    shareCount,
+    restockFlowerEach,
+    beetleBin: beetleTotal,
+    feedXpBin: feedXp,
+    mushroomBoosts: mush.list,
+    muddy,
+    fungal
+  };
+  out.gross = binGross * scale;
+  out.fee = out.gross * feeRate;
+  out.shovelCost = out.binShovelCost * scale;
+  out.feedXp = feedXp * scale;
+  out.beetles = beetleTotal * scale;
+  out.shovelsTotal = Math.ceil(shovels * scale - 1e-9);
+  const dayView = state.view === "day";
+  out.restockQty = stockQty > 0 ? dayView ? Math.ceil(out.shovelsTotal / stockQty - 1e-9) : shovels * scale / stockQty : 0;
+  out.restockGems = out.restockQty * gemPerRestock / Math.max(1, shareCount);
+  out.restockCost = dayView ? gemsToFlower(out.restockGems) : binRestockCost * scale;
+  out.cost = (binCost - binRestockCost) * scale + out.restockCost;
+  out.ingCost = out.cost > 0 ? out.binIngCost * scale : 0;
+  out.costPerBeetle = out.beetles > 0 ? out.cost / out.beetles : 0;
+  out.net = out.gross - out.fee - out.cost;
+  out.netBin = binGross * (1 - feeRate) - binCost;
+  out.unitCostBatch = beetleTotal > 0 ? binCost / beetleTotal : 0;
+  out.unpriced = items.filter((it) => it.qty > 0 && !(it.price > 0)).map((it) => it.name);
+  return out;
+}
+var unitCostMemo = 0;
+var unitCostMemoAt = 0;
+var unitCostBusy = false;
+function beetleCollectUnitCost() {
+  if (unitCostBusy) return unitCostMemo;
+  const now = Date.now();
+  if (now - unitCostMemoAt < 400) return unitCostMemo;
+  unitCostBusy = true;
+  const loaded = !!state;
+  try {
+    if (!loaded) {
+      loadBaseCropsIfNeeded();
+      state = loadState2();
+    }
+    unitCostMemo = compute().unitCostBatch || 0;
+    unitCostMemoAt = Date.now();
+    if (!host) {
+      setAutoMaterialModes({});
+      invalidateCostCache();
+    }
+  } catch (e) {
+    unitCostMemo = 0;
+  }
+  unitCostBusy = false;
+  return unitCostMemo;
+}
+setBeetleCollectCostProvider(beetleCollectUnitCost);
+var itemCostMemo = {};
+function mycoItemUnitCostFlower(name) {
+  const mud = name === "Mud";
+  const mushroom = name === "Wild Mushroom" || name === "Magic Mushroom";
+  if (!mud && !mushroom) return 0;
+  const recipe = mud ? "Mud" : "Mushroom";
+  const now = Date.now();
+  const memo = itemCostMemo[recipe];
+  if (memo && now - memo.at < 400) return memo.value;
+  let value = 0;
+  const loaded = !!state;
+  try {
+    if (!loaded) {
+      loadBaseCropsIfNeeded();
+      state = loadState2();
+    }
+    const out = compute(recipe);
+    const qty = mud ? out.items.filter((it) => it.name === "Mud").reduce((a, it) => a + it.qty, 0) : out.items.filter((it) => it.kind === "mushroom").reduce((a, it) => a + it.qty, 0);
+    value = qty > 0 ? out.binCost / qty : 0;
+    if (!host) {
+      setAutoMaterialModes({});
+      invalidateCostCache();
+    }
+  } catch (e) {
+    value = 0;
+  }
+  itemCostMemo[recipe] = {
+    at: Date.now(),
+    value
+  };
+  return value;
+}
+function costLineHtml(coins) {
+  return `<span class="rc-bc-cost">${flowerHtml(coinsToFlower(coins * skillValue(SKILLS.lean, 1)))}</span>`;
+}
+function checkHtml(on) {
+  return `<input type="checkbox" tabindex="-1" aria-hidden="true" disabled${on ? " checked" : ""}>`;
+}
+function recipeCellsHtml() {
+  const current = activeRecipe();
+  return RECIPE_ORDER.map((id) => {
+    const on = current === id;
+    const r = RECIPES[id];
+    return `<div class="rc-crop rc-bc guro-frame${on ? " is-on" : ""}" data-rc-recipe="${id}" role="button" tabindex="0" aria-pressed="${on ? "true" : "false"}"><span class="rc-crop-icon">${getIcon(r.icon)}</span><span class="rc-crop-name">${esc(r.label)}${costLineHtml(recipeBaseCost(id))}</span>${checkHtml(on)}</div>`;
+  }).join("");
+}
+function cropCellsHtml() {
+  const current = activeCrop();
+  return Object.keys(MUD_CROPS).map((name) => {
+    const on = current === name;
+    return `<div class="rc-crop rc-bc guro-frame${on ? " is-on" : ""}" data-rc-crop="${esc(name)}" role="button" tabindex="0" aria-pressed="${on ? "true" : "false"}"><span class="rc-crop-icon">${getIcon(name)}</span><span class="rc-crop-name">${esc(name)} \xD7${MUD_CROPS[name]}${costLineHtml(MUD_CROPS[name] * matUnit(resKey("Mud"), name))}</span>${checkHtml(on)}</div>`;
+  }).join("");
+}
+function pickerHtml() {
+  refreshAutoModes();
+  const mud = activeRecipe() === "Mud";
+  const cropBlock = mud ? `<div class="rc-comp-sub">Mud Mix Crop (one per batch)</div><div class="rc-crops" id="rcMudCrops">${cropCellsHtml()}</div><div class="rc-note">${state.cropManual ? "Crop picked by you. Tap it again to go back to the cheapest." : "The cheapest crop is selected automatically. Tap a crop to choose it yourself."}</div>` : "";
+  const note = state.recipeManual ? "Mix picked by you. Tap it again to go back to the cheapest." : "The cheapest mix is selected automatically. Tap a mix to choose it yourself.";
+  return `<section class="rc-block guro-frame" aria-label="Beetle Calculator">
+    <div class="rc-block-title">Beetle Calculator</div>
+    <div class="rc-crops" id="rcRecipes">${recipeCellsHtml()}</div>
+    <div class="rc-note">${note}</div>
+    ${cropBlock}
+  </section>`;
+}
+function tilesHtml(r) {
+  const good = r.net >= 0;
+  const shown = r.items.filter((it) => it.qty > 0);
+  const cells = shown.map((it) => `<div class="rc-tile rc-bc-tile guro-frame ${good ? "is-profit" : "is-loss"}"><span class="rc-tile-icon">${getIcon(it.name)}</span><span class="rc-tile-yield">${signed(it.qty * r.scale, n2)}</span><span class="rc-tile-net">${fl(it.gross * r.scale)}${FLOWER_ICON}</span>${it.kind === "beetle" ? `<span class="rc-tile-xp">${n2(it.xp * r.scale)} XP</span>` : ""}</div>`).join("");
+  return `<div class="rc-tiles-wrap guro-frame"><div class="rc-tiles">${cells}</div></div>`;
+}
+function valueBoxHtml(label, html, extra) {
+  return `<div class="rc-val guro-frame${extra ? " " + extra : ""}"><span class="rc-val-label">${label}</span><span class="rc-val-num">${html}</span></div>`;
+}
+function netBoxHtml(label, net, extra) {
+  return valueBoxHtml(label, `<span class="${net >= 0 ? "is-profit" : "is-loss"}">${signed(net, fl)}${FLOWER_ICON}</span>`, extra);
+}
+function valuesHtml(r) {
+  const feeBox = r.feeRate > 0 ? valueBoxHtml("Market Fee", flowerHtml(r.fee)) : "";
+  return `<div class="rc-values">
+    ${valueBoxHtml("Beetles (average)", `${signed(r.beetles, n2)}${getIcon("Green Beetle")}`, "rc-val-wide")}
+    ${valueBoxHtml("Gross", flowerHtml(r.gross))}
+    ${valueBoxHtml("Cost", flowerHtml(r.cost))}
+    ${valueBoxHtml("Ingredient Cost", flowerHtml(r.ingCost))}
+    ${valueBoxHtml("Shovel Cost", flowerHtml(r.shovelCost))}
+    ${valueBoxHtml("Restock Cost", flowerHtml(r.restockCost))}
+    ${valueBoxHtml("Sand Shovels", `${n2(r.shovelsTotal)}${getIcon("Sand Shovel")}`)}
+    ${feeBox}
+  </div>
+  <div class="rc-net-row">
+    ${netBoxHtml("Net", r.net, "rc-val-net")}
+    <button type="button" class="rc-linktext" data-rc-open="computation">Computation</button>
+  </div>`;
+}
+function modeNoteHtml(r) {
+  const digText = r.full ? "Every one of the 25 tiles is dug, so you also collect every Mushroom and Mud tile." : r.manualShovels ? `You use ${n2(r.manualShovels)} shovel${r.manualShovels === 1 ? "" : "s"} per batch (the number you typed, so Sturdy Shovel is already counted) until the last Beetle is found.` : "You stop digging once the last Beetle is found (the game then lets you start a new batch). The estimate assumes tiles are dug in random order; type your own shovel count in the box to override it.";
+  const viewText = r.view === "day" ? `Per Day: ${n2(r.bins)} Myco Bin${r.bins === 1 ? "" : "s"} \xD7 ${n2(r.perDay)} batches per day (${formatDuration(r.batchSec)} each).` : `Per Batch: one batch in each of your ${n2(r.bins)} Myco Bin${r.bins === 1 ? "" : "s"}.`;
+  return `<div class="rc-details-row"><button type="button" class="rc-linktext" data-rc-details aria-expanded="${detailsOpen ? "true" : "false"}">Details</button></div>${detailsOpen ? `<div class="rc-note">${viewText} ${digText} Each batch grows for 12h (shortened only by Rapid Mycelium). Wild Mushroom has a 90% chance per Mushroom tile, Magic Mushroom 10%.</div>` : ""}`;
+}
+function resultsHtml() {
+  const r = compute();
+  const viewBtn = (m) => `<button type="button" class="rc-mode guro-frame${state.view === m.id ? " is-on" : ""}" data-rc-view="${m.id}" aria-pressed="${state.view === m.id ? "true" : "false"}">${m.label}</button>`;
+  const digBtn = (m) => {
+    const on = state.dig === m.id;
+    if (m.id !== "find") return `<button type="button" class="rc-mode guro-frame${on ? " is-on" : ""}" data-rc-dig="${m.id}" aria-pressed="${on ? "true" : "false"}">${m.label}</button>`;
+    return `<div class="rc-mode rc-dig-cell guro-frame${on ? " is-on" : ""}" data-rc-dig="${m.id}" role="button" tabindex="0" aria-pressed="${on ? "true" : "false"}"><span>${m.label}</span><input type="number" min="0" max="${PATCH_TILES}" step="1" inputmode="numeric" class="rc-dig-input guro-frame" value="${state.digs > 0 ? state.digs : ""}" placeholder="~${n2(r.estShovels)}" aria-label="Shovels used until all Beetles are found"></div>`;
+  };
+  return `<section class="rc-block guro-frame" aria-label="Beetle results">
+    <div class="rc-modes" role="group" aria-label="Calculation mode">${VIEW_MODES.map(viewBtn).join("")}</div>
+    <div class="rc-modes" role="group" aria-label="Digging mode">${DIG_MODES.map(digBtn).join("")}</div>
+    <div class="rc-tools rc-tools-two">
+      <button type="button" class="rc-tool guro-frame" data-rc-open="skills">Skills</button>
+      <button type="button" class="rc-tool guro-frame" data-rc-open="bins">Myco Bins</button>
+    </div>
+    ${modeNoteHtml(r)}
+    <div id="rcResults">${tilesHtml(r)}${valuesHtml(r)}</div>
+  </section>`;
+}
+function render() {
+  if (!host) return;
+  const scroller = document.scrollingElement;
+  const y = scroller ? scroller.scrollTop : 0;
+  host.innerHTML = pickerHtml() + resultsHtml();
+  if (scroller) scroller.scrollTop = y;
+}
+function refreshResults() {
+  if (!host) return;
+  const blocks = host.querySelectorAll(".rc-block");
+  if (!blocks[1]) {
+    render();
+    return;
+  }
+  const tmp = document.createElement("div");
+  tmp.innerHTML = resultsHtml();
+  blocks[1].replaceWith(tmp.firstElementChild);
+  if (popup === "computation") renderOverlayBody();
+}
+function kv(label, html, cls) {
+  return `<div class="rc-kv${cls ? " " + cls : ""}"><span class="rc-kv-label">${label}</span><span class="rc-kv-val">${html}</span></div>`;
+}
+function matRowsHtml(list) {
+  const btn = (m, mode, label) => `<button type="button" class="es-mode-btn es-toolcfg-tbtn${m.mode === mode ? " active" : ""}" data-rc-res="${esc(m.res)}" data-rc-mat="${esc(m.name)}" data-rc-matmode="${mode}">${label}</button>`;
+  return list.map((m) => {
+    const unit = m.mode === "buy" ? flowerHtml(coinsToFlower(m.unitCost)) : `${fl(m.unitCost)}${COIN_ICON}`;
+    return `<div class="rc-tool-mat"><span class="rc-tool-mat-item"><span class="rc-tool-mat-qty">${n2(m.qty)}</span>${getIcon(m.name)}<span class="rc-kv-sub">${m.mode === "buy" ? "market" : "collect"} @ ${unit}/u</span></span><span class="es-toolcfg-tog rc-bc-tog">${btn(m, "collect", "Collect")}${btn(m, "buy", "Buy")}</span></div>`;
+  }).join("");
+}
+function appliedSkillsHtml(r) {
+  const rows = [];
+  const add = (def, text) => {
+    if (level(def)) rows.push(`<div class="rc-boost-row">${getBoostIconAnyFallback(def.name)}<span class="rc-boost-name">${esc(def.name)} ${level(def)}</span><span class="rc-boost-eff">${esc(text)}</span></div>`);
+  };
+  add(SKILLS.lean, `\xD7${r.lean} ingredients`);
+  add(SKILLS.rapid, `\xD7${r.rapid} grow time`);
+  add(SKILLS.bloom, `+${skillValue(SKILLS.bloom, 0)} Mushroom tiles`);
+  if (r.recipeId === "Beetle") add(SKILLS.nest, `+${skillValue(SKILLS.nest, 0)} Beetle tiles`);
+  add(SKILLS.muddy, `+${pct(r.muddy * 100)} Mud`);
+  add(SKILLS.fungal, `+${r.fungal} Mushrooms per tile`);
+  add(SKILLS.shovel, `${pct(r.keep * 100)} keep shovel`);
+  add(SKILLS.rare, `Odds ${r.weights.join("/")}`);
+  add(SKILLS.twin, `${pct(r.twin * 100)} extra Beetle`);
+  if (r.vipBeetle) rows.push(`<div class="rc-boost-row">${getBoostIconAnyFallback("VIP Access")}<span class="rc-boost-name">VIP Access</span><span class="rc-boost-eff">${esc(pct(r.vipBeetle * 100))} extra Beetle</span></div>`);
+  r.mushroomBoosts.forEach((b) => rows.push(`<div class="rc-boost-row">${getBoostIconAnyFallback(b.name)}<span class="rc-boost-name">${esc(b.name)}</span><span class="rc-boost-eff">${esc(b.value)}</span></div>`));
+  return `<div class="rc-group"><div class="rc-comp-sub">Applied Skills & Boosts</div>${rows.length ? rows.join("") : `<div class="rc-boost-none">No skill applied</div>`}</div>`;
+}
+function itemRowsHtml(r) {
+  return r.items.filter((it) => it.qty > 0).map((it) => {
+    const each = it.kind === "beetle" ? BEETLE_FEED_XP[BEETLE_XP_KEY[it.name]] || 0 : 0;
+    const unitNet = it.price * (1 - r.feeRate) - r.costPerBeetle;
+    const xpEach = it.kind === "beetle" ? `<span class="rc-kv-sub rc-yield-xp">${n2(each)} XP each</span>` : "";
+    const costNet = it.kind === "beetle" ? `<span class="rc-kv-sub rc-yield-line">Cost ${flowerHtml(r.costPerBeetle)}/u \xB7 Net <span class="${unitNet >= 0 ? "is-profit" : "is-loss"}">${signed(unitNet, fl)}${FLOWER_ICON}</span>/u</span>` : "";
+    return `<div class="rc-tool-mat rc-yield-row"><span class="rc-tool-mat-item"><strong class="rc-tool-mat-qty">${signed(it.qty * r.scale, n2)}</strong>${getIcon(it.name)}${xpEach}</span><strong class="rc-kv-sub rc-yield-gross">${flowerHtml(it.gross * r.scale)}</strong><span class="rc-kv-sub rc-yield-line">Market Price ${flowerHtml(it.price > 0 ? it.price : 0)}/u</span>${costNet}</div>`;
+  }).join("");
+}
+function computationCardHtml(r) {
+  const modeLabel = r.view === "day" ? "Per Day" : "Per Batch";
+  return `<article class="rc-comp-card guro-frame">
+    <header class="rc-comp-head"><span class="rc-comp-icon">${getIcon(r.rec.icon)}</span><span class="rc-comp-name">${esc(r.rec.label)}${r.recipeId === "Mud" ? " \xB7 " + esc(r.crop) : ""}</span><span class="rc-comp-nodes">${n2(r.bins)} Bin${r.bins === 1 ? "" : "s"}</span></header>
+    <div class="rc-group"><div class="rc-comp-sub">Patch (per Myco Bin)</div><div class="rc-kv-grid">
+      ${kv("Grow Time", esc(formatDuration(r.batchSec)), "rc-kv-wide")}
+      ${kv("Batches / Day / Bin", n2(r.perDay))}
+      ${kv("Mushroom Tiles", n2(r.tiles.mushroom))}
+      ${kv("Beetle Tiles", n2(r.tiles.beetle))}
+      ${kv("Mud Tiles", n2(r.tiles.mud))}
+      ${kv("Tiles Dug (avg)", String(Math.round(r.dugTiles)))}
+      ${kv("Shovels / Batch", n2(r.shovels))}
+      ${kv("Shovel Stock / Restock", n2(r.stockQty))}
+      ${kv("Beetles / Batch", n2(r.beetleBin))}
+      ${kv("Beetle Odds", esc(r.weights.map((w) => w + "%").join(" / ")), "rc-kv-wide")}
+    </div></div>
+    <div class="rc-group"><div class="rc-comp-sub">Yield (${modeLabel})</div>${itemRowsHtml(r)}
+      <div class="rc-kv-grid">
+        ${kv("Gross", flowerSigned(r.gross))}
+        ${kv("Cost", flowerHtml(r.cost))}
+        ${kv("Ingredient Cost", flowerHtml(r.ingCost))}
+        ${kv("Shovel Cost", flowerHtml(r.shovelCost))}
+        ${kv("Restock Cost", flowerHtml(r.restockCost))}
+        ${kv("Cost / Beetle", flowerHtml(r.costPerBeetle))}
+        ${r.feeRate > 0 ? kv("Market Fee", flowerHtml(r.fee)) : ""}
+        ${kv("Net", `<span class="${r.net >= 0 ? "is-profit" : "is-loss"}">${signed(r.net, fl)}${FLOWER_ICON}</span>`, "rc-kv-wide rc-kv-net")}
+        ${kv("Net / Batch / Bin", `<span class="${r.netBin >= 0 ? "is-profit" : "is-loss"}">${signed(r.netBin, fl)}${FLOWER_ICON}</span>`)}
+        ${kv("Shovel Cost / Batch", flowerHtml(r.binShovelCost))}
+        ${kv("Restock Cost / Batch", flowerHtml(r.binRestockCost))}
+        ${kv("Ingredients / Batch", flowerHtml(r.binIngCost))}
+      </div>
+    </div>
+    ${appliedSkillsHtml(r)}
+    <div class="rc-group"><div class="rc-comp-sub">${esc(r.rec.label)} Ingredients (per batch)</div>
+      <div class="rc-tool-cfg">${matRowsHtml(r.ingredients)}</div></div>
+    <div class="rc-group"><div class="rc-comp-sub">Tools</div>
+      <div class="rc-tool-cfg">
+        <div class="rc-tool-mat"><span class="rc-tool-mat-item">${getIcon("Sand Shovel")}<strong class="rc-tool-mat-name">Sand Shovel</strong></span></div>
+        <div class="rc-tool-mat"><span class="rc-tool-mat-item"><strong class="rc-tool-mat-qty">${n2(SHOVEL_COINS)}</strong>${COIN_ICON}</span></div>
+        ${matRowsHtml(r.toolMats)}
+      </div>
+      <div class="rc-comp-sub">Shovel Used</div>
+      <div class="rc-tool-cfg"><div class="rc-tool-mat"><span class="rc-tool-mat-item"><strong class="rc-tool-mat-qty">${signed(-r.shovelsTotal, n2)}</strong>${getIcon("Sand Shovel")}<strong class="rc-tool-mat-name">Sand Shovel</strong></span></div></div></div>
+  </article>`;
+}
+function computationBodyHtml() {
+  return computationCardHtml(compute());
+}
+function binsBodyHtml() {
+  const synced = syncedBins();
+  const value = binsDraft == null ? effectiveBins() : binsDraft;
+  return `<div class="rc-pop-hint">Enter how many Myco Bins you have (1 to ${MAX_BINS}), then press Save.${synced ? ` Your synced farm has ${synced}.` : ""}</div>
+  <label class="rc-node-row guro-frame"><span class="rc-node-icon">${getIcon("Mud")}</span><span class="rc-node-text"><span class="rc-node-name">Myco Bins</span><span class="rc-node-used">Each bin grows one patch of 25 tiles</span></span><input type="number" min="1" max="${MAX_BINS}" step="1" inputmode="numeric" id="rcBinsInput" value="${value ? value : ""}" placeholder="1"></label>`;
+}
+function popupTitle() {
+  if (popup === "skills") return "Cave Skills";
+  if (popup === "bins") return "Myco Bins";
+  return "Computation";
+}
+function popupBodyHtml() {
+  if (popup === "bins") return binsBodyHtml();
+  if (popup === "computation") return computationBodyHtml();
+  return `<div class="rc-pop-hint">Cave skills from the Skill Tree. Changes here also change the Skill Tree. Press Save to apply them.</div><div id="rcSkillSlot"></div>`;
+}
+function borrow(id, slotId) {
+  const el = document.getElementById(id);
+  const slot = document.getElementById(slotId);
+  if (!el || !slot) return;
+  const parent = el.parentNode;
+  const next = el.nextSibling;
+  slot.appendChild(el);
+  restoreFns.push(() => {
+    if (!parent) return;
+    if (next && next.parentNode === parent) parent.insertBefore(el, next);
+    else parent.appendChild(el);
+  });
+}
+function releaseBorrowed() {
+  while (restoreFns.length) restoreFns.pop()();
+}
+function setupBorrowed() {
+  if (popup === "skills") {
+    savedSkillCategory = skillCategory;
+    setSkillCategory("cave");
+    borrow("ascensionBar", "rcAscSlot");
+    borrow("skillListWrap", "rcSkillSlot");
+    borrow("skillSaveBar", "rcSaveSlot");
+    renderSkillPanel();
+    renderAscensionBar();
+    updateSkillSaveBarState();
+  }
+}
+function teardownBorrowed() {
+  releaseBorrowed();
+  if (savedSkillCategory != null) {
+    setSkillCategory(savedSkillCategory);
+    savedSkillCategory = null;
+    renderSkillPanel();
+  }
+}
+function footerHtml() {
+  if (popup === "bins") return `<button type="button" class="rc-save guro-frame" id="rcBinsSave">Save Changes</button>`;
+  if (popup === "skills") return `<div id="rcSaveSlot"></div>`;
+  return "";
+}
+function overlayHtml() {
+  return `<div class="rc-pop guro-frame${popup === "computation" ? " rc-pop-comp" : ""}" role="dialog" aria-modal="true" aria-label="${popupTitle()}">
+    <div class="rc-pop-head"><span class="rc-pop-title">${popupTitle()}</span><button type="button" class="rc-pop-close" data-rc-close aria-label="Close">\u2715</button></div>
+    <div class="rc-pop-body" id="rcPopBody">${popupBodyHtml()}</div>
+    <div class="rc-pop-foot">${footerHtml()}</div>
+  </div>`;
+}
+function renderOverlayBody() {
+  if (!overlayEl) return;
+  const body = overlayEl.querySelector("#rcPopBody");
+  if (!body) return;
+  if (popup === "skills") return;
+  const top = body.scrollTop;
+  body.innerHTML = popupBodyHtml();
+  body.scrollTop = top;
+}
+function isPopupDirty() {
+  if (popup === "skills") return isSkillDraftDirty() || isBoostDraftDirty();
+  if (popup === "bins") return binsDraft != null && Number(binsDraft) !== effectiveBins();
+  return false;
+}
+function openPopup(kind) {
+  if (popup) return;
+  popup = kind;
+  binsDraft = null;
+  overlayEl = document.createElement("div");
+  overlayEl.className = "rc-overlay";
+  overlayEl.innerHTML = overlayHtml();
+  document.body.appendChild(overlayEl);
+  document.body.classList.add("rc-no-scroll");
+  const slot = overlayEl.querySelector("#rcSkillSlot");
+  if (kind === "skills" && slot) {
+    const asc = document.createElement("div");
+    asc.id = "rcAscSlot";
+    slot.parentNode.insertBefore(asc, slot);
+  }
+  setupBorrowed();
+}
+function destroyPopup() {
+  teardownBorrowed();
+  if (overlayEl) overlayEl.remove();
+  overlayEl = null;
+  popup = null;
+  binsDraft = null;
+  document.body.classList.remove("rc-no-scroll");
+}
+function showPrompt(message, buttons) {
+  if (promptEl) promptEl.remove();
+  promptEl = document.createElement("div");
+  promptEl.className = "rc-overlay rc-overlay-top";
+  promptEl.innerHTML = `<div class="rc-prompt guro-frame" role="alertdialog" aria-modal="true"><p class="rc-prompt-text">${esc(message)}</p><div class="rc-prompt-actions">${buttons.map((b, i) => `<button type="button" class="rc-prompt-btn guro-frame" data-rc-prompt="${i}">${esc(b.label)}</button>`).join("")}</div></div>`;
+  promptEl.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-rc-prompt]");
+    if (!btn) return;
+    const b = buttons[Number(btn.getAttribute("data-rc-prompt"))];
+    promptEl.remove();
+    promptEl = null;
+    if (b && b.run) b.run();
+  });
+  document.body.appendChild(promptEl);
+  const first = promptEl.querySelector("button");
+  if (first) first.focus();
+}
+function closePopup(force) {
+  if (!popup) return;
+  if (!force && isPopupDirty()) {
+    showPrompt("You have unsaved changes. Save them first, or discard them to close.", [{
+      label: "Keep Editing"
+    }, {
+      label: "Discard",
+      run: () => {
+        discardSkillBoostDrafts();
+        destroyPopup();
+        refreshResults();
+      }
+    }]);
+    return;
+  }
+  const wasComputation = popup === "computation";
+  destroyPopup();
+  if (!wasComputation) refreshResults();
+}
+function saveBins() {
+  const raw = binsDraft == null ? effectiveBins() : binsDraft;
+  const v = Math.min(MAX_BINS, Math.max(1, Math.floor(Number(raw) || 1)));
+  state.bins = v;
+  saveState3();
+  binsDraft = null;
+  toast("\u2705 Myco Bins saved");
+  renderOverlayBody();
+  refreshResults();
+}
+function activate(el) {
+  const recipe = el.getAttribute("data-rc-recipe");
+  if (recipe) {
+    if (state.recipeManual && state.recipe === recipe) {
+      state.recipeManual = false;
+    } else {
+      state.recipe = recipe;
+      state.recipeManual = true;
+    }
+    saveState3();
+    render();
+    return true;
+  }
+  const crop = el.getAttribute("data-rc-crop");
+  if (crop) {
+    if (state.cropManual && state.crop === crop) {
+      state.cropManual = false;
+    } else {
+      state.crop = crop;
+      state.cropManual = true;
+    }
+    saveState3();
+    render();
+    return true;
+  }
+  return false;
+}
+function refreshValues() {
+  if (!host) return;
+  const el = host.querySelector("#rcResults");
+  if (!el) return;
+  const r = compute();
+  el.innerHTML = tilesHtml(r) + valuesHtml(r);
+}
+function onClick(e) {
+  const details = e.target.closest("[data-rc-details]");
+  if (details) {
+    detailsOpen = !detailsOpen;
+    refreshResults();
+    return;
+  }
+  if (e.target.closest(".rc-dig-input")) {
+    if (state.dig !== "find") {
+      state.dig = "find";
+      saveState3();
+      refreshResults();
+      const input = host.querySelector(".rc-dig-input");
+      if (input) input.focus();
+    }
+    return;
+  }
+  const cell = e.target.closest("[data-rc-recipe], [data-rc-crop]");
+  if (cell && activate(cell)) return;
+  const view = e.target.closest("[data-rc-view]");
+  if (view) {
+    state.view = view.getAttribute("data-rc-view");
+    saveState3();
+    refreshResults();
+    return;
+  }
+  const dig = e.target.closest("[data-rc-dig]");
+  if (dig) {
+    state.dig = dig.getAttribute("data-rc-dig");
+    saveState3();
+    refreshResults();
+    return;
+  }
+  const open = e.target.closest("[data-rc-open]");
+  if (open && !open.disabled) openPopup(open.getAttribute("data-rc-open"));
+}
+function onHostKey(e) {
+  if (e.key !== "Enter" && e.key !== " ") return;
+  const cell = e.target.closest && e.target.closest("[data-rc-recipe], [data-rc-crop]");
+  if (!cell) return;
+  e.preventDefault();
+  activate(cell);
+}
+function onDocClick(e) {
+  if (!overlayEl) return;
+  if (promptEl && promptEl.contains(e.target)) return;
+  if (e.target === overlayEl || e.target.closest("[data-rc-close]")) {
+    closePopup(false);
+    return;
+  }
+  if (!overlayEl.contains(e.target)) return;
+  if (e.target.closest("#rcBinsSave")) {
+    saveBins();
+    return;
+  }
+  const matBtn = e.target.closest("[data-rc-mat]");
+  if (matBtn && popup === "computation") {
+    setMaterialMode(matBtn.getAttribute("data-rc-res"), matBtn.getAttribute("data-rc-mat"), matBtn.getAttribute("data-rc-matmode"));
+    invalidateCostCache();
+    renderOverlayBody();
+    refreshResults();
+  }
+}
+function onDocInput(e) {
+  if (e.target && e.target.classList && e.target.classList.contains("rc-dig-input")) {
+    const v = Math.floor(Number(e.target.value));
+    state.digs = isFinite(v) && v > 0 ? Math.min(v, PATCH_TILES) : 0;
+    state.dig = "find";
+    saveState3();
+    refreshValues();
+    return;
+  }
+  if (e.target && e.target.id === "rcBinsInput") binsDraft = e.target.value === "" ? 0 : Number(e.target.value);
+}
+function onKey(e) {
+  if (e.key !== "Escape") return;
+  if (promptEl) {
+    promptEl.remove();
+    promptEl = null;
+    return;
+  }
+  if (popup) closePopup(false);
+}
+function onExternalChange() {
+  unitCostMemoAt = 0;
+  if (!host) return;
+  invalidateCostCache();
+  refreshResults();
+}
+function mountBeetlesCalculator(root) {
+  host = root;
+  loadBaseCropsIfNeeded();
+  invalidateCostCache();
+  state = loadState2();
+  detailsOpen = false;
+  host.addEventListener("click", onClick);
+  host.addEventListener("keydown", onHostKey);
+  document.addEventListener("click", onDocClick);
+  document.addEventListener("input", onDocInput);
+  document.addEventListener("keydown", onKey);
+  window.addEventListener("guroBoostsChanged", onExternalChange);
+  window.addEventListener("guroGemPackChanged", onExternalChange);
+  window.addEventListener("guroPricesUpdated", onExternalChange);
+  listening = true;
+  render();
+}
+function unmountBeetlesCalculator() {
+  invalidateCostCache();
+  setAutoMaterialModes({});
+  invalidateCostCache();
+  if (popup) destroyPopup();
+  if (promptEl) {
+    promptEl.remove();
+    promptEl = null;
+  }
+  if (host) {
+    host.removeEventListener("click", onClick);
+    host.removeEventListener("keydown", onHostKey);
+    host.innerHTML = "";
+  }
+  if (listening) {
+    document.removeEventListener("click", onDocClick);
+    document.removeEventListener("input", onDocInput);
+    document.removeEventListener("keydown", onKey);
+    window.removeEventListener("guroBoostsChanged", onExternalChange);
+    window.removeEventListener("guroGemPackChanged", onExternalChange);
+    window.removeEventListener("guroPricesUpdated", onExternalChange);
+    listening = false;
+  }
+  host = null;
+}
+function beetlesCalculatorCanLeave() {
+  if (!popup) return true;
+  if (isPopupDirty()) {
+    toast("\u26A0\uFE0F Save your changes first");
+    return false;
+  }
+  destroyPopup();
+  return true;
+}
+
+// src/cave_merchant_calc.js
+var TRADABLE = /* @__PURE__ */ new Set(["Sunflower", "Potato", "Rhubarb", "Pumpkin", "Zucchini", "Carrot", "Yam", "Cabbage", "Broccoli", "Soybean", "Beetroot", "Pepper", "Cauliflower", "Parsnip", "Eggplant", "Corn", "Onion", "Radish", "Wheat", "Turnip", "Kale", "Artichoke", "Barley", "Saltwort", "Crystal Leaf", "Tomato", "Lemon", "Blueberry", "Orange", "Apple", "Banana", "Celestine", "Lunara", "Duskberry", "Grape", "Rice", "Olive", "Wood", "Stone", "Iron", "Gold", "Crimstone", "Salt", "Egg", "Feather", "Honey", "Milk", "Leather", "Wool", "Merino Wool", "Ruffroot", "Chewed Bone", "Heart leaf", "Frost Pebble", "Wild Grass", "Ribbon", "Dewberry", "Moonfur", "Capsule Bait", "Umbrella Bait", "Crimson Baitfish", "Green Beetle", "Blue Beetle", "Pink Beetle", "Amber Beetle", "Pig Bristles", "Truffle", "Goblin Emblem", "Sunflorian Emblem", "Bumpkin Emblem", "Nightshade Emblem"]);
+var COST_OWNER = "Cave_Merchant";
+function esc2(s) {
+  return String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+function fmt2(n) {
+  if (!isFinite(n)) return "\u2014";
+  return (Math.round(n * 100) / 100).toLocaleString(void 0, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2
+  });
+}
+function fl2(n) {
+  if (!isFinite(n)) return "\u2014";
+  const a = Math.abs(n);
+  const max = a >= 1e3 ? 0 : a >= 1 ? 3 : 4;
+  return n.toLocaleString(void 0, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: max
+  });
+}
+function marketPrice(name) {
+  const m = farmPanelGetMarketPriceFlower ? Number(farmPanelGetMarketPriceFlower(name)) : 0;
+  if (m > 0) return m;
+  const live = findLivePriceForName ? Number(findLivePriceForName(name)) : 0;
+  return live > 0 ? live : 0;
+}
+function costPerUnit(name) {
+  let flower2 = 0;
+  try {
+    if (name === "Mud" || name === "Wild Mushroom" || name === "Magic Mushroom") {
+      flower2 = mycoItemUnitCostFlower(name);
+    } else if (name === "Oil") {
+      flower2 = coinsToFlower(caveMycoUnitCoins(COST_OWNER, name));
+    } else if (cookingFindRecipeForFood(name)) {
+      flower2 = coinsToFlower(cookingIngredientUnitCostCoins(name, "buy"));
+    } else {
+      flower2 = coinsToFlower(getMaterialUnitCostCoins(name, "collect"));
+    }
+  } catch (e) {
+    flower2 = 0;
+  }
+  return isFinite(flower2) && flower2 > 0 ? flower2 : 0;
+}
+function side(name, qty) {
+  const tradable = TRADABLE.has(name);
+  const unit = tradable ? marketPrice(name) : costPerUnit(name);
+  return {
+    name,
+    qty,
+    tradable,
+    unit,
+    total: unit * qty,
+    priced: unit > 0
+  };
+}
+function signed2(n, flower2) {
+  const r = fl2(Math.abs(n));
+  const sign = n > 0 && r !== "0" ? "+" : n < 0 && r !== "0" ? "-" : "";
+  return sign + r + flower2;
+}
+function sideHtml(s, kind, ctx, have) {
+  const tag = s.tradable ? "Market" : "Cost";
+  const flower2 = ctx.flower;
+  const value = s.priced ? `<span class="cmc-value ${kind === "cost" ? "is-loss" : "is-gain"}">${kind === "cost" ? "-" : "+"}${fl2(s.total)}${flower2}</span>` : `<span class="cmc-value is-none">No price</span>`;
+  const unit = s.priced ? `<span class="cmc-unit"><b>${tag}</b> ${fl2(s.unit)}${flower2}/unit</span>` : `<span class="cmc-unit"><b>${tag}</b> \u2014</span>`;
+  const owned = kind === "cost" ? `<span class="cmc-owned ${have >= s.qty ? "is-enough" : "is-short"}">Owned ${fmt2(have)}/${fmt2(s.qty)}</span>` : "";
+  return `<div class="cmc-side"><div class="cmc-name"><span class="cmc-ico">${ctx.icon(s.name)}</span><span class="cmc-label">${fmt2(s.qty)}\xD7 ${esc2(s.name)}</span></div>${value}${unit}${owned}</div>`;
+}
+function offerHtml(offer, cave, visit, inv, ctx) {
+  const cost = offer.cost || {};
+  const reward = offer.reward || {};
+  const limit = Number(offer.limit) || 0;
+  const purchases = cave.merchant && cave.merchant.purchases;
+  const bought = purchases && purchases[String(visit.index)] && Number(purchases[String(visit.index)][offer.slot]) || 0;
+  const left = Math.max(0, limit - bought);
+  const unlocked = offer.slot <= (Number(cave.tier) || 0);
+  const trades = unlocked && left > 0 ? left : Math.max(1, limit);
+  const c = side(cost.item, Number(cost.amount) || 0);
+  const r = side(reward.item, Number(reward.amount) || 0);
+  const have = Math.floor(Number(inv[cost.item]) || 0);
+  const feePct = Number(feePercent) || 0;
+  const gross = r.total * trades;
+  const spend = c.total * trades;
+  const tax = r.tradable ? gross * feePct / 100 : 0;
+  const ready = c.priced && r.priced;
+  const net = gross - tax - spend;
+  const pct2 = spend > 0 ? net / spend * 100 : 0;
+  const status = !unlocked ? `Locked (Tier ${offer.slot})` : left > 0 ? `${left}/${limit} left` : "Sold out";
+  const head = `<div class="cmc-head"><span class="cmc-chip">Offer ${offer.slot}</span><span class="cmc-chip${unlocked && left > 0 ? "" : " is-off"}">${esc2(status)}</span></div>`;
+  const row3 = `<div class="cmc-row">${sideHtml(c, "cost", ctx, have)}<img class="cmc-arrow" src="${WB_UPGRADE_ICON}" alt="">${sideHtml(r, "reward", ctx, 0)}</div>`;
+  const qtyLine = `<div class="cmc-sum"><span class="cmc-sum-label">Quantity</span><span class="cmc-sum-val">\xD7${fmt2(r.qty * trades)} <span class="cmc-ico">${ctx.icon(r.name)}</span>${trades > 1 ? `<small>${trades} trades</small>` : ""}</span></div>`;
+  const taxLine = `<div class="cmc-sum"><span class="cmc-sum-label">Tax${r.tradable && feePct > 0 ? ` (${fmt2(feePct)}%)` : ""}</span><span class="cmc-sum-val">${r.priced ? (tax > 0 ? "-" : "") + fl2(tax) + ctx.flower : "\u2014"}</span></div>`;
+  const netCls = !ready ? "" : net > 0 ? " is-gain" : net < 0 ? " is-loss" : "";
+  const netLine = `<div class="cmc-sum cmc-net${netCls}"><span class="cmc-sum-label">Net</span><span class="cmc-sum-val">${ready ? signed2(net, ctx.flower) + (spend > 0 ? `<small>${net >= 0 ? "+" : ""}${(Math.round(pct2 * 10) / 10).toLocaleString()}%</small>` : "") : "\u2014"}</span></div>`;
+  return `<div class="cmc-offer guro-frame${unlocked ? "" : " is-locked"}">${head}${row3}<div class="cmc-sums">${qtyLine}${taxLine}${netLine}</div></div>`;
+}
+function merchantOfferCardsHtml(ctx) {
+  const cave = ctx.cave;
+  const visit = cave && cave.merchantVisit;
+  if (!visit) return "";
+  const offers = Array.isArray(visit.offers) ? visit.offers.slice().sort((a, b) => a.slot - b.slot) : [];
+  if (!offers.length) return "";
+  const inv = ctx.game.inventory || {};
+  const cards = offers.map((o) => offerHtml(o, cave, visit, inv, ctx)).join("");
+  return `<div class="cmc-list">${cards}</div>`;
+}
+function merchantCalcHtml(ctx) {
+  const cave = ctx.cave;
+  const visit = cave && cave.merchantVisit;
+  const head = `<div class="cave-board-title"><span class="cave-myco-icon">${ctx.merchantIcon}</span> Merchant Calculator</div>`;
+  if (!visit) return `<div class="cave-board guro-frame cave-merchant-calc">${head}<div class="dig-panel-status">No merchant data yet. Sync your farm.</div></div>`;
+  const offers = Array.isArray(visit.offers) ? visit.offers.slice().sort((a, b) => a.slot - b.slot) : [];
+  if (!offers.length) return `<div class="cave-board guro-frame cave-merchant-calc">${head}<div class="dig-panel-status">No offers right now.</div></div>`;
+  const sub = `<div class="cave-board-sub">Tradable items use the market price. Others use their cost, made from bought materials.</div>`;
+  const inv = ctx.game.inventory || {};
+  const cards = offers.map((o) => offerHtml(o, cave, visit, inv, ctx)).join("");
+  return `<div class="cave-board guro-frame cave-merchant-calc">${head}${sub}<div class="cmc-list">${cards}</div></div>`;
+}
+
+// src/cave_merchant_card.js
+function cmField(g, key) {
+  if (!g) return null;
+  if (g[key] != null) return g[key];
+  if (g.land && g.land[key] != null) return g.land[key];
+  return null;
+}
+function cmNum(v) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
+}
+function caveMerchantMiniIconHtml(size) {
+  return `<img src="${GOBLIN_MERCHANT_ICON}" alt="Cave Merchant" decoding="async" style="width:${size}px;height:${size}px;object-fit:contain;image-rendering:pixelated;vertical-align:middle;">`;
+}
+function caveMerchantClock(sec) {
+  sec = Math.max(0, Math.floor(sec));
+  const d = Math.floor(sec / 86400);
+  const h = Math.floor(sec % 86400 / 3600);
+  const m = Math.floor(sec % 3600 / 60);
+  const s = sec % 60;
+  if (d > 0) return `${d}d ${h}h ${m}m`;
+  if (h > 0) return `${h}h ${m}m ${s}s`;
+  return `${m}m ${s}s`;
+}
+function cmItemIcon(name) {
+  if (cookFoodIcon && (COOKING_FOOD_IMAGES && COOKING_FOOD_IMAGES[name] || COOKING_FOOD_EMOJI && COOKING_FOOD_EMOJI[name])) return cookFoodIcon(name);
+  return getIcon(name);
+}
+function farmPanelComputeCaveMerchantCard(json, now) {
+  try {
+    const nowMs = now || Date.now();
+    const g = farmSyncExtractGameState(json);
+    const cave = cmField(g, "cave");
+    const visit = cave && cave.merchantVisit;
+    if (!visit || typeof visit !== "object") return null;
+    const opensAt = cmNum(visit.opensAt);
+    const closesAt = cmNum(visit.closesAt);
+    const nextOpensAt = cmNum(visit.nextOpensAt);
+    if (!opensAt && !closesAt && !nextOpensAt) return null;
+    let phase = "unknown";
+    let targetAt = 0;
+    if (nowMs >= opensAt && nowMs < closesAt) {
+      phase = "open";
+      targetAt = closesAt;
+    } else if (nowMs < opensAt) {
+      phase = "arriving";
+      targetAt = opensAt;
+    } else if (nextOpensAt > nowMs) {
+      phase = "away";
+      targetAt = nextOpensAt;
+    }
+    const offers = Array.isArray(visit.offers) ? visit.offers.filter((o) => o && o.cost && o.reward) : [];
+    return {
+      isCaveMerchantCard: true,
+      name: "Cave Merchant",
+      profit: 0,
+      isReady: phase === "open",
+      phase,
+      opensAt,
+      closesAt,
+      nextOpensAt,
+      targetAt,
+      remainingSec: targetAt ? Math.max(0, (targetAt - nowMs) / 1e3) : 0,
+      offerCount: offers.length,
+      cave,
+      game: g
+    };
+  } catch (e) {
+    return null;
+  }
+}
+function cmStatusFoldHtml(row3) {
+  if (!row3.targetAt) return `<div class="guro-status-fold"><span class="guro-status-label">SYNC TO CHECK NEXT VISIT</span></div>`;
+  const label = row3.phase === "open" ? "LEAVES IN" : row3.phase === "arriving" ? "ARRIVES IN" : "RETURNS IN";
+  return `<div class="guro-status-fold"><span class="guro-status-label">${label}</span><span class="guro-status-stack"><span class="guro-status-value cm-countdown" data-cm-at="${row3.targetAt}">${caveMerchantClock(row3.remainingSec)}</span><span class="guro-status-clock">${escapeHtml(hiveClockText(row3.targetAt))}</span></span></div>`;
+}
+function cmInfoHtml(row3) {
+  const line = (label, val) => `<div class="dig-total-row"><span class="dig-total-label">${label}</span><span class="dig-total-val">${val}</span></div>`;
+  const lines = [];
+  if (row3.phase === "open") {
+    lines.push(line("Status", "Here now"));
+    lines.push(line("Leaves at", escapeHtml(hiveClockText(row3.closesAt))));
+    if (row3.nextOpensAt > row3.closesAt) lines.push(line("Returns at", escapeHtml(hiveClockText(row3.nextOpensAt))));
+  } else if (row3.phase === "arriving") {
+    lines.push(line("Status", "On the way"));
+    lines.push(line("Arrives at", escapeHtml(hiveClockText(row3.opensAt))));
+    lines.push(line("Leaves at", escapeHtml(hiveClockText(row3.closesAt))));
+  } else if (row3.phase === "away") {
+    lines.push(line("Status", "Away"));
+    lines.push(line("Returns at", escapeHtml(hiveClockText(row3.nextOpensAt))));
+  } else {
+    lines.push(line("Status", "Away"));
+    lines.push(line("Returns at", "Sync to check"));
+  }
+  return `<div class="dig-totals">${lines.join("")}</div>`;
+}
+function cmOffersHtml(row3) {
+  const cards = merchantOfferCardsHtml({
+    cave: row3.cave,
+    game: row3.game,
+    icon: cmItemIcon,
+    flower: FLOWER_ICON
+  });
+  const label = `<div class="dig-data-label fh-label">Offers <span class="fh-label-count">\xD7${row3.offerCount}</span></div>`;
+  if (!cards) return `${label}<div class="fh-empty">${row3.phase === "open" ? "No offers right now." : "No offers while the merchant is away. They show up when he returns and you sync."}</div>`;
+  return `${label}<div class="fh-empty">Tradable items use the market price. Others use their cost, made from bought materials.</div>${cards}`;
+}
+function farmPanelRenderCaveMerchantCard(row3, expanded) {
+  const badgeHtml = row3.phase === "open" ? `<span class="harvest-badge is-ready">\u{1F7E2} Here</span>` : row3.phase === "arriving" ? `<span class="harvest-badge is-growing">\u23F3 Arriving</span>` : `<span class="harvest-badge is-growing">\u23F3 Away</span>`;
+  const countHtml = row3.offerCount ? `<span class="fi-count">x${row3.offerCount}</span>` : "";
+  return `
+  <div class="card animal-merged-card${row3.isReady ? " is-profit" : ""}${expanded ? " expanded" : ""}" data-search="cave-merchant" data-fp-category="pete">
+    <div class="card-toggle">
+      <div class="card-name-row">
+        <span class="card-icon">${caveMerchantMiniIconHtml(22)}</span>
+        <div>
+          <div class="card-name">Cave Merchant ${countHtml}</div>
+          <div class="card-type-row">
+            ${badgeHtml}
+          </div>
+        </div>
+      </div>
+      <div class="card-collapsed-profit">
+        <span class="chev">\u25BE</span>
+      </div>
+      ${cmStatusFoldHtml(row3)}
+    </div>
+    <div class="card-details">
+      ${cmInfoHtml(row3)}
+      ${cmOffersHtml(row3)}
+    </div>
+  </div>`;
+}
+
 // src/fishing_card.js
 var STORE_PREFIX2 = "guro_fish_track_v1_";
 var KEEP_DAYS2 = 14;
@@ -30334,10 +31770,10 @@ function farmPanelComputeFishingCard(json, farmId, now) {
     const reelsLeft = Math.max(0, limit - attempts) + extra;
     const skillBoosts = [];
     FISH_SKILL_BOOSTS.forEach((def) => {
-      const level = skillLevelOf2(g, def.name, def.ranks.length);
-      if (level > 0) skillBoosts.push({
+      const level2 = skillLevelOf2(g, def.name, def.ranks.length);
+      if (level2 > 0) skillBoosts.push({
         name: def.name,
-        text: def.text(def.ranks[level - 1])
+        text: def.text(def.ranks[level2 - 1])
       });
     });
     const placed = farmSyncCollectEquippedAndPlacedNames(g);
@@ -30504,9 +31940,9 @@ function farmPanelGetLastInfo() {
     factionIsContributing: localStorage.getItem("hl_farm_panel_faction_is_contributing") === "1"
   };
 }
-function farmPanelSaveLastInfo(id, level, vipStatus, factionInfo, experience, ascensionLevel) {
+function farmPanelSaveLastInfo(id, level2, vipStatus, factionInfo, experience, ascensionLevel) {
   localStorage.setItem("hl_farm_panel_id", id);
-  localStorage.setItem("hl_farm_panel_level", level != null ? String(level) : "");
+  localStorage.setItem("hl_farm_panel_level", level2 != null ? String(level2) : "");
   localStorage.setItem("hl_farm_panel_experience", experience != null ? String(experience) : "");
   localStorage.setItem("hl_farm_panel_ascension_level", ascensionLevel != null ? String(ascensionLevel) : "0");
   localStorage.setItem("hl_farm_panel_time", String(Date.now()));
@@ -30554,19 +31990,19 @@ function farmPanelProjectAnimalXp(type, xpNow, progress) {
   const feeds = Math.ceil(progress.xpGap / progress.boostedFoodXp - 1e-9);
   if (!(feeds > 0)) return null;
   const xp = Math.round((xpNow + feeds * progress.boostedFoodXp) * 1e6) / 1e6;
-  const level = getAnimalLevelFromXp(type, xp, true);
+  const level2 = getAnimalLevelFromXp(type, xp, true);
   const maxXp = thresholds[15];
   let threshold;
-  if (level >= 15) {
+  if (level2 >= 15) {
     const cycle = maxXp - thresholds[14];
     threshold = maxXp + cycle * (Math.floor((xp - maxXp) / cycle + 1e-9) + 1);
   } else {
-    threshold = thresholds[level + 1];
+    threshold = thresholds[level2 + 1];
   }
   return {
     feeds,
     xp,
-    level,
+    level: level2,
     threshold
   };
 }
@@ -30676,6 +32112,10 @@ function farmPanelCardCatalog() {
       id: "fishing",
       label: "Fishing",
       icon: fishingMiniIconHtml(16)
+    }, {
+      id: "caveMerchant",
+      label: "Cave Merchant",
+      icon: caveMerchantMiniIconHtml(16)
     }].concat(POWER_SKILL_DEFS.map((d) => ({
       id: d.name,
       label: d.name,
@@ -30717,6 +32157,7 @@ function farmPanelRowCardKey(row3) {
   else if (row3.isPeteQuestCard) id = "pete";
   else if (row3.isFloatingIslandCard) id = "floating";
   else if (row3.isFishingCard) id = "fishing";
+  else if (row3.isCaveMerchantCard) id = "caveMerchant";
   return `${cat}:${id}`;
 }
 function farmPanelRowVisible(row3) {
@@ -30830,13 +32271,13 @@ function farmPanelGetMarketId(name) {
 }
 function farmPanelComputeEconomics(name, count, totalYield) {
   const price = farmPanelGetMarketPriceFlower(name);
-  let costPerUnit = farmPanelGetCostPerUnitFlower(name);
+  let costPerUnit2 = farmPanelGetCostPerUnitFlower(name);
   const marketId = farmPanelGetMarketId(name);
   let restockInfo = marketId ? computeQtyRestockGems(marketId, totalYield) : null;
   if (name === "Honey") {
     const honeyRestock = computeHoneyRestockBreakdown(totalYield);
     if (honeyRestock) {
-      costPerUnit = honeyRestock.baseCostPerUnit;
+      costPerUnit2 = honeyRestock.baseCostPerUnit;
       restockInfo = honeyRestock.restockInfo;
     }
   }
@@ -30864,7 +32305,7 @@ function farmPanelComputeEconomics(name, count, totalYield) {
       }
     }
   }
-  const seedCost = costPerUnit * totalYield;
+  const seedCost = costPerUnit2 * totalYield;
   const restockCost = restockInfo ? restockInfo.flowerCost : 0;
   const totalCost = seedCost + restockCost;
   const grossRevenue = price * totalYield;
@@ -30876,7 +32317,7 @@ function farmPanelComputeEconomics(name, count, totalYield) {
     count,
     totalYield,
     price,
-    costPerUnit,
+    costPerUnit: costPerUnit2,
     seedCost,
     restockInfo,
     restockCost,
@@ -33216,18 +34657,18 @@ function farmPanelComputeInProgressRaw(json, opts) {
         });
       });
       const seaBlessedChain = farmPanelSimulateSeaBlessedChain(g, saltNodeStates, maxCharges, saltYield, intervalMs, now);
-      saltNodeStates.forEach((state, stateIdx) => {
-        const storedCharges = state.storedCharges;
+      saltNodeStates.forEach((state2, stateIdx) => {
+        const storedCharges = state2.storedCharges;
         const seaBlessedRestored = seaBlessedChain ? seaBlessedChain.restoredPerNode[stateIdx] : 0;
         const saltNodeMeta = {
-          saltNodeIndex: state.nodeIdx + 1,
+          saltNodeIndex: state2.nodeIdx + 1,
           saltNodeStoredCharges: storedCharges,
           saltNodeMaxCharges: maxCharges,
           saltYieldPerCharge: saltYield,
           saltNodeSeaBlessedRestored: seaBlessedRestored,
           saltNodeSeaBlessedHarvests: seaBlessedChain ? seaBlessedChain.harvestsPerNode[stateIdx] : 0,
-          saltNodeSeaBlessedProcs: seaBlessedChain ? seaBlessedChain.nowProcs.filter((pr) => pr.nodeIndex === state.nodeIdx + 1) : [],
-          saltNodeSeaBlessedFuture: seaBlessedChain ? seaBlessedChain.futureProcs.filter((pr) => pr.nodeIndex === state.nodeIdx + 1) : [],
+          saltNodeSeaBlessedProcs: seaBlessedChain ? seaBlessedChain.nowProcs.filter((pr) => pr.nodeIndex === state2.nodeIdx + 1) : [],
+          saltNodeSeaBlessedFuture: seaBlessedChain ? seaBlessedChain.futureProcs.filter((pr) => pr.nodeIndex === state2.nodeIdx + 1) : [],
           saltNodeSeaBlessedWindowRestored: seaBlessedChain ? seaBlessedChain.windowRestoredPerNode[stateIdx] : 0,
           seaBlessedChain
         };
@@ -33242,7 +34683,7 @@ function farmPanelComputeInProgressRaw(json, opts) {
           });
         }
         if (storedCharges < maxCharges) {
-          const remainingSec = Math.max(0, (state.nextChargeAt - now) / 1e3);
+          const remainingSec = Math.max(0, (state2.nextChargeAt - now) / 1e3);
           rows.push({
             name: "Salt",
             qty: 0,
@@ -33354,7 +34795,7 @@ function farmPanelComputeInProgressRaw(json, opts) {
           lovedAt,
           muddy: type === "pig" ? !!(animal.mud && animal.mud.harvestsRemaining > 0) : void 0
         }, now, readyAtMs);
-        const level = progress.shownLevel;
+        const level2 = progress.shownLevel;
         const realFeedBuffName = animal.feedBuff && typeof animal.feedBuff === "object" && animal.feedBuff.name && (typeof animal.feedBuff.harvestsRemaining !== "number" || animal.feedBuff.harvestsRemaining > 0) ? animal.feedBuff.name : null;
         const feedProjection = farmPanelProjectAnimalXp(type, progress.xp, progress);
         const yieldLevel = feedProjection && !progress.isReadyState ? Math.min(15, Math.max(progress.claimLevel, feedProjection.level)) : progress.claimLevel;
@@ -33419,7 +34860,7 @@ function farmPanelComputeInProgressRaw(json, opts) {
         const feedQtyToNext = remainingFeedQty;
         farmPanelAnimalYieldGroupsByType[type].push({
           animalId,
-          level,
+          level: level2,
           xp: typeof xp === "number" ? xp : 0,
           isReadyState: progress.isReadyState,
           pendingClaims: progress.pendingClaims,
@@ -34390,7 +35831,7 @@ function fpLimitedScopeOfRow(row3) {
   if (!row3) return "";
   if (row3.isCropMachineCard) return "cropmachine";
   if (row3.isAnimalMerged) return String(row3.typeKey || "").toLowerCase();
-  if (row3.isComposterCard || row3.isHoneyCard || row3.isCookingCard || row3.isMycoCard || row3.isPeteQuestCard || row3.isFloatingIslandCard || row3.isFishingCard || row3.isPowerSkillCard) return "";
+  if (row3.isComposterCard || row3.isHoneyCard || row3.isCookingCard || row3.isMycoCard || row3.isPeteQuestCard || row3.isFloatingIslandCard || row3.isFishingCard || row3.isCaveMerchantCard || row3.isPowerSkillCard) return "";
   const name = row3.name;
   if (name === "Wood") return "wood";
   if (name === "Oil") return "oil";
@@ -35048,10 +36489,10 @@ function farmPanelComposterBoostParts(fig, count) {
       });
     }
     if (b.timeMult) {
-      const pct = (1 - b.timeMult) * 100;
+      const pct2 = (1 - b.timeMult) * 100;
       timeParts.push({
         name: b.name,
-        pct
+        pct: pct2
       });
     }
   });
@@ -35673,6 +37114,8 @@ function farmPanelComputeInProgressOnce(json) {
   if (floatingIslandCard) allCards.push(floatingIslandCard);
   const fishingCard = farmPanelComputeFishingCard(json, String(json && json.id || farmPanelGetLastInfo().id || ""));
   if (fishingCard) allCards.push(fishingCard);
+  const caveMerchantCard = farmPanelComputeCaveMerchantCard(json);
+  if (caveMerchantCard) allCards.push(caveMerchantCard);
   farmPanelComputePowerSkillCards(json).forEach((card2) => allCards.push(card2));
   return allCards;
 }
@@ -35752,20 +37195,20 @@ function farmPanelComputeMycoCard(json) {
       const batch = machine && machine.batch;
       const readyAtMs = batch ? Number(batch.readyAt) || 0 : 0;
       const dugCount = batch && batch.dug ? Object.keys(batch.dug).length : 0;
-      let state = "idle";
+      let state2 = "idle";
       if (batch) {
-        if (readyAtMs > now) state = "growing";
-        else if (dugCount < 25) state = "ready";
+        if (readyAtMs > now) state2 = "growing";
+        else if (dugCount < 25) state2 = "ready";
       }
       let buried = null;
-      if (batch && state !== "idle") {
+      if (batch && state2 !== "idle") {
         try {
           buried = caveBuriedCounts(batch);
         } catch (e) {
           buried = null;
         }
       }
-      const remainingSec = state === "growing" ? (readyAtMs - now) / 1e3 : 0;
+      const remainingSec = state2 === "growing" ? (readyAtMs - now) / 1e3 : 0;
       const skillMap = g && g.bumpkin && g.bumpkin.skills && typeof g.bumpkin.skills === "object" ? g.bumpkin.skills : {};
       const skillLevel = (skillName) => {
         const key = Object.keys(skillMap).find((k) => k.trim().toLowerCase() === skillName.toLowerCase());
@@ -35784,16 +37227,16 @@ function farmPanelComputeMycoCard(json) {
         searchKey: "myco-bin-" + id,
         profit: 0,
         count: 1,
-        state,
+        state: state2,
         recipe: batch ? MYCO_RECIPE_LABELS[batch.recipe] || String(batch.recipe) : "",
         readyAtMs,
         remainingSec,
         dugCount,
         buried,
-        readyCount: state === "ready" ? 1 : 0,
-        growingCount: state === "growing" ? 1 : 0,
-        idleCount: state === "idle" ? 1 : 0,
-        soonestSec: state === "growing" ? remainingSec : null
+        readyCount: state2 === "ready" ? 1 : 0,
+        growingCount: state2 === "growing" ? 1 : 0,
+        idleCount: state2 === "idle" ? 1 : 0,
+        soonestSec: state2 === "growing" ? remainingSec : null
       };
     });
   } catch (e) {
@@ -36330,10 +37773,10 @@ function farmPanelRenderAnimalYieldBoostList(boosts, productNames, products, fal
   const timeHtmlParts = (timeBoosts || []).map((b) => {
     const boostIcon = getBoostIcon(b.name);
     const mult = (b.timeMult || 1) * (b.timeMultAll || 1);
-    const pct = (1 - mult) * 100;
+    const pct2 = (1 - mult) * 100;
     const secondsSaved = cycleTimeSec != null ? cycleTimeSec * (1 / mult - 1) : null;
     const savedNote = secondsSaved != null ? ` <span class="boost-total-value">-${farmPanelFormatSpiceDuration(secondsSaved)}</span>` : "";
-    return `<div class="boost-applied-row is-time">${boostIcon}<b>${escapeHtml(b.name)}</b> <span class="boost-mult-note">(-${fmtAnimal(pct)}% cycle time)</span>${savedNote}</div>`;
+    return `<div class="boost-applied-row is-time">${boostIcon}<b>${escapeHtml(b.name)}</b> <span class="boost-mult-note">(-${fmtAnimal(pct2)}% cycle time)</span>${savedNote}</div>`;
   });
   const costHtmlParts = (costBoosts || []).map((b) => {
     const parts = [];
@@ -36391,10 +37834,10 @@ function farmPanelRenderNodeYieldBoostList(row3, summary, produceIcon) {
   const timeBoostSources = (row3.activeBoosts || []).concat(row3.exactTimeBoosts || []);
   const timeHtmlParts = timeBoostSources.filter((b) => b.timeMult && b.timeMult !== 1 && !seenTime.has(b.name) && seenTime.add(b.name)).map((b) => {
     const boostIcon = getBoostIcon(b.name);
-    const pct = (1 - b.timeMult) * 100;
+    const pct2 = (1 - b.timeMult) * 100;
     const secondsSaved = row3.cycleTimeSec != null ? row3.cycleTimeSec * (1 / b.timeMult - 1) : null;
     const savedNote = secondsSaved != null ? ` <span class="boost-total-value">-${farmPanelFormatSpiceDuration(secondsSaved)}</span>` : "";
-    return `<div class="boost-applied-row is-time">${boostIcon}<b>${escapeHtml(b.name)}</b> <span class="boost-mult-note">(-${fmt(pct)}% cycle time)</span>${savedNote}</div>`;
+    return `<div class="boost-applied-row is-time">${boostIcon}<b>${escapeHtml(b.name)}</b> <span class="boost-mult-note">(-${fmt(pct2)}% cycle time)</span>${savedNote}</div>`;
   });
   const sections = [["YIELD", yieldHtmlParts], ["TIME REDUCTION", timeHtmlParts]].filter(([, parts]) => parts.length);
   if (!sections.length) return "";
@@ -36405,7 +37848,7 @@ function farmPanelCardCategory(row3) {
   if (row3.isCropMachineCard) return "crops";
   if (row3.isMycoCard) return "myco";
   if (row3.isPeteQuestCard) return "pete";
-  if (row3.isFloatingIslandCard || row3.isFishingCard || row3.isPowerSkillCard) return "pete";
+  if (row3.isFloatingIslandCard || row3.isFishingCard || row3.isCaveMerchantCard || row3.isPowerSkillCard) return "pete";
   if (row3.isAnimalMerged) return "animals";
   if (row3.isComposterCard) return "composters";
   if (row3.isHoneyCard) return "beehive";
@@ -36418,7 +37861,7 @@ function farmPanelCardCategory(row3) {
 }
 function farmPanelRowIsReady(row3) {
   if (!row3) return false;
-  if (row3.isPeteQuestCard || row3.isFloatingIslandCard || row3.isFishingCard || row3.isPowerSkillCard) return !!row3.isReady;
+  if (row3.isPeteQuestCard || row3.isFloatingIslandCard || row3.isFishingCard || row3.isCaveMerchantCard || row3.isPowerSkillCard) return !!row3.isReady;
   return (row3.readyCount || 0) > 0;
 }
 function guroCountdownText(sec) {
@@ -37205,9 +38648,9 @@ dailyHarvestSetResolver(farmPanelResolveHarvestPending);
 function farmPanelClaimedAnimalYield(groupKey, xp, buffName) {
   const type = String(groupKey).toLowerCase();
   if (!ANIMAL_DATA[type]) return null;
-  const level = getAnimalLevelFromXp(type, xp, true);
-  if (level === null) return null;
-  const fig = computeAnimalYieldsForLevel(type, level, buffName || null);
+  const level2 = getAnimalLevelFromXp(type, xp, true);
+  if (level2 === null) return null;
+  const fig = computeAnimalYieldsForLevel(type, level2, buffName || null);
   const parts = {};
   let total = 0;
   fig.products.forEach((name, i) => {
@@ -37249,6 +38692,7 @@ function farmPanelRenderInProgressRow(row3) {
   if (row3.isPeteQuestCard) return farmPanelRenderPeteQuestCard(row3);
   if (row3.isFloatingIslandCard) return farmPanelRenderFloatingIslandCard(row3, farmPanelExpandedNames.has("floating-island"));
   if (row3.isFishingCard) return farmPanelRenderFishingCard(row3, farmPanelExpandedNames.has("fishing"));
+  if (row3.isCaveMerchantCard) return farmPanelRenderCaveMerchantCard(row3, farmPanelExpandedNames.has("cave-merchant"));
   if (row3.isPowerSkillCard) return farmPanelRenderPowerSkillCard(row3, farmPanelExpandedNames.has(row3.searchKey), row3.isReady ? "" : guroStatusFoldHtml("Ready", row3.remainingSec));
   const baseStatus = row3.readyCount > 0 ? row3.readyCount === row3.count ? "\u2705 All ready" : `\u2705 ${row3.readyCount} ready \xB7 \u23F3 ${row3.count - row3.readyCount} growing` : "\u23F3 Growing";
   const showCountdown = row3.soonestSec != null && row3.readyCount < row3.count;
@@ -37442,11 +38886,20 @@ function farmPanelTickCountdowns() {
   if (farmPanelUserScrolling) return;
   const wrap = $("farmPanelTabContent");
   if (!wrap) return;
-  const els = wrap.querySelectorAll(".farm-countdown[data-base], .fp-quest-countdown[data-ready-at], .fi-countdown[data-fi-at]");
+  const els = wrap.querySelectorAll(".farm-countdown[data-base], .fp-quest-countdown[data-ready-at], .fi-countdown[data-fi-at], .cm-countdown[data-cm-at]");
   if (!els.length) return;
   const elapsedSec = (Date.now() - farmPanelRenderAtMs) / 1e3;
   let anyFinished = false;
   els.forEach((el) => {
+    if (el.hasAttribute("data-cm-at")) {
+      const merchantRemaining = (parseFloat(el.getAttribute("data-cm-at")) - Date.now()) / 1e3;
+      if (merchantRemaining <= 0) {
+        anyFinished = true;
+        return;
+      }
+      el.textContent = caveMerchantClock(merchantRemaining);
+      return;
+    }
     if (el.hasAttribute("data-fi-at")) {
       const islandRemaining = (parseFloat(el.getAttribute("data-fi-at")) - Date.now()) / 1e3;
       if (islandRemaining <= 0) {
@@ -38250,7 +39703,7 @@ function stateNoteRejected(farm, errorName) {
 
 // src/hl_state_sync.js
 var SAVED_KEY = "hl_hlog_state_saved_v1";
-var STORE_KEY = "hl_daily_harvest_v1";
+var STORE_KEY2 = "hl_daily_harvest_v1";
 var SENT_KEY = "hl_hlog_sent_v1";
 var FARM_RE = /^\d{1,20}$/;
 var MAX_STATE_CHARS = 56e4;
@@ -38354,13 +39807,13 @@ function caveKeysFor(farm) {
   return ["guro_cave_dug_v1_" + farm, "guro_cave_track_v2_" + farm];
 }
 function buildState(farm) {
-  const store = readJson(STORE_KEY);
+  const store = readJson(STORE_KEY2);
   const today = utcDay3();
   const rec = isPlain2(store) ? store[farm] : null;
   if (!isPlain2(rec) || rec.day !== today || !isPlain2(rec.stats)) return null;
   const data = {};
-  data[STORE_KEY] = {};
-  data[STORE_KEY][farm] = rec;
+  data[STORE_KEY2] = {};
+  data[STORE_KEY2][farm] = rec;
   caveKeysFor(farm).forEach((k) => {
     const v = readJson(k);
     if (isPlain2(v)) data[k] = v;
@@ -38393,18 +39846,18 @@ function applyState(farm, payload) {
   const today = utcDay3();
   if (!isPlain2(payload) || payload.day !== today || !isPlain2(payload.data)) return false;
   const data = payload.data;
-  const allowed = [STORE_KEY].concat(caveKeysFor(farm));
+  const allowed = [STORE_KEY2].concat(caveKeysFor(farm));
   if (Object.keys(data).some((k) => allowed.indexOf(k) === -1)) return false;
-  if (!isPlain2(data[STORE_KEY])) return false;
-  const rec = data[STORE_KEY][farm];
+  if (!isPlain2(data[STORE_KEY2])) return false;
+  const rec = data[STORE_KEY2][farm];
   if (!isPlain2(rec) || rec.day !== today || !isPlain2(rec.stats)) return false;
   const incoming = stateScore(rec, data["guro_cave_track_v2_" + farm], today);
-  const localStore = readJson(STORE_KEY);
+  const localStore = readJson(STORE_KEY2);
   const local = isPlain2(localStore) ? localStore : {};
   const localScore = isPlain2(local[farm]) && local[farm].day === today ? stateScore(local[farm], readJson("guro_cave_track_v2_" + farm), today) : 0;
   if (!(incoming > localScore)) return false;
   const snap = {};
-  [STORE_KEY, SENT_KEY].concat(caveKeysFor(farm)).forEach((k) => {
+  [STORE_KEY2, SENT_KEY].concat(caveKeysFor(farm)).forEach((k) => {
     try {
       snap[k] = localStorage.getItem(k);
     } catch (e) {
@@ -38414,7 +39867,7 @@ function applyState(farm, payload) {
   try {
     local[farm] = rec;
     if (!local.__last) local.__last = farm;
-    localStorage.setItem(STORE_KEY, JSON.stringify(local));
+    localStorage.setItem(STORE_KEY2, JSON.stringify(local));
     caveKeysFor(farm).forEach((k) => {
       if (isPlain2(data[k])) localStorage.setItem(k, JSON.stringify(data[k]));
     });
@@ -38481,8 +39934,8 @@ async function harvestStatePull(farmId) {
     emitLocal("applied");
     return true;
   }
-  const serverRec = isPlain2(r.json.data) && isPlain2(r.json.data[STORE_KEY]) ? r.json.data[STORE_KEY][farm] : null;
-  const localStore = readJson(STORE_KEY);
+  const serverRec = isPlain2(r.json.data) && isPlain2(r.json.data[STORE_KEY2]) ? r.json.data[STORE_KEY2][farm] : null;
+  const localStore = readJson(STORE_KEY2);
   const localRec = isPlain2(localStore) ? localStore[farm] : null;
   const serverTrack = isPlain2(r.json.data) ? r.json.data["guro_cave_track_v2_" + farm] : null;
   const todayNow = utcDay3();
@@ -39444,18 +40897,18 @@ var PRE_ASCENSION_MAX_LEVEL = 150;
 function cookGetLevelInfo(experience) {
   experience = Math.max(0, Number(experience) || 0);
   const maxLevel = Math.min(PRE_ASCENSION_MAX_LEVEL, COOK_LEVEL_XP.length);
-  let level = 1;
+  let level2 = 1;
   for (let l = 1; l <= maxLevel; l++) {
-    if (experience >= COOK_LEVEL_XP[l - 1]) level = l;
+    if (experience >= COOK_LEVEL_XP[l - 1]) level2 = l;
     else break;
   }
-  const isMax = level >= maxLevel;
-  const curFloor = COOK_LEVEL_XP[level - 1];
-  const nextCeil = isMax ? curFloor : COOK_LEVEL_XP[level];
+  const isMax = level2 >= maxLevel;
+  const curFloor = COOK_LEVEL_XP[level2 - 1];
+  const nextCeil = isMax ? curFloor : COOK_LEVEL_XP[level2];
   const span2 = isMax ? COOK_LEVEL_XP[maxLevel - 1] - COOK_LEVEL_XP[maxLevel - 2] : nextCeil - curFloor;
   const progress = experience - curFloor;
   return {
-    level,
+    level: level2,
     isMax,
     curFloor,
     nextCeil,
@@ -39516,12 +40969,12 @@ function getAscensionLevelInfo(experience, ascensionLevel) {
       experienceToNextLevel: span2
     };
   }
-  let level = 1;
+  let level2 = 1;
   let levelStart = baseline;
   for (let n = 1; n < ASCENSION_LEVEL_UPS; n++) {
     const nextStart = levelStart + ascensionLevelXp(ascensionLevel, n);
     if (experience >= nextStart) {
-      level = n + 1;
+      level2 = n + 1;
       levelStart = nextStart;
     } else {
       break;
@@ -39529,10 +40982,10 @@ function getAscensionLevelInfo(experience, ascensionLevel) {
   }
   return {
     ascension: ascensionLevel,
-    level,
+    level: level2,
     isReadyToAscend: false,
     currentExperienceProgress: experience - levelStart,
-    experienceToNextLevel: ascensionLevelXp(ascensionLevel, level)
+    experienceToNextLevel: ascensionLevelXp(ascensionLevel, level2)
   };
 }
 function resolveAscensionLevelInfo(experience) {
@@ -39547,9 +41000,9 @@ function resolveAscensionLevelInfo(experience) {
   }
   return getAscensionLevelInfo(experience, ascension);
 }
-function ascensionLevelBadgeText(ascensionLevel, level, isReadyToAscend) {
+function ascensionLevelBadgeText(ascensionLevel, level2, isReadyToAscend) {
   if (!ascensionLevel) return `Ascension [0]`;
-  return `Ascension [${ascensionLevel}] \xB7 Lv ${level}${isReadyToAscend ? " \u2705" : ""}`;
+  return `Ascension [${ascensionLevel}] \xB7 Lv ${level2}${isReadyToAscend ? " \u2705" : ""}`;
 }
 function withPreservedScroll(container, renderFn) {
   const scrollTop = container ? container.scrollTop : 0;
@@ -40187,12 +41640,12 @@ function clampAnimalStartLevel(v) {
 function getAnimalLevelFromXp(type, xp, allowZero) {
   const thresholds = ANIMAL_XP_THRESHOLDS[type];
   if (!thresholds || typeof xp !== "number" || isNaN(xp)) return null;
-  let level = 0;
+  let level2 = 0;
   for (let lvl = 0; lvl <= 15; lvl++) {
-    if (xp >= thresholds[lvl]) level = lvl;
+    if (xp >= thresholds[lvl]) level2 = lvl;
     else break;
   }
-  return allowZero ? level : Math.max(1, level);
+  return allowZero ? level2 : Math.max(1, level2);
 }
 function animalMaxCycleXp(type) {
   const t = ANIMAL_XP_THRESHOLDS[type];
@@ -40707,8 +42160,8 @@ function runAnimalCycleSim(type, scales, startXp) {
   }
   return cycles;
 }
-function getAnimalCycleRecord(type, level, scales) {
-  const target = Math.min(15, Math.max(1, parseInt(level) || 1));
+function getAnimalCycleRecord(type, level2, scales) {
+  const target = Math.min(15, Math.max(1, parseInt(level2) || 1));
   const cycles = runAnimalCycleSim(type, scales === void 0 ? getAffectionScales(type) : scales);
   if (target >= 15) {
     const steady = cycles.filter((c) => c.isMax).slice(-12);
@@ -40724,8 +42177,8 @@ function getAnimalCycleRecord(type, level, scales) {
   }
   return cycles.find((c) => c.claimLevel >= target) || cycles[cycles.length - 1];
 }
-function getAnimalStartCycle(type, level, scales) {
-  const target = clampAnimalStartLevel(level);
+function getAnimalStartCycle(type, level2, scales) {
+  const target = clampAnimalStartLevel(level2);
   if (target >= 15) return getAnimalCycleRecord(type, 15, scales);
   const sc = scales === void 0 ? getAffectionScales(type) : scales;
   const chain = runAnimalCycleSim(type, sc);
@@ -40738,8 +42191,8 @@ function maxCarry(record, thresholds) {
   if (!(cycleXp > 0) || !(record.xpStart >= thresholds[15])) return 0;
   return ((record.xpStart - thresholds[15]) % cycleXp + cycleXp) % cycleXp;
 }
-function computeAnimalFeedFigures(type, level, cycleOverride) {
-  const displayLevel = clampAnimalStartLevel(level);
+function computeAnimalFeedFigures(type, level2, cycleOverride) {
+  const displayLevel = clampAnimalStartLevel(level2);
   const thresholds = ANIMAL_XP_THRESHOLDS[type];
   const mods = getAnimalXpModifiers(type);
   const scales = getAffectionScales(type);
@@ -40778,13 +42231,13 @@ function computeAnimalRemainingLoveSlots(asleepAt, lovedAt, readyAt, now) {
   }
   return slots;
 }
-function computeAnimalRealLoveXp(type, level, animal, now, readyAt) {
+function computeAnimalRealLoveXp(type, level2, animal, now, readyAt) {
   const slots = computeAnimalRemainingLoveSlots(animal.asleepAt, animal.lovedAt, readyAt, now);
   if (!slots) return {
     slots: 0,
     xp: 0
   };
-  const affection = computeAnimalAffectionFigures(type, level);
+  const affection = computeAnimalAffectionFigures(type, level2);
   const itemKey = ANIMAL_LOVE_ITEM_KEYS[animal.item];
   let xp;
   if (itemKey) {
@@ -40806,17 +42259,17 @@ function computeAnimalRealLoveXp(type, level, animal, now, readyAt) {
 function computeAnimalRealProgress(type, animal, now, readyAt) {
   const thresholds = ANIMAL_XP_THRESHOLDS[type];
   const hasXp = typeof animal.xp === "number" && !isNaN(animal.xp);
-  const level = hasXp ? getAnimalLevelFromXp(type, animal.xp, true) : 1;
-  const xp = hasXp ? animal.xp : thresholds[level];
+  const level2 = hasXp ? getAnimalLevelFromXp(type, animal.xp, true) : 1;
+  const xp = hasXp ? animal.xp : thresholds[level2];
   const pendingClaims = hasXp ? animalPendingClaims(type, animal) : animal.state === "ready" ? 1 : 0;
-  const shownLevel = hasXp ? animalShownLevel(type, animal) : level;
+  const shownLevel = hasXp ? animalShownLevel(type, animal) : level2;
   const isReadyState = animal.state === "ready" || pendingClaims > 0;
-  const isMax = level >= 15;
+  const isMax = level2 >= 15;
   let xpGap, nextThreshold, nextLevelLabel, isMaxCycle;
   if (!isMax) {
-    nextThreshold = thresholds[level + 1];
+    nextThreshold = thresholds[level2 + 1];
     xpGap = Math.max(0, nextThreshold - xp);
-    nextLevelLabel = "Lv" + (level + 1);
+    nextLevelLabel = "Lv" + (level2 + 1);
     isMaxCycle = false;
   } else {
     const maxLevelXp = thresholds[15];
@@ -40828,9 +42281,9 @@ function computeAnimalRealProgress(type, animal, now, readyAt) {
     isMaxCycle = true;
   }
   if (isReadyState) xpGap = 0;
-  const favouriteFoodKey = getFavouriteFoodKeyAtLevel(level, type);
+  const favouriteFoodKey = getFavouriteFoodKeyAtLevel(level2, type);
   const feedKeyUsed = resolveFeedKeyUsed(type, favouriteFoodKey);
-  const baseFoodXp = getBaseFoodXpFor(type, Math.min(15, Math.max(0, level)), feedKeyUsed);
+  const baseFoodXp = getBaseFoodXpFor(type, Math.min(15, Math.max(0, level2)), feedKeyUsed);
   const mods = getAnimalXpModifiers(type);
   let realXpMult = mods.xpMultTotal;
   if (type === "pig" && typeof animal.muddy === "boolean") {
@@ -40839,19 +42292,19 @@ function computeAnimalRealProgress(type, animal, now, readyAt) {
     if (!mudSelected && animal.muddy) realXpMult *= PIG_MUD_XP_MULTIPLIER;
   }
   const boostedFoodXp = Math.max(1e-9, baseFoodXp * realXpMult);
-  const love = xpGap > 0 ? computeAnimalRealLoveXp(type, level, animal, now, readyAt) : {
+  const love = xpGap > 0 ? computeAnimalRealLoveXp(type, level2, animal, now, readyAt) : {
     slots: 0,
     xp: 0
   };
   const noOfFeeds = Math.ceil(Math.max(0, xpGap - love.xp) / boostedFoodXp);
   let claimLevel;
   if (isReadyState) {
-    claimLevel = hasXp && pendingClaims > 0 ? Math.max(1, animalNextClaimLevel(type, animal)) : Math.max(1, level);
+    claimLevel = hasXp && pendingClaims > 0 ? Math.max(1, animalNextClaimLevel(type, animal)) : Math.max(1, level2);
   } else if (isMax) {
     claimLevel = 15;
   } else {
     const xpAfter = xp + love.xp + noOfFeeds * boostedFoodXp;
-    claimLevel = Math.min(15, Math.max(level + 1, getAnimalLevelFromXp(type, xpAfter, true)));
+    claimLevel = Math.min(15, Math.max(level2 + 1, getAnimalLevelFromXp(type, xpAfter, true)));
   }
   let costFeeds = noOfFeeds;
   let costFeedKey = feedKeyUsed;
@@ -40864,7 +42317,7 @@ function computeAnimalRealProgress(type, animal, now, readyAt) {
     }
   }
   return {
-    level,
+    level: level2,
     shownLevel,
     pendingClaims,
     xp,
@@ -40889,8 +42342,8 @@ function roundClaimProduce(n) {
 }
 function computePigTradeIn(levelOverride) {
   const counts = getAnimalCount("pig");
-  const level = Math.min(15, Math.max(0, parseInt(levelOverride != null ? levelOverride : counts.level) || 0));
-  const base = PIG_BRISTLES_PER_LEVEL[level] || 0;
+  const level2 = Math.min(15, Math.max(0, parseInt(levelOverride != null ? levelOverride : counts.level) || 0));
+  const base = PIG_BRISTLES_PER_LEVEL[level2] || 0;
   const active = getActiveAnimalBoosts("pig");
   let flat = 0, mult = 1;
   active.forEach((b) => {
@@ -40901,7 +42354,7 @@ function computePigTradeIn(levelOverride) {
   const amount = base > 0 ? roundClaimProduce(Math.max(0, base * mult * spice.yieldMultAll + flat)) : 0;
   const sickAmount = roundClaimProduce(amount * SICK_ANIMAL_REWARD_MULTIPLIER);
   return {
-    level,
+    level: level2,
     base,
     amount,
     sickAmount,
@@ -41052,9 +42505,9 @@ function computePigBristlesPlanCore(basis, target) {
     basis: useGross ? "gross" : "net"
   };
 }
-function computeAnimalYieldsForLevel(type, level, realFeedBuffName) {
+function computeAnimalYieldsForLevel(type, level2, realFeedBuffName) {
   const cfg = ANIMAL_DATA[type];
-  const lvl = Math.min(15, Math.max(1, parseInt(level) || 1));
+  const lvl = Math.min(15, Math.max(1, parseInt(level2) || 1));
   const lvlData = cfg.levels[lvl - 1];
   const active = getActiveAnimalBoosts(type);
   let yieldMultAllTotal = 1;
@@ -41474,8 +42927,8 @@ var TOOL_HOARDER_STOCK = {
 function toolHoarderStockAdd(itemName) {
   const ranks = TOOL_HOARDER_STOCK[itemName];
   if (!ranks || !isSkillActive("skill_tool_hoarder")) return 0;
-  const level = Math.min(Math.max(getAscensionRank("skill_tool_hoarder"), 1), ranks.length);
-  return ranks[level - 1];
+  const level2 = Math.min(Math.max(getAscensionRank("skill_tool_hoarder"), 1), ranks.length);
+  return ranks[level2 - 1];
 }
 var ISLAND_RESOURCE_TAXES = {
   basic: 1,
@@ -43010,9 +44463,9 @@ function resolveFeedKeyUsed(type, favouriteFoodKey) {
   if (beetleFeed) return beetleFeed;
   return omnifeedEnabled && type !== "pig" ? "omnifeed" : favouriteFoodKey;
 }
-function getBaseFoodXpFor(type, level, feedKey) {
+function getBaseFoodXpFor(type, level2, feedKey) {
   if (isBeetleFeedKey(feedKey)) return BEETLE_FEED_XP[feedKey];
-  return getAnimalFoodXpTable(type)[level][feedKey];
+  return getAnimalFoodXpTable(type)[level2][feedKey];
 }
 function isOmnifeedEnabled() {
   return omnifeedEnabled;
@@ -43795,12 +45248,12 @@ function computeResourceFigures(name, visited) {
   const toolCoinCostMult = (typeof getActiveBoostsForTool === "function" ? getActiveBoostsForTool(data.tool).reduce((m, b) => b.coinCostMult ? m * b.coinCostMult : m, 1) : 1) * getArtistCoinCostMult();
   const toolCost = boosted.noToolNeeded ? 0 : (data.toolCoinCost || 0) * boosted.toolCostMult * toolCoinCostMult;
   const totalToolCost = materialsCost + toolCost;
-  const costPerUnit = totalToolCost / boosted.yieldVal;
+  const costPerUnit2 = totalToolCost / boosted.yieldVal;
   const nodeCount = getNodeCount(name);
   const toolUsageTotal = boosted.noToolNeeded ? 0 : getResourceToolUsageTotal(name);
   const totalYieldPerCycle = getResourceTieredYieldTotal(name, boosted.yieldVal, boosted.perTierYield);
   return {
-    costPerUnit,
+    costPerUnit: costPerUnit2,
     totalToolCost,
     yieldPer: boosted.yieldVal,
     timeSec: boosted.timeVal,
@@ -43850,9 +45303,9 @@ function computeLavaPitFigures(season) {
       mode
     };
   });
-  const costPerUnit = materialsCost / boosted.yieldVal;
+  const costPerUnit2 = materialsCost / boosted.yieldVal;
   return {
-    costPerUnit,
+    costPerUnit: costPerUnit2,
     totalMaterialsCost: materialsCost,
     timeSec: boosted.timeVal,
     yieldVal: boosted.yieldVal,
@@ -47293,7 +48746,7 @@ function ascensionParts(id, rank) {
   if (!data) return [];
   const meta = ASCENSION_PART_META[id] || {};
   const labels = meta.labels || data.labels || {};
-  const fmt2 = meta.fmt || {};
+  const fmt3 = meta.fmt || {};
   const unit = meta.unit || data.unit;
   const r = Math.min(Math.max(rank, 1), 3) - 1;
   let src = null;
@@ -47307,7 +48760,7 @@ function ascensionParts(id, rank) {
   if (!src) return [];
   return Object.keys(src).map((k) => {
     const v = ascensionRound(src[k][r]);
-    const kind = fmt2[k] || (unit === "\xD7" ? "x" : "add");
+    const kind = fmt3[k] || (unit === "\xD7" ? "x" : "add");
     const num = kind === "x" ? `\xD7${v}` : v > 0 ? `+${v}` : `${v}`;
     return `${num} ${labels[k] || k.split(".").pop()}`;
   });
@@ -47330,15 +48783,15 @@ function skillAoeNoteForRank(s, rank) {
 function ascensionRewriteNote(note, data, rank) {
   const base = data.values[0];
   const v = data.values[rank - 1];
-  const signed2 = (x) => `${x < 0 ? "-" : "+"}${ascensionRound(Math.abs(x))}`;
+  const signed4 = (x) => `${x < 0 ? "-" : "+"}${ascensionRound(Math.abs(x))}`;
   const same = (txt, ref) => Math.abs(parseFloat(txt) - ref) < 1e-6;
   if (data.field === "yieldAdd") {
     const m = note.match(/^[+-]?[\d.]+/);
-    if (m && same(m[0], base)) return note.replace(m[0], signed2(v));
+    if (m && same(m[0], base)) return note.replace(m[0], signed4(v));
   }
   if (data.field === "extraYieldAdd") {
     const m = note.match(/additional ([+-]?[\d.]+)/);
-    if (m && same(m[1], base)) return note.replace(m[0], `additional ${signed2(v)}`);
+    if (m && same(m[1], base)) return note.replace(m[0], `additional ${signed4(v)}`);
   }
   if (data.field === "timeMult") {
     const m = note.match(/^-([\d.]+)%/);
@@ -50665,10 +52118,10 @@ function skillSyncedLevel(s) {
   if (Number.isFinite(synced)) return Math.min(Math.max(Math.round(synced), 1), 3);
   return 1;
 }
-function skillSyncedBoostText(s, level) {
+function skillSyncedBoostText(s, level2) {
   const ascData = ASCENSION_RANK_DATA[s.id];
-  if (ascData) return ascensionDescribeRank(s.id, level);
-  return `Skill Level [${level}]`;
+  if (ascData) return ascensionDescribeRank(s.id, level2);
+  return `Skill Level [${level2}]`;
 }
 var LIMITED_TIME_BOOSTS = [{
   id: "lt_time_warp_totem",
@@ -51156,12 +52609,12 @@ function syncWeatherDestructionFromFarmData(g) {
   };
 }
 function farmSyncRefreshLimitedBoostActiveState(g) {
-  const state = {};
+  const state2 = {};
   const protection = {};
   const now = Date.now();
   LIMITED_TIME_BOOSTS.forEach((entry) => {
     const status = farmSyncGetLimitedTimeBoostStatus(g, entry.name, entry.durationMs);
-    state[entry.name] = {
+    state2[entry.name] = {
       active: status.activeCount > 0,
       expiresAt: status.activeCount > 0 ? now + status.remainingMs : 0,
       startedAt: status.activeCount > 0 && status.startedAt ? status.startedAt : 0,
@@ -51172,15 +52625,15 @@ function farmSyncRefreshLimitedBoostActiveState(g) {
     const status = farmSyncGetCalendarBoostStatus(g, entry.calendarKey, entry.durationMs);
     const suppressed = entry.isDebuff && status.protectedFlag;
     protection[entry.name] = status.protectedFlag;
-    state[entry.name] = {
+    state2[entry.name] = {
       active: status.active && !suppressed,
       expiresAt: status.active && !suppressed ? now + status.remainingMs : 0,
       durationMs: entry.durationMs
     };
   });
-  limitedBoostActiveState = state;
+  limitedBoostActiveState = state2;
   calendarDebuffProtection = protection;
-  return state;
+  return state2;
 }
 function hasLimitedBoostSyncData() {
   return Object.keys(limitedBoostActiveState).length > 0;
@@ -52168,14 +53621,14 @@ function getBoostedToolRecipe(item) {
 function coinsToFlower(coins) {
   return coins / (coinPerFlower || 1);
 }
-function compute24hProjection(yieldPerCycle, cycleTimeSec, costPerUnit, sellPerUnit, count, restockInfo, manualCyclesPerDay) {
+function compute24hProjection(yieldPerCycle, cycleTimeSec, costPerUnit2, sellPerUnit, count, restockInfo, manualCyclesPerDay) {
   count = count == null ? 1 : count;
   const autoCyclesPerDay = cycleTimeSec > 0 ? 86400 / cycleTimeSec : 0;
   const cyclesPerDay = Math.round(manualCyclesPerDay != null && manualCyclesPerDay >= 0 ? manualCyclesPerDay : autoCyclesPerDay);
   const unitsPerDay = (yieldPerCycle || 0) * count * cyclesPerDay;
   const netSellPerUnit = (sellPerUnit || 0) * (1 - feePercent / 100);
   const revenue24h = netSellPerUnit * unitsPerDay;
-  let cost24h = (costPerUnit || 0) * unitsPerDay;
+  let cost24h = (costPerUnit2 || 0) * unitsPerDay;
   let restockCost24h = 0;
   let restockDetails = null;
   if (restockInfo && restockInfo.baseStock) {
@@ -52469,9 +53922,9 @@ var ANIMAL_BASE_CYCLE_SEC = 86400;
 function computeAnimalTypeFigures(type, visited, levelOverride, cycleOverride) {
   const cfg = ANIMAL_DATA[type];
   const counts = getAnimalCount(type);
-  const level = levelOverride != null ? clampAnimalStartLevel(levelOverride) : clampAnimalStartLevel(counts.level);
+  const level2 = levelOverride != null ? clampAnimalStartLevel(levelOverride) : clampAnimalStartLevel(counts.level);
   const qty = Math.max(0, parseFloat(counts.qty) || 0);
-  let lvlData = cfg.levels[Math.max(1, level) - 1];
+  let lvlData = cfg.levels[Math.max(1, level2) - 1];
   const active = getActiveAnimalBoosts(type);
   let feedMultTotal = 1, yieldMultAllTotal = 1, timeMultTotal = 1, freeFeed = false, cureFree = false, cureCostMult = 1;
   const productCount = cfg.products.length;
@@ -52510,8 +53963,8 @@ function computeAnimalTypeFigures(type, visited, levelOverride, cycleOverride) {
   feedMultTotal *= spice.feedMultAll;
   yieldMultAllTotal *= spice.yieldMultAll;
   timeMultTotal *= spice.timeMultAll;
-  const feedFig = computeAnimalFeedFigures(type, level, cycleOverride);
-  const claimLevel = Math.min(15, Math.max(level, parseInt(feedFig.claimLevel) || level));
+  const feedFig = computeAnimalFeedFigures(type, level2, cycleOverride);
+  const claimLevel = Math.min(15, Math.max(level2, parseInt(feedFig.claimLevel) || level2));
   lvlData = cfg.levels[claimLevel - 1];
   const feedKeyUsed = feedFig.feedKeyUsed;
   const feedNameUsed = FEED_LABELS[feedKeyUsed];
@@ -52540,14 +53993,14 @@ function computeAnimalTypeFigures(type, visited, levelOverride, cycleOverride) {
   const sickHeads = getEffectiveSickHeads(type);
   const extraCoinsPerLevel = (medicineFlowerPerLevel + consumablesFlowerPerLevel) * coinPerFlower;
   const totalCostCoinsPerAnimal = feedCostCoins + extraCoinsPerLevel;
-  const costPerUnit = totalYieldUnits > 0 ? totalCostCoinsPerAnimal / totalYieldUnits : 0;
+  const costPerUnit2 = totalYieldUnits > 0 ? totalCostCoinsPerAnimal / totalYieldUnits : 0;
   const cycleTimeSec = Math.max(1, ANIMAL_BASE_CYCLE_SEC * timeMultTotal);
   const animalShrineInfo = getActiveShrineDailyCost(active);
   const cyclesPerDayForShrine = ANIMAL_BASE_CYCLE_SEC / cycleTimeSec;
   const shrineCostFlowerPerCyclePerAnimal = animalShrineInfo.total > 0 && qty > 0 ? animalShrineInfo.total / cyclesPerDayForShrine / qty : 0;
   return {
     type,
-    level,
+    level: level2,
     claimLevel,
     qty,
     lvlData,
@@ -52556,7 +54009,7 @@ function computeAnimalTypeFigures(type, visited, levelOverride, cycleOverride) {
     feedCostCoins,
     yields,
     totalYieldUnits,
-    costPerUnit,
+    costPerUnit: costPerUnit2,
     totalCostCoinsPerAnimal,
     cycleTimeSec,
     products: cfg.products,
@@ -52719,12 +54172,12 @@ function computeAnimalBountyTable() {
       if (!r || completed.has(r.id)) return;
       if (String(r.name).toLowerCase() !== type) return;
       if (typeof r.coins !== "number" || !(r.coins > 0)) return;
-      const level = Math.min(15, Math.max(1, parseInt(r.level) || 1));
-      const feedCost = feedByLevel[level] != null ? feedByLevel[level] : 0;
+      const level2 = Math.min(15, Math.max(1, parseInt(r.level) || 1));
+      const feedCost = feedByLevel[level2] != null ? feedByLevel[level2] : 0;
       const totalCost = buyCost + feedCost;
       const coins = r.coins * multiplier;
       list.push({
-        level,
+        level: level2,
         baseCoins: r.coins,
         coins,
         feedCost,
@@ -52789,10 +54242,10 @@ function computeAnimalWeeklyFigures(type, manualCyclesPerWeek) {
   const figCacheWith = {};
   const figCacheBase = {};
   const savedSalt = spiceUsage.saltLick[type], savedHoney = spiceUsage.honeyTreat[type], savedSeasoning = spiceUsage.truffleSeasoning[type];
-  function figAtLevel(level, withSpice, cyc) {
+  function figAtLevel(level2, withSpice, cyc) {
     const cache = withSpice ? figCacheWith : figCacheBase;
     const useCycle = !!cyc && !cyc.isMax;
-    const lv = useCycle ? cyc.startLevel : level;
+    const lv = useCycle ? cyc.startLevel : level2;
     const key = useCycle ? cyc.startLevel + "|" + cyc.feeds + "|" + cyc.loveXp + "|" + cyc.xpStart : "lvl" + lv;
     if (cache[key]) return cache[key];
     if (!withSpice) {
@@ -52820,11 +54273,11 @@ function computeAnimalWeeklyFigures(type, manualCyclesPerWeek) {
   let levelReached = startLevel;
   for (let n = 0; n < cyclesPerWeek; n++) {
     const cyc = simCycles[Math.min(idx, simCycles.length - 1)];
-    const level = Math.min(15, Math.max(1, cyc.claimLevel || startLevel));
-    levelReached = level;
+    const level2 = Math.min(15, Math.max(1, cyc.claimLevel || startLevel));
+    levelReached = level2;
     const isBoosted = n < boostedCycles;
-    const figWith = figAtLevel(level, true, cyc);
-    const figBase = figAtLevel(level, false, cyc);
+    const figWith = figAtLevel(level2, true, cyc);
+    const figBase = figAtLevel(level2, false, cyc);
     const withP = computeAnimalProfit(figWith);
     const baseP = computeAnimalProfit(figBase);
     const activeFig = isBoosted ? figWith : figBase;
@@ -53977,9 +55430,9 @@ function applyFarmPlotsNodesOnly(json, hasFullData) {
   setNodeCount("Lava Pit", Object.keys(asObj2(g.lavaPits) || {}).length);
   {
     const saltFarmObj = asObj2(g.saltFarm);
-    const level = saltFarmObj && (typeof saltFarmObj.level === "number" ? saltFarmObj.level : typeof saltFarmObj.level === "string" && saltFarmObj.level.trim() && !isNaN(Number(saltFarmObj.level)) ? Number(saltFarmObj.level) : null);
-    if (level != null && typeof setSaltFarmLevel === "function") {
-      setSaltFarmLevel(level);
+    const level2 = saltFarmObj && (typeof saltFarmObj.level === "number" ? saltFarmObj.level : typeof saltFarmObj.level === "string" && saltFarmObj.level.trim() && !isNaN(Number(saltFarmObj.level)) ? Number(saltFarmObj.level) : null);
+    if (level2 != null && typeof setSaltFarmLevel === "function") {
+      setSaltFarmLevel(level2);
       const saltNodesObj = saltFarmObj && typeof saltFarmObj.nodes === "object" ? saltFarmObj.nodes : null;
       const physicalSaltNodeCount = saltNodesObj ? Object.keys(saltNodesObj).length : null;
       if (physicalSaltNodeCount != null) {
@@ -56756,20 +58209,20 @@ $("globalMiniSyncBtn").onclick = () => {
 function computeAnimalBaseCoinFigures(type) {
   const cfg = ANIMAL_DATA[type];
   const counts = getAnimalCount(type);
-  const level = clampAnimalStartLevel(counts.level);
-  const lvlData = cfg.levels[Math.max(1, level) - 1];
+  const level2 = clampAnimalStartLevel(counts.level);
+  const lvlData = cfg.levels[Math.max(1, level2) - 1];
   const feedInfo = getFeedUnitCost(lvlData.feed);
   const feedCostCoins = lvlData.qty * feedInfo.cost;
-  const claimData = cfg.levels[Math.max(1, Math.min(15, level + 1)) - 1];
+  const claimData = cfg.levels[Math.max(1, Math.min(15, level2 + 1)) - 1];
   const yields = cfg.products.map((_, pi) => claimData.y[pi]);
   const totalYieldUnits = yields.reduce((a, v) => a + v, 0);
-  const costPerUnit = totalYieldUnits > 0 ? feedCostCoins / totalYieldUnits : 0;
+  const costPerUnit2 = totalYieldUnits > 0 ? feedCostCoins / totalYieldUnits : 0;
   return {
-    level,
+    level: level2,
     lvlData,
     feedCostCoins,
     yields,
-    costPerUnit
+    costPerUnit: costPerUnit2
   };
 }
 var SEASON_ACCENT = {
@@ -57209,16 +58662,16 @@ function bettyGatherItems() {
   const names = [...Object.keys(BASE_CROPS), ...Object.keys(BASE_FRUITS), ...Object.keys(BASE_GREENHOUSE)];
   return names.map((name) => {
     const baseCoin = BETTY_BASE_COIN_SELL[name] || 0;
-    const marketPrice = bettyMarketPrice(name);
-    const baseRate = baseCoin > 0 && marketPrice > 0 ? baseCoin / marketPrice : 0;
+    const marketPrice2 = bettyMarketPrice(name);
+    const baseRate = baseCoin > 0 && marketPrice2 > 0 ? baseCoin / marketPrice2 : 0;
     const category = bettyItemCategory(name);
     const boostMult = bettyGreenThumbOn && category === "Crop" ? 1.05 : 1;
-    const qty = marketPrice > 0 ? 1 / marketPrice : 0;
+    const qty = marketPrice2 > 0 ? 1 / marketPrice2 : 0;
     return {
       name,
       category,
       baseCoin,
-      marketPrice,
+      marketPrice: marketPrice2,
       qty,
       baseRate,
       boostedRate: baseRate * boostMult
@@ -57336,8 +58789,8 @@ function formatTrade12h(ts) {
   return `${datePart} \xB7 ${timePart}`;
 }
 function computeTradeFigures(t) {
-  const marketPrice = tradeMarketPrice(t.itemName);
-  const grossMarketValue = t.remainingQty * marketPrice;
+  const marketPrice2 = tradeMarketPrice(t.itemName);
+  const grossMarketValue = t.remainingQty * marketPrice2;
   const feeAmount = grossMarketValue * (feePercent / 100);
   const marketValue = grossMarketValue - feeAmount;
   const costBasis = t.remainingQty * t.buyPrice;
@@ -57345,7 +58798,7 @@ function computeTradeFigures(t) {
   const plPct = costBasis > 0 ? pl / costBasis * 100 : 0;
   const originalCapital = t.qty * t.buyPrice;
   return {
-    marketPrice,
+    marketPrice: marketPrice2,
     grossMarketValue,
     feeAmount,
     marketValue,
@@ -57922,8 +59375,8 @@ function gunterAlreadyBought(nodeName) {
 }
 function gunterFormatOdds(odds) {
   if (!odds && odds !== 0) return "\u2014";
-  const pct = odds * 100;
-  const rounded = pct >= 10 ? Math.round(pct * 10) / 10 : Math.round(pct * 100) / 100;
+  const pct2 = odds * 100;
+  const rounded = pct2 >= 10 ? Math.round(pct2 * 10) / 10 : Math.round(pct2 * 100) / 100;
   return `${rounded}%`;
 }
 function gunterMutantSeasonBadges(seasons) {
@@ -62951,8 +64404,8 @@ function esAscLevelLabel(a) {
   const isl = esAscLevelToIsland(a);
   return isl ? ES_ISLAND_LABEL[isl] : "Marble Age (A" + a + ")";
 }
-function esLocalIndex(island, level) {
-  return ES_ASCENSION_LEVEL[island] || island === "marbleX" ? level - 30 : level;
+function esLocalIndex(island, level2) {
+  return ES_ASCENSION_LEVEL[island] || island === "marbleX" ? level2 - 30 : level2;
 }
 function esBandExpansionCrystalTotal(ascLevel) {
   return Math.min(ascLevel + 2, 12);
@@ -63036,12 +64489,12 @@ function esAddDelta(nodes, delta) {
     nodes[k] = (nodes[k] || 0) + delta[k];
   });
 }
-function esComputeAscensionNodes(ascLevel, level) {
+function esComputeAscensionNodes(ascLevel, level2) {
   const nodes = Object.assign({}, ES_ASCENSION_BASE_NODES);
   for (let prior = 1; prior < ascLevel; prior++) {
     esGetAscensionSchedule(prior).forEach((delta) => esAddDelta(nodes, delta));
   }
-  const cap = Math.max(0, Math.min(level - 30, ES_SWAMP_EXPANSIONS_PER_ASCENSION));
+  const cap = Math.max(0, Math.min(level2 - 30, ES_SWAMP_EXPANSIONS_PER_ASCENSION));
   if (ascLevel >= 1) {
     const schedule = esGetAscensionSchedule(ascLevel);
     for (let e = 1; e <= cap; e++) esAddDelta(nodes, schedule[e - 1]);
@@ -63060,32 +64513,32 @@ function esPrevIslandOf(island) {
   const idx = ES_ISLAND_ORDER.indexOf(island);
   return idx > 0 ? ES_ISLAND_ORDER[idx - 1] : null;
 }
-function esGetNodesAt(island, level, ascOverride) {
+function esGetNodesAt(island, level2, ascOverride) {
   if (ES_NODE_TABLE[island]) {
     const table = ES_NODE_TABLE[island];
     const keys = Object.keys(table).map(Number).sort((a, b) => a - b);
-    if (level < keys[0]) {
+    if (level2 < keys[0]) {
       const prevIsland = esPrevIslandOf(island);
       if (prevIsland) return esGetNodesAt(prevIsland, ES_ISLAND_MAX[prevIsland]);
       return {};
     }
     let use = keys[0];
     keys.forEach((k) => {
-      if (k <= level) use = k;
+      if (k <= level2) use = k;
     });
     return table[use] || {};
   }
   const ascLevel = island === "marbleX" ? Math.max(ES_CUSTOM_ASCENSION_MIN, ascOverride || ES_CUSTOM_ASCENSION_MIN) : ES_ASCENSION_LEVEL[island];
   if (!ascLevel) return {};
-  return esComputeAscensionNodes(ascLevel, level);
+  return esComputeAscensionNodes(ascLevel, level2);
 }
-function esGetRequirementsAt(island, level, ascOverride) {
+function esGetRequirementsAt(island, level2, ascOverride) {
   if (ES_REQ_TABLE[island]) {
-    return ES_REQ_TABLE[island][level] || null;
+    return ES_REQ_TABLE[island][level2] || null;
   }
   const ascLevel = island === "marbleX" ? Math.max(ES_CUSTOM_ASCENSION_MIN, ascOverride || ES_CUSTOM_ASCENSION_MIN) : ES_ASCENSION_LEVEL[island];
   if (!ascLevel) return null;
-  const local = esLocalIndex(island, level);
+  const local = esLocalIndex(island, level2);
   if (local < 1 || local > 12) return null;
   const table = ES_ASCENSION_REQ[ascLevel];
   if (table && table[local]) return table[local];
@@ -64208,12 +65661,12 @@ function esReadFarmPosition(g) {
     };
   }
   const expandingNow = !!(g && g.expansionConstruction && typeof g.expansionConstruction === "object");
-  let level = ascensionLevel > 0 ? Math.max(30, basicLand) : basicLand;
-  if (expandingNow) level += 1;
-  level = Math.max(ES_ISLAND_MIN[matchedIsland], Math.min(ES_ISLAND_MAX[matchedIsland], level));
+  let level2 = ascensionLevel > 0 ? Math.max(30, basicLand) : basicLand;
+  if (expandingNow) level2 += 1;
+  level2 = Math.max(ES_ISLAND_MIN[matchedIsland], Math.min(ES_ISLAND_MAX[matchedIsland], level2));
   return {
     island: matchedIsland,
-    level,
+    level: level2,
     expandingNow,
     ascensionLevel
   };
@@ -64229,19 +65682,19 @@ function esSyncFromFarm() {
     toast(pos.error);
     return;
   }
-  const matchedIsland = pos.island, level = pos.level, expandingNow = pos.expandingNow, ascensionLevel = pos.ascensionLevel;
+  const matchedIsland = pos.island, level2 = pos.level, expandingNow = pos.expandingNow, ascensionLevel = pos.ascensionLevel;
   esState.start.island = matchedIsland;
-  esState.start.level = level;
+  esState.start.level = level2;
   esState.start.inProgress = expandingNow;
   esState.target.island = matchedIsland;
-  esState.target.level = Math.min(level + 1, ES_ISLAND_MAX[matchedIsland]);
+  esState.target.level = Math.min(level2 + 1, ES_ISLAND_MAX[matchedIsland]);
   if (matchedIsland === "marbleX") {
     esState.start.customAsc = ascensionLevel;
     esState.target.customAsc = ascensionLevel;
   }
   esSyncAutoBoostsFromFarm();
   esRenderAll();
-  toast("\u2705 Synced to " + ES_ISLAND_LABEL[matchedIsland] + " #" + level + (expandingNow ? " (currently expanding)" : ""));
+  toast("\u2705 Synced to " + ES_ISLAND_LABEL[matchedIsland] + " #" + level2 + (expandingNow ? " (currently expanding)" : ""));
 }
 function esNextExpansionPosition(cur) {
   const island = cur.island;
@@ -64380,7 +65833,7 @@ function esRenderReachNote() {
   if (!el || !body) return;
   const out = esComputeReachableExpansions();
   const hello = "Hello <b>" + escapeHtml(profileGetDisplayName()) + "</b>!<br>";
-  const islandHtml = (island, level) => '<img class="es-reach-icon" src="' + esIslandIcon(island) + '" alt=""><b>' + escapeHtml(ES_ISLAND_LABEL[island]) + "</b> Expansion <b>" + level + "</b>";
+  const islandHtml = (island, level2) => '<img class="es-reach-icon" src="' + esIslandIcon(island) + '" alt=""><b>' + escapeHtml(ES_ISLAND_LABEL[island]) + "</b> Expansion <b>" + level2 + "</b>";
   if (out.state === "reach") {
     const reach = out.best;
     body.innerHTML = '<div class="es-reach-text">' + hello + "Your resources can reach you to " + islandHtml(reach.island, reach.level) + '</div><div class="es-reach-sub"><b>' + reach.steps + "</b> expansion" + (reach.steps === 1 ? "" : "s") + ' in total, including upgrades</div><div class="es-reach-list">' + esReachListHtml(reach.coins, reach.resources) + "</div>";
@@ -65478,21 +66931,21 @@ function computeCalcAnimalShrineCost(animalType, qty) {
   };
 }
 function computeCalcFigures() {
-  let baseCost = 0, gross = 0, restockCost = 0, restockCount = 0, restockGems = 0, shrineCost = 0, shrineNames = [], consumableCost = 0, isAnimal = false, marketPrice = 0;
+  let baseCost = 0, gross = 0, restockCost = 0, restockCount = 0, restockGems = 0, shrineCost = 0, shrineNames = [], consumableCost = 0, isAnimal = false, marketPrice2 = 0;
   if (calcMode === "bought") {
     const qty = parseFloat($("calcBSQty").value) || 0;
     const buyPrice = parseFloat($("calcBSBuyPrice").value) || 0;
     const sellPrice = parseFloat($("calcBSSellPrice").value) || 0;
     baseCost = buyPrice * qty;
     gross = sellPrice * qty;
-    marketPrice = sellPrice;
+    marketPrice2 = sellPrice;
   } else {
     const qty = parseFloat($("calcHarvestQty").value) || 0;
     const m = harvestSelectedLibId ? marketItems.find((x) => String(x.id) === String(harvestSelectedLibId)) : null;
     if (m) {
       const econ = farmPanelComputeEconomics(m.name, 1, qty);
       gross = econ.grossRevenue;
-      marketPrice = econ.price;
+      marketPrice2 = econ.price;
       restockCost = econ.restockCost;
       restockCount = econ.restockInfo ? econ.restockInfo.restocksNeeded : 0;
       restockGems = econ.restockInfo ? econ.restockInfo.gemsTotal : 0;
@@ -65521,7 +66974,7 @@ function computeCalcFigures() {
   return {
     cost: baseCost,
     gross,
-    marketPrice,
+    marketPrice: marketPrice2,
     tradeTax,
     netRevenue,
     restockCost,
@@ -69545,12 +70998,12 @@ function getDailyFishingLimitInfoFromState(g) {
   const parts = [];
   const skills = g.bumpkin && g.bumpkin.skills && typeof g.bumpkin.skills === "object" ? g.bumpkin.skills : {};
   FISHING_LIMIT_SKILL_RANKS.forEach(([name, ranks]) => {
-    const level = Math.min(Number(skills[name]) || 0, ranks.length);
-    if (level > 0) {
-      limit += ranks[level - 1];
+    const level2 = Math.min(Number(skills[name]) || 0, ranks.length);
+    if (level2 > 0) {
+      limit += ranks[level2 - 1];
       parts.push({
         name,
-        add: ranks[level - 1]
+        add: ranks[level2 - 1]
       });
     }
   });
@@ -70791,8 +72244,8 @@ function farmSyncMapPetBib(raw) {
   return "No Bib";
 }
 var PET_MAX_LEVEL = 300;
-function petXpForLevel(level) {
-  const l = Math.max(1, Math.floor(Number(level) || 1));
+function petXpForLevel(level2) {
+  const l = Math.max(1, Math.floor(Number(level2) || 1));
   return 50 * (l - 1) * l;
 }
 function petLevelFromXp(xp) {
@@ -70832,11 +72285,11 @@ function farmSyncExtractPetTraits(pet) {
   const levelRaw = farmSyncPickField(pet, ["level", "lvl"]);
   const xpRaw = farmSyncPickField(pet, ["experience", "xp", "exp"]);
   const xpNum = xpRaw != null ? Number(xpRaw) || 0 : null;
-  const level = levelRaw != null ? Math.max(1, parseInt(levelRaw, 10) || 1) : petLevelFromXp(xpNum || 0);
+  const level2 = levelRaw != null ? Math.max(1, parseInt(levelRaw, 10) || 1) : petLevelFromXp(xpNum || 0);
   return {
     type: String(type).trim(),
     name: name != null ? String(name).trim() : null,
-    level,
+    level: level2,
     experience: xpNum,
     aura,
     bib
@@ -71048,18 +72501,18 @@ function petUnlockedFetches(pet) {
   return petFetchConfig(pet.petType).filter((f) => pet.level >= f.level);
 }
 function petFeedCounts(pet) {
-  const level = pet && pet.level > 0 ? pet.level : 1;
+  const level2 = pet && pet.level > 0 ? pet.level : 1;
   if (pet && pet.isNFT) {
     return {
       easy: 1,
-      medium: level >= 30 ? 2 : 1,
-      hard: level >= 200 ? 2 : 1
+      medium: level2 >= 30 ? 2 : 1,
+      hard: level2 >= 200 ? 2 : 1
     };
   }
   return {
     easy: 1,
     medium: 1,
-    hard: level >= 10 ? 1 : 0
+    hard: level2 >= 10 ? 1 : 0
   };
 }
 function petDailyEnergy(pet) {
@@ -71090,9 +72543,9 @@ function petComputeCard(pet) {
     const yieldPerFetch = petFetchYieldPerFetch(pet, r);
     const totalYield = numFetches * yieldPerFetch;
     const tradable = !PET_NOT_TRADABLE.has(r);
-    const marketPrice = tradable ? getPetResourceMarket(r) : 0;
-    const costPerUnit = totalYield > 0 ? dailyFoodCostFlower / totalYield : 0;
-    const gross = tradable ? totalYield * marketPrice : 0;
+    const marketPrice2 = tradable ? getPetResourceMarket(r) : 0;
+    const costPerUnit2 = totalYield > 0 ? dailyFoodCostFlower / totalYield : 0;
+    const gross = tradable ? totalYield * marketPrice2 : 0;
     const sellFee = tradable ? gross * fee : 0;
     const net = tradable ? gross - sellFee - dailyFoodCostFlower : -dailyFoodCostFlower;
     return {
@@ -71101,8 +72554,8 @@ function petComputeCard(pet) {
       numFetches,
       totalYield,
       tradable,
-      marketPrice,
-      costPerUnit,
+      marketPrice: marketPrice2,
+      costPerUnit: costPerUnit2,
       gross,
       sellFee,
       net
@@ -72923,11 +74376,11 @@ function digCollectDug(g) {
   };
 }
 function digPricePct() {
-  let pct = 0;
+  let pct2 = 0;
   DIG_BOOST_DEFS.forEach((b) => {
-    if (b.pricePct && digBoostOn(b.id)) pct += b.pricePct;
+    if (b.pricePct && digBoostOn(b.id)) pct2 += b.pricePct;
   });
-  return pct;
+  return pct2;
 }
 function digDailyDigLimit() {
   let amount = DIG_BASE_DAILY_DIGS;
@@ -72944,12 +74397,12 @@ function digYieldPerDig(kind) {
   });
   return amount;
 }
-function digItemPrice(name, pct) {
+function digItemPrice(name, pct2) {
   const base = SELLABLE_TREASURES[name];
   if (typeof base === "number") {
     return {
       base,
-      price: base * (1 + pct / 100),
+      price: base * (1 + pct2 / 100),
       sellable: true
     };
   }
@@ -73151,20 +74604,20 @@ function caveSetMatMode(owner, name, mode) {
   st.mats[owner + ":" + name] = mode;
   digDataSaveState();
 }
-function digTreasurePriceHtml(solved, pct) {
+function digTreasurePriceHtml(solved, pct2) {
   const artefact = solved && solved.artefactName;
   const names = Object.keys(SELLABLE_TREASURES).filter((n) => !DIG_CHAPTER_ARTEFACTS.has(n) || n === artefact);
   return names.map((name) => {
-    const p = digItemPrice(name, pct);
-    const boosted = pct > 0;
+    const p = digItemPrice(name, pct2);
+    const boosted = pct2 > 0;
     const tag = name === "Sand" || name === "Crab" ? `<span class="dig-yield-tag" title="Yield per dig">\xD7${digYieldPerDig(name)}</span>` : "";
     const vals = boosted ? `<span class="dig-price-base is-struck">${digFmt(p.base)}</span><span class="dig-price-boosted">${digFmt(p.price)}</span>` : `<span class="dig-price-base">${digFmt(p.base)}</span>`;
     return `<div class="dig-price-row">${digIconHtml(name)}<span class="dig-price-name" title="${escapeHtml(name)}">${escapeHtml(name)}${tag}</span><span class="dig-price-vals">${vals}${COIN_ICON}</span></div>`;
   }).join("");
 }
-function digDugTreasuresHtml(dug, pct) {
+function digDugTreasuresHtml(dug, pct2) {
   const rows = Object.keys(dug.items).map((name) => {
-    const p = digItemPrice(name, pct);
+    const p = digItemPrice(name, pct2);
     return {
       name,
       qty: dug.items[name],
@@ -73174,14 +74627,14 @@ function digDugTreasuresHtml(dug, pct) {
   if (!rows.length) return '<div class="dig-empty">Nothing dug yet \u2014 sync your farm.</div>';
   return rows.map((r) => `<div class="dig-dug-row"><span class="dig-dug-qty">\xD7${digFmt(r.qty)}</span>${digIconHtml(r.name)}<span class="dig-dug-name" title="${escapeHtml(r.name)}">${escapeHtml(r.name)}</span><span class="dig-dug-val">${digFmt(r.total)}${COIN_ICON}</span></div>`).join("");
 }
-function digInventoryHtml(g, pct) {
+function digInventoryHtml(g, pct2) {
   const src = g && g.inventory && typeof g.inventory === "object" ? g.inventory : {};
   let totalQty = 0;
   let totalCoins = 0;
   const rows = Object.keys(SELLABLE_TREASURES).map((name) => {
     const qty = Number(src[name]);
     if (!isFinite(qty) || qty <= 0) return null;
-    const total = digItemPrice(name, pct).price * qty;
+    const total = digItemPrice(name, pct2).price * qty;
     totalQty += qty;
     totalCoins += total;
     return {
@@ -73371,31 +74824,31 @@ function digStreakTiersHtml() {
       r,
       i
     })).sort((a, b) => b.r.w - a.r.w || a.i - b.i).map(({ r }) => {
-      const pct = Number((r.w / sum * 100).toPrecision(3));
-      return `<div class="dig-dug-row dig-streak-row">${digRewardIconHtml(r.name)}<span class="dig-dug-name" title="${escapeHtml(r.name)}">${escapeHtml(r.name)}<span class="dig-streak-qty">\xD7${digFmt(r.qty)}</span></span><span class="dig-dug-val">${pct}%</span></div>`;
+      const pct2 = Number((r.w / sum * 100).toPrecision(3));
+      return `<div class="dig-dug-row dig-streak-row">${digRewardIconHtml(r.name)}<span class="dig-dug-name" title="${escapeHtml(r.name)}">${escapeHtml(r.name)}<span class="dig-streak-qty">\xD7${digFmt(r.qty)}</span></span><span class="dig-dug-val">${pct2}%</span></div>`;
     }).join("");
     return `<div class="dig-data-label dig-sublabel">${escapeHtml(t.name)}<span class="dig-streak-days">${escapeHtml(t.days)}</span></div>${rows}`;
   }).join("");
 }
-function digStreakItemRowHtml(name, qty, pct) {
+function digStreakItemRowHtml(name, qty, pct2) {
   const sellable = typeof SELLABLE_TREASURES[name] === "number";
-  const val = sellable ? `<span class="dig-dug-val">${digFmt(digItemPrice(name, pct).price * qty)}${COIN_ICON}</span>` : "";
+  const val = sellable ? `<span class="dig-dug-val">${digFmt(digItemPrice(name, pct2).price * qty)}${COIN_ICON}</span>` : "";
   return `<div class="dig-dug-row"><span class="dig-dug-qty">\xD7${digFmt(qty)}</span>${digRewardIconHtml(name)}<span class="dig-dug-name" title="${escapeHtml(name)}">${escapeHtml(name)}</span>${val}</div>`;
 }
-function digStreakDugHtml(info, pct) {
+function digStreakDugHtml(info, pct2) {
   const label = `<div class="dig-data-label dig-sublabel">${digFmt(info.count)} Digging Streak Reward</div>`;
   if (!info.claimed) return label + '<div class="dig-empty">Not claimed today.</div>';
   const detected = info.rec && info.rec.items;
   const art = digStreakArtefactName();
-  const artRow = digStreakItemRowHtml(art, 1, pct);
+  const artRow = digStreakItemRowHtml(art, 1, pct2);
   if (!detected) {
     const picks = digStreakCandidates(info.count).map((c) => `<label class="dig-dug-row dig-streak-pick"><span class="dig-dug-qty">\xD7${digFmt(c.qty)}</span>${digRewardIconHtml(c.name)}<span class="dig-dug-name" title="${escapeHtml(c.name)}">${escapeHtml(c.name)}</span><span class="bg-sim-check"><input type="checkbox" data-dig-streak-pick="${escapeHtml(c.name)}:${c.qty}" aria-label="${escapeHtml(c.name)}"></span></label>`).join("");
     return label + '<div class="dig-empty">Reward not detected. Select what you received:</div><div class="dig-streak-picks">' + picks + "</div>";
   }
-  const rows = Object.keys(detected).map((name) => digStreakItemRowHtml(name, detected[name], pct)).join("");
+  const rows = Object.keys(detected).map((name) => digStreakItemRowHtml(name, detected[name], pct2)).join("");
   return label + rows + artRow + '<div class="dig-streak-change-wrap"><span class="dig-streak-change" role="button" tabindex="0" data-dig-streak-edit="1">Change</span></div>';
 }
-function digTotalsHtml(dug, pct, reward) {
+function digTotalsHtml(dug, pct2, reward) {
   const freeShovel = digBoostOn("ancient_shovel");
   const rewardItems = reward || {};
   const uses = Object.assign({}, dug.toolUses);
@@ -73412,10 +74865,10 @@ function digTotalsHtml(dug, pct, reward) {
   const shownTools = Object.keys(uses).filter((tool) => uses[tool] > 0 && !(freeShovel && tool === "Sand Shovel"));
   let totalCoins = 0;
   Object.keys(dug.items).forEach((name) => {
-    totalCoins += digItemPrice(name, pct).price * dug.items[name];
+    totalCoins += digItemPrice(name, pct2).price * dug.items[name];
   });
   Object.keys(rewardItems).forEach((name) => {
-    if (typeof SELLABLE_TREASURES[name] === "number") totalCoins += digItemPrice(name, pct).price * rewardItems[name];
+    if (typeof SELLABLE_TREASURES[name] === "number") totalCoins += digItemPrice(name, pct2).price * rewardItems[name];
   });
   let totalCost = 0;
   const parts = [];
@@ -73471,7 +74924,7 @@ function digGoalRowHtml(g, solved, streakInfo, item, chapter) {
   const need = Math.max(0, item.price - owned);
   const bought = digGoalBought(g, item, chapter);
   const shown = owned + (bought ? item.price : 0);
-  const pct = bought ? 100 : Math.min(100, owned / item.price * 100);
+  const pct2 = bought ? 100 : Math.min(100, owned / item.price * 100);
   const counts = digGoalCounts(solved, streakInfo);
   const days = need <= counts.left ? 0 : Math.ceil((need - counts.left) / counts.perDay);
   const todayMs = Date.parse(digUtcDay(Date.now()));
@@ -73489,10 +74942,10 @@ function digGoalRowHtml(g, solved, streakInfo, item, chapter) {
   else if (need <= 0) dateHtml = '<span class="dig-goal-date is-done">Ready</span>';
   else dateHtml = `<span class="dig-goal-date${late ? " is-late" : ""}" title="${late ? "Chapter ends before this is reached" : counts.perDay + " " + escapeHtml(item.artefact) + " per day"}">${etaText}</span>`;
   const buffHtml = item.buffs && item.buffs.length ? '<div class="dig-goal-buffs">' + item.buffs.map((b) => `<div class="dig-goal-buff">${escapeHtml(b)}</div>`).join("") + "</div>" : "";
-  const pctText = (Math.round(pct * 10) / 10).toLocaleString(void 0, {
+  const pctText = (Math.round(pct2 * 10) / 10).toLocaleString(void 0, {
     maximumFractionDigits: 1
   }) + "%";
-  return `<div class="dig-goal"><div class="dig-goal-row">${digRewardIconHtml(item.name).replace("dig-ico", "dig-ico dig-goal-ico")}<span class="dig-goal-name" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</span><span class="dig-goal-count">${digFmt(shown)}/${digFmt(item.price)}${digRewardIconHtml(item.artefact)}</span>${dateHtml}</div>${buffHtml}<div class="dig-goal-bar-row"><div class="dig-goal-track guro-frame"><div class="dig-goal-fill" style="width:${pct}%"></div></div><span class="dig-goal-pct">${pctText}</span></div></div>`;
+  return `<div class="dig-goal"><div class="dig-goal-row">${digRewardIconHtml(item.name).replace("dig-ico", "dig-ico dig-goal-ico")}<span class="dig-goal-name" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</span><span class="dig-goal-count">${digFmt(shown)}/${digFmt(item.price)}${digRewardIconHtml(item.artefact)}</span>${dateHtml}</div>${buffHtml}<div class="dig-goal-bar-row"><div class="dig-goal-track guro-frame"><div class="dig-goal-fill" style="width:${pct2}%"></div></div><span class="dig-goal-pct">${pctText}</span></div></div>`;
 }
 function digGoalsHtml(g, solved, streakInfo) {
   const chapter = solved && solved.chapterName || digGetCurrentChapterName(Date.now());
@@ -73508,10 +74961,10 @@ function renderDigDataPanel(solved) {
   digApplyDetectedBoosts(g);
   digWireDataPanel();
   const dug = digCollectDug(g);
-  const pct = digPricePct();
+  const pct2 = digPricePct();
   $("digBoostGrid").innerHTML = digBoostGridHtml();
   digRenderToolCfg();
-  $("digDugList").innerHTML = digDugTreasuresHtml(dug, pct);
+  $("digDugList").innerHTML = digDugTreasuresHtml(dug, pct2);
   const streakInfo = digStreakInfo(g);
   const goalBox = $("digGoalBox");
   if (goalBox) {
@@ -73519,10 +74972,10 @@ function renderDigDataPanel(solved) {
     $("digGoalList").innerHTML = goalHtml;
     goalBox.style.display = goalHtml ? "" : "none";
   }
-  $("digStreakDug").innerHTML = digStreakDugHtml(streakInfo, pct);
-  $("digDugTotals").innerHTML = digTotalsHtml(dug, pct, digStreakBonusItems(streakInfo));
-  $("digInventoryList").innerHTML = digInventoryHtml(g, pct);
-  $("digPriceList").innerHTML = digTreasurePriceHtml(digDataLastSolved, pct);
+  $("digStreakDug").innerHTML = digStreakDugHtml(streakInfo, pct2);
+  $("digDugTotals").innerHTML = digTotalsHtml(dug, pct2, digStreakBonusItems(streakInfo));
+  $("digInventoryList").innerHTML = digInventoryHtml(g, pct2);
+  $("digPriceList").innerHTML = digTreasurePriceHtml(digDataLastSolved, pct2);
   $("digStreakList").innerHTML = digStreakTiersHtml();
 }
 function digWireDataPanel() {
@@ -74694,7 +76147,7 @@ function profileGetReputationPoints(g) {
   if (!g) return 0;
   const islandType = g.island && g.island.type;
   const ascInfo = getAscensionLevelInfo(g.bumpkin && g.bumpkin.experience || 0, g.island && g.island.ascensionLevel || 0);
-  const meetsLevel = (level) => ascInfo.ascension > 0 || ascInfo.level >= level;
+  const meetsLevel = (level2) => ascInfo.ascension > 0 || ascInfo.level >= level2;
   const vip = farmSyncGetVipStatus(g);
   let points = 0;
   if (islandType && islandType !== "basic") points += 100;
@@ -75703,12 +77156,12 @@ function getBuildDetailActiveEntries(tabId, filterId) {
 function profileEffectLabel(entry) {
   if (!entry) return "Active";
   if (typeof entry.timeMult === "number") {
-    const pct = Math.round((1 - entry.timeMult) * 100);
-    return pct >= 0 ? `-${pct}% time` : `+${Math.abs(pct)}% time`;
+    const pct2 = Math.round((1 - entry.timeMult) * 100);
+    return pct2 >= 0 ? `-${pct2}% time` : `+${Math.abs(pct2)}% time`;
   }
   if (typeof entry.yieldMult === "number") {
-    const pct = Math.round((entry.yieldMult - 1) * 100);
-    return `${pct >= 0 ? "+" : ""}${pct}% yield`;
+    const pct2 = Math.round((entry.yieldMult - 1) * 100);
+    return `${pct2 >= 0 ? "+" : ""}${pct2}% yield`;
   }
   if (typeof entry.yieldAdd === "number") {
     return `${entry.yieldAdd >= 0 ? "+" : ""}${entry.yieldAdd} yield`;
@@ -75722,10 +77175,10 @@ function profileEffectLabel(entry) {
   return "Active";
 }
 function profileSkillEffectText(s) {
-  const level = skillSyncedLevel(s);
+  const level2 = skillSyncedLevel(s);
   let text = s.note || profileEffectLabel(s);
-  if (Array.isArray(s.aoeSizeByRank) && s.aoeSizeByRank[level - 1] != null) {
-    const size = s.aoeSizeByRank[level - 1];
+  if (Array.isArray(s.aoeSizeByRank) && s.aoeSizeByRank[level2 - 1] != null) {
+    const size = s.aoeSizeByRank[level2 - 1];
     text = text.replace(/\d+x\d+\s*\(\d+\s*plots\)/i, `${size}x${size} (${size * size} plots)`);
   }
   if (typeof s.extraYieldAdd === "number") {
@@ -76551,11 +78004,11 @@ function runWithSimulatedSetup(setup, fn) {
     invalidateCostCache();
   }
 }
-function simProjectionRow(name, price, costPerUnit, count, timeSec) {
+function simProjectionRow(name, price, costPerUnit2, count, timeSec) {
   const card2 = {
     name,
     price,
-    costPerUnit,
+    costPerUnit: costPerUnit2,
     count,
     displayNodeCount: count,
     cyclesPerDay: timeSec > 0 ? 86400 / timeSec : null,
@@ -76746,11 +78199,11 @@ function simResourceRow(name) {
   } : 1;
   return simWithTemporary(nodeCounts, name, one, build);
 }
-function simAnimalRow(type, qty, level) {
+function simAnimalRow(type, qty, level2) {
   const cfg = ANIMAL_DATA[type];
   if (!cfg) return null;
   const q = Math.max(0, Number(qty) || 0);
-  const lv = clampAnimalStartLevel(level);
+  const lv = clampAnimalStartLevel(level2);
   const real = getAnimalCount(type);
   const sameAsReal = (Number(real.qty) || 0) === q && clampAnimalStartLevel(real.level) === lv;
   const build = () => simWithTemporary(animalCounts, type, {
@@ -76885,7 +78338,7 @@ function simulateGuideRows(setup, spec) {
 }
 
 // src/daily_harvest.js
-var STORE_KEY2 = "hl_daily_harvest_v1";
+var STORE_KEY3 = "hl_daily_harvest_v1";
 var ROUND_THRESHOLD = 1;
 var memStore = null;
 function utcDay4(ms) {
@@ -76939,7 +78392,7 @@ function pruneStore(store) {
 function loadStore3() {
   if (memStore) return memStore;
   try {
-    const raw = localStorage.getItem(STORE_KEY2);
+    const raw = localStorage.getItem(STORE_KEY3);
     const parsed = raw ? JSON.parse(raw) : null;
     memStore = parsed && typeof parsed === "object" ? parsed : {};
   } catch (e) {
@@ -76958,7 +78411,7 @@ function freshStore() {
 }
 function saveStore3() {
   try {
-    localStorage.setItem(STORE_KEY2, JSON.stringify(memStore || {}));
+    localStorage.setItem(STORE_KEY3, JSON.stringify(memStore || {}));
   } catch (e) {
   }
 }
@@ -77060,17 +78513,17 @@ function pigSnapshot(g) {
   return out;
 }
 function pigBristlesFor(pig) {
-  let level = getAnimalLevelFromXp("pig", pig.x, true);
-  if (pig.s === "ready" && level < 15) level -= 1;
-  const base = computePigTradeIn(level);
+  let level2 = getAnimalLevelFromXp("pig", pig.x, true);
+  if (pig.s === "ready" && level2 < 15) level2 -= 1;
+  const base = computePigTradeIn(level2);
   if (!base.tradeable) return {
-    level,
+    level: level2,
     amount: 0
   };
   let amount = pig.m > 0 ? base.amount * pig.m : base.amount;
   if (pig.s === "sick") amount *= 0.75;
   return {
-    level,
+    level: level2,
     amount: Math.round(amount * 100) / 100
   };
 }
@@ -77177,7 +78630,7 @@ function trackGoldenSunflower(g, rec, fid, fresh, now, prevSyncAt, start) {
   const ctrNow = raw === void 0 ? 0 : Number(raw);
   if (!Number.isFinite(ctrNow)) return;
   const farmNum = Number(fid);
-  const level = goldenSunflowerLevel(g);
+  const level2 = goldenSunflowerLevel(g);
   const packsNow = sunflowerPackCounts(g);
   if (gs.known) {
     const delta = Math.floor(ctrNow - gs.ctr);
@@ -77187,7 +78640,7 @@ function trackGoldenSunflower(g, rec, fid, fresh, now, prevSyncAt, start) {
         const gone = (gs.q[key] || 0) - (packsNow[key] || 0);
         if (gone > 0) machineSeeds += gone * packSeedsOf(key);
       });
-      const rank = gs.rank > 0 ? gs.rank : level;
+      const rank = gs.rank > 0 ? gs.rank : level2;
       if (rank > 0) {
         const chance = GS_CHANCES[rank - 1];
         const itemId = CROP_KNOWN_IDS.Sunflower;
@@ -77221,7 +78674,7 @@ function trackGoldenSunflower(g, rec, fid, fresh, now, prevSyncAt, start) {
           lo = total - maxWin;
           hi = total - minWin;
         }
-        const estimated = lo !== hi || gs.rank !== level;
+        const estimated = lo !== hi || gs.rank !== level2;
         const gold = lo * GS_GOLD_PER_PROC;
         const extra = (hi - lo) * GS_GOLD_PER_PROC;
         if (gold > 1e-9 || extra > 1e-9) {
@@ -77242,7 +78695,7 @@ function trackGoldenSunflower(g, rec, fid, fresh, now, prevSyncAt, start) {
     }
   }
   gs.ctr = ctrNow;
-  gs.rank = level;
+  gs.rank = level2;
   gs.q = packsNow;
   gs.known = true;
 }
@@ -77690,9 +79143,9 @@ function dailyHarvestSetAnimalYieldProvider(fn) {
 }
 function claimedAnimalYield(groupKey, current, before) {
   if (!animalYieldProvider || !current) return null;
-  const state = typeof current.s === "string" ? current.s : "";
+  const state2 = typeof current.s === "string" ? current.s : "";
   let xp = null;
-  if (state === "idle" || state === "sick") xp = current.x;
+  if (state2 === "idle" || state2 === "sick") xp = current.x;
   else if (before && before.s === "ready") xp = before.x;
   if (typeof xp !== "number" || !isFinite(xp)) return null;
   const buff = before && typeof before.s === "string" ? before.b || "" : current.b || "";
@@ -79373,7 +80826,7 @@ dailyHarvestOnYield(() => {
   clearTimeout(settleTimer);
   settleTimer = setTimeout(flush, SETTLE_MS);
 });
-function esc(s) {
+function esc3(s) {
   return String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 function fmtAmount(n) {
@@ -79426,7 +80879,7 @@ function itemIcon2(name, kind) {
   if (kind === "cooking" && COOKING_FOOD_IMAGES[name]) return cookFoodIcon(name);
   return getIcon(name);
 }
-function flowerHtml() {
+function flowerHtml2() {
   return `<span class="dh-hlog-fl">${FLOWER_ICON}</span>`;
 }
 function taxLabel(list) {
@@ -79451,7 +80904,7 @@ function fmtCount(n) {
   });
 }
 function craftedRowsHtml(crafted) {
-  const rows = crafted.tools.map((t) => `<div class="dh-hlog-row"><span class="dh-hlog-amt">\xD7${fmtCount(t.c)}</span><span class="dh-hlog-ico">${getIcon(t.name)}</span><span class="dh-hlog-name">${esc(t.name)}</span></div>`).join("");
+  const rows = crafted.tools.map((t) => `<div class="dh-hlog-row"><span class="dh-hlog-amt">\xD7${fmtCount(t.c)}</span><span class="dh-hlog-ico">${getIcon(t.name)}</span><span class="dh-hlog-name">${esc3(t.name)}</span></div>`).join("");
   return `<div class="dh-hlog-crafted"><div class="dh-hlog-crafted-label">Crafted Tools</div>${rows}</div>`;
 }
 function totalsAfterTools(totals, used) {
@@ -79473,8 +80926,8 @@ function totalsAfterTools(totals, used) {
   });
   return out;
 }
-function signed(n, fmt2) {
-  return `${n < 0 ? "-" : "+"}${fmt2(Math.abs(n))}`;
+function signed3(n, fmt3) {
+  return `${n < 0 ? "-" : "+"}${fmt3(Math.abs(n))}`;
 }
 function coinsHtml(c) {
   if (!c || !(c.e > 0 || c.s > 0)) return "";
@@ -79483,7 +80936,7 @@ function coinsHtml(c) {
   const ico = `<span class="dh-hlog-coin-ico">${COIN_ICON}</span>`;
   const row3 = (label, value, cls) => `<div class="dh-hlog-coin-row"><span>${label}</span><span class="dh-hlog-coin-val${cls ? ` ${cls}` : ""}">${value}${ico}</span></div>`;
   const balance = typeof c.b === "number" && isFinite(c.b) ? row3("Balance", fmtAmount(c.b), "") : "";
-  return `<div class="dh-hlog-coins">${balance}${row3("Earned Coins", `${mark}+${fmtAmount(c.e)}`, "pos")}${row3("Spend Coins", `${mark}-${fmtAmount(c.s)}`, "neg")}${row3("Net", `${mark}${signed(net, fmtAmount)}`, net < 0 ? "neg" : "pos")}</div>`;
+  return `<div class="dh-hlog-coins">${balance}${row3("Earned Coins", `${mark}+${fmtAmount(c.e)}`, "pos")}${row3("Spend Coins", `${mark}-${fmtAmount(c.s)}`, "neg")}${row3("Net", `${mark}${signed3(net, fmtAmount)}`, net < 0 ? "neg" : "pos")}</div>`;
 }
 var foldState = {
   popup: {},
@@ -79626,7 +81079,7 @@ function buildPeriod(group, mode, today) {
     sortKey: range.start,
     mode,
     current: range.start <= today && range.end >= today,
-    head: esc(periodLabel(range, mode)) + note,
+    head: esc3(periodLabel(range, mode)) + note,
     totals,
     coins: hasCoins ? coins.est ? coins : {
       e: coins.e,
@@ -79669,9 +81122,9 @@ function cardHtml2(entry, number, head, crafted, preApplied, fold) {
     const shown = isMachineName(name) ? name.slice(MACHINE_PREFIX.length) : name;
     const net = netOf(e);
     if (net !== null) totalNet += net;
-    const value = net !== null ? `<span class="dh-hlog-val"><span class="dh-hlog-price">(${fmtPrice(e.p)}${flowerHtml()}/U)</span><span class="dh-hlog-net">(${signed(net, fmtFlower)}${flowerHtml()})</span></span>` : "";
+    const value = net !== null ? `<span class="dh-hlog-val"><span class="dh-hlog-price">(${fmtPrice(e.p)}${flowerHtml2()}/U)</span><span class="dh-hlog-net">(${signed3(net, fmtFlower)}${flowerHtml2()})</span></span>` : "";
     const count = e.c > 0 ? `<span class="dh-hlog-count"><span class="dh-hlog-h" role="button" tabindex="0" data-dh-h="1" aria-label="${e.k === "cooking" || e.k === "composter" ? "Collected" : "Harvested"}">${e.k === "cooking" || e.k === "composter" ? "C" : "H"}<span class="dh-hlog-tip">${e.k === "cooking" || e.k === "composter" ? "Collected" : "Harvested"}</span></span>${e.c}x</span>` : "";
-    return `<div class="dh-hlog-row"><span class="dh-hlog-amt">${signed(e.a, fmtAmount)}</span><span class="dh-hlog-ico">${itemIcon2(shown, e.k)}</span><span class="dh-hlog-name">${esc(shown)}</span>${value}${count}</div>`;
+    return `<div class="dh-hlog-row"><span class="dh-hlog-amt">${signed3(e.a, fmtAmount)}</span><span class="dh-hlog-ico">${itemIcon2(shown, e.k)}</span><span class="dh-hlog-name">${esc3(shown)}</span>${value}${count}</div>`;
   };
   const orderedNames = sortedNames(view);
   const plainNames = orderedNames.filter((name) => !isMachineName(name));
@@ -79680,13 +81133,13 @@ function cardHtml2(entry, number, head, crafted, preApplied, fold) {
   const rows = plainNames.map(rowFor).join("") + machineBlock;
   const toolBtn = crafted ? `<button type="button" class="fd-lb-tab dh-hlog-craftbtn guro-frame${applyTools ? " active" : ""}" data-dh-tools="1" aria-pressed="${applyTools ? "true" : "false"}">Crafted Tools</button>` : "";
   const craftedBlock = showCrafted ? craftedRowsHtml(crafted) : "";
-  const total = totalNet > 0 || crafted ? `<div class="dh-hlog-gain${toolBtn ? " dh-hlog-gain-tools" : ""}">${toolBtn}<span class="dh-hlog-gain-sum"><span>Total Gained:</span><span class="dh-hlog-gain-val">${signed(totalNet, (n) => n.toLocaleString("en-US", {
+  const total = totalNet > 0 || crafted ? `<div class="dh-hlog-gain${toolBtn ? " dh-hlog-gain-tools" : ""}">${toolBtn}<span class="dh-hlog-gain-sum"><span>Total Gained:</span><span class="dh-hlog-gain-val">${signed3(totalNet, (n) => n.toLocaleString("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
-  }))}${flowerHtml()}</span></span></div>` : "";
+  }))}${flowerHtml2()}</span></span></div>` : "";
   const coinsBlock = coinsHtml(entry.coins);
   const sumBox = total || coinsBlock ? `<div class="dh-hlog-sumbox">${total}${coinsBlock}</div>` : "";
-  return `<div class="dh-hlog-day guro-frame"><div class="dh-hlog-dayhead dh-hlog-fold" role="button" tabindex="0" data-dh-fold="${esc(fold.key)}" data-dh-fold-ctx="${fold.ctx}" aria-expanded="${open ? "true" : "false"}"><span class="dh-hlog-no">#${number}</span><span class="dh-hlog-date">${head}</span><img class="ct-chev dh-hlog-chev${open ? " open" : ""}" src="${ICON_DATA["chevron_down.png"]}" alt=""></div>${sumBox}${open ? `${craftedBlock}<div class="dh-hlog-rows">${rows}</div>` : ""}</div>`;
+  return `<div class="dh-hlog-day guro-frame"><div class="dh-hlog-dayhead dh-hlog-fold" role="button" tabindex="0" data-dh-fold="${esc3(fold.key)}" data-dh-fold-ctx="${fold.ctx}" aria-expanded="${open ? "true" : "false"}"><span class="dh-hlog-no">#${number}</span><span class="dh-hlog-date">${head}</span><img class="ct-chev dh-hlog-chev${open ? " open" : ""}" src="${ICON_DATA["chevron_down.png"]}" alt=""></div>${sumBox}${open ? `${craftedBlock}<div class="dh-hlog-rows">${rows}</div>` : ""}</div>`;
 }
 function mergeLocalToday(days, farmId) {
   return withLocalTools(mergeToday(days, farmId));
@@ -79970,8 +81423,8 @@ var inlineState = {
   notice: ""
 };
 function inlineRender() {
-  const host = inlineState.host;
-  if (!host || !host.isConnected) return;
+  const host2 = inlineState.host;
+  if (!host2 || !host2.isConnected) return;
   const list = inlineState.list;
   craftedToolsPrepare(list, currentFarmId());
   const asc = list.slice().sort((a, b) => a.day < b.day ? -1 : a.day > b.day ? 1 : 0);
@@ -79979,11 +81432,11 @@ function inlineRender() {
   const cards = mode === "day" ? asc.map((entry, i) => dayHtml(entry, i + 1, "inline")).reverse() : aggregateEntries(asc, mode).map((entry, i) => periodHtml(entry, i + 1, "inline")).reverse();
   const periodBtns = `<div class="dh-hlog-periods">${PERIODS.map((p) => `<button type="button" class="fd-lb-tab dh-hlog-craftbtn guro-frame${p.id === mode ? " active" : ""}" data-pf-hperiod="${p.id}" aria-pressed="${p.id === mode ? "true" : "false"}">${p.label}</button>`).join("")}</div>`;
   const more = cards.length > inlineState.showCount ? `<div class="dh-hlog-more"><button type="button" class="dh-pop-log-btn" data-pf-hmore="1">Show more (${cards.length - inlineState.showCount} older)</button></div>` : "";
-  host.innerHTML = `<div class="dh-hlog-tax">${taxNoteHtml(list)}</div>` + periodBtns + (inlineState.notice ? `<div class="dh-hlog-msg">${inlineState.notice}</div>` : "") + `<div class="pf-hlog-grid">${cards.slice(0, inlineState.showCount).join("")}</div>` + more;
+  host2.innerHTML = `<div class="dh-hlog-tax">${taxNoteHtml(list)}</div>` + periodBtns + (inlineState.notice ? `<div class="dh-hlog-msg">${inlineState.notice}</div>` : "") + `<div class="pf-hlog-grid">${cards.slice(0, inlineState.showCount).join("")}</div>` + more;
 }
 function inlineMessage(html) {
-  const host = inlineState.host;
-  if (host && host.isConnected) host.innerHTML = `<div class="dh-hlog-msg">${html}</div>`;
+  const host2 = inlineState.host;
+  if (host2 && host2.isConnected) host2.innerHTML = `<div class="dh-hlog-msg">${html}</div>`;
 }
 function harvestLogInlineMore() {
   inlineState.showCount += PAGE_SIZE;
@@ -79999,8 +81452,8 @@ function harvestLogInlineClose() {
   inlineState.token++;
   inlineState.host = null;
 }
-async function harvestLogInlineOpen(host) {
-  inlineState.host = host;
+async function harvestLogInlineOpen(host2) {
+  inlineState.host = host2;
   inlineState.period = "day";
   foldState.inline = {};
   inlineState.showCount = PAGE_SIZE;
@@ -80097,7 +81550,6 @@ craftedToolsInit({
 });
 
 export {
-  WB_UPGRADE_ICON,
   renderBeginnerPanel,
   renderSeasonToggle,
   renderAscensionBar,
@@ -80141,10 +81593,8 @@ export {
   getGreenhouseSeedCoins,
   getPigSlopOptions,
   resolvePigSlopIngredient,
-  findLivePriceForName,
   cookingCostMode,
   setCookingCostMode,
-  cookingIngredientUnitCostCoins,
   getPetResourceMarket,
   petResourceCostOverride,
   petResourceCostPerUnit,
@@ -80157,6 +81607,16 @@ export {
   caveSkillLevel,
   caveTrackFromState,
   caveDayTotals,
+  GOBLIN_MERCHANT_ICON,
+  normalizeSeason,
+  restockShareCount,
+  restockSeedIconsHtml,
+  toolRestockShareCount,
+  toolRestockIconsHtml,
+  mountBeetlesCalculator,
+  unmountBeetlesCalculator,
+  beetlesCalculatorCanLeave,
+  merchantCalcHtml,
   dailyHarvestReloadStore,
   stateCodeValid,
   stateCodeInfo,
@@ -80215,10 +81675,8 @@ export {
   BASE_STOCK_CROPS,
   BASE_STOCK_FRUITS,
   BASE_STOCK_GREENHOUSE,
-  BASE_STOCK_FLOWERS,
   BASE_GREENHOUSE,
   BASE_STOCK_TOOLS,
-  BASE_STOCK_TREASURE_TOOLS,
   BASE_COMPOSTERS,
   SEASON_COMPOST_REQUIREMENTS,
   BASE_CROP_MACHINE,
@@ -80273,7 +81731,6 @@ export {
   setBeetleFeed,
   getBeetleFeedMode,
   setBeetleFeedMode,
-  setBeetleCollectCostProvider,
   getBeetleCollectUnitFlower,
   isOmnifeedEnabled,
   setOmnifeedEnabled,
@@ -80300,7 +81757,6 @@ export {
   OBSIDIAN_WEEKLY_PURCHASE_CAP,
   computeObsidianWeeklyProfit,
   SKILL_CATEGORY_META,
-  getAscensionRank,
   BOOSTS,
   spiceUsage,
   SPICE_ANIMAL_TYPES,
@@ -80333,10 +81789,7 @@ export {
   getKaleMixKaleQty,
   computeAnimalTypeFigures,
   computeAnimalWeeklyFigures,
-  farmSyncExtractGameState,
   farmSyncCollectEquippedAndPlacedNames,
-  VIP_BEETLE_BONUS_CHANCE,
-  farmSyncHasVipBeetleBonus,
   FARM_LEVEL_NODES,
   MUTANT_TYPE_EMOJI,
   setSkillCategory,
@@ -80360,7 +81813,6 @@ export {
   computeSpiceFigures,
   runDeferredInitialRender,
   __deferredInitialRenderCallbacks,
-  cookingFindRecipeForFood,
   PET_CATEGORY_ICON,
   PET_COMMON_TYPES,
   PET_NFT_TYPES,
