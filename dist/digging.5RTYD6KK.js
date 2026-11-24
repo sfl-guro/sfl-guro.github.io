@@ -1,7 +1,7 @@
 import {
   digSolveBoard,
   getIcon
-} from "./chunk.5LDGZUCU.js";
+} from "./chunk.WQ6CRS7A.js";
 import "./chunk.XKJMJZUJ.js";
 import "./chunk.LPEVZJ4B.js";
 import "./chunk.D3PHX6VZ.js";

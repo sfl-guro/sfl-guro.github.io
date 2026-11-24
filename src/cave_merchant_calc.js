@@ -116,6 +116,17 @@ function offerHtml(offer, cave, visit, inv, ctx) {
   return `<div class="cmc-offer guro-frame${unlocked ? "" : " is-locked"}">${head}${row}<div class="cmc-sums">${qtyLine}${taxLine}${netLine}</div></div>`;
 }
 
+export function merchantOfferCardsHtml(ctx) {
+  const cave = ctx.cave;
+  const visit = cave && cave.merchantVisit;
+  if (!visit) return "";
+  const offers = Array.isArray(visit.offers) ? visit.offers.slice().sort((a, b) => a.slot - b.slot) : [];
+  if (!offers.length) return "";
+  const inv = ctx.game.inventory || {};
+  const cards = offers.map(o => offerHtml(o, cave, visit, inv, ctx)).join("");
+  return `<div class="cmc-list">${cards}</div>`;
+}
+
 export function merchantCalcHtml(ctx) {
   const cave = ctx.cave;
   const visit = cave && cave.merchantVisit;
