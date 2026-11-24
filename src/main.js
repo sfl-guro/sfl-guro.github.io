@@ -16,6 +16,8 @@ import { initHarvestBackup } from "./hl_backup.js";
 
 import { initRouter } from "./router.js";
 
+import { applyFontScale, getFontScale } from "./font_scale.js";
+
 import { finishBoot, initRewardBanner } from "./reward_banner.js";
 
 import { initGemPacks } from "./gem_packs.js";
@@ -70,6 +72,7 @@ setTimeout(() => {
 
       initHarvestBackup();
       renderFarmPanelInfo();
+      applyFontScale(getFontScale());
       initRouter();
     } catch (e) {
       console.error("initRouter failed:", e);

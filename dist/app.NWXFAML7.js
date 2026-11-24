@@ -2,10 +2,14 @@ import {
   api,
   initNav,
   initRouter
-} from "./chunk.UV4DFBAH.js";
+} from "./chunk.LDXDLB3A.js";
 import {
   initGemPacks
 } from "./chunk.F7REBWYF.js";
+import {
+  applyFontScale,
+  getFontScale
+} from "./chunk.SOBU22BA.js";
 import {
   COIN_ICON,
   IMAGE_ICONS,
@@ -33,7 +37,7 @@ import {
   stateLastSaved,
   stateSetCode,
   toast
-} from "./chunk.A4SO7UZT.js";
+} from "./chunk.5LDGZUCU.js";
 import "./chunk.XKJMJZUJ.js";
 import "./chunk.LPEVZJ4B.js";
 import "./chunk.D3PHX6VZ.js";
@@ -1052,6 +1056,7 @@ setTimeout(() => {
       initFooter();
       initHarvestBackup();
       renderFarmPanelInfo();
+      applyFontScale(getFontScale());
       initRouter();
     } catch (e) {
       console.error("initRouter failed:", e);

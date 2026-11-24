@@ -32,6 +32,8 @@ import { renderMapPanel } from "./map.js";
 
 import { KEY_ICON_DATA } from "./npcgift_data.js";
 
+import { computeHiveSchedule, makeFlowerReadyResolver } from "./hive_schedule.js";
+
 export const __getIconCache = new Map;
 
 export const __getTreasureIconCache = new Map;
@@ -17650,6 +17652,11 @@ $("farmPanelDebugBtn").onclick = () => {
   if (hiveBagDebug && typeof hiveBagDebug === "object") {
     const HIVE_FULL_RAW_DEBUG = 864e5;
     const nowDebugHive = Date.now();
+    const flowerReadyAtDebug = makeFlowerReadyResolver(gDebug, gDebug.flowers || (gDebug.land && gDebug.land.flowers), name => {
+      const v = FLOWER_VARIETIES[name];
+      const seed = v && FLOWER_SEEDS[v.seed];
+      return seed ? seed.timeSec * 1e3 : null;
+    });
     const lines = [ "", "🐝 HIVE FULL BREAKDOWN (" + Object.keys(hiveBagDebug).length + " hive(s)):" ];
     Object.entries(hiveBagDebug).forEach(([id, hive]) => {
       if (!hive || !hive.honey || typeof hive.honey.produced !== "number") {
@@ -17659,24 +17666,15 @@ $("farmPanelDebugBtn").onclick = () => {
       const storedProduced = hive.honey.produced;
       const updatedAt = typeof hive.honey.updatedAt === "number" ? hive.honey.updatedAt : nowDebugHive;
       const flowers = Array.isArray(hive.flowers) ? hive.flowers : [];
-      const flower = flowers.find(f => f && typeof f.rate === "number" && f.rate > 0);
-      let produced = storedProduced;
-      let flowerStillActive = false;
-      if (flower) {
-        const attachedAt = typeof flower.attachedAt === "number" ? flower.attachedAt : updatedAt;
-        const attachedUntil = typeof flower.attachedUntil === "number" ? flower.attachedUntil : nowDebugHive;
-        const windowStart = Math.max(updatedAt, attachedAt);
-        const windowEnd = Math.min(nowDebugHive, attachedUntil);
-        if (windowEnd > windowStart) produced = storedProduced + flower.rate * (windowEnd - windowStart);
-        flowerStillActive = attachedUntil > nowDebugHive;
-      }
-      const ready = produced >= HIVE_FULL_RAW_DEBUG;
+      const schedule = computeHiveSchedule(hive, nowDebugHive, flowerReadyAtDebug);
+      const produced = schedule.produced;
       let verdict;
-      if (ready) verdict = "READY TO HARVEST (shows in In Progress)"; else if (flowerStillActive) {
-        const remainingSec = Math.max(0, (HIVE_FULL_RAW_DEBUG - produced) / flower.rate / 1e3);
-        verdict = `IN PROGRESS — ${Math.round(remainingSec)}s remaining, flower rate=${flower.rate}`;
+      if (schedule.ready) verdict = "READY TO HARVEST (shows in In Progress)"; else if (schedule.readyAtMs != null) {
+        verdict = `IN PROGRESS — ${Math.round((schedule.readyAtMs - nowDebugHive) / 1e3)}s remaining`;
+      } else if (schedule.stallAtMs != null) {
+        verdict = `STALLS at ${new Date(schedule.stallAtMs).toISOString()} — attached flowers run out before the hive is full`;
       } else {
-        verdict = "PAUSED — flower not currently blooming, no ETA";
+        verdict = "PAUSED — no flower attached now or later, no ETA";
       }
       lines.push(`#${id}: storedProduced=${storedProduced}, updatedAt=${updatedAt}, projectedProduced=${produced.toFixed(1)} (${(produced / HIVE_FULL_RAW_DEBUG * 100).toFixed(2)}% full), flowers=${flowers.length} → ${verdict}`);
     });

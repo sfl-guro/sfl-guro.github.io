@@ -46,7 +46,7 @@ async function renderHarvest() {
   rootEl.innerHTML = `${tabsHtml()}<div class="pf-hlog-host" id="pfHarvestHost"></div>`;
   const host = rootEl.querySelector("#pfHarvestHost");
   try {
-    if (!harvestMod) harvestMod = await import("./harvest_log.SSQ4IAOQ.js");
+    if (!harvestMod) harvestMod = await import("./harvest_log.B5FK2HLL.js");
   } catch (e) {
     if (host) host.innerHTML = `<div class="dh-hlog-msg">Couldn't load history. Check your connection.</div>`;
     return;

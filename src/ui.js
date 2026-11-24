@@ -2690,6 +2690,8 @@ export function renderBeehiveListHtml(honeyHiveDetails) {
       timeHtml = `<span class="hive-time-pill guro-frame is-ready">Full</span>`;
     } else if (h.remainingSec != null) {
       timeHtml = `<span class="hive-time-pill guro-frame farm-countdown" data-base="${h.remainingSec}">${hiveCountdownText(h.remainingSec)}</span>${h.readyAtMs != null ? `<span class="hive-time-clock">${hiveClockText(h.readyAtMs)}</span>` : ""}`;
+    } else if (h.stallAtMs != null) {
+      timeHtml = `<span class="hive-time-pill guro-frame is-idle" title="The attached flower runs out before this hive is full. It needs another flower.">Stalls</span><span class="hive-time-clock">${hiveClockText(h.stallAtMs)}</span>`;
     } else {
       timeHtml = `<span class="hive-time-pill guro-frame is-idle">No flower</span>`;
     }
