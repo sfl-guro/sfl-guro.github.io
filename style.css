@@ -15753,7 +15753,6 @@ html body #caveSidePanel #caveCard.dig-panel-card::before, html body #caveSidePa
 .cave-merchant-wrap{ min-width:0; }
 .cave-offers{ display:flex; flex-direction:column; gap:6px; margin-top:4px; }
 .cave-offer{ display:flex; flex-direction:column; gap:2px; padding:6px 8px; background:var(--wheat-dim); box-sizing:border-box; }
-.cave-offer.is-locked{ opacity:.55; }
 .cave-offer-main{ display:flex; flex-wrap:wrap; align-items:center; gap:4px 6px; font-family:'Inter',sans-serif; font-size:calc(12px * var(--fs-desk,1)); font-weight:700; color:var(--ink); }
 .cave-offer-have{ font-weight:800; }
 .cave-offer-have.is-enough{ color:var(--profit); }
@@ -15784,7 +15783,6 @@ body.sfl-theme .cave-offer .cave-offer-have.is-short{ color:var(--sfl-loss) !imp
 .cave-merchant-stack{ display:flex; flex-direction:column; gap:12px; min-width:0; }
 .cmc-list{ display:flex; flex-direction:column; gap:8px; margin-top:4px; }
 .cmc-offer{ display:flex; flex-direction:column; gap:6px; padding:8px; min-width:0; box-sizing:border-box; background:var(--wheat-dim); font-family:'Inter',sans-serif; color:var(--ink); }
-.cmc-offer.is-locked{ opacity:.6; }
 .cmc-head{ display:flex; align-items:center; justify-content:space-between; gap:6px; }
 .cmc-chip{ padding:1px 6px; font-size:calc(10px * var(--fs-desk,1)); font-weight:800; color:#2a1f2d; background:#f0c75a; }
 .cmc-chip.is-off{ background:#d9cfae; }

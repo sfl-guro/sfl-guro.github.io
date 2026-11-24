@@ -31327,6 +31327,11 @@ function marketPrice(name) {
   const live = findLivePriceForName ? Number(findLivePriceForName(name)) : 0;
   return live > 0 ? live : 0;
 }
+function toolRecipeByName(name) {
+  const list = Array.isArray(toolRecipes) ? toolRecipes : [];
+  const lname = String(name || "").toLowerCase();
+  return list.find((t) => (t.producesName || "").toLowerCase() === lname) || null;
+}
 function costPerUnit(name) {
   let flower2 = 0;
   try {
@@ -31334,6 +31339,10 @@ function costPerUnit(name) {
       flower2 = mycoItemUnitCostFlower(name);
     } else if (name === "Oil") {
       flower2 = coinsToFlower(caveMycoUnitCoins(COST_OWNER, name));
+    } else if (name === "Sand Shovel" || name === "Sand Drill" || name === "Oil Drill") {
+      flower2 = coinsToFlower(caveToolUnitCoins(name));
+    } else if (toolRecipeByName(name)) {
+      flower2 = coinsToFlower(getToolCostCoins(toolRecipeByName(name).id));
     } else if (cookingFindRecipeForFood(name)) {
       flower2 = coinsToFlower(cookingIngredientUnitCostCoins(name, "buy"));
     } else {
