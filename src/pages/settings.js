@@ -2,6 +2,8 @@ import { farmPanelCardCatalog, farmPanelFilterCategories, farmPanelHiddenCards, 
 
 import { renderFarmPanelTabContent } from "../ui.js";
 
+import { getFontScale, setFontScale, FONT_SCALE_OPTIONS } from "../font_scale.js";
+
 let rootEl = null;
 
 let calc = null;
@@ -71,6 +73,21 @@ function modesHtml() {
         <div class="st-label">Restock Cost Mode</div>
         <p class="st-modes-note">The mode ticked here is used for the restock cost across the whole app. The mode buttons inside the Resource Calculators only change that calculator.</p>
         <div class="st-modes">${modeCardHtml("shared", "PER RESTOCK MODE", shared, perRestock)}${modeCardHtml("individual", "24HR MODE", !shared, twentyFour)}</div>
+      </div>
+    </div>`;
+}
+
+function fontScaleHtml() {
+  const cur = getFontScale();
+  const cards = FONT_SCALE_OPTIONS.map(v => `<label class="st-grow-card guro-frame${cur === v ? " is-on" : ""}">
+    <span class="st-grow-name"><span class="st-grow-text">${v}%</span></span>
+    <input type="checkbox" data-st-font="${v}"${cur === v ? " checked" : ""} aria-label="${v}% font size">
+  </label>`).join("");
+  return `<div class="st-outer guro-frame st-font-outer">
+      <div class="st-inner guro-frame">
+        <div class="st-label">Font Size Settings</div>
+        <p class="st-grow-note">Only one option can be ticked. With no check the app keeps its default font size. Desktop view only, the bubble chart panel is not affected.</p>
+        <div class="st-grow-list">${cards}</div>
       </div>
     </div>`;
 }
@@ -189,6 +206,7 @@ function render() {
       </div>
     </div>
     ${modesHtml()}
+    ${fontScaleHtml()}
     ${growHtml()}
   </div>`;
 }
@@ -196,6 +214,16 @@ function render() {
 function onChange(e) {
   const t = e.target;
   if (!t || !t.dataset) return;
+  if (t.dataset.stFont != null) {
+    setFontScale(t.checked ? t.dataset.stFont : "");
+    const cur = getFontScale();
+    rootEl.querySelectorAll("[data-st-font]").forEach(box => {
+      box.checked = box.dataset.stFont === cur;
+      const card = box.closest(".st-grow-card");
+      if (card) card.classList.toggle("is-on", box.checked);
+    });
+    return;
+  }
   if (t.dataset.stGrowGroup != null) {
     const group = farmPanelCardCatalog().find(g => g.id === t.dataset.stGrowGroup);
     if (group) group.cards.forEach(c => {

@@ -2,6 +2,8 @@ import { withAnimalFeedContext, ANIMAL_FEED_CHOICES, ICONS, NPC_ICONS, ALL_ANIMA
 
 import { CONFIRM_ICON } from "./confirm_icon.js";
 
+import { computeHiveSchedule, makeFlowerReadyResolver, HIVE_FULL_RAW } from "./hive_schedule.js";
+
 import { findLivePriceForName, SFL_COMMUNITY_PROXY_BASE, SFL_NFT_PRICE_API, SFL_PROXY_BASE, computeRestockCost24h, cookingCostMode, cookingIngredientUnitCostCoins, fishSaltCostFlower, getActiveShrineDailyCostStable, getItemCostByName, getRestockGemCost, restocksForMode, getSpiceCostPerUseFlower, hasFreeSaltRakeCost, honeyCostFlowerForSpiceRack, marketItems, pickledVegCost, refinedSaltUnitCostFlower, saltCostFlowerForSpiceRack } from "./prices.js";
 
 import { getPumpkinPeteQuest } from "./pete_quests.js";
@@ -3043,32 +3045,21 @@ function farmPanelComputeInProgressRaw(json, opts) {
   const hiveBag = farmPanelField(g, "beehives");
   if (hiveBag && typeof hiveBag === "object" && typeof computeHiveStats === "function") {
     const hiveStats = computeHiveStats();
-    const HIVE_FULL_RAW = 864e5;
     const hiveEntries = Object.entries(hiveBag).filter(([, hive]) => hive && hive.honey && typeof hive.honey.produced === "number");
     hiveEntries.sort((a, b) => a[0].localeCompare(b[0], undefined, {
       numeric: true
     }));
     const honeyNow = Math.min(now, farmPanelHoneySnapshotMs);
+    const flowerReadyAt = makeFlowerReadyResolver(g, farmPanelField(g, "flowers"), name => {
+      const v = FLOWER_VARIETIES[name];
+      const seed = v && FLOWER_SEEDS[v.seed];
+      return seed ? seed.timeSec * 1e3 : null;
+    });
     hiveEntries.forEach(([hiveId, hive], hiveIndex) => {
-      const storedProduced = hive.honey.produced;
-      const updatedAt = typeof hive.honey.updatedAt === "number" ? hive.honey.updatedAt : honeyNow;
-      const flowers = Array.isArray(hive.flowers) ? hive.flowers : [];
-      const flower = flowers.find(f => f && typeof f.rate === "number" && f.rate > 0);
-      let produced = storedProduced;
-      let flowerStillActive = false;
-      if (flower) {
-        const attachedAt = typeof flower.attachedAt === "number" ? flower.attachedAt : updatedAt;
-        const attachedUntil = typeof flower.attachedUntil === "number" ? flower.attachedUntil : honeyNow;
-        const windowStart = Math.max(updatedAt, attachedAt);
-        const windowEnd = Math.min(honeyNow, attachedUntil);
-        if (windowEnd > windowStart) produced = storedProduced + flower.rate * (windowEnd - windowStart);
-        flowerStillActive = attachedUntil > honeyNow;
-      }
-      const ready = produced >= HIVE_FULL_RAW;
-      let remainingSec = 0;
-      if (!ready) {
-        remainingSec = flowerStillActive ? Math.max(0, (HIVE_FULL_RAW - produced) / flower.rate / 1e3) : null;
-      }
+      const schedule = computeHiveSchedule(hive, honeyNow, flowerReadyAt);
+      const produced = schedule.produced;
+      const ready = schedule.ready;
+      const remainingSec = ready ? 0 : schedule.readyAtMs != null ? Math.max(0, (schedule.readyAtMs - honeyNow) / 1e3) : null;
       const fillFraction = Math.max(0, Math.min(1, produced / HIVE_FULL_RAW));
       const currentHoneyQty = fillFraction * hiveStats.honeyPerFill;
       rows.push({
@@ -3082,7 +3073,8 @@ function farmPanelComputeInProgressRaw(json, opts) {
         isActualYield: true,
         ready: ready,
         remainingSec: remainingSec,
-        readyAtMs: !ready && remainingSec != null ? honeyNow + remainingSec * 1e3 : null,
+        readyAtMs: !ready && schedule.readyAtMs != null ? schedule.readyAtMs : null,
+        stallAtMs: !ready && schedule.stallAtMs != null ? schedule.stallAtMs : null,
         mapPos: farmPanelMapPos(hiveId, hive, 1, 1)
       });
     });
@@ -5413,7 +5405,8 @@ function farmPanelComputeInProgressOnce(json) {
         willSwarm: n.willSwarm === true,
         ready: n.ready === true,
         remainingSec: typeof n.remainingSec === "number" ? n.remainingSec : null,
-        readyAtMs: typeof n.readyAtMs === "number" ? n.readyAtMs : null
+        readyAtMs: typeof n.readyAtMs === "number" ? n.readyAtMs : null,
+        stallAtMs: typeof n.stallAtMs === "number" ? n.stallAtMs : null
       }));
     }
     return {
