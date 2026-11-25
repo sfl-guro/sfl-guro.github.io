@@ -14823,6 +14823,7 @@ html body #pageResourceCalc .rc-link.is-active{ color:var(--ink) !important; tex
 .rc-share-icon{ display:inline-block; margin:0 1px; vertical-align:middle; }
 .rc-share-icon img{ width:14px; height:14px; image-rendering:pixelated; vertical-align:middle; }
 .rc-boost-pick .lib-item-meta .rc-share-icon{ margin:0 .1em; }
+.rc-boost-pick .lib-item-meta .rc-yield-val{ font-size:1.3em; font-weight:700; color:var(--ink); }
 .rc-boost-pick .lib-item-meta .rc-share-icon img{ width:1.25em !important; height:1.25em !important; }
 .rc-boost-pick .lib-item-meta .rc-share-icon > span{ font-size:1.1em !important; }
 html body #pageResourceCalc .rc-season, html body #pageResourceCalc .rc-mode, html body #pageResourceCalc .rc-tool{

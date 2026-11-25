@@ -2571,7 +2571,7 @@ export function renderAnimalYieldGroupsList(card) {
     const lvlTag = needsFeed(a) && !a.isMaxCycle ? `LVL ${a.level} → ${Math.max(a.level + 1, a.claimLevel)}` : `LVL ${a.level}`;
     const feedIcon = a.feedToNextName ? getIcon(a.feedToNextName) : "";
     const proj = needsFeed(a) && a.projection ? a.projection : null;
-    const projHtml = proj ? `<div class="ay-proj"><span class="tier-tag ay-proj-tag">Projected LVL ${proj.level} XP ${num(proj.xp)}/${num(proj.threshold)}</span></div>` : "";
+    const projHtml = proj ? `<div class="ay-proj"><span class="tier-tag ay-proj-tag">Projected LVL ${proj.level} XP ${num(proj.xp)}/${num(proj.threshold)}</span>${proj.claims > 1 ? `<span class="tier-tag ay-proj-tag">${proj.claims} claims banked</span>` : ""}</div>` : "";
     let needHtml;
     if (feedsOf(a) > 0) {
       needHtml = `<div class="ay-need"><span class="ay-k">XP needed</span><b class="ay-v">${num(a.xpGap)}</b><span class="ay-sep"></span><span class="ay-k">Feed</span><span class="ay-feed"><b>×${foodText(foodOf(a))}</b>${feedIcon} ${escapeHtml(a.feedToNextName || "")}</span><span class="ay-xpe">${feedsWord(feedsOf(a))} · +${num(a.xpPerFeed)} XP each</span></div>${a.loveXp > 0 ? `<div class="ay-why">Love XP from ${escapeHtml(a.loveItem || "petting")} (about ${num(a.loveXp)} XP) may cover this instead of a feed.</div>` : ""}`;

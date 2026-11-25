@@ -2163,18 +2163,18 @@ export function computeAnimalAffectionSummary(type) {
 function runAnimalCycleSim(type, scales, startXp) {
   const thresholds = ANIMAL_XP_THRESHOLDS[type];
   const mods = getAnimalXpModifiers(type);
-  const maxXp = thresholds[15];
-  const maxCycleXp = maxXp - thresholds[14];
-  const levelOf = xp => getAnimalLevelFromXp(type, xp, true);
+  const marksOf = xp => animalProduceMarkCount(type, xp);
   const cycles = [];
   const customStart = typeof startXp === "number" && isFinite(startXp) && startXp >= 0;
   let xp = customStart ? startXp : 0;
+  let claimed = marksOf(xp);
   let maxCycles = 0;
   let prevStartLevel = null;
   for (let i = 0; i < 160 && maxCycles < 16; i++) {
-    const startXp = xp;
-    const startLevel = levelOf(startXp);
-    const startsAtMax = startXp >= maxXp;
+    const cycleStartXp = xp;
+    const startLevel = Math.min(15, claimed);
+    const startsAtMax = claimed >= 15;
+    const banked = marksOf(cycleStartXp) > claimed;
     const favouriteFoodKey = getFavouriteFoodKeyAtLevel(startLevel, type);
     const feedKeyUsed = resolveFeedKeyUsed(type, favouriteFoodKey);
     const baseFoodXp = getBaseFoodXpFor(type, startLevel, feedKeyUsed);
@@ -2184,28 +2184,29 @@ function runAnimalCycleSim(type, scales, startXp) {
       loveXp = computeAnimalAffectionFigures(type, startLevel, scales, mods, prevStartLevel).avgPerCycle;
       xp += loveXp;
     }
-    let ready = !startsAtMax && levelOf(xp) !== startLevel;
+    let ready = marksOf(xp) > claimed;
     let feeds = 0;
     while (!ready && feeds < 500) {
-      const before = xp;
       xp += boostedFoodXp;
       feeds++;
-      if (before >= maxXp) ready = Math.max(before - maxXp, 0) % maxCycleXp + boostedFoodXp >= maxCycleXp; else ready = levelOf(before) !== levelOf(xp);
+      ready = marksOf(xp) > claimed;
     }
     cycles.push({
       startLevel: startLevel,
       prevStartLevel: prevStartLevel,
-      claimLevel: levelOf(xp),
+      claimLevel: Math.min(15, claimed + 1),
       feeds: feeds,
       loveXp: loveXp,
-      xpStart: startXp,
+      xpStart: cycleStartXp,
       xpEnd: xp,
       favouriteFoodKey: favouriteFoodKey,
       feedKeyUsed: feedKeyUsed,
       baseFoodXp: baseFoodXp,
       boostedFoodXp: boostedFoodXp,
-      isMax: startsAtMax
+      isMax: startsAtMax,
+      banked: banked
     });
+    claimed = Math.min(claimed + 1, Math.max(marksOf(xp), claimed));
     prevStartLevel = startLevel;
     if (startsAtMax) maxCycles++;
   }
@@ -2235,7 +2236,7 @@ function getAnimalStartCycle(type, level, scales) {
   if (target >= 15) return getAnimalCycleRecord(type, 15, scales);
   const sc = scales === undefined ? getAffectionScales(type) : scales;
   const chain = runAnimalCycleSim(type, sc);
-  const hit = chain.find(c => c.startLevel === target);
+  const hit = chain.find(c => c.startLevel === target && !c.banked);
   if (hit) return hit;
   return runAnimalCycleSim(type, sc, ANIMAL_XP_THRESHOLDS[type][target])[0];
 }
@@ -2362,17 +2363,22 @@ export function computeAnimalRealProgress(type, animal, now, readyAt) {
   } else if (isMax) {
     claimLevel = 15;
   } else {
-    const xpAfter = xp + love.xp + noOfFeeds * boostedFoodXp;
-    claimLevel = Math.min(15, Math.max(level + 1, getAnimalLevelFromXp(type, xpAfter, true)));
+    claimLevel = Math.min(15, level + 1);
   }
   let costFeeds = noOfFeeds;
   let costFeedKey = feedKeyUsed;
   if (isReadyState || animal.state === "happy" || animal.state === "sad") {
     const cycle = getAnimalCycleRecord(type, claimLevel);
-    const cycleFeeds = Math.round(cycle.feeds);
+    let cycleFeeds = Math.round(cycle.feeds);
+    let cycleFeedKey = cycle.feedKeyUsed;
+    if (isReadyState && claimLevel < 15 && (cycle.banked || pendingClaims > 1)) {
+      const fresh = getAnimalStartCycle(type, claimLevel - 1);
+      cycleFeeds = fresh.feeds / Math.max(1, pendingClaims);
+      cycleFeedKey = fresh.feedKeyUsed;
+    }
     if (isReadyState || cycleFeeds > noOfFeeds) {
       costFeeds = cycleFeeds;
-      costFeedKey = cycle.feedKeyUsed;
+      costFeedKey = cycleFeedKey;
     }
   }
   return {
@@ -14914,7 +14920,7 @@ export function computeAnimalWeeklyFigures(type, manualCyclesPerWeek) {
   const unboostedCycles = Math.max(0, cyclesPerWeek - boostedCycles);
   const scales = getAffectionScales(type);
   let simCycles = runAnimalCycleSim(type, scales);
-  let simIdx = simCycles.findIndex(c => c.startLevel === startLevel);
+  let simIdx = simCycles.findIndex(c => c.startLevel === startLevel && !c.banked);
   if (simIdx === -1) {
     simCycles = runAnimalCycleSim(type, scales, ANIMAL_XP_THRESHOLDS[type][startLevel]);
     simIdx = 0;
