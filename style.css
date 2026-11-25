@@ -14822,6 +14822,9 @@ html body #pageResourceCalc .rc-link.is-active{ color:var(--ink) !important; tex
 .rc-seasons{ display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:6px; }
 .rc-share-icon{ display:inline-block; margin:0 1px; vertical-align:middle; }
 .rc-share-icon img{ width:14px; height:14px; image-rendering:pixelated; vertical-align:middle; }
+.rc-boost-pick .lib-item-meta .rc-share-icon{ margin:0 .1em; }
+.rc-boost-pick .lib-item-meta .rc-share-icon img{ width:1.25em !important; height:1.25em !important; }
+.rc-boost-pick .lib-item-meta .rc-share-icon > span{ font-size:1.1em !important; }
 html body #pageResourceCalc .rc-season, html body #pageResourceCalc .rc-mode, html body #pageResourceCalc .rc-tool{
   appearance:none; -webkit-appearance:none; box-sizing:border-box; margin:0; min-width:0; cursor:pointer; color:var(--ink);
   background:var(--parchment, #f2d9a0); font-family:var(--pixel-font); text-transform:uppercase; letter-spacing:.3px; line-height:1.2; text-align:center; touch-action:manipulation;
