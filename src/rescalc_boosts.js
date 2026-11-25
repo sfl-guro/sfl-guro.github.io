@@ -57,18 +57,19 @@ function effectParts(b, ctx) {
     html: html
   });
   const target = targetIcons(b, ctx.subjects);
-  const yieldHtml = lead => `${esc(lead)}${target} Yield`;
+  const val = lead => `<span class="rc-yield-val">${esc(lead)}</span>`;
+  const yieldHtml = lead => `${val(lead)}${target} Yield`;
   const keyed = (map, key, byResource) => {
     const keys = Object.keys(map);
-    if (key != null && keys.includes(key)) return `${esc(signed(map[key]))}${target} Yield`;
-    return keys.map(k => byResource ? `${esc(signed(map[k]))}${iconSpan(ui.getIcon(k))} Yield` : `${esc(signed(map[k]))}${target} Yield (${esc(k)})`).join(" / ");
+    if (key != null && keys.includes(key)) return `${val(signed(map[key]))}${target} Yield`;
+    return keys.map(k => byResource ? `${val(signed(map[k]))}${iconSpan(ui.getIcon(k))} Yield` : `${val(signed(map[k]))}${target} Yield (${esc(k)})`).join(" / ");
   };
   if (b.tierEffects) addRaw("Yield", keyed(b.tierEffects, ctx.tier, false)); else if (b.resourceEffects) addRaw("Yield", keyed(b.resourceEffects, ctx.name, true)); else if (b.yieldAdd) addRaw("Yield", yieldHtml(signed(b.yieldAdd)));
   if (b.yieldAddAll) addRaw("Yield", yieldHtml(signed(b.yieldAddAll)));
   if (b.yieldMult) addRaw("Yield", yieldHtml(`×${b.yieldMult}`));
   if (b.saltYieldAdd) addRaw("Yield", yieldHtml(signed(b.saltYieldAdd)));
   if (b.saltRechargeTimeMult) add("Time", `×${b.saltRechargeTimeMult} time`);
-  if (b.harvestAdd) addRaw("Yield", `${esc(`+${n2(b.harvestAdd)}`)}${target} Harvest`);
+  if (b.harvestAdd) addRaw("Yield", `${val(`+${n2(b.harvestAdd)}`)}${target} Harvest`);
   if (b.honeyYieldAdd) addRaw("Yield", yieldHtml(signed(b.honeyYieldAdd)));
   if (b.flowerExtraChance) addRaw("Yield", yieldHtml(`+${n2(b.flowerExtraChance)}`));
   if (b.flowerExtraFlat) addRaw("Yield", yieldHtml(`+${n2(b.flowerExtraFlat)}`));
