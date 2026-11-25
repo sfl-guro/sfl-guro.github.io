@@ -1,6 +1,8 @@
 import { ICON_DATA } from "../icon_data.js";
 import { CONFIRM_ICON } from "../confirm_icon.js";
 
+import { SFL_TOKEN_ICON } from "../sfl_token_icon.js";
+
 let FLOWER_ICON = "";
 
 let escapeHtml = s => String(s);
@@ -44,6 +46,8 @@ let menuOpen = false;
 let listenersOn = false;
 
 let tab = "info";
+
+let chainMode = "all";
 
 let harvestMod = null;
 
@@ -137,6 +141,11 @@ function renderMenuOnly() {
   if (slot) slot.innerHTML = menuHtml();
 }
 
+function chainAmountHtml(sfl, flower) {
+  if (chainMode !== "all") return `<span class="pf-value-num">${money(flower)}${FLOWER_ICON}</span>`;
+  return `<span class="pf-value-num">${money((sfl || 0) + (flower || 0))}${SFL_TOKEN_ICON}${FLOWER_ICON}</span>`;
+}
+
 function render() {
   if (!rootEl) return;
   rootEl.classList.toggle("pf-harvest-active", tab === "harvest");
@@ -151,6 +160,7 @@ function render() {
   const keep = rootEl.querySelector("#pfSearchInput");
   const hadFocus = keep && document.activeElement === keep;
   const {inv: inv, chain: chain, total: total, goals: goals, source: source} = evaluateGoals();
+  const playerType = chainMode === "all" ? chain.typeAll : chain.type;
   const invRows = inv.rows.length ? inv.rows.map(inventoryRowHtml).join("") : `<div class="pf-empty">${inv.ready ? "No tradable resources found" : "Sync a Farm ID to see your inventory"}</div>`;
   const priceRows = goals.length ? goals.map(goalPriceRowHtml).join("") : `<div class="pf-empty">No SFT added yet</div>`;
   const cards = goals.length ? goals.map(g => goalTileHtml(g, total)).join("") : `<div class="pf-empty">Add an SFT to track your goal</div>`;
@@ -159,9 +169,13 @@ function render() {
     <div class="pf-value guro-frame">
       <div class="pf-title">On Chain History</div>
       <div class="pf-value-row"><span class="pf-value-label">Net Inventory Value</span><span class="pf-value-num">${money(inv.net)}${FLOWER_ICON}</span></div>
-      <div class="pf-value-row"><span class="pf-value-label">Deposit</span><span class="pf-value-num">${money(chain.deposit)}${FLOWER_ICON}</span></div>
-      <div class="pf-value-row"><span class="pf-value-label">Withdraw</span><span class="pf-value-num">${money(chain.withdraw)}${FLOWER_ICON}</span></div>
-      <div class="pf-value-row"><span class="pf-value-label">Player Type</span>${chain.type ? `<span class="pf-badge pf-badge-${chain.type.toLowerCase()} guro-frame">${chain.type}</span>` : `<span class="pf-value-num">—</span>`}</div>
+      <div class="pf-source-row">
+        <label class="pf-source-opt"><span>All Time</span><input type="checkbox" class="pf-source-check" data-pf-chain="all"${chainMode === "all" ? " checked" : ""}></label>
+        <label class="pf-source-opt"><span>FLOWER Only</span><input type="checkbox" class="pf-source-check" data-pf-chain="flower"${chainMode === "flower" ? " checked" : ""}></label>
+      </div>
+      <div class="pf-value-row"><span class="pf-value-label">Deposit</span>${chainAmountHtml(chain.sflDeposit, chain.deposit)}</div>
+      <div class="pf-value-row"><span class="pf-value-label">Withdraw</span>${chainAmountHtml(chain.sflWithdraw, chain.withdraw)}</div>
+      <div class="pf-value-row"><span class="pf-value-label">Player Type</span>${playerType ? `<span class="pf-badge pf-badge-${playerType.toLowerCase()} guro-frame">${playerType}</span>` : `<span class="pf-value-num">—</span>`}</div>
     </div>
     <div class="pf-box guro-frame">
       <div class="pf-title">Inventory</div>
@@ -283,6 +297,12 @@ function onClick(e) {
 }
 
 function onChange(e) {
+  const mode = e.target.closest && e.target.closest("[data-pf-chain]");
+  if (mode) {
+    chainMode = mode.dataset.pfChain;
+    render();
+    return;
+  }
   const box = e.target.closest && e.target.closest("[data-pf-source]");
   if (!box) return;
   const src = loadSource();

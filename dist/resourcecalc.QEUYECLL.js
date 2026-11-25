@@ -244,7 +244,7 @@ import {
   unmountBeetlesCalculator,
   updateCalcSummary,
   updateSkillSaveBarState
-} from "./chunk.WKXFDVU3.js";
+} from "./chunk.PQ36BDPT.js";
 import "./chunk.XKJMJZUJ.js";
 import "./chunk.LPEVZJ4B.js";
 import "./chunk.D3PHX6VZ.js";
@@ -3252,11 +3252,25 @@ function cropCellsHtml4() {
     return `<label class="rc-crop guro-frame${on ? " is-on" : ""}"><span class="rc-crop-icon">${getIcon(iconNameOf(n))}</span><span class="rc-crop-name">${esc5(n)}</span><input type="checkbox" data-rc-crop="${esc5(n)}"${on ? " checked" : ""} aria-label="${esc5(n)}"></label>`;
   }).join("");
 }
+function consumedByOthers(rows) {
+  const used = {};
+  rows.forEach((r) => {
+    if (!(r.toolUses > 0)) return;
+    r.breakdown.forEach((m) => {
+      if (m.mode !== "collect" || !(m.qty > 0) || !isResource(m.name)) return;
+      used[m.name] = (used[m.name] || 0) + m.qty * r.toolUses;
+    });
+  });
+  return used;
+}
 function tilesHtml4(rows) {
   if (!rows.length) return `<div class="rc-empty">No resources selected yet. Tick a resource above to include it in the calculation.</div>`;
+  const consumed = consumedByOthers(rows);
   return `<div class="rc-tiles-wrap guro-frame"><div class="rc-tiles">${rows.map((r) => {
     const good = r.net >= 0;
-    return `<div class="rc-tile guro-frame ${good ? "is-profit" : "is-loss"}" data-rc-tile="${esc5(r.name)}"><span class="rc-tile-icon">${getIcon(iconNameOf(r.name))}</span><span class="rc-tile-yield">${signed5(r.totalYield, n25)}</span><span class="rc-tile-net">${fl4(r.gross)}${FLOWER_ICON}</span></div>`;
+    const used = consumed[r.name] || 0;
+    const usedHtml = used > 0 ? `<span class="rc-tile-used">-${n25(used)}${getIcon(iconNameOf(r.name))}</span>` : "";
+    return `<div class="rc-tile guro-frame ${good ? "is-profit" : "is-loss"}${used > 0 ? " has-used" : ""}" data-rc-tile="${esc5(r.name)}"><span class="rc-tile-icon">${getIcon(iconNameOf(r.name))}</span><span class="rc-tile-yield">${signed5(r.totalYield - used, n25)}</span>${usedHtml}<span class="rc-tile-net">${fl4(r.gross)}${FLOWER_ICON}</span></div>`;
   }).join("")}</div></div>`;
 }
 function valueBoxHtml4(label, html, extra) {
@@ -3369,9 +3383,6 @@ function appliedBoostHtml4(row) {
 function kv4(label, html, cls) {
   return `<div class="rc-kv${cls ? " " + cls : ""}"><span class="rc-kv-label">${label}</span><span class="rc-kv-val">${html}</span></div>`;
 }
-function matPrice(name) {
-  return farmPanelGetMarketPriceFlower(name) || 0;
-}
 function matRowHtml(name, qty, price, badge) {
   return `<div class="rc-mat-row"><span class="rc-mat-main">${getIcon(name)}<span class="rc-mat-name">${esc5(name)}</span><span class="rc-mat-qty">\xD7${n25(qty)}</span><span class="rc-mat-val">(${flowerHtml4(qty * price)})</span></span><span class="rc-badge">${badge}</span></div>`;
 }
@@ -3395,7 +3406,7 @@ function materialsHtml(r) {
   const modeBadge = r.mode === "restock" ? "Per Restock" : "24hr";
   const mats = r.breakdown.filter((m) => m.qty > 0);
   const matRows = !mats.length || r.toolUse <= 0 ? `<div class="rc-boost-none">No material used</div>` : mats.map((m) => {
-    const p = matPrice(m.name);
+    const p = coinsToFlower(m.unitCost || 0);
     return matRowHtml(m.name, m.qty * r.toolUse, p, "1 cycle") + matRowHtml(m.name, m.qty * r.toolUses, p, modeBadge);
   }).join("");
   const yieldRows = matRowHtml(r.name, r.yieldCycle, r.sell, "1 cycle") + matRowHtml(r.name, r.totalYield, r.sell, modeBadge);
@@ -4201,9 +4212,6 @@ function refreshResults5() {
 function kv5(label, html, cls) {
   return `<div class="rc-kv${cls ? " " + cls : ""}"><span class="rc-kv-label">${label}</span><span class="rc-kv-val">${html}</span></div>`;
 }
-function matPrice2(name) {
-  return farmPanelGetMarketPriceFlower(name) || 0;
-}
 function matRowHtml2(name, qty, price, badge) {
   return `<div class="rc-mat-row"><span class="rc-mat-main">${getIcon(name)}<span class="rc-mat-name">${esc6(name)}</span><span class="rc-mat-qty">\xD7${n26(qty)}</span><span class="rc-mat-val">(${flowerHtml5(qty * price)})</span></span><span class="rc-badge">${badge}</span></div>`;
 }
@@ -4268,7 +4276,7 @@ function materialsHtml2(r) {
   const modeBadge = r.mode === "restock" ? "Per Restock" : "24hr";
   const mats = r.recipe ? r.recipe.materials.filter((m) => m.qty > 0) : [];
   const matRows = !mats.length || r.toolUse <= 0 ? `<div class="rc-boost-none">No material used</div>` : mats.map((m) => {
-    const p = matPrice2(m.name);
+    const p = coinsToFlower(getMaterialUnitCostCoins(m.name, m.mode));
     return matRowHtml2(m.name, m.qty * r.toolUse, p, "1 cycle") + matRowHtml2(m.name, m.qty * r.toolUses, p, modeBadge);
   }).join("");
   const yieldRows = matRowHtml2("Salt", r.yieldCycle, r.sell, "1 cycle") + matRowHtml2("Salt", r.totalYield, r.sell, modeBadge);

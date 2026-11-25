@@ -326,10 +326,6 @@ function kv(label, html, cls) {
   return `<div class="rc-kv${cls ? " " + cls : ""}"><span class="rc-kv-label">${label}</span><span class="rc-kv-val">${html}</span></div>`;
 }
 
-function matPrice(name) {
-  return farmPanelGetMarketPriceFlower(name) || 0;
-}
-
 function matRowHtml(name, qty, price, badge) {
   return `<div class="rc-mat-row"><span class="rc-mat-main">${ui.getIcon(name)}<span class="rc-mat-name">${esc(name)}</span><span class="rc-mat-qty">×${n2(qty)}</span><span class="rc-mat-val">(${flowerHtml(qty * price)})</span></span><span class="rc-badge">${badge}</span></div>`;
 }
@@ -398,7 +394,7 @@ function materialsHtml(r) {
   const modeBadge = r.mode === "restock" ? "Per Restock" : "24hr";
   const mats = r.recipe ? r.recipe.materials.filter(m => m.qty > 0) : [];
   const matRows = !mats.length || r.toolUse <= 0 ? `<div class="rc-boost-none">No material used</div>` : mats.map(m => {
-    const p = matPrice(m.name);
+    const p = calc.coinsToFlower(prices.getMaterialUnitCostCoins(m.name, m.mode));
     return matRowHtml(m.name, m.qty * r.toolUse, p, "1 cycle") + matRowHtml(m.name, m.qty * r.toolUses, p, modeBadge);
   }).join("");
   const yieldRows = matRowHtml("Salt", r.yieldCycle, r.sell, "1 cycle") + matRowHtml("Salt", r.totalYield, r.sell, modeBadge);

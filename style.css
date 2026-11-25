@@ -14480,6 +14480,7 @@ input[type="checkbox"]:not(.dprofit-cost-config-input):checked{ background-image
 .pf-value{ display:flex; flex-direction:column; align-items:stretch; gap:8px; padding:10px 12px; background:var(--parchment, #f2d9a0); }
 .pf-value-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; font-size:calc(12px * var(--fs-desk,1)); font-weight:700; color:var(--ink); }
 .pf-value-label{ color:var(--ink); }
+.pf-value-stack{ display:inline-flex; flex-direction:column; align-items:flex-end; gap:2px; }
 .pf-value-num{ display:inline-flex; align-items:center; gap:5px; color:var(--ink); }
 .pf-badge{ display:inline-flex; align-items:center; padding:2px 8px; font-size:calc(11px * var(--fs-desk,1)); font-weight:800; color:#fff; background:var(--ink-soft, #7a6a55); }
 .pf-badge-whale{ background:#2f6fb0; }
@@ -14848,6 +14849,9 @@ html body #pageResourceCalc .rc-season.is-on, html body #pageResourceCalc .rc-mo
 .rc-tile-icon{ display:inline-flex; width:22px; height:22px; align-items:center; justify-content:center; }
 .rc-tile-icon img{ max-width:22px; max-height:22px; image-rendering:pixelated; }
 .rc-tile-yield{ font-size:calc(12px * var(--fs-desk,1)); font-weight:800; line-height:1.1; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.rc-tile.has-used{ height:auto; min-height:78px; }
+.rc-tile-used{ display:inline-flex; align-items:center; gap:2px; font-size:calc(11px * var(--fs-desk,1)); font-weight:800; line-height:1.1; max-width:100%; white-space:nowrap; color:var(--loss); }
+.rc-tile-used img{ width:12px; height:12px; image-rendering:pixelated; flex:0 0 auto; }
 .rc-tile-net{ display:inline-flex; align-items:center; gap:2px; font-size:calc(11px * var(--fs-desk,1)); font-weight:800; line-height:1.1; max-width:100%; white-space:nowrap; }
 .rc-tile.is-profit .rc-tile-net{ color:var(--profit); }
 .rc-tile.is-loss .rc-tile-net{ color:var(--loss); }
@@ -14996,6 +15000,7 @@ html body.app-dark:not(.sfl-theme) #pageResourceCalc .rc-mode.is-on{
 }
 html body #pageResourceCalc .rc-tile.is-profit .rc-tile-net{ color:var(--profit) !important; }
 html body #pageResourceCalc .rc-tile.is-loss .rc-tile-net{ color:var(--loss) !important; }
+html body #pageResourceCalc .rc-tile .rc-tile-used{ color:var(--loss) !important; }
 
 .exp-tools{ display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:8px; margin:0 0 10px; }
 .exp-skill-tabs{ display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:6px; }

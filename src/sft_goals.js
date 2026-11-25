@@ -180,15 +180,19 @@ export function computeChainHistory() {
   const activity = g.farmActivity && typeof g.farmActivity === "object" ? g.farmActivity : {};
   const deposit = toNum(activity["FLOWER Deposited"]);
   const withdraw = toNum(activity["FLOWER Withdrawn"]);
+  const sflDeposit = toNum(activity["SFL Deposited"]);
+  const sflWithdraw = toNum(g.bank && g.bank.withdrawnAmount);
   const whale = ownsWhaleItem(g);
-  let type = "Neutral";
-  if (whale) type = "Whale"; else if (withdraw > 0 && withdraw >= deposit * 1.8) type = "Extractor"; else if (deposit > withdraw) type = "Investor";
+  const typeOf = (d, w) => whale ? "Whale" : w > 0 && w >= d * 1.8 ? "Extractor" : d > w ? "Investor" : "Neutral";
   return {
     ready: true,
     deposit: deposit,
     withdraw: withdraw,
+    sflDeposit: sflDeposit,
+    sflWithdraw: sflWithdraw,
     balance: toNum(g.balance),
-    type: type
+    type: typeOf(deposit, withdraw),
+    typeAll: typeOf(deposit + sflDeposit, withdraw + sflWithdraw)
   };
 }
 
