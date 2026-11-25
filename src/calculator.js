@@ -2278,7 +2278,16 @@ const ANIMAL_LOVE_ITEM_KEYS = {
   "Music Box": "musicBox"
 };
 
-export function computeAnimalRemainingLoveSlots(asleepAt, lovedAt, readyAt, now) {
+export function animalLovesThisSleep(animal) {
+  const lovedAt = isFinite(animal.lovedAt) ? animal.lovedAt : 0;
+  const asleepAt = isFinite(animal.asleepAt) ? animal.asleepAt : 0;
+  if (lovedAt <= asleepAt) return 0;
+  return typeof animal.lovesThisSleep === "number" ? animal.lovesThisSleep : 1;
+}
+
+const ANIMAL_MAX_LOVES_PER_SLEEP = 2;
+
+export function computeAnimalRemainingLoveSlots(asleepAt, lovedAt, readyAt, now, lovesUsed) {
   if (!isFinite(asleepAt) || !isFinite(readyAt) || readyAt <= asleepAt || now >= readyAt) return 0;
   const third = (readyAt - asleepAt) / 3;
   const nextAt = Math.max(asleepAt + third, (isFinite(lovedAt) ? lovedAt : 0) + third);
@@ -2287,32 +2296,45 @@ export function computeAnimalRemainingLoveSlots(asleepAt, lovedAt, readyAt, now)
   for (let k = 0; k < 3; k++) {
     if (first + k * third < readyAt) slots++;
   }
-  return slots;
+  const lovesLeft = Math.max(0, ANIMAL_MAX_LOVES_PER_SLEEP - (lovesUsed || 0));
+  return Math.min(slots, lovesLeft);
 }
 
 export function computeAnimalRealLoveXp(type, level, animal, now, readyAt) {
-  const slots = computeAnimalRemainingLoveSlots(animal.asleepAt, animal.lovedAt, readyAt, now);
+  const slots = computeAnimalRemainingLoveSlots(animal.asleepAt, animal.lovedAt, readyAt, now, animalLovesThisSleep(animal));
   if (!slots) return {
     slots: 0,
-    xp: 0
+    xp: 0,
+    item: ""
   };
-  const affection = computeAnimalAffectionFigures(type, level);
   const itemKey = ANIMAL_LOVE_ITEM_KEYS[animal.item];
-  let xp;
-  if (itemKey) {
-    const tool = affection.tools.find(t => t.key === itemKey);
-    if (!tool || !tool.owned) return {
-      slots: slots,
-      xp: 0
-    };
-    xp = tool.xpEach;
-  } else {
-    xp = affection.avgPerOpportunity;
-  }
-  xp += (slots - 1) * affection.avgPerOpportunity;
+  if (!itemKey || !animalAffectionTools[itemKey]) return {
+    slots: slots,
+    xp: 0,
+    item: animal.item || ""
+  };
+  const mods = getAnimalXpModifiers(type);
   return {
     slots: slots,
-    xp: xp
+    xp: ANIMAL_LOVE_ITEM_XP[itemKey] * mods.affectionXpMultTotal + mods.loveFlatXpAddTotal,
+    item: animal.item
+  };
+}
+
+export function animalClaimFeedPlan(type, claimIndex, xpMult) {
+  const th = ANIMAL_XP_THRESHOLDS[type];
+  const n = Math.max(1, Math.floor(claimIndex) || 1);
+  const startLevel = Math.min(15, n - 1);
+  const gap = n <= 15 ? th[n] - th[n - 1] : th[15] - th[14];
+  const favouriteFoodKey = getFavouriteFoodKeyAtLevel(startLevel, type);
+  const feedKeyUsed = resolveFeedKeyUsed(type, favouriteFoodKey);
+  const foodXp = Math.max(1e-9, getBaseFoodXpFor(type, startLevel, feedKeyUsed) * xpMult);
+  return {
+    feeds: Math.max(1, Math.ceil(gap / foodXp - 1e-9)),
+    feedKeyUsed: feedKeyUsed,
+    favouriteFoodKey: favouriteFoodKey,
+    gap: gap,
+    startLevel: startLevel
   };
 }
 
@@ -2325,6 +2347,7 @@ export function computeAnimalRealProgress(type, animal, now, readyAt) {
   const shownLevel = hasXp ? animalShownLevel(type, animal) : level;
   const isReadyState = animal.state === "ready" || pendingClaims > 0;
   const isMax = level >= 15;
+  const freeFeed = !!animal.freeFeed;
   let xpGap, nextThreshold, nextLevelLabel, isMaxCycle;
   if (!isMax) {
     nextThreshold = thresholds[level + 1];
@@ -2343,7 +2366,6 @@ export function computeAnimalRealProgress(type, animal, now, readyAt) {
   if (isReadyState) xpGap = 0;
   const favouriteFoodKey = getFavouriteFoodKeyAtLevel(level, type);
   const feedKeyUsed = resolveFeedKeyUsed(type, favouriteFoodKey);
-  const baseFoodXp = getBaseFoodXpFor(type, Math.min(15, Math.max(0, level)), feedKeyUsed);
   const mods = getAnimalXpModifiers(type);
   let realXpMult = mods.xpMultTotal;
   if (type === "pig" && typeof animal.muddy === "boolean") {
@@ -2351,12 +2373,22 @@ export function computeAnimalRealProgress(type, animal, now, readyAt) {
     if (mudSelected && !animal.muddy) realXpMult /= PIG_MUD_XP_MULTIPLIER;
     if (!mudSelected && animal.muddy) realXpMult *= PIG_MUD_XP_MULTIPLIER;
   }
-  const boostedFoodXp = Math.max(1e-9, baseFoodXp * realXpMult);
   const love = xpGap > 0 ? computeAnimalRealLoveXp(type, level, animal, now, readyAt) : {
     slots: 0,
-    xp: 0
+    xp: 0,
+    item: ""
   };
-  const noOfFeeds = Math.ceil(Math.max(0, xpGap - love.xp) / boostedFoodXp);
+  const xpAfterLove = Math.max(0, xpGap - love.xp);
+  let baseFoodXp = getBaseFoodXpFor(type, Math.min(15, Math.max(0, level)), feedKeyUsed);
+  let boostedFoodXp = Math.max(1e-9, baseFoodXp * realXpMult);
+  if (freeFeed) {
+    if (isMax) {
+      boostedFoodXp = Math.max(1e-9, xpAfterLove > 0 ? xpAfterLove : xpGap);
+    } else {
+      boostedFoodXp = Math.max(1e-9, getBaseFoodXpFor(type, level + 1, favouriteFoodKey) * mods.xpMultTotal);
+    }
+  }
+  const noOfFeeds = Math.ceil(xpAfterLove / boostedFoodXp - 1e-9);
   let claimLevel;
   if (isReadyState) {
     claimLevel = hasXp && pendingClaims > 0 ? Math.max(1, animalNextClaimLevel(type, animal)) : Math.max(1, level);
@@ -2368,17 +2400,11 @@ export function computeAnimalRealProgress(type, animal, now, readyAt) {
   let costFeeds = noOfFeeds;
   let costFeedKey = feedKeyUsed;
   if (isReadyState || animal.state === "happy" || animal.state === "sad") {
-    const cycle = getAnimalCycleRecord(type, claimLevel);
-    let cycleFeeds = Math.round(cycle.feeds);
-    let cycleFeedKey = cycle.feedKeyUsed;
-    if (isReadyState && claimLevel < 15 && (cycle.banked || pendingClaims > 1)) {
-      const fresh = getAnimalStartCycle(type, claimLevel - 1);
-      cycleFeeds = fresh.feeds / Math.max(1, pendingClaims);
-      cycleFeedKey = fresh.feedKeyUsed;
-    }
-    if (isReadyState || cycleFeeds > noOfFeeds) {
-      costFeeds = cycleFeeds;
-      costFeedKey = cycleFeedKey;
+    const claimIndex = isReadyState ? hasXp && pendingClaims > 0 ? animalProduceMarkCount(type, animalClaimedExperience(type, animal)) + 1 : claimLevel : animalProduceMarkCount(type, xp) + 1;
+    const plan = animalClaimFeedPlan(type, claimIndex, realXpMult);
+    if (isReadyState || plan.feeds > noOfFeeds) {
+      costFeeds = plan.feeds;
+      costFeedKey = plan.feedKeyUsed;
     }
   }
   return {
@@ -2399,6 +2425,7 @@ export function computeAnimalRealProgress(type, animal, now, readyAt) {
     boostedFoodXp: boostedFoodXp,
     loveSlots: love.slots,
     expectedLoveXp: love.xp,
+    loveItem: love.item,
     noOfFeeds: noOfFeeds
   };
 }
@@ -2574,7 +2601,7 @@ function computePigBristlesPlanCore(basis, target) {
   };
 }
 
-export function computeAnimalYieldsForLevel(type, level, realFeedBuffName) {
+export function computeAnimalYieldsForLevel(type, level, realFeedBuffName, animalMultiplier) {
   const cfg = ANIMAL_DATA[type];
   const lvl = Math.min(15, Math.max(1, parseInt(level) || 1));
   const lvlData = cfg.levels[lvl - 1];
@@ -2612,7 +2639,8 @@ export function computeAnimalYieldsForLevel(type, level, realFeedBuffName) {
   const yields = cfg.products.map((_, pi) => {
     const budPart = Object.values(budAddSum[pi]).length ? Math.max(...Object.values(budAddSum[pi])) : 0;
     const flatPart = yieldAdd[pi] - budPart;
-    return roundClaimProduce(Math.max(0, lvlData.y[pi] * productMult[pi] * yieldMultAllTotal + flatPart + budPart));
+    const perAnimalMult = typeof animalMultiplier === "number" && animalMultiplier > 0 ? animalMultiplier : 1;
+    return roundClaimProduce(Math.max(0, lvlData.y[pi] * productMult[pi] * perAnimalMult * yieldMultAllTotal + flatPart + budPart));
   });
   return {
     yields: yields,

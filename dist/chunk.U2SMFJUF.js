@@ -311,8 +311,10 @@ __export(calculator_exports, {
   animalAffectionCounts: () => animalAffectionCounts,
   animalAffectionTools: () => animalAffectionTools,
   animalBuds: () => animalBuds,
+  animalClaimFeedPlan: () => animalClaimFeedPlan,
   animalClaimedExperience: () => animalClaimedExperience,
   animalCounts: () => animalCounts,
+  animalLovesThisSleep: () => animalLovesThisSleep,
   animalNextClaimLevel: () => animalNextClaimLevel,
   animalPendingClaims: () => animalPendingClaims,
   animalProduceMarkCount: () => animalProduceMarkCount,
@@ -16153,7 +16155,7 @@ function renderAnimalYieldGroupsList(card2) {
   if (!animals || !animals.length) return "";
   const animalIcon = getIcon(card2.typeLabel);
   const num = (n) => String(Math.round(n * 100) / 100);
-  const feedsOf = (a) => a.isReadyState || !(a.xpGap > 0) || !(a.xpPerFeed > 0) ? 0 : Math.ceil(a.xpGap / a.xpPerFeed - 1e-9);
+  const feedsOf = (a) => a.isReadyState || !(a.xpGap > 0) || !(a.xpPerFeed > 0) ? 0 : typeof a.feedsToNextCount === "number" ? a.feedsToNextCount : Math.ceil(a.xpGap / a.xpPerFeed - 1e-9);
   const needsFeed = (a) => feedsOf(a) > 0;
   const isFree = !!card2.freeFeed;
   const foodOf = (a) => isFree ? 0 : typeof a.feedQtyToNext === "number" && isFinite(a.feedQtyToNext) ? a.feedQtyToNext : feedsOf(a);
@@ -16203,7 +16205,9 @@ function renderAnimalYieldGroupsList(card2) {
     const projHtml = proj ? `<div class="ay-proj"><span class="tier-tag ay-proj-tag">Projected LVL ${proj.level} XP ${num(proj.xp)}/${num(proj.threshold)}</span>${proj.claims > 1 ? `<span class="tier-tag ay-proj-tag">${proj.claims} claims banked</span>` : ""}</div>` : "";
     let needHtml;
     if (feedsOf(a) > 0) {
-      needHtml = `<div class="ay-need"><span class="ay-k">XP needed</span><b class="ay-v">${num(a.xpGap)}</b><span class="ay-sep"></span><span class="ay-k">Feed</span><span class="ay-feed"><b>\xD7${foodText(foodOf(a))}</b>${feedIcon} ${escapeHtml(a.feedToNextName || "")}</span><span class="ay-xpe">${feedsWord(feedsOf(a))} \xB7 +${num(a.xpPerFeed)} XP each</span></div>${a.loveXp > 0 ? `<div class="ay-why">Love XP from ${escapeHtml(a.loveItem || "petting")} (about ${num(a.loveXp)} XP) may cover this instead of a feed.</div>` : ""}`;
+      needHtml = `<div class="ay-need"><span class="ay-k">XP needed</span><b class="ay-v">${num(a.xpGap)}</b><span class="ay-sep"></span><span class="ay-k">Feed</span><span class="ay-feed"><b>\xD7${foodText(foodOf(a))}</b>${feedIcon} ${escapeHtml(a.feedToNextName || "")}</span><span class="ay-xpe">${feedsWord(feedsOf(a))} \xB7 +${num(a.xpPerFeed)} XP each</span></div>${a.loveXp > 0 ? `<div class="ay-why">Counts ${escapeHtml(a.loveItem || "love")} love: +${num(a.loveXp)} XP already taken off the feeds above.</div>` : ""}`;
+    } else if (!a.isReadyState && a.xpGap > 0 && a.loveXp >= a.xpGap) {
+      needHtml = `<div class="ay-need is-done"><span class="ay-k">No feed needed \xB7 ${escapeHtml(a.loveItem || "love")} love (+${num(a.loveXp)} XP) reaches the next level</span></div>`;
     } else if (a.isReadyState) {
       needHtml = `<div class="ay-need is-done"><span class="ay-k">${a.pendingClaims > 1 ? "Ready to collect \xB7 " + a.pendingClaims + " claims banked" : "Ready to collect"}</span></div>`;
     } else if (a.fedThisCycle) {
@@ -32004,9 +32008,9 @@ function setFarmPanelAnimalFeedChoice(type, key) {
 function farmPanelProjectAnimalXp(type, xpNow, progress) {
   const thresholds = ANIMAL_XP_THRESHOLDS[type];
   if (!thresholds || progress.isReadyState || !(progress.xpGap > 0) || !(progress.boostedFoodXp > 0)) return null;
-  const feeds = Math.ceil(progress.xpGap / progress.boostedFoodXp - 1e-9);
+  const feeds = progress.noOfFeeds;
   if (!(feeds > 0)) return null;
-  const xp = Math.round((xpNow + feeds * progress.boostedFoodXp) * 1e6) / 1e6;
+  const xp = Math.round((xpNow + (progress.expectedLoveXp || 0) + feeds * progress.boostedFoodXp) * 1e6) / 1e6;
   const level2 = getAnimalLevelFromXp(type, xp, true);
   const maxXp = thresholds[15];
   let threshold;
@@ -34811,13 +34815,15 @@ function farmPanelComputeInProgressRaw(json, opts) {
           item: animal.item,
           asleepAt,
           lovedAt,
+          lovesThisSleep: typeof animal.lovesThisSleep === "number" ? animal.lovesThisSleep : void 0,
+          freeFeed,
           muddy: type === "pig" ? !!(animal.mud && animal.mud.harvestsRemaining > 0) : void 0
         }, now, readyAtMs);
         const level2 = progress.shownLevel;
         const realFeedBuffName = animal.feedBuff && typeof animal.feedBuff === "object" && animal.feedBuff.name && (typeof animal.feedBuff.harvestsRemaining !== "number" || animal.feedBuff.harvestsRemaining > 0) ? animal.feedBuff.name : null;
         const feedProjection = farmPanelProjectAnimalXp(type, progress.xp, progress);
         const yieldLevel = progress.claimLevel;
-        const fig = computeAnimalYieldsForLevel(type, yieldLevel, realFeedBuffName);
+        const fig = computeAnimalYieldsForLevel(type, yieldLevel, realFeedBuffName, animal.multiplier);
         const feedInfo = getActiveFeedInfo(progress.costFeedKey);
         let animalFeedMultTotal = baseFeedMultTotal;
         if (realFeedBuffName === "Honey Treat") animalFeedMultTotal *= 0.75;
@@ -34900,7 +34906,8 @@ function farmPanelComputeInProgressRaw(json, opts) {
           projection: feedProjection,
           claimLevel: yieldLevel,
           loveXp: progress.expectedLoveXp,
-          loveItem: animal.item || "",
+          loveItem: progress.loveItem || animal.item || "",
+          loveSlots: progress.loveSlots,
           isReady: ready,
           fedThisCycle: !sick && !ready && !progress.isReadyState && (stateStr === "happy" || stateStr === "sad" || stateStr === "" && (awakeAt != null || asleepAt != null))
         });
@@ -38663,11 +38670,16 @@ function farmPanelToolInfoForGroup(groupKey) {
 }
 dailyHarvestSetToolProvider(farmPanelToolInfoForGroup);
 dailyHarvestSetResolver(farmPanelResolveHarvestPending);
-function farmPanelClaimedAnimalYield(groupKey, xp, buffName) {
+function farmPanelClaimedAnimalYield(groupKey, xp, buffName, claimedXp) {
   const type = String(groupKey).toLowerCase();
   if (!ANIMAL_DATA[type]) return null;
-  const level2 = getAnimalLevelFromXp(type, xp, true);
+  let level2 = getAnimalLevelFromXp(type, xp, true);
   if (level2 === null) return null;
+  if (typeof claimedXp === "number") level2 = Math.max(1, animalNextClaimLevel(type, {
+    xp,
+    claimedExperience: claimedXp,
+    state: "ready"
+  }));
   const fig = computeAnimalYieldsForLevel(type, level2, buffName || null);
   const parts = {};
   let total = 0;
@@ -42238,7 +42250,14 @@ var ANIMAL_LOVE_ITEM_KEYS = {
   Brush: "brush",
   "Music Box": "musicBox"
 };
-function computeAnimalRemainingLoveSlots(asleepAt, lovedAt, readyAt, now) {
+function animalLovesThisSleep(animal) {
+  const lovedAt = isFinite(animal.lovedAt) ? animal.lovedAt : 0;
+  const asleepAt = isFinite(animal.asleepAt) ? animal.asleepAt : 0;
+  if (lovedAt <= asleepAt) return 0;
+  return typeof animal.lovesThisSleep === "number" ? animal.lovesThisSleep : 1;
+}
+var ANIMAL_MAX_LOVES_PER_SLEEP = 2;
+function computeAnimalRemainingLoveSlots(asleepAt, lovedAt, readyAt, now, lovesUsed) {
   if (!isFinite(asleepAt) || !isFinite(readyAt) || readyAt <= asleepAt || now >= readyAt) return 0;
   const third = (readyAt - asleepAt) / 3;
   const nextAt = Math.max(asleepAt + third, (isFinite(lovedAt) ? lovedAt : 0) + third);
@@ -42247,31 +42266,43 @@ function computeAnimalRemainingLoveSlots(asleepAt, lovedAt, readyAt, now) {
   for (let k = 0; k < 3; k++) {
     if (first + k * third < readyAt) slots++;
   }
-  return slots;
+  const lovesLeft = Math.max(0, ANIMAL_MAX_LOVES_PER_SLEEP - (lovesUsed || 0));
+  return Math.min(slots, lovesLeft);
 }
 function computeAnimalRealLoveXp(type, level2, animal, now, readyAt) {
-  const slots = computeAnimalRemainingLoveSlots(animal.asleepAt, animal.lovedAt, readyAt, now);
+  const slots = computeAnimalRemainingLoveSlots(animal.asleepAt, animal.lovedAt, readyAt, now, animalLovesThisSleep(animal));
   if (!slots) return {
     slots: 0,
-    xp: 0
+    xp: 0,
+    item: ""
   };
-  const affection = computeAnimalAffectionFigures(type, level2);
   const itemKey = ANIMAL_LOVE_ITEM_KEYS[animal.item];
-  let xp;
-  if (itemKey) {
-    const tool = affection.tools.find((t) => t.key === itemKey);
-    if (!tool || !tool.owned) return {
-      slots,
-      xp: 0
-    };
-    xp = tool.xpEach;
-  } else {
-    xp = affection.avgPerOpportunity;
-  }
-  xp += (slots - 1) * affection.avgPerOpportunity;
+  if (!itemKey || !animalAffectionTools[itemKey]) return {
+    slots,
+    xp: 0,
+    item: animal.item || ""
+  };
+  const mods = getAnimalXpModifiers(type);
   return {
     slots,
-    xp
+    xp: ANIMAL_LOVE_ITEM_XP[itemKey] * mods.affectionXpMultTotal + mods.loveFlatXpAddTotal,
+    item: animal.item
+  };
+}
+function animalClaimFeedPlan(type, claimIndex, xpMult) {
+  const th = ANIMAL_XP_THRESHOLDS[type];
+  const n = Math.max(1, Math.floor(claimIndex) || 1);
+  const startLevel = Math.min(15, n - 1);
+  const gap = n <= 15 ? th[n] - th[n - 1] : th[15] - th[14];
+  const favouriteFoodKey = getFavouriteFoodKeyAtLevel(startLevel, type);
+  const feedKeyUsed = resolveFeedKeyUsed(type, favouriteFoodKey);
+  const foodXp = Math.max(1e-9, getBaseFoodXpFor(type, startLevel, feedKeyUsed) * xpMult);
+  return {
+    feeds: Math.max(1, Math.ceil(gap / foodXp - 1e-9)),
+    feedKeyUsed,
+    favouriteFoodKey,
+    gap,
+    startLevel
   };
 }
 function computeAnimalRealProgress(type, animal, now, readyAt) {
@@ -42283,6 +42314,7 @@ function computeAnimalRealProgress(type, animal, now, readyAt) {
   const shownLevel = hasXp ? animalShownLevel(type, animal) : level2;
   const isReadyState = animal.state === "ready" || pendingClaims > 0;
   const isMax = level2 >= 15;
+  const freeFeed = !!animal.freeFeed;
   let xpGap, nextThreshold, nextLevelLabel, isMaxCycle;
   if (!isMax) {
     nextThreshold = thresholds[level2 + 1];
@@ -42301,7 +42333,6 @@ function computeAnimalRealProgress(type, animal, now, readyAt) {
   if (isReadyState) xpGap = 0;
   const favouriteFoodKey = getFavouriteFoodKeyAtLevel(level2, type);
   const feedKeyUsed = resolveFeedKeyUsed(type, favouriteFoodKey);
-  const baseFoodXp = getBaseFoodXpFor(type, Math.min(15, Math.max(0, level2)), feedKeyUsed);
   const mods = getAnimalXpModifiers(type);
   let realXpMult = mods.xpMultTotal;
   if (type === "pig" && typeof animal.muddy === "boolean") {
@@ -42309,12 +42340,22 @@ function computeAnimalRealProgress(type, animal, now, readyAt) {
     if (mudSelected && !animal.muddy) realXpMult /= PIG_MUD_XP_MULTIPLIER;
     if (!mudSelected && animal.muddy) realXpMult *= PIG_MUD_XP_MULTIPLIER;
   }
-  const boostedFoodXp = Math.max(1e-9, baseFoodXp * realXpMult);
   const love = xpGap > 0 ? computeAnimalRealLoveXp(type, level2, animal, now, readyAt) : {
     slots: 0,
-    xp: 0
+    xp: 0,
+    item: ""
   };
-  const noOfFeeds = Math.ceil(Math.max(0, xpGap - love.xp) / boostedFoodXp);
+  const xpAfterLove = Math.max(0, xpGap - love.xp);
+  let baseFoodXp = getBaseFoodXpFor(type, Math.min(15, Math.max(0, level2)), feedKeyUsed);
+  let boostedFoodXp = Math.max(1e-9, baseFoodXp * realXpMult);
+  if (freeFeed) {
+    if (isMax) {
+      boostedFoodXp = Math.max(1e-9, xpAfterLove > 0 ? xpAfterLove : xpGap);
+    } else {
+      boostedFoodXp = Math.max(1e-9, getBaseFoodXpFor(type, level2 + 1, favouriteFoodKey) * mods.xpMultTotal);
+    }
+  }
+  const noOfFeeds = Math.ceil(xpAfterLove / boostedFoodXp - 1e-9);
   let claimLevel;
   if (isReadyState) {
     claimLevel = hasXp && pendingClaims > 0 ? Math.max(1, animalNextClaimLevel(type, animal)) : Math.max(1, level2);
@@ -42326,17 +42367,11 @@ function computeAnimalRealProgress(type, animal, now, readyAt) {
   let costFeeds = noOfFeeds;
   let costFeedKey = feedKeyUsed;
   if (isReadyState || animal.state === "happy" || animal.state === "sad") {
-    const cycle = getAnimalCycleRecord(type, claimLevel);
-    let cycleFeeds = Math.round(cycle.feeds);
-    let cycleFeedKey = cycle.feedKeyUsed;
-    if (isReadyState && claimLevel < 15 && (cycle.banked || pendingClaims > 1)) {
-      const fresh = getAnimalStartCycle(type, claimLevel - 1);
-      cycleFeeds = fresh.feeds / Math.max(1, pendingClaims);
-      cycleFeedKey = fresh.feedKeyUsed;
-    }
-    if (isReadyState || cycleFeeds > noOfFeeds) {
-      costFeeds = cycleFeeds;
-      costFeedKey = cycleFeedKey;
+    const claimIndex = isReadyState ? hasXp && pendingClaims > 0 ? animalProduceMarkCount(type, animalClaimedExperience(type, animal)) + 1 : claimLevel : animalProduceMarkCount(type, xp) + 1;
+    const plan = animalClaimFeedPlan(type, claimIndex, realXpMult);
+    if (isReadyState || plan.feeds > noOfFeeds) {
+      costFeeds = plan.feeds;
+      costFeedKey = plan.feedKeyUsed;
     }
   }
   return {
@@ -42357,6 +42392,7 @@ function computeAnimalRealProgress(type, animal, now, readyAt) {
     boostedFoodXp,
     loveSlots: love.slots,
     expectedLoveXp: love.xp,
+    loveItem: love.item,
     noOfFeeds
   };
 }
@@ -42528,7 +42564,7 @@ function computePigBristlesPlanCore(basis, target) {
     basis: useGross ? "gross" : "net"
   };
 }
-function computeAnimalYieldsForLevel(type, level2, realFeedBuffName) {
+function computeAnimalYieldsForLevel(type, level2, realFeedBuffName, animalMultiplier) {
   const cfg = ANIMAL_DATA[type];
   const lvl = Math.min(15, Math.max(1, parseInt(level2) || 1));
   const lvlData = cfg.levels[lvl - 1];
@@ -42566,7 +42602,8 @@ function computeAnimalYieldsForLevel(type, level2, realFeedBuffName) {
   const yields = cfg.products.map((_, pi) => {
     const budPart = Object.values(budAddSum[pi]).length ? Math.max(...Object.values(budAddSum[pi])) : 0;
     const flatPart = yieldAdd[pi] - budPart;
-    return roundClaimProduce(Math.max(0, lvlData.y[pi] * productMult[pi] * yieldMultAllTotal + flatPart + budPart));
+    const perAnimalMult = typeof animalMultiplier === "number" && animalMultiplier > 0 ? animalMultiplier : 1;
+    return roundClaimProduce(Math.max(0, lvlData.y[pi] * productMult[pi] * perAnimalMult * yieldMultAllTotal + flatPart + budPart));
   });
   return {
     yields,
@@ -79178,12 +79215,18 @@ function claimedAnimalYield(groupKey, current, before) {
   if (!animalYieldProvider || !current) return null;
   const state2 = typeof current.s === "string" ? current.s : "";
   let xp = null;
-  if (state2 === "idle" || state2 === "sick") xp = current.x;
-  else if (before && before.s === "ready") xp = before.x;
+  let claimed;
+  if (before && before.s === "ready") {
+    xp = before.x;
+    claimed = before.c;
+  } else if (state2 === "idle" || state2 === "sick") {
+    xp = current.x;
+    claimed = current.c;
+  }
   if (typeof xp !== "number" || !isFinite(xp)) return null;
   const buff = before && typeof before.s === "string" ? before.b || "" : current.b || "";
   try {
-    return animalYieldProvider(groupKey, xp, buff);
+    return animalYieldProvider(groupKey, xp, buff, typeof claimed === "number" && isFinite(claimed) ? claimed : void 0);
   } catch (e) {
     return null;
   }
@@ -79376,6 +79419,8 @@ function collectGroups(g, now) {
       const xp = Number(animal.experience);
       if (isFinite(xp)) node.x = xp;
       if (typeof animal.state === "string") node.s = animal.state;
+      const ce = Number(animal.claimedExperience);
+      if (animal.claimedExperience !== void 0 && isFinite(ce)) node.c = ce;
       const fb = animal.feedBuff;
       if (fb && typeof fb === "object" && fb.name && !(fb.harvestsRemaining <= 0)) node.b = fb.name;
     });
@@ -79616,6 +79661,16 @@ function dailyHarvestTrack(g, farmId) {
           const c = grp.nodes[id];
           if (!c || c.key !== prev.nodes[id].key && !String(prev.nodes[id].key).startsWith(`${c.key}:`)) events.push(id);
         });
+      }
+    }
+    if (grp.kind === "animal" && grp.mode === "ts" && events.length) {
+      st.seen = st.seen || {};
+      for (let ei = events.length - 1; ei >= 0; ei--) {
+        const eid = events[ei];
+        const ets = grp.nodes[eid] ? grp.nodes[eid].ts : 0;
+        if (!ets) continue;
+        if (typeof st.seen[eid] === "number" && st.seen[eid] >= ets) events.splice(ei, 1);
+        else st.seen[eid] = ets;
       }
     }
     const skillTime = grp.kind ? skillTimes[grp.kind] || 0 : 0;
