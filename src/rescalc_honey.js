@@ -342,7 +342,8 @@ function boostBodyHtml() {
   const flower = calc.selectedHoneyFlower;
   const subjects = [ {
     name: "Hives",
-    icon: ui.getIcon("Beehive")
+    icon: ui.getIcon("Beehive"),
+    yieldIcon: ui.getIcon("Honey")
   }, {
     name: flower,
     icon: flowerNameIcon(flower)

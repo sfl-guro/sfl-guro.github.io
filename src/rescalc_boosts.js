@@ -19,29 +19,62 @@ function signed(v) {
   return `${v > 0 ? "+" : ""}${n2(v)}`;
 }
 
+function iconSpan(html) {
+  return `<span class="rc-share-icon">${html}</span>`;
+}
+
+function targetIcons(b, subjects) {
+  const seen = new Set();
+  let out = "";
+  const push = (key, html) => {
+    if (!html || seen.has(key)) return;
+    seen.add(key);
+    out += iconSpan(html);
+  };
+  (subjects || []).forEach(s => {
+    if (s.products) {
+      if (b.productIndex != null) {
+        const n = s.products[b.productIndex];
+        if (n) push(n, ui.getIcon(n));
+      } else {
+        s.products.forEach(n => push(n, ui.getIcon(n)));
+      }
+    } else {
+      push(s.name, s.yieldIcon || s.icon);
+    }
+  });
+  return out;
+}
+
 function effectParts(b, ctx) {
   const parts = [];
   const add = (kind, text) => parts.push({
     kind: kind,
-    text: text
+    html: esc(text)
   });
-  const keyed = (map, key) => {
+  const addRaw = (kind, html) => parts.push({
+    kind: kind,
+    html: html
+  });
+  const target = targetIcons(b, ctx.subjects);
+  const yieldHtml = lead => `${esc(lead)}${target} Yield`;
+  const keyed = (map, key, byResource) => {
     const keys = Object.keys(map);
-    if (key != null && keys.includes(key)) return `${signed(map[key])} yield`;
-    return keys.map(k => `${k} ${signed(map[k])}`).join(" / ") + " yield";
+    if (key != null && keys.includes(key)) return `${esc(signed(map[key]))}${target} Yield`;
+    return keys.map(k => byResource ? `${esc(signed(map[k]))}${iconSpan(ui.getIcon(k))} Yield` : `${esc(signed(map[k]))}${target} Yield (${esc(k)})`).join(" / ");
   };
-  if (b.tierEffects) add("Yield", keyed(b.tierEffects, ctx.tier)); else if (b.resourceEffects) add("Yield", keyed(b.resourceEffects, ctx.name)); else if (b.yieldAdd) add("Yield", `${signed(b.yieldAdd)} yield`);
-  if (b.yieldAddAll) add("Yield", `${signed(b.yieldAddAll)} yield`);
-  if (b.yieldMult) add("Yield", `×${b.yieldMult} yield`);
-  if (b.saltYieldAdd) add("Yield", `${signed(b.saltYieldAdd)} yield`);
+  if (b.tierEffects) addRaw("Yield", keyed(b.tierEffects, ctx.tier, false)); else if (b.resourceEffects) addRaw("Yield", keyed(b.resourceEffects, ctx.name, true)); else if (b.yieldAdd) addRaw("Yield", yieldHtml(signed(b.yieldAdd)));
+  if (b.yieldAddAll) addRaw("Yield", yieldHtml(signed(b.yieldAddAll)));
+  if (b.yieldMult) addRaw("Yield", yieldHtml(`×${b.yieldMult}`));
+  if (b.saltYieldAdd) addRaw("Yield", yieldHtml(signed(b.saltYieldAdd)));
   if (b.saltRechargeTimeMult) add("Time", `×${b.saltRechargeTimeMult} time`);
-  if (b.harvestAdd) add("Yield", `+${n2(b.harvestAdd)} harvest`);
-  if (b.honeyYieldAdd) add("Yield", `${signed(b.honeyYieldAdd)} honey`);
-  if (b.flowerExtraChance) add("Yield", `+${n2(b.flowerExtraChance)} flowers`);
-  if (b.flowerExtraFlat) add("Yield", `+${n2(b.flowerExtraFlat)} flowers`);
+  if (b.harvestAdd) addRaw("Yield", `${esc(`+${n2(b.harvestAdd)}`)}${target} Harvest`);
+  if (b.honeyYieldAdd) addRaw("Yield", yieldHtml(signed(b.honeyYieldAdd)));
+  if (b.flowerExtraChance) addRaw("Yield", yieldHtml(`+${n2(b.flowerExtraChance)}`));
+  if (b.flowerExtraFlat) addRaw("Yield", yieldHtml(`+${n2(b.flowerExtraFlat)}`));
   if (b.timeMult) add("Time", `×${b.timeMult} time`);
   if (b.timeMultAll) add("Time", `×${b.timeMultAll} time`);
-  if (b.yieldMultAll) add("Yield", `×${b.yieldMultAll} yield`);
+  if (b.yieldMultAll) addRaw("Yield", yieldHtml(`×${b.yieldMultAll}`));
   if (b.feedMult) add("Cost", `×${b.feedMult} feed`);
   if (b.feedMultAll) add("Cost", `×${b.feedMultAll} feed`);
   if (b.freeFeed) add("Cost", "free feed");
@@ -73,7 +106,7 @@ function rowHtml(b, text, noteSkip) {
   const active = calc.isBoostDraftActive(b.id);
   const mark = locked ? "🔒" : `<input type="checkbox" class="rc-boost-check" tabindex="-1" aria-hidden="true"${active ? " checked" : ""}>`;
   const note = b.note && !noteSkip.test(b.note) && b.note.length < 60 ? ` · ${b.note}` : "";
-  return `<div class="lib-item-row rc-boost-pick${active ? " boost-active" : ""}${locked ? " season-locked" : ""}" data-boost-id="${b.id}"><span class="lib-item-icon">${mark}</span><div class="lib-item-main"><div class="lib-item-name">${ui.getBoostIcon(b.name)}${esc(b.name)}</div><div class="lib-item-meta">${esc(text)}${note}</div></div></div>`;
+  return `<div class="lib-item-row rc-boost-pick${active ? " boost-active" : ""}${locked ? " season-locked" : ""}" data-boost-id="${b.id}"><span class="lib-item-icon">${mark}</span><div class="lib-item-main"><div class="lib-item-name">${ui.getBoostIcon(b.name)}${esc(b.name)}</div><div class="lib-item-meta">${text}${note}</div></div></div>`;
 }
 
 function subjectHtml(title, icon, list, ctx, noteSkip) {
@@ -89,7 +122,7 @@ function subjectHtml(title, icon, list, ctx, noteSkip) {
       if (!kinds.includes(p.kind)) kinds.push(p.kind);
     });
     kinds.forEach(k => {
-      const text = parts.filter(p => p.kind === k).map(p => p.text).join(", ");
+      const text = parts.filter(p => p.kind === k).map(p => p.html).join(", ");
       (buckets[k] = buckets[k] || []).push(rowHtml(b, text, noteSkip));
     });
   });
@@ -110,7 +143,8 @@ export function boostsBySubjectHtml(opts) {
   if (subjects.length > 1) {
     shared = opts.boosts.filter(b => perSubject.every(p => p.list.includes(b)));
     if (shared.length) html += subjectHtml(`${opts.allLabel || "All Selected"}`, "", shared, {
-      unit: opts.unit
+      unit: opts.unit,
+      subjects: subjects
     }, noteSkip);
   }
   perSubject.forEach(p => {
@@ -118,7 +152,8 @@ export function boostsBySubjectHtml(opts) {
     html += subjectHtml(`Boost for ${p.subject.name}`, p.subject.icon, list, {
       name: p.subject.name,
       tier: p.subject.tier,
-      unit: opts.unit
+      unit: opts.unit,
+      subjects: [ p.subject ]
     }, noteSkip);
   });
   return html;

@@ -919,7 +919,8 @@ function boostBodyHtml() {
   const subjects = types.map(n => ({
     name: labelOf(n),
     type: n,
-    icon: iconOf(n)
+    icon: iconOf(n),
+    products: calc.ANIMAL_DATA[n].products
   }));
   const boosts = calc.BOOSTS.filter(b => b.source !== "skill" && !b.hiddenFromOwnPanel && b.category === "animals");
   const appliesTo = (b, s) => b.scope === "animalGlobal" || b.scope === "animalType" && b.target === s.type;
