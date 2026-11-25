@@ -2524,7 +2524,7 @@ export function renderAnimalYieldGroupsList(card) {
   if (!animals || !animals.length) return "";
   const animalIcon = getIcon(card.typeLabel);
   const num = n => String(Math.round(n * 100) / 100);
-  const feedsOf = a => a.isReadyState || !(a.xpGap > 0) || !(a.xpPerFeed > 0) ? 0 : Math.ceil(a.xpGap / a.xpPerFeed - 1e-9);
+  const feedsOf = a => a.isReadyState || !(a.xpGap > 0) || !(a.xpPerFeed > 0) ? 0 : typeof a.feedsToNextCount === "number" ? a.feedsToNextCount : Math.ceil(a.xpGap / a.xpPerFeed - 1e-9);
   const needsFeed = a => feedsOf(a) > 0;
   const isFree = !!card.freeFeed;
   const foodOf = a => isFree ? 0 : typeof a.feedQtyToNext === "number" && isFinite(a.feedQtyToNext) ? a.feedQtyToNext : feedsOf(a);
@@ -2574,7 +2574,9 @@ export function renderAnimalYieldGroupsList(card) {
     const projHtml = proj ? `<div class="ay-proj"><span class="tier-tag ay-proj-tag">Projected LVL ${proj.level} XP ${num(proj.xp)}/${num(proj.threshold)}</span>${proj.claims > 1 ? `<span class="tier-tag ay-proj-tag">${proj.claims} claims banked</span>` : ""}</div>` : "";
     let needHtml;
     if (feedsOf(a) > 0) {
-      needHtml = `<div class="ay-need"><span class="ay-k">XP needed</span><b class="ay-v">${num(a.xpGap)}</b><span class="ay-sep"></span><span class="ay-k">Feed</span><span class="ay-feed"><b>×${foodText(foodOf(a))}</b>${feedIcon} ${escapeHtml(a.feedToNextName || "")}</span><span class="ay-xpe">${feedsWord(feedsOf(a))} · +${num(a.xpPerFeed)} XP each</span></div>${a.loveXp > 0 ? `<div class="ay-why">Love XP from ${escapeHtml(a.loveItem || "petting")} (about ${num(a.loveXp)} XP) may cover this instead of a feed.</div>` : ""}`;
+      needHtml = `<div class="ay-need"><span class="ay-k">XP needed</span><b class="ay-v">${num(a.xpGap)}</b><span class="ay-sep"></span><span class="ay-k">Feed</span><span class="ay-feed"><b>×${foodText(foodOf(a))}</b>${feedIcon} ${escapeHtml(a.feedToNextName || "")}</span><span class="ay-xpe">${feedsWord(feedsOf(a))} · +${num(a.xpPerFeed)} XP each</span></div>${a.loveXp > 0 ? `<div class="ay-why">Counts ${escapeHtml(a.loveItem || "love")} love: +${num(a.loveXp)} XP already taken off the feeds above.</div>` : ""}`;
+    } else if (!a.isReadyState && a.xpGap > 0 && a.loveXp >= a.xpGap) {
+      needHtml = `<div class="ay-need is-done"><span class="ay-k">No feed needed · ${escapeHtml(a.loveItem || "love")} love (+${num(a.loveXp)} XP) reaches the next level</span></div>`;
     } else if (a.isReadyState) {
       needHtml = `<div class="ay-need is-done"><span class="ay-k">${a.pendingClaims > 1 ? "Ready to collect · " + a.pendingClaims + " claims banked" : "Ready to collect"}</span></div>`;
     } else if (a.fedThisCycle) {

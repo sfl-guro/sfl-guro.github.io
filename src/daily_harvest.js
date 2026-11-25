@@ -891,12 +891,18 @@ function claimedAnimalYield(groupKey, current, before) {
   if (!animalYieldProvider || !current) return null;
   const state = typeof current.s === "string" ? current.s : "";
   let xp = null;
-  if (state === "idle" || state === "sick") xp = current.x;
-  else if (before && before.s === "ready") xp = before.x;
+  let claimed;
+  if (before && before.s === "ready") {
+    xp = before.x;
+    claimed = before.c;
+  } else if (state === "idle" || state === "sick") {
+    xp = current.x;
+    claimed = current.c;
+  }
   if (typeof xp !== "number" || !isFinite(xp)) return null;
   const buff = before && typeof before.s === "string" ? before.b || "" : current.b || "";
   try {
-    return animalYieldProvider(groupKey, xp, buff);
+    return animalYieldProvider(groupKey, xp, buff, typeof claimed === "number" && isFinite(claimed) ? claimed : undefined);
   } catch (e) {
     return null;
   }
@@ -1106,6 +1112,8 @@ function collectGroups(g, now) {
       const xp = Number(animal.experience);
       if (isFinite(xp)) node.x = xp;
       if (typeof animal.state === "string") node.s = animal.state;
+      const ce = Number(animal.claimedExperience);
+      if (animal.claimedExperience !== undefined && isFinite(ce)) node.c = ce;
       const fb = animal.feedBuff;
       if (fb && typeof fb === "object" && fb.name && !(fb.harvestsRemaining <= 0)) node.b = fb.name;
     });
@@ -1354,6 +1362,15 @@ export function dailyHarvestTrack(g, farmId) {
           const c = grp.nodes[id];
           if (!c || c.key !== prev.nodes[id].key && !String(prev.nodes[id].key).startsWith(`${c.key}:`)) events.push(id);
         });
+      }
+    }
+    if (grp.kind === "animal" && grp.mode === "ts" && events.length) {
+      st.seen = st.seen || {};
+      for (let ei = events.length - 1; ei >= 0; ei--) {
+        const eid = events[ei];
+        const ets = grp.nodes[eid] ? grp.nodes[eid].ts : 0;
+        if (!ets) continue;
+        if (typeof st.seen[eid] === "number" && st.seen[eid] >= ets) events.splice(ei, 1); else st.seen[eid] = ets;
       }
     }
     const skillTime = grp.kind ? skillTimes[grp.kind] || 0 : 0;
