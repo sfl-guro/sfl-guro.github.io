@@ -6,6 +6,9 @@ import {
 } from "./chunk.VR6FV3KR.js";
 import "./chunk.AS3VMXOQ.js";
 
+// src/sfl_token_icon.js
+var SFL_TOKEN_ICON = '<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACz0lEQVR42uWXv2sUQRTHP7N7cgYOiWfOi6ghFhYm6B8g+OOSQhEx2iiXShBsLbQSUglWsRIsArYe2khEghYmauEfEEksLBR/EJNLLkcSiIe7MxazM9nN3W5yScADp7ljZ973vXnvzfe9J2hyjV84oZL2+8YmRTN4Dv94pWJu+SROoPd2DmV8sFrVv23tAAgB48TL9o1NDm7KAKAYB7L/TAZ8BQhYWtYf92QABa5g6kG5mHDhwdYNQeD2IkDheTcA3utP8PtPVKI6AwpwBN7EnAbpFyAVCDh1fSl6fvcuUueOaR1XMMErmXC0ZhLazbNHQSkQAu/VNAA3B6o4xuxaIP5wEQAp4dGtQPZ8j5XdsgGkg+0QSGVe4q7327IEwJdR1689l2YNMApCgPbWSZgqdG6Tqd7QgImBrwCcfHyYdNYFB4pD+mhXPpt4o+JQBYCnlwEfahWfDze+ty4TCsPtPXdy5E9n9NelGZ1wFxeplHUcujr3AfCjvICISSylFIdy+ty3XwsAZHMOIy/3BoR1AIDZ9ytMD5fXhUASMJx2HYDjCtxUVJlIyOrwnpFzXGHxLL6MzYEAwBE762eLJxKScLVqud0wnH3n21k1ifdmVisrBB5Y9VuxHLe1B1Ut4HbDcMtyexrSDqn+vP6f6Qx0rQDlRjlgkkTt7DUtnkrwgAO4wc3dQM5X+J6qe2pJz9AsIyd9ZfEsvlOX9tFybJZlQldw7fgUAAc7kpnw53zAhB97wVdxTNji5bgw2h0lDAmlex4AV+9WcN3GYL4Pz+57Edl01rV4psZsXA0bJL6UsVwSCag552yAt7l+oObVNRXZDifUkEj71CJGgm7ljGw6tTUDvLef63rCkdH2tZ7QMFx/3vaE3rhmUdNBhXvC1izHzY5fhRdHQnPBTKjM6rlg4tKXpsa2lu2KS3ECc+9WimujmR/idpurpW2H4L+ajv8CnrgDEgvZTfQAAAAASUVORK5CYII=" alt="SFL" style="width:13px;height:13px;vertical-align:-2px;image-rendering:pixelated;">';
+
 // src/pages/profile.js
 var FLOWER_ICON = "";
 var escapeHtml = (s) => String(s);
@@ -36,6 +39,7 @@ var picked = null;
 var menuOpen = false;
 var listenersOn = false;
 var tab = "info";
+var chainMode = "all";
 var harvestMod = null;
 var craftedMod = null;
 function tabsHtml() {
@@ -46,7 +50,7 @@ async function renderHarvest() {
   rootEl.innerHTML = `${tabsHtml()}<div class="pf-hlog-host" id="pfHarvestHost"></div>`;
   const host = rootEl.querySelector("#pfHarvestHost");
   try {
-    if (!harvestMod) harvestMod = await import("./harvest_log.CGN63KS3.js");
+    if (!harvestMod) harvestMod = await import("./harvest_log.VT3Q5DXS.js");
   } catch (e) {
     if (host) host.innerHTML = `<div class="dh-hlog-msg">Couldn't load history. Check your connection.</div>`;
     return;
@@ -115,6 +119,10 @@ function renderMenuOnly() {
   const slot = rootEl && rootEl.querySelector("[data-pf-menu-slot]");
   if (slot) slot.innerHTML = menuHtml();
 }
+function chainAmountHtml(sfl, flower) {
+  if (chainMode !== "all") return `<span class="pf-value-num">${money(flower)}${FLOWER_ICON}</span>`;
+  return `<span class="pf-value-num">${money((sfl || 0) + (flower || 0))}${SFL_TOKEN_ICON}${FLOWER_ICON}</span>`;
+}
 function render() {
   if (!rootEl) return;
   rootEl.classList.toggle("pf-harvest-active", tab === "harvest");
@@ -129,6 +137,7 @@ function render() {
   const keep = rootEl.querySelector("#pfSearchInput");
   const hadFocus = keep && document.activeElement === keep;
   const { inv, chain, total, goals, source } = evaluateGoals();
+  const playerType = chainMode === "all" ? chain.typeAll : chain.type;
   const invRows = inv.rows.length ? inv.rows.map(inventoryRowHtml).join("") : `<div class="pf-empty">${inv.ready ? "No tradable resources found" : "Sync a Farm ID to see your inventory"}</div>`;
   const priceRows = goals.length ? goals.map(goalPriceRowHtml).join("") : `<div class="pf-empty">No SFT added yet</div>`;
   const cards = goals.length ? goals.map((g) => goalTileHtml(g, total)).join("") : `<div class="pf-empty">Add an SFT to track your goal</div>`;
@@ -137,9 +146,13 @@ function render() {
     <div class="pf-value guro-frame">
       <div class="pf-title">On Chain History</div>
       <div class="pf-value-row"><span class="pf-value-label">Net Inventory Value</span><span class="pf-value-num">${money(inv.net)}${FLOWER_ICON}</span></div>
-      <div class="pf-value-row"><span class="pf-value-label">Deposit</span><span class="pf-value-num">${money(chain.deposit)}${FLOWER_ICON}</span></div>
-      <div class="pf-value-row"><span class="pf-value-label">Withdraw</span><span class="pf-value-num">${money(chain.withdraw)}${FLOWER_ICON}</span></div>
-      <div class="pf-value-row"><span class="pf-value-label">Player Type</span>${chain.type ? `<span class="pf-badge pf-badge-${chain.type.toLowerCase()} guro-frame">${chain.type}</span>` : `<span class="pf-value-num">\u2014</span>`}</div>
+      <div class="pf-source-row">
+        <label class="pf-source-opt"><span>All Time</span><input type="checkbox" class="pf-source-check" data-pf-chain="all"${chainMode === "all" ? " checked" : ""}></label>
+        <label class="pf-source-opt"><span>FLOWER Only</span><input type="checkbox" class="pf-source-check" data-pf-chain="flower"${chainMode === "flower" ? " checked" : ""}></label>
+      </div>
+      <div class="pf-value-row"><span class="pf-value-label">Deposit</span>${chainAmountHtml(chain.sflDeposit, chain.deposit)}</div>
+      <div class="pf-value-row"><span class="pf-value-label">Withdraw</span>${chainAmountHtml(chain.sflWithdraw, chain.withdraw)}</div>
+      <div class="pf-value-row"><span class="pf-value-label">Player Type</span>${playerType ? `<span class="pf-badge pf-badge-${playerType.toLowerCase()} guro-frame">${playerType}</span>` : `<span class="pf-value-num">\u2014</span>`}</div>
     </div>
     <div class="pf-box guro-frame">
       <div class="pf-title">Inventory</div>
@@ -259,6 +272,12 @@ function onClick(e) {
   }
 }
 function onChange(e) {
+  const mode = e.target.closest && e.target.closest("[data-pf-chain]");
+  if (mode) {
+    chainMode = mode.dataset.pfChain;
+    render();
+    return;
+  }
   const box = e.target.closest && e.target.closest("[data-pf-source]");
   if (!box) return;
   const src = loadSource();
@@ -293,7 +312,7 @@ async function mount(root, api) {
   FLOWER_ICON = api.calc.FLOWER_ICON;
   escapeHtml = api.calc.escapeHtml;
   getIcon = api.ui.getIcon;
-  const goals = await import("./sft_goals.COL7LZ5E.js");
+  const goals = await import("./sft_goals.DS4DRFRJ.js");
   goals.bindApi(api);
   loadGoals = goals.loadGoals;
   saveGoals = goals.saveGoals;

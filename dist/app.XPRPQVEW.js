@@ -2,7 +2,7 @@ import {
   api,
   initNav,
   initRouter
-} from "./chunk.TRDPU7KL.js";
+} from "./chunk.T45Y3PQF.js";
 import {
   initGemPacks
 } from "./chunk.F7REBWYF.js";
@@ -37,7 +37,7 @@ import {
   stateLastSaved,
   stateSetCode,
   toast
-} from "./chunk.WKXFDVU3.js";
+} from "./chunk.PQ36BDPT.js";
 import "./chunk.XKJMJZUJ.js";
 import "./chunk.LPEVZJ4B.js";
 import "./chunk.D3PHX6VZ.js";
@@ -899,7 +899,7 @@ async function scanGoals() {
   if (!bootDone) return;
   let fresh = [];
   try {
-    const mod = await import("./sft_goals.COL7LZ5E.js");
+    const mod = await import("./sft_goals.DS4DRFRJ.js");
     mod.bindApi(api);
     fresh = mod.takeNewlyReachedGoals();
   } catch (e) {

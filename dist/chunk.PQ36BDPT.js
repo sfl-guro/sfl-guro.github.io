@@ -2830,6 +2830,7 @@ __export(prices_exports, {
   getItemCostByName: () => getItemCostByName,
   getMarketItemCostCoins: () => getMarketItemCostCoins,
   getMaterialUnitCostCoins: () => getMaterialUnitCostCoins,
+  getNetSellUnitCoins: () => getNetSellUnitCoins,
   getOmnifeedUnitCostCoins: () => getOmnifeedUnitCostCoins,
   getPetResourceMarket: () => getPetResourceMarket,
   getPigSlopOptions: () => getPigSlopOptions,
@@ -24301,12 +24302,19 @@ function getItemCostByNameUncached(name, visited) {
   if (tool) return getToolCostCoins(tool.id, visited);
   return 0;
 }
+function getNetSellUnitCoins(name) {
+  const price = farmPanelGetMarketPriceFlower(name);
+  if (!(price > 0)) return 0;
+  return price * coinPerFlower * (1 - (feePercent || 0) / 100);
+}
 function getMaterialUnitCostCoins(materialName, mode, visited) {
   if (mode === "buy") {
     const m = marketItems.find((x) => (x.name || "").toLowerCase() === materialName.toLowerCase());
     if (m) return (m.flowerPrice || 0) * coinPerFlower;
     return getItemCostByName(materialName, visited);
   }
+  const netSell = getNetSellUnitCoins(materialName);
+  if (netSell > 0) return netSell;
   return getItemCostByName(materialName, visited);
 }
 function traceZeroCostBoosts(name, visited) {
@@ -30466,7 +30474,7 @@ function mushroomBoosts() {
 }
 function cheaperMode(name) {
   if (name.toLowerCase() === "oil") return "collect";
-  const collect = getMaterialUnitCostCoins(name, "collect");
+  const collect = getItemCostByName(name);
   const buy = getMaterialUnitCostCoins(name, "buy");
   if (!(buy > 0)) return "collect";
   if (!(collect > 0)) return "collect";
@@ -53347,6 +53355,7 @@ $("settingsMovedHintBtn").onclick = () => {
 $("feeInput").addEventListener("input", (e) => {
   const v = parseFloat(e.target.value);
   feePercent = isNaN(v) ? 0 : Math.min(Math.max(v, 0), 100);
+  invalidateCostCache();
   saveState2();
   updateSettingsSummary();
   updateCalcSummary();
@@ -55083,6 +55092,7 @@ function applyFarmFeeOnly(json) {
   };
   __saveSyncSigs();
   feePercent = detected;
+  invalidateCostCache();
   if ($("feeInput")) $("feeInput").value = feePercent;
   if (typeof saveState2 === "function") saveState2();
   if (typeof updateSettingsSummary === "function") updateSettingsSummary();
@@ -74299,14 +74309,22 @@ function digCrimstoneUnitCoins() {
   return digCrimstoneUseCoins() / r.yieldVal;
 }
 function digMatUnitCoins(owner, name) {
-  if (name === "Oil") return digOilUnitCoins();
-  if (name === "Crimstone" && digMatMode(owner, name) === "collect") return digCrimstoneUnitCoins();
+  if (name === "Oil") {
+    const oilNet = getNetSellUnitCoins("Oil");
+    return oilNet > 0 ? oilNet : digOilUnitCoins();
+  }
+  if (name === "Crimstone" && digMatMode(owner, name) === "collect") {
+    const crimNet = getNetSellUnitCoins("Crimstone");
+    return crimNet > 0 ? crimNet : digCrimstoneUnitCoins();
+  }
   if (DIG_ALWAYS_BUY_MATS.has(name)) {
     const live = findLivePriceForName(name);
     if (live != null && isFinite(live) && live > 0) return live * coinPerFlower;
     return getMaterialUnitCostCoins(name, "buy");
   }
   if (digMatMode(owner, name) === "collect") {
+    const collectNet = getNetSellUnitCoins(name);
+    if (collectNet > 0) return collectNet;
     return RESOURCE_DATA[name] ? esResourceCollectCoins(name) : getItemCostByName(name);
   }
   return getMaterialUnitCostCoins(name, "buy");

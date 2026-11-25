@@ -335,7 +335,7 @@ function mushroomBoosts() {
 
 function cheaperMode(name) {
   if (name.toLowerCase() === "oil") return "collect";
-  const collect = prices.getMaterialUnitCostCoins(name, "collect");
+  const collect = prices.getItemCostByName(name);
   const buy = prices.getMaterialUnitCostCoins(name, "buy");
   if (!(buy > 0)) return "collect";
   if (!(collect > 0)) return "collect";

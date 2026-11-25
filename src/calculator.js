@@ -23,7 +23,7 @@ import { renderBeginnerPanel, syncBeginnerPanel } from "./beginner.js";
 
 import { sflbRefreshMyBuildIfOpen } from "./sfl_bubbles.js";
 
-import { getFlowerSeedTypeCost, getFlowerSeedEffectiveCost, SFL_COMMUNITY_API_BASE, SFL_COMMUNITY_PROXY_BASE, SFL_DIG_API_BASE, SFL_EXCHANGE_API, SFL_LAND_API_BASE, SFL_LAND_INFO_BASE, __set_animalFlowerCost, __set_bountyFlowerCost, __set_budFloorPrice, __set_choresFlowerCost, __set_marketActiveTab, __set_marketItems, __set_petFloorPrice, _priceIndexCache, animalFlowerCost, applyLivePricesToMarket, applyMarketSearchFilter, bettyMarketPrice, bountyFlowerCost, budFloorPrice, choresFlowerCost, computeCalcShrineCost, computeMedicineCostFlower, computeRestockCost24h, computeRestockCost24hDetailed, computeRestockCost24hDetailedIndividual, computeSaltUnitCostCoins, cookingCostMode, cookingIngredientUnitCostCoins, crustaceanOptionCosts, crustaceanTrapCostCoins, esComputeAscensionUpgradeCostGeneric, esGetIslandUpgradeCost, esResourceFlowerCost, esSwampCostBase, ensureCosmeticPricesLoaded, fetchLivePrices, findCosmeticPriceForName, findLiveNftPriceForName, findLivePriceForItem, findLivePriceForName, fishCatchStageCostCoins, fishChumUnitCostCoins, fishEffectiveBasicCostCoins, fishRodCostCoins, fishSaltCostFlower, isFishingBuyMode, getActiveAgingSaltCostMult, getAgingSaltCostLocal, getActiveShrineDailyCost, getArtistCoinCostMult, getCropCostCoins, getFeedUnitCost, getFlowerVarietyCostCoins, getFruitCostCoins, getGreenhouseCostCoins, getItemCostByName, getMaterialUnitCostCoins, getOmnifeedUnitCostCoins, getPetResourceMarket, getRestockGemCost, getRestockGemCostIndividual, getSpiceCostPerUseFlower, getToolCostCoins, gunterBuyCost, gunterBuyTotalCost, gunterRenderFlowerCost, hasFreeCostBoost, hasFreeSaltRakeCost, honeyCostFlowerForSpiceRack, truffleCostFlowerForSpiceRack, wildMushroomCostFlowerForSpiceRack, initLivePricesOnLoad, invalidateCostCache, isSflThemeOn, liveNftPrices, livePriceSource, livePrices, livePricesUpdatedAt, marketplaceFlowerUsdPrice, marketItems, marketPriceEditId, npcFlowerCost, openMarketPriceEdit, petDailyFoodCostFlower, petFloorPrice, petResourceCostOverride, pickledVegCost, priceEditTargetId, priceSourceBadgeHtml, refinedSaltUnitCostFlower, refreshSflThemeClass, removeToolMarketEntry, renderFishMarketCardsList, renderMarketList, renderMedicineCostDisplay, restockCostMode, restocksForMode, wholeRestocks, saltCostFlowerForSpiceRack, setLivePrices, setRestockCostMode, setSflTheme, syncToolMarketEntry, tradeMarketPrice } from "./prices.js";
+import { getNetSellUnitCoins, getFlowerSeedTypeCost, getFlowerSeedEffectiveCost, SFL_COMMUNITY_API_BASE, SFL_COMMUNITY_PROXY_BASE, SFL_DIG_API_BASE, SFL_EXCHANGE_API, SFL_LAND_API_BASE, SFL_LAND_INFO_BASE, __set_animalFlowerCost, __set_bountyFlowerCost, __set_budFloorPrice, __set_choresFlowerCost, __set_marketActiveTab, __set_marketItems, __set_petFloorPrice, _priceIndexCache, animalFlowerCost, applyLivePricesToMarket, applyMarketSearchFilter, bettyMarketPrice, bountyFlowerCost, budFloorPrice, choresFlowerCost, computeCalcShrineCost, computeMedicineCostFlower, computeRestockCost24h, computeRestockCost24hDetailed, computeRestockCost24hDetailedIndividual, computeSaltUnitCostCoins, cookingCostMode, cookingIngredientUnitCostCoins, crustaceanOptionCosts, crustaceanTrapCostCoins, esComputeAscensionUpgradeCostGeneric, esGetIslandUpgradeCost, esResourceFlowerCost, esSwampCostBase, ensureCosmeticPricesLoaded, fetchLivePrices, findCosmeticPriceForName, findLiveNftPriceForName, findLivePriceForItem, findLivePriceForName, fishCatchStageCostCoins, fishChumUnitCostCoins, fishEffectiveBasicCostCoins, fishRodCostCoins, fishSaltCostFlower, isFishingBuyMode, getActiveAgingSaltCostMult, getAgingSaltCostLocal, getActiveShrineDailyCost, getArtistCoinCostMult, getCropCostCoins, getFeedUnitCost, getFlowerVarietyCostCoins, getFruitCostCoins, getGreenhouseCostCoins, getItemCostByName, getMaterialUnitCostCoins, getOmnifeedUnitCostCoins, getPetResourceMarket, getRestockGemCost, getRestockGemCostIndividual, getSpiceCostPerUseFlower, getToolCostCoins, gunterBuyCost, gunterBuyTotalCost, gunterRenderFlowerCost, hasFreeCostBoost, hasFreeSaltRakeCost, honeyCostFlowerForSpiceRack, truffleCostFlowerForSpiceRack, wildMushroomCostFlowerForSpiceRack, initLivePricesOnLoad, invalidateCostCache, isSflThemeOn, liveNftPrices, livePriceSource, livePrices, livePricesUpdatedAt, marketplaceFlowerUsdPrice, marketItems, marketPriceEditId, npcFlowerCost, openMarketPriceEdit, petDailyFoodCostFlower, petFloorPrice, petResourceCostOverride, pickledVegCost, priceEditTargetId, priceSourceBadgeHtml, refinedSaltUnitCostFlower, refreshSflThemeClass, removeToolMarketEntry, renderFishMarketCardsList, renderMarketList, renderMedicineCostDisplay, restockCostMode, restocksForMode, wholeRestocks, saltCostFlowerForSpiceRack, setLivePrices, setRestockCostMode, setSflTheme, syncToolMarketEntry, tradeMarketPrice } from "./prices.js";
 
 import { loadBaseHoneyIfNeeded, profileBumpkinCachePersist, safeLSJSON, saveAnimalAffectionCounts, saveAnimalAffectionTools, saveAnimalBuds, saveAnimalCounts, saveAnimalSicknessEstimate, saveAoeSyncOverrides, saveAscensionState, saveBeeSwarmState, saveBoostState, saveBoosts, saveBudFloorPrice, saveCmOilTank, saveCmQueue, saveCookingCounts, saveCropBuds, saveCrustaceanChumSelection, saveFishBuds, saveFlowerVarietyOverrides, saveFruitBuds, saveFruitCounts, saveGlobalPlotCount, saveGlobalPlotCountTouched, saveGreenhouseBuds, saveGreenhouseCounts, saveHiveCount, saveManualCycleOverrides, saveMarketState, saveNodeCounts, saveNodeCountsTouched, savePetFloorPrice, savePetResourceCostOverride, savePetsData, saveResourceBuds, saveSaltFarmLevel, saveSaltUi, saveSculptureLevel, saveSelectedHoneyFlower, saveSelectedSwarmCrop, saveSkillState, saveSpiceUsage, saveState, saveSyncedSkillLevels, saveToolRecipes, saveTradeState, saveWeatherDestructionSync } from "./storage.js";
 
@@ -13967,6 +13967,7 @@ $("settingsMovedHintBtn").onclick = () => {
 $("feeInput").addEventListener("input", e => {
   const v = parseFloat(e.target.value);
   feePercent = isNaN(v) ? 0 : Math.min(Math.max(v, 0), 100);
+  invalidateCostCache();
   saveState();
   updateSettingsSummary();
   updateCalcSummary();
@@ -15870,6 +15871,7 @@ function applyFarmFeeOnly(json) {
   };
   __saveSyncSigs();
   feePercent = detected;
+  invalidateCostCache();
   if ($("feeInput")) $("feeInput").value = feePercent;
   if (typeof saveState === "function") saveState();
   if (typeof updateSettingsSummary === "function") updateSettingsSummary();
@@ -35808,14 +35810,22 @@ function digCrimstoneUnitCoins() {
 }
 
 function digMatUnitCoins(owner, name) {
-  if (name === "Oil") return digOilUnitCoins();
-  if (name === "Crimstone" && digMatMode(owner, name) === "collect") return digCrimstoneUnitCoins();
+  if (name === "Oil") {
+    const oilNet = getNetSellUnitCoins("Oil");
+    return oilNet > 0 ? oilNet : digOilUnitCoins();
+  }
+  if (name === "Crimstone" && digMatMode(owner, name) === "collect") {
+    const crimNet = getNetSellUnitCoins("Crimstone");
+    return crimNet > 0 ? crimNet : digCrimstoneUnitCoins();
+  }
   if (DIG_ALWAYS_BUY_MATS.has(name)) {
     const live = findLivePriceForName(name);
     if (live != null && isFinite(live) && live > 0) return live * coinPerFlower;
     return getMaterialUnitCostCoins(name, "buy");
   }
   if (digMatMode(owner, name) === "collect") {
+    const collectNet = getNetSellUnitCoins(name);
+    if (collectNet > 0) return collectNet;
     return RESOURCE_DATA[name] ? esResourceCollectCoins(name) : getItemCostByName(name);
   }
   return getMaterialUnitCostCoins(name, "buy");
