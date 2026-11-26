@@ -247,7 +247,7 @@ export function draftToggleBoost(id) {
     toast(`🔒 ${boost.name} only works in ${seasonLabel} — switch the season toggle above to turn it on`);
     return;
   }
-  if (!isBoostDraftActive(id) && !hasPlotsNodesData() && !(boost && (boost.category === "cooking" || boost.agedFishXpMult || boost.agingTimeMult))) {
+  if (!isBoostDraftActive(id) && !hasPlotsNodesData() && !(boost && (boost.category === "cooking" || boost.category === "fishing" || boost.agedFishXpMult || boost.agingTimeMult))) {
     const missing = getMissingPlotNodeFields();
     let msg;
     if (missing.length === 1) {
@@ -853,6 +853,9 @@ export function renderBoostPanel() {
       label: `<img src='${FISHING_ROD_ICON}' style='width:12px;height:12px;vertical-align:-2px;image-rendering:pixelated;'> Rod cost`,
       items: inCategory.filter(b => b.scope === "fishRod")
     }, {
+      label: "🎟️ Daily fishing reels",
+      items: inCategory.filter(b => b.scope === "fishReels")
+    }, {
       label: "🐟 Fish Yield (Basic / Advance / Expert)",
       items: inCategory.filter(b => b.scope === "fishYield")
     }, {
@@ -867,6 +870,9 @@ export function renderBoostPanel() {
     }, {
       label: "⏳ Fish Aging time (Aging Shed)",
       items: inCategory.filter(b => b.scope === "fishAging")
+    }, {
+      label: "🗺️ Map pieces &amp; minigame",
+      items: inCategory.filter(b => b.scope === "fishMisc")
     } ];
   } else {
     const calendarEventOrder = [ "Bountiful Harvest", "Sunshower", "Insect Plague", "Tsunami", "Tornado", "Great Freeze" ];
@@ -893,7 +899,7 @@ export function renderBoostPanel() {
   const missingFields = getMissingPlotNodeFields();
   const lockNotice = missingFields.length ? `<div class="field-hint" style="background:#fdf1c8;border:1.5px solid var(--sun-deep);padding:8px 10px;border-radius:8px;margin-bottom:10px;font-weight:600;">⚠️ Fill in <b>Crop plots</b> and <b>every Resource node count</b> in <b>Plots &amp; Nodes</b> above before turning on boosts — an AoE boost (like Gnome on crops or Sir Goldensnout on resources) gives the wrong yield if it can't be diluted across your real plot/node count. Fruit node counts and animals stay optional.<br><span style="font-weight:400;color:var(--ink-soft);">Still missing: ${missingFields.join(", ")}</span></div>` : "";
   const cropMachineNote = boostCategory === "cropmachine" ? `<div class="hint-collapsible"><button type="button" class="hint-q-btn" aria-label="More info">❓</button><div class="hint-slide"><div class="field-hint" style="background:#e6f0f7;border:1.5px solid #2b6b8f;padding:8px 10px;border-radius:8px;margin-bottom:10px;font-weight:600;color:#1c4a63;">🛢️ Oil boosts (Battle Fish, Oil Can, Oil Gallon, Oil Overalls, Infernal Drill, Dev Wrench, Stag Shrine...) live in <b>⛏️ Mining → Oil</b>, and per-crop yield boosts (Scarecrow, Sunflower Amulet, Easter Bunny...) live in <b>🌾 Crops</b> — both already apply to the Crop Machine automatically. Only machine-specific batch-time boosts are listed here.</div></div></div>` : "";
-  const fishingNote = boostCategory === "fishing" ? `<div class="hint-collapsible"><button type="button" class="hint-q-btn" aria-label="More info">❓</button><div class="hint-slide"><div class="field-hint" style="background:#e6f0f7;border:1.5px solid #2b6b8f;padding:8px 10px;border-radius:8px;margin-bottom:10px;font-weight:600;color:#1c4a63;">🎣 Every boost here is wired straight into <b>🎣 Fishing</b> above — Rod cost, Fish/Crab/Crustacean yield, Crab Pot &amp; Mariner Pot time, and Fish Market processing time &amp; yield all update live as you toggle these on.</div></div></div>` : "";
+  const fishingNote = boostCategory === "fishing" ? `<div class="hint-collapsible"><button type="button" class="hint-q-btn" aria-label="More info">❓</button><div class="hint-slide"><div class="field-hint" style="background:#e6f0f7;border:1.5px solid #2b6b8f;padding:8px 10px;border-radius:8px;margin-bottom:10px;font-weight:600;color:#1c4a63;">🎣 Every boost here is wired straight into <b>🎣 Fishing</b> above — Rod cost, daily reels, Fish/Crab/Crustacean yield, Crab Pot &amp; Mariner Pot time, and Fish Market processing time &amp; yield all update live as you toggle these on.</div></div></div>` : "";
   const fertilizerToggleHtml = boostCategory === "spicerack" ? renderFertilizerApplyToggles() : "";
   const spiceAnimalToggleHtml = boostCategory === "spicerack" ? renderSpiceRackAnimalToggles() : "";
   wrap.innerHTML = lockNotice + cropMachineNote + fishingNote + fertilizerToggleHtml + spiceAnimalToggleHtml + (groups.map(g => {
