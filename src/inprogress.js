@@ -20,6 +20,8 @@ import { caveTrackFromState } from "./cave_track.js";
 
 import { farmPanelComputeCaveMerchantCard, farmPanelRenderCaveMerchantCard, caveMerchantMiniIconHtml, caveMerchantClock } from "./cave_merchant_card.js";
 
+import { farmPanelComputeMushroomCards, farmPanelRenderMushroomCard } from "./mushroom_card.js";
+
 import { farmPanelComputeFishingCard, farmPanelRenderFishingCard, fishingMiniIconHtml, fishTrackFromState } from "./fishing_card.js";
 import { dailyHarvestTrack, dailyHarvestBadgeHtml, dailyHarvestSetYield, dailyHarvestSetResolver, dailyHarvestSetAnimalYieldProvider, dailyHarvestSetCookingProvider, dailyHarvestSetMachineProvider, dailyHarvestSetIconProvider, dailyHarvestSetToolProvider, dailyHarvestSetPriceProvider, dailyHarvestNodeToolMult } from "./daily_harvest.js";
 
@@ -219,6 +221,14 @@ export function farmPanelCardCatalog() {
       id: "Crop Machine",
       label: "Crop Machine",
       icon: getIcon("Crop Machine")
+    }, {
+      id: "Wild Mushroom",
+      label: "Wild Mushroom",
+      icon: getIcon("Wild Mushroom")
+    }, {
+      id: "Magic Mushroom",
+      label: "Magic Mushroom",
+      icon: getIcon("Magic Mushroom")
     } ]);
     if (id === "fruits") return Object.keys(BASE_FRUITS).map(n => ({
       id: n,
@@ -311,7 +321,7 @@ export function farmPanelCategoryVisible(id) {
 export function farmPanelRowCardKey(row) {
   const cat = farmPanelRowFilterCategory(row);
   let id = row.name;
-  if (row.isAnimalMerged) id = row.typeKey; else if (row.isComposterCard) id = row.composterName; else if (row.isCookingCard) id = row.cookingBuilding; else if (row.isCropMachineCard) id = "Crop Machine"; else if (row.isMycoCard) id = "myco"; else if (row.isPeteQuestCard) id = "pete"; else if (row.isFloatingIslandCard) id = "floating"; else if (row.isFishingCard) id = "fishing"; else if (row.isCaveMerchantCard) id = "caveMerchant";
+  if (row.isAnimalMerged) id = row.typeKey; else if (row.isComposterCard) id = row.composterName; else if (row.isCookingCard) id = row.cookingBuilding; else if (row.isCropMachineCard) id = "Crop Machine"; else if (row.isMushroomCard) id = row.name; else if (row.isMycoCard) id = "myco"; else if (row.isPeteQuestCard) id = "pete"; else if (row.isFloatingIslandCard) id = "floating"; else if (row.isFishingCard) id = "fishing"; else if (row.isCaveMerchantCard) id = "caveMerchant";
   return `${cat}:${id}`;
 }
 
@@ -4194,7 +4204,7 @@ function fpLimitedScopeOfRow(row) {
   if (!row) return "";
   if (row.isCropMachineCard) return "cropmachine";
   if (row.isAnimalMerged) return String(row.typeKey || "").toLowerCase();
-  if (row.isComposterCard || row.isHoneyCard || row.isCookingCard || row.isMycoCard || row.isPeteQuestCard || row.isFloatingIslandCard || row.isFishingCard || row.isCaveMerchantCard || row.isPowerSkillCard) return "";
+  if (row.isComposterCard || row.isHoneyCard || row.isCookingCard || row.isMycoCard || row.isMushroomCard || row.isPeteQuestCard || row.isFloatingIslandCard || row.isFishingCard || row.isCaveMerchantCard || row.isPowerSkillCard) return "";
   const name = row.name;
   if (name === "Wood") return "wood";
   if (name === "Oil") return "oil";
@@ -5487,6 +5497,7 @@ function farmPanelComputeInProgressOnce(json) {
   const allCards = cards.concat(animalCards).concat(composterCards).concat(cookingCards);
   allCards.sort((a, b) => b.profit - a.profit);
   farmPanelComputeCropMachineCards(json).forEach(card => allCards.push(card));
+  farmPanelComputeMushroomCards(json, farmPanelComputeEconomics).forEach(card => allCards.push(card));
   farmPanelComputeMycoCard(json).forEach(card => allCards.push(card));
   const peteQuestCard = farmPanelComputePeteQuestCard(json);
   if (peteQuestCard) allCards.push(peteQuestCard);
@@ -6239,7 +6250,7 @@ function farmPanelRenderNodeYieldBoostList(row, summary, produceIcon) {
 }
 
 function farmPanelCardCategory(row) {
-  if (row.isCropMachineCard) return "crops";
+  if (row.isCropMachineCard || row.isMushroomCard) return "crops";
   if (row.isMycoCard) return "myco";
   if (row.isPeteQuestCard) return "pete";
   if (row.isFloatingIslandCard || row.isFishingCard || row.isCaveMerchantCard || row.isPowerSkillCard) return "pete";
@@ -6963,6 +6974,16 @@ export function farmPanelRenderInProgressRow(row) {
   if (row.isHoneyCard) return farmPanelRenderHoneyCard(row);
   if (row.isCookingCard) return farmPanelRenderCookingCard(row);
   if (row.isCropMachineCard) return farmPanelRenderCropMachineCard(row);
+  if (row.isMushroomCard) return farmPanelRenderMushroomCard(row, farmPanelExpandedNames.has(row.name.toLowerCase()), {
+    flowerIcon: FLOWER_ICON,
+    valueBlockHtml: (gross, fee) => guroValueBlockHtml(gross, fee, fmt),
+    statusBadgeHtml: r => farmPanelStatusBadgeHtml(r.count, 0, "Growing"),
+    statusFoldHtml: r => {
+      if (r.remainingSec == null) return `<div class="guro-status-fold"><span class="guro-status-label">SYNC TO CHECK RESPAWN</span></div>`;
+      if (r.remainingSec <= 0) return `<div class="guro-status-fold"><span class="guro-status-label">SPAWN DUE · SYNC TO REFRESH</span></div>`;
+      return guroStatusFoldHtml(r.count > 0 ? "Next spawn" : "Ready", r.remainingSec);
+    }
+  });
   if (row.isMycoCard) return farmPanelRenderMycoCard(row);
   if (row.isPeteQuestCard) return farmPanelRenderPeteQuestCard(row);
   if (row.isFloatingIslandCard) return farmPanelRenderFloatingIslandCard(row, farmPanelExpandedNames.has("floating-island"));
