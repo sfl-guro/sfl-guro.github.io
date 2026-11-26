@@ -1140,6 +1140,8 @@ var U10 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAA
 var U11 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAA1klEQVR42mNgGAWjYIABIzmaZps4/McmnnrmAMnmMQ10CLCQ4/NoRytcSv6TGhJDIwTUtF2gcf6HgYGBgeHrpatEqb91dQ/joA8BRmJ8cv3SLrIM19RzYyAUEoMzBAj5HOYzmDw6n5SQGNy54MDZ+wwMDAwMDsaKeH2KKyRg+od+OQDzybVN7hCBjcZY1V3bFEW0z4dmXcB4cRlWccfb4gwMDAwM+xmg8jJBwzQEcAFVO1YI4znpekfrAqYh0SaEh0TzW4jPaoWxqkOXHxLtgVEwCgYcAAAuKlU+PkLyVAAAAABJRU5ErkJggg==";
 var U12 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAA+ElEQVR42mNgGAUjHTCSq1FCRPU/Mv/Fm9tkmcU05EIA5vMV27ejiEd4epIVEgMeAizkapw1bw1VHDB00gAs7peZceFVF3XqG0lpYfCnAXSfz5GPZGBgYGBISwrBmiaWMSyHhgREH6GQGLxpAJfPl04rZ2BgYGCQFFVjYGBgYHj++haKvuisTgYGBgaGlIfLiUoTQ6ccQI9zdAALEVgJ+a9++TApCbd+gaQBXwI+h6WFg2fuouhjYPg2TOoCWD63NynHmvrR1UkOm7oAVh5Ea4lAfK7tj7cklLy6EVJeXHvDMLRLQkIhgQsQ6/Oh3ybEBYZcm3AUjAIAKrJf21lLcGoAAAAASUVORK5CYII=";
 var GAME_ICON_DATA = {
+  "Mushroom House": "data:image/png;base64,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",
+  "Mushroom Hat": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIsAAACLCAYAAABRGWr/AAADbklEQVR42u3bP4vUQBwG4CiLlaBgIYKlhQiCjYVY2IiV+CGs/AB+DAtbG2truUptLOQKG0GQKywFsRAUrEQ4q6wDziWTySSZ7D5PJXfuv2zufX8zm20aAAAAAAAAAAAAAAAAAAAAAABiTu3rC/9y++5x7m0vv3uzl8fttL8X9j5ZxiTHWLuaPJIFJwtqaOv51Zvbmrl34VxVz+3V958n/u7h0fvVHnPJwu4mS5goMXOnTFeKDLGGxJEsOFnY0xrqq54x5qqt1LqquY4kC04W9qyGdqF+xtRUbZUkWVhvsuSkSW0pMaUlP6SULDhZ2OEaGlo/S1RPqa390q9hrmqSLKwjWVLTpLZd1inVnDaSBScLO1BDtVyPUkPlrK2SJAt1JMuQ5XDpRCmVHJ8ubv772ZVLZztvc//B9aT7Pnj5cfvvMx9+TH5swmOS87mTZMHJQnmbpeunpsr5feN80zRN8/nrr+jvu+ontXr66i58jLaaYq8vp5rC27Tv0ZA6kizMlyylUqT964n9xUyxzG1TJJYO4eB5UsrMIfYcu9JmSOK0/y98//pSRrJgwKW8rH2WuQfYKSunz9Nnh0kDbup991Vc+Bix+2lv37Uvk1JNOd/HliyoIRZeDa2hfmKVM7R6xgqrJtXQijto0j4qKLmalCyUG3BrS5NYcoSD4pghNJYIfUPoUH27wznpF3veQwbgLuGwK1lQQ8xUQ7VUT+r+SGzvYkxVpNRGabHnm7pf0/e8r337o4ZYMFmWTJRSS95wx3XoQLrkh4YlhuchyZozAEsWnCyUt5nrgXIufB6zz5BTL0/eHi72Dc3Hd24dl6jC1GPa1v6QOpIspA+4Uwy1XcNqzm7r2MF0ycQokTZTDMI5S2zJghqikhoKh9XSH6rl3F/sftZaPX11VLp+Yvd30tArWZhm6Rxb/pZa5rVn+til4y4lytBEGJLAXbcPFyhhykgWDLgsUEN91VP6kgB10/1aS+30pnKJAmqIBWooZ9WTs42/hg/4dsnYUUGyUG7AHbMXYIitS2r6P3rx2nedMeAyVw2F6+glL9hWOctVUup7IFnIG3C3KXP072ddV2tJk/XKOfaSBScL5Q2KohKVpHrGyXkPSh1zycI0yVL67Jcy5Y/tlMdUsuBkAQAAAAAAAAAAAAAAAAAAAAAAqM5flLBivt+xDP8AAAAASUVORK5CYII=",
   "Instant Growth": U0,
   "Discord Mod": U1,
   "Lumberjack's Extra": U2,
@@ -31581,6 +31583,260 @@ function farmPanelRenderCaveMerchantCard(row3, expanded) {
   </div>`;
 }
 
+// src/mushroom_card.js
+var HOUR_MS2 = 36e5;
+var WILD = "Wild Mushroom";
+var MAGIC = "Magic Mushroom";
+var MUSHROOM_NAMES = [WILD, MAGIC];
+var WILD_RESPAWN_HOURS = 16;
+var WILD_FARM_CAP = 5;
+var MAGIC_FARM_CAP = 3;
+var MAGIC_RESPAWN_HOURS = {
+  basic: 48,
+  spring: 36,
+  desert: 24,
+  volcano: 24
+};
+var BUD_AURA_MULT = {
+  Basic: 1.05,
+  Green: 1.2,
+  Rare: 2,
+  Mythical: 5
+};
+var BUD_STEM_BOOST = {
+  [WILD]: {
+    stem: "Mushroom",
+    value: 0.3
+  },
+  [MAGIC]: {
+    stem: "Magic Mushroom",
+    value: 0.2
+  }
+};
+var WILD_COLLECTIBLE_BOOSTS = [{
+  name: "Mushroom House",
+  value: 0.2
+}, {
+  name: "Fairy Circle",
+  value: 0.2
+}];
+var WILD_WEARABLE_BOOSTS = [{
+  name: "Mushroom Hat",
+  value: 0.1
+}];
+function mField(g, key) {
+  if (!g) return null;
+  if (g[key] != null) return g[key];
+  if (g.land && g.land[key] != null) return g.land[key];
+  return null;
+}
+function mNum(v) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
+}
+function mRound(v) {
+  return Math.round(v * 1e4) / 1e4;
+}
+function mIsBuilt(g, name, nowMs) {
+  return placementsOf(g, name).some((p) => p && !!p.coordinates && !p.used && (typeof p.readyAt === "number" ? p.readyAt : 0) <= nowMs);
+}
+function mEquippedNames(g) {
+  const out = /* @__PURE__ */ new Set();
+  const collect = (equipped) => {
+    if (equipped && typeof equipped === "object") Object.values(equipped).forEach((v) => {
+      if (typeof v === "string") out.add(v);
+    });
+  };
+  collect(g && g.bumpkin && g.bumpkin.equipped);
+  const hands = g && g.farmHands && g.farmHands.bumpkins;
+  if (hands && typeof hands === "object") Object.values(hands).forEach((h) => collect(h && h.equipped));
+  return out;
+}
+function mBestBud(g, name) {
+  const rule = BUD_STEM_BOOST[name];
+  const buds = g && g.buds;
+  if (!rule || !buds || typeof buds !== "object") return null;
+  let best = null;
+  Object.entries(buds).forEach(([id, bud]) => {
+    if (!bud || typeof bud !== "object" || !bud.coordinates) return;
+    if (bud.stem !== rule.stem) return;
+    const aura = BUD_AURA_MULT[bud.aura] || 1;
+    const value = mRound(aura * rule.value);
+    if (value > 0 && (!best || value > best.value)) best = {
+      id,
+      value,
+      aura: bud.aura,
+      auraMult: aura,
+      stem: bud.stem
+    };
+  });
+  return best;
+}
+function computeMushroomYield(g, name, nowMs) {
+  let amount = 1;
+  const boosts = [];
+  if (name === WILD) {
+    WILD_COLLECTIBLE_BOOSTS.forEach((b) => {
+      if (mIsBuilt(g, b.name, nowMs)) {
+        amount += b.value;
+        boosts.push({
+          name: b.name,
+          value: b.value,
+          note: ""
+        });
+      }
+    });
+    const equipped = mEquippedNames(g);
+    WILD_WEARABLE_BOOSTS.forEach((b) => {
+      if (equipped.has(b.name)) {
+        amount += b.value;
+        boosts.push({
+          name: b.name,
+          value: b.value,
+          note: ""
+        });
+      }
+    });
+  }
+  const bud = mBestBud(g, name);
+  if (bud) {
+    amount += bud.value;
+    const auraNote = bud.auraMult !== 1 ? `, ${bud.aura} aura \xD7${fmt(bud.auraMult)}` : "";
+    boosts.push({
+      name: `Bud #${bud.id}`,
+      value: bud.value,
+      note: `${bud.stem} stem${auraNote}`,
+      isBud: true
+    });
+  }
+  return {
+    amount: mRound(amount),
+    boosts
+  };
+}
+function mRespawnHours(name, g) {
+  if (name === WILD) return WILD_RESPAWN_HOURS;
+  const type = g && g.island && g.island.type;
+  return MAGIC_RESPAWN_HOURS[type] || MAGIC_RESPAWN_HOURS.basic;
+}
+function mIconHtml(name, size) {
+  const src = IMAGE_ICONS[name];
+  if (!src) return getIcon(name);
+  return `<img src="${src}" alt="${escapeHtml(name)}" decoding="async" style="width:${size}px;height:${size}px;object-fit:contain;image-rendering:pixelated;vertical-align:middle;">`;
+}
+function farmPanelComputeMushroomCards(json, econFn, now) {
+  try {
+    const nowMs = now || Date.now();
+    const g = farmSyncExtractGameState(json);
+    const state2 = mField(g, "mushrooms");
+    if (!state2 || typeof state2 !== "object") return [];
+    const onLand = state2.mushrooms && typeof state2.mushrooms === "object" ? Object.values(state2.mushrooms).filter((m) => m && typeof m === "object") : [];
+    return MUSHROOM_NAMES.map((name) => {
+      const isMagic = name === MAGIC;
+      const cap = isMagic ? MAGIC_FARM_CAP : WILD_FARM_CAP;
+      const count = onLand.filter((m) => m.name === name).length;
+      const intervalHours = mRespawnHours(name, g);
+      const lastAt = mNum(isMagic ? state2.magicSpawnedAt : state2.spawnedAt);
+      const nextAt = lastAt ? lastAt + intervalHours * HOUR_MS2 : 0;
+      const remainingSec = nextAt ? Math.max(0, (nextAt - nowMs) / 1e3) : null;
+      const yieldInfo = computeMushroomYield(g, name, nowMs);
+      const totalYield = mRound(yieldInfo.amount * count);
+      const econ = econFn ? econFn(name, count, totalYield) : null;
+      const pickEcon = econFn ? econFn(name, 1, yieldInfo.amount) : null;
+      return {
+        isMushroomCard: true,
+        name,
+        profit: econ ? econ.profit : 0,
+        isReady: count > 0,
+        count,
+        readyCount: count,
+        cap,
+        intervalHours,
+        lastAt,
+        nextAt,
+        remainingSec,
+        due: !!nextAt && nextAt <= nowMs,
+        perPick: yieldInfo.amount,
+        boosts: yieldInfo.boosts,
+        totalYield,
+        price: econ ? econ.price : 0,
+        grossRevenue: econ ? econ.grossRevenue : 0,
+        feeAmount: econ ? econ.feeAmount : 0,
+        pickGross: pickEcon ? pickEcon.grossRevenue : 0,
+        pickFee: pickEcon ? pickEcon.feeAmount : 0,
+        islandType: g && g.island && g.island.type || "basic"
+      };
+    });
+  } catch (e) {
+    return [];
+  }
+}
+function mBoostRowsHtml(row3) {
+  const icon = getIcon(row3.name);
+  const baseRow = `<div class="boost-applied-row is-yield"><b>Base yield</b> <span class="boost-total-value">${fmt(1)}</span>${icon}</div>`;
+  const rows = row3.boosts.map((b) => {
+    const note = b.note ? ` <span class="boost-mult-note">(${escapeHtml(b.note)})</span>` : "";
+    return `<div class="boost-applied-row is-yield">${b.isBud ? "" : getBoostIcon(b.name)}<b>${escapeHtml(b.name)}</b>${note} <span class="boost-total-value">+${fmt(b.value)}</span>${icon}</div>`;
+  }).join("");
+  const perPickRow = `<div class="boost-applied-row is-yield"><b>Per mushroom</b> <span class="boost-total-value">${fmt(row3.perPick)}</span>${icon}</div>`;
+  const label = row3.boosts.length ? "\u26A1 Applied Boost" : "\u26A1 Boosts";
+  const empty = row3.boosts.length ? "" : `<div class="fh-empty">No ${escapeHtml(row3.name)} boosts active on your farm.</div>`;
+  return `<div class="section-badge is-boost-label">${label}</div><div class="lib-section-title" style="margin-top:10px;">YIELD</div>${baseRow}${rows}${perPickRow}${empty}`;
+}
+function mInfoHtml(row3) {
+  const line = (label, val) => `<div class="dig-total-row"><span class="dig-total-label">${label}</span><span class="dig-total-val">${val}</span></div>`;
+  const lines = [];
+  lines.push(line("On your farm", `${row3.count} / ${row3.cap}`));
+  lines.push(line("Respawn time", `Every ${row3.intervalHours}h`));
+  if (row3.lastAt) lines.push(line("Last spawn", escapeHtml(hiveClockText(row3.lastAt))));
+  if (row3.nextAt) lines.push(line(row3.due ? "Spawn was due" : "Next spawn", escapeHtml(hiveClockText(row3.nextAt))));
+  if (row3.count >= row3.cap) lines.push(line("Farm full", "Pick some to make room"));
+  return `<div class="dig-totals">${lines.join("")}</div>`;
+}
+function farmPanelRenderMushroomCard(row3, expanded, ctx) {
+  const produceIcon = getIcon(row3.name);
+  const hasReady = row3.count > 0;
+  const shownYield = hasReady ? row3.totalYield : row3.perPick;
+  const yieldNote = hasReady ? `<span class="card-tier-note">(${fmt(row3.perPick)} each)</span>` : `<span class="card-tier-note">(next pick)</span>`;
+  const chipHtml = `<span class="animal-produce-chip"><span class="produce-yield">+${fmt(shownYield)}</span><span class="produce-icon">${produceIcon}</span><span class="produce-name">${escapeHtml(row3.name)}</span></span>`;
+  const gross = hasReady ? row3.grossRevenue : row3.pickGross;
+  const fee = hasReady ? row3.feeAmount : row3.pickFee;
+  const valueHtml = row3.price > 0 && ctx && ctx.valueBlockHtml ? ctx.valueBlockHtml(gross, fee) : "";
+  const badgeHtml = row3.due && !hasReady ? `<span class="harvest-badge is-growing">\u23F3 Spawn due</span>` : "";
+  const stateBadge = ctx && ctx.statusBadgeHtml ? ctx.statusBadgeHtml(row3) : "";
+  const foldHtml = ctx && ctx.statusFoldHtml ? ctx.statusFoldHtml(row3) : "";
+  const boostBadge = row3.boosts.length ? `<span class="harvest-badge is-ready">\u26A1 ${row3.boosts.length} boost${row3.boosts.length === 1 ? "" : "s"}</span>` : "";
+  const net = gross - fee;
+  const priceRow = row3.price > 0 ? `<div class="animal-detail-grid"><div class="animal-detail-stat"><span class="label">Market Price/Unit</span><span class="value">${fmt(row3.price)} ${ctx && ctx.flowerIcon || ""}</span></div><div class="animal-detail-stat"><span class="label">Market Value</span><span class="value">${fmt(gross)} ${ctx && ctx.flowerIcon || ""}</span></div><div class="animal-detail-stat"><span class="label">Tax</span><span class="value">${fee > 0 ? `-${fmt(fee)}` : "0"} ${ctx && ctx.flowerIcon || ""}</span></div></div><div class="animal-net-row2"><span class="label">Net</span><span class="value is-profit">${fmt(net)} ${ctx && ctx.flowerIcon || ""}</span></div>` : "";
+  return `
+  <div class="card animal-merged-card is-profit${expanded ? " expanded" : ""}" data-search="${escapeHtml(row3.name.toLowerCase())}" data-fp-category="crops">
+    <div class="card-toggle">
+      <div class="card-name-row">
+        <span class="card-icon">${mIconHtml(row3.name, 22)}</span>
+        <div>
+          <div class="card-name">${escapeHtml(row3.name)}</div>
+          <div class="card-type-row">
+            <span class="card-type">Respawns every ${row3.intervalHours}h ${yieldNote}</span>
+            ${badgeHtml}${boostBadge}
+          </div>
+          <div class="animal-fold-row">${chipHtml}</div>
+          ${valueHtml}
+        </div>
+      </div>
+      <div class="card-collapsed-profit">
+        <span class="harvest-stack">${stateBadge}</span>
+        <span class="chev">\u25BE</span>
+      </div>
+      ${foldHtml}
+    </div>
+    <div class="card-details">
+      ${mInfoHtml(row3)}
+      ${priceRow}
+      ${mBoostRowsHtml(row3)}
+    </div>
+  </div>`;
+}
+
 // src/fishing_card.js
 var STORE_PREFIX2 = "guro_fish_track_v1_";
 var KEEP_DAYS2 = 14;
@@ -32148,6 +32404,14 @@ function farmPanelCardCatalog() {
       id: "Crop Machine",
       label: "Crop Machine",
       icon: getIcon("Crop Machine")
+    }, {
+      id: "Wild Mushroom",
+      label: "Wild Mushroom",
+      icon: getIcon("Wild Mushroom")
+    }, {
+      id: "Magic Mushroom",
+      label: "Magic Mushroom",
+      icon: getIcon("Magic Mushroom")
     }]);
     if (id === "fruits") return Object.keys(BASE_FRUITS).map((n) => ({
       id: n,
@@ -32242,6 +32506,7 @@ function farmPanelRowCardKey(row3) {
   else if (row3.isComposterCard) id = row3.composterName;
   else if (row3.isCookingCard) id = row3.cookingBuilding;
   else if (row3.isCropMachineCard) id = "Crop Machine";
+  else if (row3.isMushroomCard) id = row3.name;
   else if (row3.isMycoCard) id = "myco";
   else if (row3.isPeteQuestCard) id = "pete";
   else if (row3.isFloatingIslandCard) id = "floating";
@@ -35923,7 +36188,7 @@ function fpLimitedScopeOfRow(row3) {
   if (!row3) return "";
   if (row3.isCropMachineCard) return "cropmachine";
   if (row3.isAnimalMerged) return String(row3.typeKey || "").toLowerCase();
-  if (row3.isComposterCard || row3.isHoneyCard || row3.isCookingCard || row3.isMycoCard || row3.isPeteQuestCard || row3.isFloatingIslandCard || row3.isFishingCard || row3.isCaveMerchantCard || row3.isPowerSkillCard) return "";
+  if (row3.isComposterCard || row3.isHoneyCard || row3.isCookingCard || row3.isMycoCard || row3.isMushroomCard || row3.isPeteQuestCard || row3.isFloatingIslandCard || row3.isFishingCard || row3.isCaveMerchantCard || row3.isPowerSkillCard) return "";
   const name = row3.name;
   if (name === "Wood") return "wood";
   if (name === "Oil") return "oil";
@@ -37199,6 +37464,7 @@ function farmPanelComputeInProgressOnce(json) {
   const allCards = cards.concat(animalCards).concat(composterCards).concat(cookingCards);
   allCards.sort((a, b) => b.profit - a.profit);
   farmPanelComputeCropMachineCards(json).forEach((card2) => allCards.push(card2));
+  farmPanelComputeMushroomCards(json, farmPanelComputeEconomics).forEach((card2) => allCards.push(card2));
   farmPanelComputeMycoCard(json).forEach((card2) => allCards.push(card2));
   const peteQuestCard = farmPanelComputePeteQuestCard(json);
   if (peteQuestCard) allCards.push(peteQuestCard);
@@ -37937,7 +38203,7 @@ function farmPanelRenderNodeYieldBoostList(row3, summary, produceIcon) {
   return `<div class="section-badge is-boost-label">\u26A1 Applied Boost</div>${sectionsHtml}`;
 }
 function farmPanelCardCategory(row3) {
-  if (row3.isCropMachineCard) return "crops";
+  if (row3.isCropMachineCard || row3.isMushroomCard) return "crops";
   if (row3.isMycoCard) return "myco";
   if (row3.isPeteQuestCard) return "pete";
   if (row3.isFloatingIslandCard || row3.isFishingCard || row3.isCaveMerchantCard || row3.isPowerSkillCard) return "pete";
@@ -38785,6 +39051,16 @@ function farmPanelRenderInProgressRow(row3) {
   if (row3.isHoneyCard) return farmPanelRenderHoneyCard(row3);
   if (row3.isCookingCard) return farmPanelRenderCookingCard(row3);
   if (row3.isCropMachineCard) return farmPanelRenderCropMachineCard(row3);
+  if (row3.isMushroomCard) return farmPanelRenderMushroomCard(row3, farmPanelExpandedNames.has(row3.name.toLowerCase()), {
+    flowerIcon: FLOWER_ICON,
+    valueBlockHtml: (gross, fee) => guroValueBlockHtml(gross, fee, fmt),
+    statusBadgeHtml: (r) => farmPanelStatusBadgeHtml(r.count, 0, "Growing"),
+    statusFoldHtml: (r) => {
+      if (r.remainingSec == null) return `<div class="guro-status-fold"><span class="guro-status-label">SYNC TO CHECK RESPAWN</span></div>`;
+      if (r.remainingSec <= 0) return `<div class="guro-status-fold"><span class="guro-status-label">SPAWN DUE \xB7 SYNC TO REFRESH</span></div>`;
+      return guroStatusFoldHtml(r.count > 0 ? "Next spawn" : "Ready", r.remainingSec);
+    }
+  });
   if (row3.isMycoCard) return farmPanelRenderMycoCard(row3);
   if (row3.isPeteQuestCard) return farmPanelRenderPeteQuestCard(row3);
   if (row3.isFloatingIslandCard) return farmPanelRenderFloatingIslandCard(row3, farmPanelExpandedNames.has("floating-island"));
