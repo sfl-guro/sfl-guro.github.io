@@ -1,4 +1,4 @@
-import { escapeHtml, farmSyncExtractGameState, farmSyncCollectEquippedAndPlacedNames, sflPrngChance, COIN_ICON, FLOWER_ICON, coinsToFlower, coinPerFlower, CRUSTACEAN_NAMES, getDailyFishingLimitInfoFromState, fishingBoostsActiveByScope, fishRodIsFree, fishRodUnitCoins, fishRodSectionHtml, fishRodUsageHtml, fishSetRodMatMode, fishTreasurePrice, fishMarketFlowerPrice, fishDigFmt } from "./calculator.js";
+import { escapeHtml, farmSyncExtractGameState, farmSyncCollectEquippedAndPlacedNames, sflPrngChance, COIN_ICON, FLOWER_ICON, coinsToFlower, coinPerFlower, CRUSTACEAN_NAMES, getDailyFishingLimitInfoFromState, fishingBoostsActiveByScope, fishRodIsFree, fishRodUnitCoins, fishRodSectionHtml, fishRodUsageHtml, fishSetRodMatMode, fishTreasurePrice, fishMarketFlowerPrice, fishDigFmt, fishFrenzyOn } from "./calculator.js";
 
 import { getIcon, getBoostIcon, hiveClockText, renderFarmPanelTabContent } from "./ui.js";
 
@@ -15,15 +15,15 @@ const MAX_CHAIN = 5000;
 const FISH_SKILL_BOOSTS = [ {
   name: "Fishy Chance",
   ranks: [ 10, 12.5, 15 ],
-  text: v => `+${v}% basic fish`
+  text: v => `${v}% chance +1 basic fish`
 }, {
   name: "Fishy Roll",
   ranks: [ 10, 12.5, 15 ],
-  text: v => `+${v}% advanced fish`
+  text: v => `${v}% chance +1 advanced fish`
 }, {
   name: "Fishy Gamble",
   ranks: [ 20, 25, 30 ],
-  text: v => `+${v}% expert fish`
+  text: v => `${v}% chance +1 expert fish`
 }, {
   name: "Reel Deal",
   ranks: [ .5, .45, .4 ],
@@ -31,12 +31,27 @@ const FISH_SKILL_BOOSTS = [ {
 }, {
   name: "Frenzied Fish",
   ranks: [ 1, 2, 3 ],
-  text: v => `+${v} fish during Fish Frenzy`
+  text: v => `+${v} fish during Fish Frenzy${v < 3 ? ", 50% chance +1" : ""}`
 } ];
 
 function skillLevelOf(g, name, max) {
   const skills = g && g.bumpkin && g.bumpkin.skills && typeof g.bumpkin.skills === "object" ? g.bumpkin.skills : {};
   return Math.min(Number(skills[name]) || 0, max);
+}
+
+const FRENZIED_FISH_FLAT = [ 1, 2, 3 ];
+
+function reelMilestonesToday(g, casts) {
+  const total = Number(g && g.farmActivity && g.farmActivity["Rod Casted"]);
+  if (!isFinite(total) || total < 0 || !(casts > 0)) return 0;
+  const before = Math.max(0, total - casts);
+  return Math.max(0, Math.floor(total / 15) - Math.floor(before / 15));
+}
+
+function fishFrenzyActive(g) {
+  const f = g && g.calendar && g.calendar.fishFrenzy;
+  const at = f && f.startedAt ? new Date(f.startedAt).getTime() : 0;
+  return at > Date.now() - 864e5;
 }
 
 const CRUSTACEANS = new Set(CRUSTACEAN_NAMES);
@@ -239,6 +254,7 @@ export function farmPanelComputeFishingCard(json, farmId, now) {
       const level = skillLevelOf(g, def.name, def.ranks.length);
       if (level > 0) skillBoosts.push({
         name: def.name,
+        level: level,
         text: def.text(def.ranks[level - 1])
       });
     });
@@ -269,11 +285,15 @@ export function farmPanelComputeFishingCard(json, farmId, now) {
       extraUsed: extraUsed,
       limitParts: limitInfo.parts,
       skillBoosts: skillBoosts,
+      frenzy: fishFrenzyActive(g) || fishFrenzyOn,
       reelsLeft: reelsLeft,
       harpoon: placed.has("Harpoon"),
       ancientRod: placed.has("Ancient Rod"),
+      reelMilestones: reelMilestonesToday(g, day.casts),
       yieldBoosts: fishingBoostsActiveByScope("fishYield").concat(fishingBoostsActiveByScope("fishReels").filter(b => b.randomFishEvery)).map(b => ({
         name: b.name,
+        flat: !b.randomFishEvery && !b.tier && (b.fishYieldAdd || 0) >= 1 ? b.fishYieldAdd : 0,
+        every: b.randomFishEvery || (Math.abs((b.fishYieldAdd || 0) - 1 / 15) < 1e-9 ? 15 : 0),
         text: fishYieldBoostText(b)
       }))
     };
@@ -298,20 +318,46 @@ function fishYieldBoostText(b) {
   return `+${fishDigFmt(add)} ${kind}`;
 }
 
-function boostRow(name, text) {
-  return `<div class="boost-applied-row is-yield">${getBoostIcon(name)}<b>${escapeHtml(name)}</b> <span class="boost-total-value">${escapeHtml(text)}</span></div>`;
+function boostRow(name, text, iconName) {
+  return `<div class="boost-applied-row is-yield">${getBoostIcon(iconName || name)}<b>${escapeHtml(name)}</b> <span class="boost-total-value">${escapeHtml(text)}</span></div>`;
 }
 
 function appliedBoostHtml(row) {
   const rows = [];
   const day = row.day;
   row.limitParts.forEach(p => rows.push(boostRow(p.name, `+${fishDigFmt(p.add)} daily reels`)));
-  row.skillBoosts.forEach(b => rows.push(boostRow(b.name, b.text)));
+  let frenzyFlat = 0;
+  row.skillBoosts.forEach(b => {
+    if (row.frenzy && b.name === "Frenzied Fish" && day.casts > 0) {
+      const qty = FRENZIED_FISH_FLAT[Math.min(b.level, 3) - 1] * day.casts;
+      frenzyFlat += qty;
+      rows.push(boostRow(b.name, `+${fishDigFmt(qty)} fish`));
+    } else {
+      rows.push(boostRow(b.name, b.text));
+    }
+  });
+  if (row.frenzy && day.casts > 0) {
+    frenzyFlat += day.casts;
+    rows.push(boostRow("Fish Frenzy", `+${fishDigFmt(day.casts)} fish`, "Frenzied Fish"));
+  }
   if (row.harpoon || day.free > 0) rows.push(boostRow("Harpoon", `${fishDigFmt(day.free)}× free reel (${fishDigFmt(day.casts)} casts)`));
   if (row.ancientRod || day.rodsFree > 0) rows.push(boostRow("Ancient Rod", `${fishDigFmt(day.rodsFree)}× free Rod`));
-  const bonus = Math.max(0, row.fishQty - day.casts);
   if (row.yieldBoosts.length && day.casts > 0) {
-    row.yieldBoosts.forEach(b => rows.push(boostRow(b.name, b.text)));
+    let flatTotal = 0;
+    row.yieldBoosts.forEach(b => {
+      if (b.every) {
+        const qty = row.reelMilestones;
+        flatTotal += qty;
+        rows.push(boostRow(b.name, `+${fishDigFmt(qty)} fish (every ${b.every}th reel)`));
+      } else if (b.flat) {
+        const qty = b.flat * day.casts;
+        flatTotal += qty;
+        rows.push(boostRow(b.name, `+${fishDigFmt(qty)} fish`));
+      } else {
+        rows.push(boostRow(b.name, b.text));
+      }
+    });
+    const bonus = Math.max(0, row.fishQty - day.casts - flatTotal - frenzyFlat);
     rows.push(`<div class="boost-applied-row is-yield"><b>Bonus Fish</b> <span class="boost-total-value">+${fishDigFmt(bonus)} (${fishDigFmt(row.fishQty)} fish from ${fishDigFmt(day.casts)} casts)</span></div>`);
   }
   if (!rows.length) return "";
