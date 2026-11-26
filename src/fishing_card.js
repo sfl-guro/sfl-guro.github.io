@@ -272,7 +272,10 @@ export function farmPanelComputeFishingCard(json, farmId, now) {
       reelsLeft: reelsLeft,
       harpoon: placed.has("Harpoon"),
       ancientRod: placed.has("Ancient Rod"),
-      yieldBoosts: fishingBoostsActiveByScope("fishYield").map(b => b.name)
+      yieldBoosts: fishingBoostsActiveByScope("fishYield").concat(fishingBoostsActiveByScope("fishReels").filter(b => b.randomFishEvery)).map(b => ({
+        name: b.name,
+        text: fishYieldBoostText(b)
+      }))
     };
   } catch (e) {
     return null;
@@ -281,6 +284,18 @@ export function farmPanelComputeFishingCard(json, farmId, now) {
 
 function fishingStatusFoldHtml(row) {
   return `<div class="guro-status-fold"><span class="guro-status-label">RESETS IN</span><span class="guro-status-stack"><span class="guro-status-value fi-countdown" data-fi-at="${row.targetAt}">${fishingClock(row.remainingSec)}</span><span class="guro-status-clock">${escapeHtml(hiveClockText(row.targetAt))}</span></span></div>`;
+}
+
+function fishYieldBoostText(b) {
+  if (b.randomFishEvery) return `+1 random fish every ${b.randomFishEvery}th reel`;
+  const add = b.fishYieldAdd || 0;
+  const kind = b.tier === "basic" ? "basic fish" : "fish";
+  if (add > 0 && add < 1) {
+    const pct = Math.round(add * 1000) / 10;
+    if (Math.abs(add - 1 / 15) < 1e-9) return "+1 random fish every 15th reel";
+    return `${pct}% chance +1 ${kind}`;
+  }
+  return `+${fishDigFmt(add)} ${kind}`;
 }
 
 function boostRow(name, text) {
@@ -296,8 +311,8 @@ function appliedBoostHtml(row) {
   if (row.ancientRod || day.rodsFree > 0) rows.push(boostRow("Ancient Rod", `${fishDigFmt(day.rodsFree)}× free Rod`));
   const bonus = Math.max(0, row.fishQty - day.casts);
   if (row.yieldBoosts.length && day.casts > 0) {
-    const icons = row.yieldBoosts.map(name => getBoostIcon(name)).join("");
-    rows.push(`<div class="boost-applied-row is-yield" title="${escapeHtml(row.yieldBoosts.join(", "))}">${icons}<b>Bonus Fish</b> <span class="boost-total-value">+${fishDigFmt(bonus)} (${fishDigFmt(row.fishQty)} fish from ${fishDigFmt(day.casts)} casts)</span></div>`);
+    row.yieldBoosts.forEach(b => rows.push(boostRow(b.name, b.text)));
+    rows.push(`<div class="boost-applied-row is-yield"><b>Bonus Fish</b> <span class="boost-total-value">+${fishDigFmt(bonus)} (${fishDigFmt(row.fishQty)} fish from ${fishDigFmt(day.casts)} casts)</span></div>`);
   }
   if (!rows.length) return "";
   return `<div class="section-badge is-boost-label">⚡ Applied Boost</div>${rows.join("")}`;
