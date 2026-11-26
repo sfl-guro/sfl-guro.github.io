@@ -31594,9 +31594,9 @@ var MAGIC_FARM_CAP = 3;
 var MAGIC_RESPAWN_HOURS = {
   basic: 48,
   spring: 36,
-  desert: 24,
-  volcano: 24
+  desert: 24
 };
+var MAGIC_RESPAWN_DEFAULT_HOURS = 16;
 var BUD_AURA_MULT = {
   Basic: 1.05,
   Green: 1.2,
@@ -31714,10 +31714,13 @@ function computeMushroomYield(g, name, nowMs) {
     boosts
   };
 }
+function getMagicMushroomInterval(islandType = "basic") {
+  const type = String(islandType || "basic").toLowerCase();
+  return Object.prototype.hasOwnProperty.call(MAGIC_RESPAWN_HOURS, type) ? MAGIC_RESPAWN_HOURS[type] : MAGIC_RESPAWN_DEFAULT_HOURS;
+}
 function mRespawnHours(name, g) {
   if (name === WILD) return WILD_RESPAWN_HOURS;
-  const type = g && g.island && g.island.type;
-  return MAGIC_RESPAWN_HOURS[type] || MAGIC_RESPAWN_HOURS.basic;
+  return getMagicMushroomInterval(g && g.island && g.island.type);
 }
 function mIconHtml(name, size) {
   const src = IMAGE_ICONS[name];
