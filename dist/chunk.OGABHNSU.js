@@ -31817,6 +31817,8 @@ function farmPanelComputeFishingCard(json, farmId, now) {
       });
     });
     const placed = farmSyncCollectEquippedAndPlacedNames(g);
+    const treasureReels = Math.min(day.casts, Math.round(treasureQty / (placed.has("Crab Hat") ? 2 : 1)));
+    const fishReels = Math.max(0, day.casts - treasureReels);
     const targetAt = nextUtcMidnight(nowMs);
     return {
       isFishingCard: true,
@@ -31847,6 +31849,8 @@ function farmPanelComputeFishingCard(json, farmId, now) {
       reelsLeft,
       harpoon: placed.has("Harpoon"),
       ancientRod: placed.has("Ancient Rod"),
+      treasureReels,
+      fishReels,
       reelMilestones: reelMilestonesToday(g, day.casts),
       yieldBoosts: fishingBoostsActiveByScope("fishYield").concat(fishingBoostsActiveByScope("fishReels").filter((b) => b.randomFishEvery)).map((b) => ({
         name: b.name,
@@ -31883,7 +31887,7 @@ function appliedBoostHtml2(row3) {
   let frenzyFlat = 0;
   row3.skillBoosts.forEach((b) => {
     if (row3.frenzy && b.name === "Frenzied Fish" && day.casts > 0) {
-      const qty = FRENZIED_FISH_FLAT[Math.min(b.level, 3) - 1] * day.casts;
+      const qty = FRENZIED_FISH_FLAT[Math.min(b.level, 3) - 1] * row3.fishReels;
       frenzyFlat += qty;
       rows.push(boostRow2(b.name, `+${fishDigFmt(qty)} fish`));
     } else {
@@ -31891,8 +31895,8 @@ function appliedBoostHtml2(row3) {
     }
   });
   if (row3.frenzy && day.casts > 0) {
-    frenzyFlat += day.casts;
-    rows.push(boostRow2("Fish Frenzy", `+${fishDigFmt(day.casts)} fish`, "Frenzied Fish"));
+    frenzyFlat += row3.fishReels;
+    rows.push(boostRow2("Fish Frenzy", `+${fishDigFmt(row3.fishReels)} fish`, "Frenzied Fish"));
   }
   if (row3.harpoon || day.free > 0) rows.push(boostRow2("Harpoon", `${fishDigFmt(day.free)}\xD7 free reel (${fishDigFmt(day.casts)} casts)`));
   if (row3.ancientRod || day.rodsFree > 0) rows.push(boostRow2("Ancient Rod", `${fishDigFmt(day.rodsFree)}\xD7 free Rod`));
@@ -31902,20 +31906,20 @@ function appliedBoostHtml2(row3) {
       if (b.every) {
         const qty = row3.reelMilestones;
         flatTotal += qty;
-        rows.push(boostRow2(b.name, `+${fishDigFmt(qty)} fish (every ${b.every}th reel)`));
+        rows.push(boostRow2(b.name, `+${fishDigFmt(qty)} fish`));
       } else if (b.flat) {
-        const qty = b.flat * day.casts;
+        const qty = b.flat * row3.fishReels;
         flatTotal += qty;
         rows.push(boostRow2(b.name, `+${fishDigFmt(qty)} fish`));
       } else {
         rows.push(boostRow2(b.name, b.text));
       }
     });
-    const bonus = Math.max(0, row3.fishQty - day.casts - flatTotal - frenzyFlat);
-    rows.push(`<div class="boost-applied-row is-yield"><b>Bonus Fish</b> <span class="boost-total-value">+${fishDigFmt(bonus)} (${fishDigFmt(row3.fishQty)} fish from ${fishDigFmt(day.casts)} casts)</span></div>`);
+    const bonus = row3.fishQty - row3.fishReels - flatTotal - frenzyFlat;
+    if (bonus >= 0) rows.push(`<div class="boost-applied-row is-yield"><b>Bonus Fish</b> <span class="boost-total-value">+${fishDigFmt(bonus)} (${fishDigFmt(row3.fishQty)} fish from ${fishDigFmt(row3.fishReels)} fish reels)</span></div>`);
   }
   if (!rows.length) return "";
-  return `<div class="section-badge is-boost-label">\u26A1 Applied Boost</div>${rows.join("")}`;
+  return `<div class="section-badge is-boost-label">\u26A1 Applied Boost</div><div class="boost-applied-list">${rows.join("")}</div>`;
 }
 function fishRowHtml(r) {
   const val = r.each > 0 ? `<span class="fh-val">${fishDigFmt(r.flower)}${FLOWER_ICON}</span>` : `<span class="fh-val fh-na">No price</span>`;
