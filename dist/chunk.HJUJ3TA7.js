@@ -31590,15 +31590,15 @@ var MAX_CHAIN = 5e3;
 var FISH_SKILL_BOOSTS = [{
   name: "Fishy Chance",
   ranks: [10, 12.5, 15],
-  text: (v) => `+${v}% basic fish`
+  text: (v) => `${v}% chance +1 basic fish`
 }, {
   name: "Fishy Roll",
   ranks: [10, 12.5, 15],
-  text: (v) => `+${v}% advanced fish`
+  text: (v) => `${v}% chance +1 advanced fish`
 }, {
   name: "Fishy Gamble",
   ranks: [20, 25, 30],
-  text: (v) => `+${v}% expert fish`
+  text: (v) => `${v}% chance +1 expert fish`
 }, {
   name: "Reel Deal",
   ranks: [0.5, 0.45, 0.4],
@@ -31606,11 +31606,23 @@ var FISH_SKILL_BOOSTS = [{
 }, {
   name: "Frenzied Fish",
   ranks: [1, 2, 3],
-  text: (v) => `+${v} fish during Fish Frenzy`
+  text: (v) => `+${v} fish during Fish Frenzy${v < 3 ? ", 50% chance +1" : ""}`
 }];
 function skillLevelOf2(g, name, max) {
   const skills = g && g.bumpkin && g.bumpkin.skills && typeof g.bumpkin.skills === "object" ? g.bumpkin.skills : {};
   return Math.min(Number(skills[name]) || 0, max);
+}
+var FRENZIED_FISH_FLAT = [1, 2, 3];
+function reelMilestonesToday(g, casts) {
+  const total = Number(g && g.farmActivity && g.farmActivity["Rod Casted"]);
+  if (!isFinite(total) || total < 0 || !(casts > 0)) return 0;
+  const before = Math.max(0, total - casts);
+  return Math.max(0, Math.floor(total / 15) - Math.floor(before / 15));
+}
+function fishFrenzyActive(g) {
+  const f = g && g.calendar && g.calendar.fishFrenzy;
+  const at = f && f.startedAt ? new Date(f.startedAt).getTime() : 0;
+  return at > Date.now() - 864e5;
 }
 var CRUSTACEANS = new Set(CRUSTACEAN_NAMES);
 var ROD_ICON_HTML = (size) => `<img src="${rodIconSrc()}" alt="Rod" decoding="async" style="width:${size}px;height:${size}px;object-fit:contain;image-rendering:pixelated;vertical-align:middle;">`;
@@ -31800,6 +31812,7 @@ function farmPanelComputeFishingCard(json, farmId, now) {
       const level2 = skillLevelOf2(g, def.name, def.ranks.length);
       if (level2 > 0) skillBoosts.push({
         name: def.name,
+        level: level2,
         text: def.text(def.ranks[level2 - 1])
       });
     });
@@ -31830,11 +31843,15 @@ function farmPanelComputeFishingCard(json, farmId, now) {
       extraUsed,
       limitParts: limitInfo.parts,
       skillBoosts,
+      frenzy: fishFrenzyActive(g) || fishFrenzyOn,
       reelsLeft,
       harpoon: placed.has("Harpoon"),
       ancientRod: placed.has("Ancient Rod"),
+      reelMilestones: reelMilestonesToday(g, day.casts),
       yieldBoosts: fishingBoostsActiveByScope("fishYield").concat(fishingBoostsActiveByScope("fishReels").filter((b) => b.randomFishEvery)).map((b) => ({
         name: b.name,
+        flat: !b.randomFishEvery && !b.tier && (b.fishYieldAdd || 0) >= 1 ? b.fishYieldAdd : 0,
+        every: b.randomFishEvery || (Math.abs((b.fishYieldAdd || 0) - 1 / 15) < 1e-9 ? 15 : 0),
         text: fishYieldBoostText(b)
       }))
     };
@@ -31856,19 +31873,45 @@ function fishYieldBoostText(b) {
   }
   return `+${fishDigFmt(add)} ${kind}`;
 }
-function boostRow2(name, text) {
-  return `<div class="boost-applied-row is-yield">${getBoostIcon(name)}<b>${escapeHtml(name)}</b> <span class="boost-total-value">${escapeHtml(text)}</span></div>`;
+function boostRow2(name, text, iconName) {
+  return `<div class="boost-applied-row is-yield">${getBoostIcon(iconName || name)}<b>${escapeHtml(name)}</b> <span class="boost-total-value">${escapeHtml(text)}</span></div>`;
 }
 function appliedBoostHtml2(row3) {
   const rows = [];
   const day = row3.day;
   row3.limitParts.forEach((p) => rows.push(boostRow2(p.name, `+${fishDigFmt(p.add)} daily reels`)));
-  row3.skillBoosts.forEach((b) => rows.push(boostRow2(b.name, b.text)));
+  let frenzyFlat = 0;
+  row3.skillBoosts.forEach((b) => {
+    if (row3.frenzy && b.name === "Frenzied Fish" && day.casts > 0) {
+      const qty = FRENZIED_FISH_FLAT[Math.min(b.level, 3) - 1] * day.casts;
+      frenzyFlat += qty;
+      rows.push(boostRow2(b.name, `+${fishDigFmt(qty)} fish`));
+    } else {
+      rows.push(boostRow2(b.name, b.text));
+    }
+  });
+  if (row3.frenzy && day.casts > 0) {
+    frenzyFlat += day.casts;
+    rows.push(boostRow2("Fish Frenzy", `+${fishDigFmt(day.casts)} fish`, "Frenzied Fish"));
+  }
   if (row3.harpoon || day.free > 0) rows.push(boostRow2("Harpoon", `${fishDigFmt(day.free)}\xD7 free reel (${fishDigFmt(day.casts)} casts)`));
   if (row3.ancientRod || day.rodsFree > 0) rows.push(boostRow2("Ancient Rod", `${fishDigFmt(day.rodsFree)}\xD7 free Rod`));
-  const bonus = Math.max(0, row3.fishQty - day.casts);
   if (row3.yieldBoosts.length && day.casts > 0) {
-    row3.yieldBoosts.forEach((b) => rows.push(boostRow2(b.name, b.text)));
+    let flatTotal = 0;
+    row3.yieldBoosts.forEach((b) => {
+      if (b.every) {
+        const qty = row3.reelMilestones;
+        flatTotal += qty;
+        rows.push(boostRow2(b.name, `+${fishDigFmt(qty)} fish (every ${b.every}th reel)`));
+      } else if (b.flat) {
+        const qty = b.flat * day.casts;
+        flatTotal += qty;
+        rows.push(boostRow2(b.name, `+${fishDigFmt(qty)} fish`));
+      } else {
+        rows.push(boostRow2(b.name, b.text));
+      }
+    });
+    const bonus = Math.max(0, row3.fishQty - day.casts - flatTotal - frenzyFlat);
     rows.push(`<div class="boost-applied-row is-yield"><b>Bonus Fish</b> <span class="boost-total-value">+${fishDigFmt(bonus)} (${fishDigFmt(row3.fishQty)} fish from ${fishDigFmt(day.casts)} casts)</span></div>`);
   }
   if (!rows.length) return "";
@@ -71063,13 +71106,13 @@ function setFishFrenzyOn(val) {
   fishFrenzyOn = !!val;
   localStorage.setItem("hl_fish_frenzy", String(fishFrenzyOn));
 }
-var FRENZIED_FISH_FLAT = [1, 2, 3];
+var FRENZIED_FISH_FLAT2 = [1, 2, 3];
 var FRENZIED_FISH_CRIT = [50, 50, 0];
 function getFrenziedFishInfo() {
   if (!isSkillActive("skill_frenzied_fish")) return null;
   const i = Math.min(Math.max(getAscensionRank("skill_frenzied_fish"), 1), 3) - 1;
   return {
-    flat: FRENZIED_FISH_FLAT[i],
+    flat: FRENZIED_FISH_FLAT2[i],
     crit: FRENZIED_FISH_CRIT[i]
   };
 }
