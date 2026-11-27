@@ -2,6 +2,8 @@ import { escapeHtml, farmSyncExtractGameState, farmSyncCollectEquippedAndPlacedN
 
 import { getIcon, getBoostIcon, hiveClockText, renderFarmPanelTabContent } from "./ui.js";
 
+import { foldClock } from "./fold_clock.js";
+
 const STORE_PREFIX = "guro_fish_track_v1_";
 
 const KEEP_DAYS = 14;
@@ -307,7 +309,7 @@ export function farmPanelComputeFishingCard(json, farmId, now) {
 }
 
 function fishingStatusFoldHtml(row) {
-  return `<div class="guro-status-fold"><span class="guro-status-label">RESETS IN</span><span class="guro-status-stack"><span class="guro-status-value fi-countdown" data-fi-at="${row.targetAt}">${fishingClock(row.remainingSec)}</span><span class="guro-status-clock">${escapeHtml(hiveClockText(row.targetAt))}</span></span></div>`;
+  return `<div class="guro-status-fold"><span class="guro-status-label">RESETS IN</span><span class="guro-status-stack"><span class="guro-status-value fi-countdown" data-fi-at="${row.targetAt}">${foldClock(row.remainingSec)}</span><span class="guro-status-clock">${escapeHtml(hiveClockText(row.targetAt))}</span></span></div>`;
 }
 
 function fishYieldBoostText(b) {

@@ -22,6 +22,10 @@ import { farmPanelComputeCaveMerchantCard, farmPanelRenderCaveMerchantCard, cave
 
 import { farmPanelComputeMushroomCards, farmPanelRenderMushroomCard } from "./mushroom_card.js";
 
+import { farmPanelComputeSkillResetCard, farmPanelRenderSkillResetCard, SKILL_RESET_NAME } from "./skill_reset.js";
+
+import { foldClock, foldStamp } from "./fold_clock.js";
+
 import { farmPanelComputeFishingCard, farmPanelRenderFishingCard, fishingMiniIconHtml, fishTrackFromState } from "./fishing_card.js";
 import { dailyHarvestTrack, dailyHarvestBadgeHtml, dailyHarvestSetYield, dailyHarvestSetResolver, dailyHarvestSetAnimalYieldProvider, dailyHarvestSetCookingProvider, dailyHarvestSetMachineProvider, dailyHarvestSetIconProvider, dailyHarvestSetToolProvider, dailyHarvestSetPriceProvider, dailyHarvestNodeToolMult } from "./daily_harvest.js";
 
@@ -200,7 +204,9 @@ function farmPanelLoadHiddenCards() {
     const raw = JSON.parse(localStorage.getItem(FARM_PANEL_HIDDEN_CARDS_KEY) || "[]");
     const legacy = {
       "floating:floating": "pete:floating",
-      "fishing:fishing": "pete:fishing"
+      "fishing:fishing": "pete:fishing",
+      "crops:Wild Mushroom": "pete:Wild Mushroom",
+      "crops:Magic Mushroom": "pete:Magic Mushroom"
     };
     return new Set(Array.isArray(raw) ? raw.filter(k => typeof k === "string").map(k => legacy[k] || k) : []);
   } catch (e) {
@@ -221,14 +227,6 @@ export function farmPanelCardCatalog() {
       id: "Crop Machine",
       label: "Crop Machine",
       icon: getIcon("Crop Machine")
-    }, {
-      id: "Wild Mushroom",
-      label: "Wild Mushroom",
-      icon: getIcon("Wild Mushroom")
-    }, {
-      id: "Magic Mushroom",
-      label: "Magic Mushroom",
-      icon: getIcon("Magic Mushroom")
     } ]);
     if (id === "fruits") return Object.keys(BASE_FRUITS).map(n => ({
       id: n,
@@ -286,6 +284,18 @@ export function farmPanelCardCatalog() {
       id: "caveMerchant",
       label: "Cave Merchant",
       icon: caveMerchantMiniIconHtml(16)
+    }, {
+      id: "Wild Mushroom",
+      label: "Wild Mushroom",
+      icon: getIcon("Wild Mushroom")
+    }, {
+      id: "Magic Mushroom",
+      label: "Magic Mushroom",
+      icon: getIcon("Magic Mushroom")
+    }, {
+      id: SKILL_RESET_NAME,
+      label: SKILL_RESET_NAME,
+      icon: getIcon("Green Thumb")
     } ].concat(POWER_SKILL_DEFS.map(d => ({
       id: d.name,
       label: d.name,
@@ -4204,7 +4214,7 @@ function fpLimitedScopeOfRow(row) {
   if (!row) return "";
   if (row.isCropMachineCard) return "cropmachine";
   if (row.isAnimalMerged) return String(row.typeKey || "").toLowerCase();
-  if (row.isComposterCard || row.isHoneyCard || row.isCookingCard || row.isMycoCard || row.isMushroomCard || row.isPeteQuestCard || row.isFloatingIslandCard || row.isFishingCard || row.isCaveMerchantCard || row.isPowerSkillCard) return "";
+  if (row.isComposterCard || row.isHoneyCard || row.isCookingCard || row.isMycoCard || row.isMushroomCard || row.isPeteQuestCard || row.isFloatingIslandCard || row.isFishingCard || row.isCaveMerchantCard || row.isPowerSkillCard || row.isSkillResetCard) return "";
   const name = row.name;
   if (name === "Wood") return "wood";
   if (name === "Oil") return "oil";
@@ -5508,6 +5518,8 @@ function farmPanelComputeInProgressOnce(json) {
   const caveMerchantCard = farmPanelComputeCaveMerchantCard(json);
   if (caveMerchantCard) allCards.push(caveMerchantCard);
   farmPanelComputePowerSkillCards(json).forEach(card => allCards.push(card));
+  const skillResetCard = farmPanelComputeSkillResetCard(json);
+  if (skillResetCard) allCards.push(skillResetCard);
   return allCards;
 }
 
@@ -6250,7 +6262,8 @@ function farmPanelRenderNodeYieldBoostList(row, summary, produceIcon) {
 }
 
 function farmPanelCardCategory(row) {
-  if (row.isCropMachineCard || row.isMushroomCard) return "crops";
+  if (row.isCropMachineCard) return "crops";
+  if (row.isMushroomCard || row.isSkillResetCard) return "pete";
   if (row.isMycoCard) return "myco";
   if (row.isPeteQuestCard) return "pete";
   if (row.isFloatingIslandCard || row.isFishingCard || row.isCaveMerchantCard || row.isPowerSkillCard) return "pete";
@@ -6267,7 +6280,7 @@ function farmPanelCardCategory(row) {
 
 export function farmPanelRowIsReady(row) {
   if (!row) return false;
-  if (row.isPeteQuestCard || row.isFloatingIslandCard || row.isFishingCard || row.isCaveMerchantCard || row.isPowerSkillCard) return !!row.isReady;
+  if (row.isPeteQuestCard || row.isFloatingIslandCard || row.isFishingCard || row.isCaveMerchantCard || row.isPowerSkillCard || row.isSkillResetCard) return !!row.isReady;
   return (row.readyCount || 0) > 0;
 }
 
@@ -6277,8 +6290,8 @@ function guroCountdownText(sec) {
 
 function guroStatusFoldHtml(word, sec) {
   if (sec == null) return "";
-  const clockHtml = sec > 0 ? `<span class="guro-status-clock">${hiveClockText(Date.now() + sec * 1e3)}</span>` : "";
-  return `<div class="guro-status-fold"><span class="guro-status-label">${word} IN</span><span class="guro-status-stack"><span class="guro-status-value farm-countdown" data-base="${sec}">${guroCountdownText(sec)}</span>${clockHtml}</span></div>`;
+  const clockHtml = sec > 0 ? `<span class="guro-status-clock">${foldStamp(Date.now() + sec * 1e3)}</span>` : "";
+  return `<div class="guro-status-fold"><span class="guro-status-label">${word} IN</span><span class="guro-status-stack"><span class="guro-status-value farm-countdown" data-base="${sec}">${foldClock(sec)}</span>${clockHtml}</span></div>`;
 }
 
 function guroSignedAmount(v, fmtFn) {
@@ -6980,7 +6993,6 @@ export function farmPanelRenderInProgressRow(row) {
     statusBadgeHtml: r => farmPanelStatusBadgeHtml(r.count, 0, "Growing"),
     statusFoldHtml: r => {
       if (r.remainingSec == null) return `<div class="guro-status-fold"><span class="guro-status-label">SYNC TO CHECK RESPAWN</span></div>`;
-      if (r.remainingSec <= 0) return `<div class="guro-status-fold"><span class="guro-status-label">SPAWN DUE · SYNC TO REFRESH</span></div>`;
       return guroStatusFoldHtml(r.count > 0 ? "Next spawn" : "Ready", r.remainingSec);
     }
   });
@@ -6989,6 +7001,7 @@ export function farmPanelRenderInProgressRow(row) {
   if (row.isFloatingIslandCard) return farmPanelRenderFloatingIslandCard(row, farmPanelExpandedNames.has("floating-island"));
   if (row.isFishingCard) return farmPanelRenderFishingCard(row, farmPanelExpandedNames.has("fishing"));
   if (row.isCaveMerchantCard) return farmPanelRenderCaveMerchantCard(row, farmPanelExpandedNames.has("cave-merchant"));
+  if (row.isSkillResetCard) return farmPanelRenderSkillResetCard(row, farmPanelExpandedNames.has(row.searchKey), row.isReady ? "" : guroStatusFoldHtml("Ready", row.remainingSec));
   if (row.isPowerSkillCard) return farmPanelRenderPowerSkillCard(row, farmPanelExpandedNames.has(row.searchKey), row.isReady ? "" : guroStatusFoldHtml("Ready", row.remainingSec));
   const baseStatus = row.readyCount > 0 ? row.readyCount === row.count ? "✅ All ready" : `✅ ${row.readyCount} ready · ⏳ ${row.count - row.readyCount} growing` : "⏳ Growing";
   const showCountdown = row.soonestSec != null && row.readyCount < row.count;
@@ -7113,7 +7126,7 @@ function farmPanelTickCountdowns() {
         anyFinished = true;
         return;
       }
-      el.textContent = caveMerchantClock(merchantRemaining);
+      el.textContent = el.classList.contains("guro-status-value") ? foldClock(merchantRemaining) : caveMerchantClock(merchantRemaining);
       return;
     }
     if (el.hasAttribute("data-fi-at")) {
@@ -7122,7 +7135,7 @@ function farmPanelTickCountdowns() {
         anyFinished = true;
         return;
       }
-      el.textContent = floatingIslandClock(islandRemaining);
+      el.textContent = el.classList.contains("guro-status-value") ? foldClock(islandRemaining) : floatingIslandClock(islandRemaining);
       return;
     }
     if (el.hasAttribute("data-ready-at")) {
@@ -7140,7 +7153,7 @@ function farmPanelTickCountdowns() {
       anyFinished = true;
       return;
     }
-    el.textContent = guroCountdownText(remaining);
+    el.textContent = el.classList.contains("guro-status-value") ? foldClock(remaining) : guroCountdownText(remaining);
   });
   if (anyFinished) renderFarmPanelTabContent();
 }

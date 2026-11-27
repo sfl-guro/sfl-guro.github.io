@@ -4,6 +4,8 @@ import { getIcon, hiveClockText } from "./ui.js";
 
 import { FLOATING_ISLAND_ICON, FLOATING_ISLAND_ICON_DATA } from "./floating_island_icons.js";
 
+import { foldClock } from "./fold_clock.js";
+
 const ISLAND_TITLE = "Floating / Mystery Island";
 
 const CURRENCY = "Love Charm";
@@ -178,7 +180,7 @@ export function farmPanelComputeFloatingIslandCard(json, now) {
 function fiStatusFoldHtml(row) {
   if (!row.targetAt) return `<div class="guro-status-fold"><span class="guro-status-label">NO ISLAND SCHEDULED</span></div>`;
   const label = row.isLive ? "ENDS IN" : "ARRIVING IN";
-  return `<div class="guro-status-fold"><span class="guro-status-label">${label}</span><span class="guro-status-stack"><span class="guro-status-value fi-countdown" data-fi-at="${row.targetAt}">${floatingIslandClock(row.remainingSec)}</span><span class="guro-status-clock">${escapeHtml(hiveClockText(row.targetAt))}</span></span></div>`;
+  return `<div class="guro-status-fold"><span class="guro-status-label">${label}</span><span class="guro-status-stack"><span class="guro-status-value fi-countdown" data-fi-at="${row.targetAt}">${foldClock(row.remainingSec)}</span><span class="guro-status-clock">${escapeHtml(hiveClockText(row.targetAt))}</span></span></div>`;
 }
 
 function fiEntryHtml(row, entry) {
