@@ -3076,6 +3076,38 @@ __export(ui_exports, {
   updateRcmToggleUI: () => updateRcmToggleUI
 });
 
+// src/fold_clock.js
+var MONTH_SEC = 30 * 86400;
+var DAY_SEC = 86400;
+function foldClock(sec) {
+  sec = Math.max(0, Math.floor(Number(sec) || 0));
+  const units = [[Math.floor(sec / MONTH_SEC), "M"], [Math.floor(sec % MONTH_SEC / DAY_SEC), "D"], [Math.floor(sec % DAY_SEC / 3600), "h"], [Math.floor(sec % 3600 / 60), "m"], [sec % 60, "s"]];
+  const parts = [];
+  units.forEach(([value, suffix], i) => {
+    if (parts.length || value > 0 || i === units.length - 1) parts.push(`${value}${suffix}`);
+  });
+  return parts.join(" ");
+}
+function foldStamp(ms, nowMs = Date.now()) {
+  const d = new Date(ms);
+  let h = d.getHours();
+  const m = d.getMinutes();
+  const ampm = h >= 12 ? "PM" : "AM";
+  h = h % 12;
+  if (h === 0) h = 12;
+  const time = `${h}:${String(m).padStart(2, "0")} ${ampm}`;
+  const today = new Date(nowMs);
+  const sameDay = d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth() && d.getDate() === today.getDate();
+  if (sameDay) return time;
+  if (ms - nowMs > 6 * DAY_SEC * 1e3) return `${d.toLocaleDateString(void 0, {
+    month: "short",
+    day: "numeric"
+  })} ${time}`;
+  return `${d.toLocaleDateString(void 0, {
+    weekday: "short"
+  })} ${time}`;
+}
+
 // src/sfl_bubbles.js
 var SFLB_WORKER_BASE = "https://sfl-market-cache.bossweki.workers.dev";
 var SFLB_WORKER_SNAPSHOT_TTL_MS = 6e4;
@@ -16304,11 +16336,7 @@ function hiveClockText(ms) {
   return sameDay ? time : `${d.toLocaleDateString(void 0, { weekday: "short" })} ${time}`;
 }
 function hiveCountdownText(sec) {
-  sec = Math.max(0, Math.floor(sec));
-  const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60;
-  if (h > 0) return `${h}h ${m}m ${s}s`;
-  if (m > 0) return `${m}m ${s}s`;
-  return `${s}s`;
+  return foldClock(sec);
 }
 function renderBeehiveListHtml(honeyHiveDetails) {
   if (!honeyHiveDetails || !honeyHiveDetails.length) return "";
@@ -29075,38 +29103,6 @@ function getPumpkinPeteQuest(rawName) {
   return null;
 }
 
-// src/fold_clock.js
-var MONTH_SEC = 30 * 86400;
-var DAY_SEC = 86400;
-function foldClock(sec) {
-  sec = Math.max(0, Math.floor(Number(sec) || 0));
-  const units = [[Math.floor(sec / MONTH_SEC), "M"], [Math.floor(sec % MONTH_SEC / DAY_SEC), "D"], [Math.floor(sec % DAY_SEC / 3600), "H"], [Math.floor(sec % 3600 / 60), "M"], [sec % 60, "S"]];
-  const parts = [];
-  units.forEach(([value, suffix], i) => {
-    if (parts.length || value > 0 || i === units.length - 1) parts.push(`${value}${suffix}`);
-  });
-  return parts.join(" ");
-}
-function foldStamp(ms, nowMs = Date.now()) {
-  const d = new Date(ms);
-  let h = d.getHours();
-  const m = d.getMinutes();
-  const ampm = h >= 12 ? "PM" : "AM";
-  h = h % 12;
-  if (h === 0) h = 12;
-  const time = `${h}:${String(m).padStart(2, "0")} ${ampm}`;
-  const today = new Date(nowMs);
-  const sameDay = d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth() && d.getDate() === today.getDate();
-  if (sameDay) return time;
-  if (ms - nowMs > 6 * DAY_SEC * 1e3) return `${d.toLocaleDateString(void 0, {
-    month: "short",
-    day: "numeric"
-  })} ${time}`;
-  return `${d.toLocaleDateString(void 0, {
-    weekday: "short"
-  })} ${time}`;
-}
-
 // src/floating_island.js
 var ISLAND_TITLE = "Floating / Mystery Island";
 var CURRENCY = "Love Charm";
@@ -38344,7 +38340,7 @@ function farmPanelRowIsReady(row3) {
   return (row3.readyCount || 0) > 0;
 }
 function guroCountdownText(sec) {
-  return farmPanelFormatCountdown(sec).replace(/ left$/, "");
+  return sec <= 0 ? "Ready now" : foldClock(sec);
 }
 function guroStatusFoldHtml(word, sec) {
   if (sec == null) return "";

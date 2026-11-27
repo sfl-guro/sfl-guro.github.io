@@ -6285,7 +6285,7 @@ export function farmPanelRowIsReady(row) {
 }
 
 function guroCountdownText(sec) {
-  return farmPanelFormatCountdown(sec).replace(/ left$/, "");
+  return sec <= 0 ? "Ready now" : foldClock(sec);
 }
 
 function guroStatusFoldHtml(word, sec) {
