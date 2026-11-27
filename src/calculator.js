@@ -5133,7 +5133,7 @@ function computeBoostedGreenhouseStatsUncached(name, baseYield, baseTimeSec, nod
   windowSec = windowSec || 86400;
   const active = getActiveBoostsForGreenhouse(name);
   let addSum = 0, multBonusSum = 0;
-  let alwaysTimeMult = 1, seedQtyMult = 1, oilQtyMult = 1, oilFlatReduce = 0;
+  let alwaysTimeMult = 1, seedQtyMult = 1, oilQtyMult = 1, oilFlatReduce = 0, oilPostMult = 1;
   const totalNodes = nodeCountOverride != null ? nodeCountOverride : getGreenhouseCount(name);
   const limitedTimeFactors = [];
   const haveSyncData = hasLimitedBoostSyncData();
@@ -5169,6 +5169,7 @@ function computeBoostedGreenhouseStatsUncached(name, baseYield, baseTimeSec, nod
     if (b.seedQtyMult) seedQtyMult *= b.seedQtyMult;
     if (b.oilQtyMult) oilQtyMult *= b.oilQtyMult;
     if (b.oilFlatReduce) oilFlatReduce += b.oilFlatReduce;
+    if (b.oilPostMult) oilPostMult *= b.oilPostMult;
   });
   const budAddValues = Object.values(budAddSum);
   if (budAddValues.length) addSum += Math.max(...budAddValues);
@@ -5183,7 +5184,8 @@ function computeBoostedGreenhouseStatsUncached(name, baseYield, baseTimeSec, nod
     activeBoosts: active,
     seedQtyMult: seedQtyMult,
     oilQtyMult: oilQtyMult,
-    oilFlatReduce: oilFlatReduce
+    oilFlatReduce: oilFlatReduce,
+    oilPostMult: oilPostMult
   };
 }
 
@@ -9960,7 +9962,7 @@ const GREENHOUSE_BOOSTS = [ {
   scope: "greenhouse",
   target: "Rice",
   yieldAdd: 1,
-  oilQtyMult: .5,
+  oilPostMult: .5,
   note: "-50% Oil to plant Rice, +1 Rice per harvest"
 } ];
 

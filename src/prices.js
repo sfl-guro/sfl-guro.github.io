@@ -678,7 +678,7 @@ export function getGreenhouseCostCoins(name) {
   if (!d) return 0;
   const boosted = computeBoostedGreenhouseStats(name, d.baseYield || 1, d.timeSec);
   const seedCoinCost = (hasFreeCostBoostGreenhouse(name) ? 0 : (d.seedCost || 0) * (boosted.seedQtyMult || 1)) * getArtistCoinCostMult() * getSkillRankMult("skill_seedy_business");
-  const oilQty = Math.max(0, (d.oilQty || 0) * (boosted.oilQtyMult || 1) - (boosted.oilFlatReduce || 0));
+  const oilQty = Math.max(0, ((d.oilQty || 0) * (boosted.oilQtyMult || 1) - (boosted.oilFlatReduce || 0)) * (boosted.oilPostMult || 1));
   const oilCoinCost = oilQty * getItemCostByName("Oil");
   return (seedCoinCost + oilCoinCost) / boosted.yieldVal;
 }

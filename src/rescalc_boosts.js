@@ -93,6 +93,7 @@ function effectParts(b, ctx) {
   if (b.seedQtyMult) add("Cost", `×${b.seedQtyMult} seeds`);
   if (b.oilQtyMult) add("Cost", `×${b.oilQtyMult} oil`);
   if (b.oilFlatReduce) add("Cost", `-${n2(b.oilFlatReduce)} oil`);
+  if (b.oilPostMult) add("Cost", `×${b.oilPostMult} oil`);
   if (b.stockAdd) add("Stock", `+${n2(b.stockAdd)} stock`);
   if (b.swarmChanceAdd) add("Swarm", `+${n2(b.swarmChanceAdd * 100)}% swarm chance`);
   if (b.swarmChanceMult) add("Swarm", `×${b.swarmChanceMult} swarm chance`);

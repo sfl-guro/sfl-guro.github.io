@@ -959,6 +959,7 @@ export function renderBoostPanel() {
       if (b.agingTimeMult) parts.push(`×${b.agingTimeMult} Fish Aging time`);
       if (b.spiceOutputAdd) parts.push(`+${fmt(b.spiceOutputAdd)} Spice Rack output`);
       if (b.oilQtyMult) parts.push(`×${b.oilQtyMult} Oil cost`);
+      if (b.oilPostMult) parts.push(`×${b.oilPostMult} Oil cost`);
       if (b.feedBuffHarvests) parts.push(`Salt Lick / Honey Treat lasts ${b.feedBuffHarvests} harvests, Truffle Seasoning ${b.feedBuffHarvests / 3} sleeps`);
       if (b.petEnergyAdd) parts.push(`+${fmt(b.petEnergyAdd)} Pet Energy`);
       if (b.petXpAdd) parts.push(`+${fmt(b.petXpAdd)} Pet XP`);
@@ -3536,7 +3537,7 @@ function renderGreenhouseCard(name) {
   const boosted = computeBoostedGreenhouseStats(name, d.baseYield || 1, d.timeSec);
   const plotCount = getGreenhouseCount(name);
   const boostListHtml = renderBoostAppliedList(boosted.activeBoosts, name);
-  const oilQty = Math.max(0, (d.oilQty || 0) * (boosted.oilQtyMult || 1) - (boosted.oilFlatReduce || 0));
+  const oilQty = Math.max(0, ((d.oilQty || 0) * (boosted.oilQtyMult || 1) - (boosted.oilFlatReduce || 0)) * (boosted.oilPostMult || 1));
   const oilUnitCost = getItemCostByName("Oil");
   const oilCoinCost = oilQty * oilUnitCost;
   const greenhouseManualCycleKey = "greenhouse_" + name;

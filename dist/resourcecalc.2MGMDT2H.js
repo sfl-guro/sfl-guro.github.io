@@ -244,7 +244,7 @@ import {
   unmountBeetlesCalculator,
   updateCalcSummary,
   updateSkillSaveBarState
-} from "./chunk.ROTRQDBY.js";
+} from "./chunk.WISGHUTM.js";
 import "./chunk.XKJMJZUJ.js";
 import "./chunk.LPEVZJ4B.js";
 import "./chunk.D3PHX6VZ.js";
@@ -340,6 +340,7 @@ function effectParts(b, ctx) {
   if (b.seedQtyMult) add("Cost", `\xD7${b.seedQtyMult} seeds`);
   if (b.oilQtyMult) add("Cost", `\xD7${b.oilQtyMult} oil`);
   if (b.oilFlatReduce) add("Cost", `-${n2(b.oilFlatReduce)} oil`);
+  if (b.oilPostMult) add("Cost", `\xD7${b.oilPostMult} oil`);
   if (b.stockAdd) add("Stock", `+${n2(b.stockAdd)} stock`);
   if (b.swarmChanceAdd) add("Swarm", `+${n2(b.swarmChanceAdd * 100)}% swarm chance`);
   if (b.swarmChanceMult) add("Swarm", `\xD7${b.swarmChanceMult} swarm chance`);
@@ -2226,7 +2227,7 @@ function compute3(name, mode, share) {
   const sell = farmPanelGetMarketPriceFlower(name) || 0;
   const feeRate = (feePercent || 0) / 100;
   const seedCost = coinsToFlower(getGreenhouseSeedCoins(name));
-  const oilPerPlant = Math.max(0, (d.oilQty || 0) * (boosted.oilQtyMult || 1) - (boosted.oilFlatReduce || 0));
+  const oilPerPlant = Math.max(0, ((d.oilQty || 0) * (boosted.oilQtyMult || 1) - (boosted.oilFlatReduce || 0)) * (boosted.oilPostMult || 1));
   const oilUnit = oilUnitFlower();
   const shrine = getActiveShrineDailyCost(boosted.activeBoosts);
   const stockBase = BASE_STOCK_GREENHOUSE[name] || 0;
@@ -2468,6 +2469,7 @@ function effectParts4(b, name) {
   if (b.seedQtyMult) c.push(`\xD7${b.seedQtyMult} seeds`);
   if (b.oilQtyMult) c.push(`\xD7${b.oilQtyMult} oil`);
   if (b.oilFlatReduce) c.push(`-${n24(b.oilFlatReduce)} oil`);
+  if (b.oilPostMult) c.push(`\xD7${b.oilPostMult} oil`);
   if (b.coinCostMult) c.push(`\xD7${b.coinCostMult} cost`);
   if (b.coinCostMultAll) c.push(`\xD7${b.coinCostMultAll} cost`);
   return {
