@@ -132,7 +132,7 @@ function compute(name, mode, share) {
   const sell = farmPanelGetMarketPriceFlower(name) || 0;
   const feeRate = (calc.feePercent || 0) / 100;
   const seedCost = calc.coinsToFlower(prices.getGreenhouseSeedCoins(name));
-  const oilPerPlant = Math.max(0, (d.oilQty || 0) * (boosted.oilQtyMult || 1) - (boosted.oilFlatReduce || 0));
+  const oilPerPlant = Math.max(0, ((d.oilQty || 0) * (boosted.oilQtyMult || 1) - (boosted.oilFlatReduce || 0)) * (boosted.oilPostMult || 1));
   const oilUnit = oilUnitFlower();
   const shrine = prices.getActiveShrineDailyCost(boosted.activeBoosts);
   const stockBase = calc.BASE_STOCK_GREENHOUSE[name] || 0;
@@ -389,6 +389,7 @@ function effectParts(b, name) {
   if (b.seedQtyMult) c.push(`×${b.seedQtyMult} seeds`);
   if (b.oilQtyMult) c.push(`×${b.oilQtyMult} oil`);
   if (b.oilFlatReduce) c.push(`-${n2(b.oilFlatReduce)} oil`);
+  if (b.oilPostMult) c.push(`×${b.oilPostMult} oil`);
   if (b.coinCostMult) c.push(`×${b.coinCostMult} cost`);
   if (b.coinCostMultAll) c.push(`×${b.coinCostMultAll} cost`);
   return {

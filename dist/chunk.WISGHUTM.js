@@ -14378,6 +14378,7 @@ function renderBoostPanel() {
       if (b.agingTimeMult) parts.push(`\xD7${b.agingTimeMult} Fish Aging time`);
       if (b.spiceOutputAdd) parts.push(`+${fmt(b.spiceOutputAdd)} Spice Rack output`);
       if (b.oilQtyMult) parts.push(`\xD7${b.oilQtyMult} Oil cost`);
+      if (b.oilPostMult) parts.push(`\xD7${b.oilPostMult} Oil cost`);
       if (b.feedBuffHarvests) parts.push(`Salt Lick / Honey Treat lasts ${b.feedBuffHarvests} harvests, Truffle Seasoning ${b.feedBuffHarvests / 3} sleeps`);
       if (b.petEnergyAdd) parts.push(`+${fmt(b.petEnergyAdd)} Pet Energy`);
       if (b.petXpAdd) parts.push(`+${fmt(b.petXpAdd)} Pet XP`);
@@ -17465,7 +17466,7 @@ function renderGreenhouseCard(name) {
   const boosted = computeBoostedGreenhouseStats(name, d.baseYield || 1, d.timeSec);
   const plotCount = getGreenhouseCount(name);
   const boostListHtml = renderBoostAppliedList(boosted.activeBoosts, name);
-  const oilQty = Math.max(0, (d.oilQty || 0) * (boosted.oilQtyMult || 1) - (boosted.oilFlatReduce || 0));
+  const oilQty = Math.max(0, ((d.oilQty || 0) * (boosted.oilQtyMult || 1) - (boosted.oilFlatReduce || 0)) * (boosted.oilPostMult || 1));
   const oilUnitCost2 = getItemCostByName("Oil");
   const oilCoinCost = oilQty * oilUnitCost2;
   const greenhouseManualCycleKey = "greenhouse_" + name;
@@ -24735,7 +24736,7 @@ function getGreenhouseCostCoins(name) {
   if (!d) return 0;
   const boosted = computeBoostedGreenhouseStats(name, d.baseYield || 1, d.timeSec);
   const seedCoinCost = (hasFreeCostBoostGreenhouse(name) ? 0 : (d.seedCost || 0) * (boosted.seedQtyMult || 1)) * getArtistCoinCostMult() * getSkillRankMult("skill_seedy_business");
-  const oilQty = Math.max(0, (d.oilQty || 0) * (boosted.oilQtyMult || 1) - (boosted.oilFlatReduce || 0));
+  const oilQty = Math.max(0, ((d.oilQty || 0) * (boosted.oilQtyMult || 1) - (boosted.oilFlatReduce || 0)) * (boosted.oilPostMult || 1));
   const oilCoinCost = oilQty * getItemCostByName("Oil");
   return (seedCoinCost + oilCoinCost) / boosted.yieldVal;
 }
@@ -45347,7 +45348,7 @@ function computeBoostedGreenhouseStatsUncached(name, baseYield, baseTimeSec, nod
   windowSec = windowSec || 86400;
   const active = getActiveBoostsForGreenhouse(name);
   let addSum = 0, multBonusSum = 0;
-  let alwaysTimeMult = 1, seedQtyMult = 1, oilQtyMult = 1, oilFlatReduce = 0;
+  let alwaysTimeMult = 1, seedQtyMult = 1, oilQtyMult = 1, oilFlatReduce = 0, oilPostMult = 1;
   const totalNodes = nodeCountOverride != null ? nodeCountOverride : getGreenhouseCount(name);
   const limitedTimeFactors = [];
   const haveSyncData = hasLimitedBoostSyncData();
@@ -45385,6 +45386,7 @@ function computeBoostedGreenhouseStatsUncached(name, baseYield, baseTimeSec, nod
     if (b.seedQtyMult) seedQtyMult *= b.seedQtyMult;
     if (b.oilQtyMult) oilQtyMult *= b.oilQtyMult;
     if (b.oilFlatReduce) oilFlatReduce += b.oilFlatReduce;
+    if (b.oilPostMult) oilPostMult *= b.oilPostMult;
   });
   const budAddValues = Object.values(budAddSum);
   if (budAddValues.length) addSum += Math.max(...budAddValues);
@@ -45399,7 +45401,8 @@ function computeBoostedGreenhouseStatsUncached(name, baseYield, baseTimeSec, nod
     activeBoosts: active,
     seedQtyMult,
     oilQtyMult,
-    oilFlatReduce
+    oilFlatReduce,
+    oilPostMult
   };
 }
 function getActiveBoostsForCropMachine() {
@@ -50071,7 +50074,7 @@ var GREENHOUSE_BOOSTS = [{
   scope: "greenhouse",
   target: "Rice",
   yieldAdd: 1,
-  oilQtyMult: 0.5,
+  oilPostMult: 0.5,
   note: "-50% Oil to plant Rice, +1 Rice per harvest"
 }];
 GREENHOUSE_BOOSTS.forEach((b) => {
