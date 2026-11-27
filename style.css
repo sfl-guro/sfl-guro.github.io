@@ -14724,8 +14724,8 @@ html body #pageContainer #cookingPanel #cookModeToggle{
 .fp-manual-card .betty-boost-row-main{ flex:1 1 auto; }
 
 @media (min-width:1024px){
-  html body .guro-links-panel{ padding:6px; gap:4px; align-content:stretch; align-self:stretch; contain:size; box-sizing:border-box; grid-auto-rows:minmax(0,1fr); }
-  html body .guro-links-panel .guro-desk-btn{ height:auto; min-height:0; padding:1px 5px; gap:4px; font-size:calc(10px * var(--fs-desk,1)); line-height:1.1; box-sizing:border-box; overflow:hidden; }
+  html body .guro-links-panel{ padding:6px; gap:4px; align-content:start; align-self:stretch; contain:size; box-sizing:border-box; grid-auto-rows:28px; }
+  html body .guro-links-panel .guro-desk-btn{ height:28px; min-height:28px; max-height:28px; padding:1px 5px; gap:4px; font-size:calc(10px * var(--fs-desk,1)); line-height:1.1; box-sizing:border-box; overflow:hidden; }
   html body .guro-links-panel .guro-desk-btn .guro-link-icon{ width:14px; height:14px; font-size:calc(12px * var(--fs-desk,1)); }
   html body .guro-links-panel .guro-desk-btn img{ width:14px; height:14px; }
 }
@@ -15186,7 +15186,7 @@ html body .guro-grow-content .section-badge.is-boost-label{ display:flex !import
 @media (min-width:1024px){
   html body .guro-grow-content .fp-inprogress-list{ display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:14px; align-items:start; }
   html body .guro-grow-content .guro-grow-section{ width:100%; min-width:0; }
-  html body .guro-grow-content .guro-section-list{ display:grid; grid-template-columns:repeat(2, minmax(0, 300px)); justify-content:start; gap:10px; align-items:start; }
+  html body .guro-grow-content .guro-section-list{ display:grid; grid-template-columns:minmax(0, 1fr); justify-content:start; gap:10px; align-items:start; }
   html body .guro-grow-content .guro-section-list > .card{ width:100%; min-width:0; margin:0; }
   html body .guro-grow-content .guro-section-list > :not(.card){ grid-column:1 / -1; }
 }
@@ -15204,7 +15204,7 @@ html body .guro-grow-content .section-badge.is-boost-label{ display:flex !import
 @media (min-width:1024px){
   html body .guro-grow-content .fp-inprogress-list{ grid-template-columns:repeat(2, minmax(0, 1fr)); justify-content:stretch; }
   html body .guro-grow-content .guro-grow-section{ width:100%; max-width:100%; }
-  html body .guro-grow-content .guro-section-list{ grid-template-columns:repeat(2, minmax(0, 1fr)); justify-content:stretch; }
+  html body .guro-grow-content .guro-section-list{ grid-template-columns:minmax(0, 1fr); justify-content:stretch; }
   html body .guro-filters-panel.guro-native.guro-native{ width:max(170px, calc(250px - 5%)) !important; flex:0 0 max(170px, calc(250px - 5%)); }
 }
 html body .hive-list{ margin-left:0; margin-right:0; }
@@ -16500,8 +16500,8 @@ html body.app-dark:not(.sfl-theme) .fp-ext-switch.is-on{ background-color:#1c1e2
   html[data-fs] .rc-love-input{ width:calc(96px * var(--fs-inh,1)); }
   html[data-fs] body .guro-rate .guro-rate-grp:last-child .guro-rate-field.guro-rate-field{ width:calc(78px * var(--fs-inh,1)); }
   html[data-fs] body .guro-rate .guro-rate-field input{ width:100%; min-width:0; }
-  html[data-fs] body .guro-grow-content .fp-inprogress-list,
-  html[data-fs] body .guro-grow-content .guro-section-list{ grid-template-columns:repeat(auto-fit, minmax(calc(300px * var(--fs-inh,1)), 1fr)); justify-content:stretch; }
+  html[data-fs] body .guro-grow-content .fp-inprogress-list{ grid-template-columns:repeat(auto-fit, minmax(calc(300px * var(--fs-inh,1)), 1fr)); justify-content:stretch; }
+  html[data-fs] body .guro-grow-content .guro-section-list{ grid-template-columns:minmax(0, 1fr); justify-content:stretch; }
   html[data-fs] :is(.betty-sort-btn,.calc-readout-label,.flower-cross-label,.flower-cross-result-name,.flower-cross-chain-title,.flower-cross-chain-time,.bl-col-total,.potion-log-date,.aoe-plots-affected,.lib-section-title,.rc-bc-cost,.rc-tile-pn,.rc-node-name,.fd-item-main,.fdm-side-rate,.fd-item-cost,.guro-net-amount,.guro-market-amount,.guro-status-value,.guro-status-clock,.card-details label,.card-details .value){ white-space:normal; overflow-wrap:anywhere; min-width:0; text-overflow:clip; }
   html[data-fs] .farm-panel-sync-row{ flex-wrap:wrap; }
   html[data-fs] .farm-panel-sync-row input[type=text]{ flex:1 1 calc(110px * var(--fs-inh,1)); min-width:0; }
@@ -16514,3 +16514,11 @@ html body .mushroom-count-pill{ display:inline-block; flex:0 0 auto; margin-left
 html body .guro-grow-content .guro-status-fold{ flex-wrap:nowrap; min-width:0; }
 html body .guro-grow-content .guro-status-stack{ flex:0 1 auto; min-width:0; max-width:100%; }
 html body .guro-grow-content .guro-status-value{ display:inline-block; box-sizing:border-box; max-width:100%; white-space:nowrap; word-spacing:-.4em; letter-spacing:0; padding:3px 4px; font-size:calc(9.5px * var(--fs-desk,1)); overflow:hidden; }
+html, body{ overflow-x:clip; max-width:100%; }
+html body .guro-grow-content, html body .guro-grow-content .fp-inprogress-list, html body .guro-grow-content .guro-grow-section, html body .guro-grow-content .guro-section-list{ min-width:0; max-width:100%; overflow-x:clip; }
+html body .guro-grow-content .guro-section-list > .card{ min-width:0; max-width:100%; box-sizing:border-box; }
+html body .guro-profile-top{ align-content:start; grid-auto-rows:auto; row-gap:1px; }
+html body .guro-profile-info{ gap:1px; }
+html body .guro-profile-farmid, html body .guro-profile-line{ line-height:1.15; margin:0; padding:0; min-height:0; }
+html body .guro-profile-farmid{ margin-top:4px; }
+html body .guro-profile > .guro-profile-status, html body #farmPanelStatus{ display:none !important; }
