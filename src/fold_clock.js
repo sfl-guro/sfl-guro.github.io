@@ -4,7 +4,7 @@ const DAY_SEC = 86400;
 
 export function foldClock(sec) {
   sec = Math.max(0, Math.floor(Number(sec) || 0));
-  const units = [ [ Math.floor(sec / MONTH_SEC), "M" ], [ Math.floor(sec % MONTH_SEC / DAY_SEC), "D" ], [ Math.floor(sec % DAY_SEC / 3600), "H" ], [ Math.floor(sec % 3600 / 60), "M" ], [ sec % 60, "S" ] ];
+  const units = [ [ Math.floor(sec / MONTH_SEC), "M" ], [ Math.floor(sec % MONTH_SEC / DAY_SEC), "D" ], [ Math.floor(sec % DAY_SEC / 3600), "h" ], [ Math.floor(sec % 3600 / 60), "m" ], [ sec % 60, "s" ] ];
   const parts = [];
   units.forEach(([value, suffix], i) => {
     if (parts.length || value > 0 || i === units.length - 1) parts.push(`${value}${suffix}`);
