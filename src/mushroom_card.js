@@ -194,25 +194,30 @@ export function farmPanelComputeMushroomCards(json, econFn, now) {
       const count = onLand.filter(m => m.name === name).length;
       const intervalHours = mRespawnHours(name, g);
       const lastAt = mNum(isMagic ? state.magicSpawnedAt : state.spawnedAt);
-      const nextAt = lastAt ? lastAt + intervalHours * HOUR_MS : 0;
+      const intervalMs = intervalHours * HOUR_MS;
+      const elapsedSpawns = lastAt ? Math.max(0, Math.floor((nowMs - lastAt) / intervalMs)) : 0;
+      const pending = Math.min(elapsedSpawns, Math.max(0, cap - count));
+      const shownCount = count + pending;
+      const nextAt = lastAt ? lastAt + (elapsedSpawns + 1) * intervalMs : 0;
       const remainingSec = nextAt ? Math.max(0, (nextAt - nowMs) / 1e3) : null;
       const yieldInfo = computeMushroomYield(g, name, nowMs);
-      const totalYield = mRound(yieldInfo.amount * count);
-      const econ = econFn ? econFn(name, count, totalYield) : null;
+      const totalYield = mRound(yieldInfo.amount * shownCount);
+      const econ = econFn ? econFn(name, shownCount, totalYield) : null;
       const pickEcon = econFn ? econFn(name, 1, yieldInfo.amount) : null;
       return {
         isMushroomCard: true,
         name: name,
         profit: econ ? econ.profit : 0,
-        isReady: count > 0,
-        count: count,
-        readyCount: count,
+        isReady: shownCount > 0,
+        count: shownCount,
+        syncedCount: count,
+        pending: pending,
+        readyCount: shownCount,
         cap: cap,
         intervalHours: intervalHours,
         lastAt: lastAt,
         nextAt: nextAt,
         remainingSec: remainingSec,
-        due: !!nextAt && nextAt <= nowMs,
         perPick: yieldInfo.amount,
         boosts: yieldInfo.boosts,
         totalYield: totalYield,
@@ -246,9 +251,10 @@ function mInfoHtml(row) {
   const line = (label, val) => `<div class="dig-total-row"><span class="dig-total-label">${label}</span><span class="dig-total-val">${val}</span></div>`;
   const lines = [];
   lines.push(line("On your farm", `${row.count} / ${row.cap}`));
+  if (row.pending > 0) lines.push(line("Spawned since last sync", `+${row.pending} (estimate)`));
   lines.push(line("Respawn time", `Every ${row.intervalHours}h`));
   if (row.lastAt) lines.push(line("Last spawn", escapeHtml(hiveClockText(row.lastAt))));
-  if (row.nextAt) lines.push(line(row.due ? "Spawn was due" : "Next spawn", escapeHtml(hiveClockText(row.nextAt))));
+  if (row.nextAt) lines.push(line("Next spawn", escapeHtml(hiveClockText(row.nextAt))));
   if (row.count >= row.cap) lines.push(line("Farm full", "Pick some to make room"));
   return `<div class="dig-totals">${lines.join("")}</div>`;
 }
@@ -262,22 +268,21 @@ export function farmPanelRenderMushroomCard(row, expanded, ctx) {
   const gross = hasReady ? row.grossRevenue : row.pickGross;
   const fee = hasReady ? row.feeAmount : row.pickFee;
   const valueHtml = row.price > 0 && ctx && ctx.valueBlockHtml ? ctx.valueBlockHtml(gross, fee) : "";
-  const badgeHtml = row.due && !hasReady ? `<span class="harvest-badge is-growing">⏳ Spawn due</span>` : "";
   const stateBadge = ctx && ctx.statusBadgeHtml ? ctx.statusBadgeHtml(row) : "";
   const foldHtml = ctx && ctx.statusFoldHtml ? ctx.statusFoldHtml(row) : "";
   const boostBadge = row.boosts.length ? `<span class="harvest-badge is-ready">⚡ ${row.boosts.length} boost${row.boosts.length === 1 ? "" : "s"}</span>` : "";
   const net = gross - fee;
   const priceRow = row.price > 0 ? `<div class="animal-detail-grid"><div class="animal-detail-stat"><span class="label">Market Price/Unit</span><span class="value">${fmt(row.price)} ${ctx && ctx.flowerIcon || ""}</span></div><div class="animal-detail-stat"><span class="label">Market Value</span><span class="value">${fmt(gross)} ${ctx && ctx.flowerIcon || ""}</span></div><div class="animal-detail-stat"><span class="label">Tax</span><span class="value">${fee > 0 ? `-${fmt(fee)}` : "0"} ${ctx && ctx.flowerIcon || ""}</span></div></div><div class="animal-net-row2"><span class="label">Net</span><span class="value is-profit">${fmt(net)} ${ctx && ctx.flowerIcon || ""}</span></div>` : "";
   return `
-  <div class="card animal-merged-card is-profit${expanded ? " expanded" : ""}" data-search="${escapeHtml(row.name.toLowerCase())}" data-fp-category="crops">
+  <div class="card animal-merged-card is-profit${expanded ? " expanded" : ""}" data-search="${escapeHtml(row.name.toLowerCase())}" data-fp-category="pete">
     <div class="card-toggle">
       <div class="card-name-row">
         <span class="card-icon">${mIconHtml(row.name, 22)}</span>
         <div>
-          <div class="card-name">${escapeHtml(row.name)}</div>
+          <div class="card-name">${escapeHtml(row.name)}<span class="mushroom-count-pill">${row.count}/${row.cap}</span></div>
           <div class="card-type-row">
             <span class="card-type">Respawns every ${row.intervalHours}h ${yieldNote}</span>
-            ${badgeHtml}${boostBadge}
+            ${boostBadge}
           </div>
           <div class="animal-fold-row">${chipHtml}</div>
           ${valueHtml}

@@ -29075,6 +29075,38 @@ function getPumpkinPeteQuest(rawName) {
   return null;
 }
 
+// src/fold_clock.js
+var MONTH_SEC = 30 * 86400;
+var DAY_SEC = 86400;
+function foldClock(sec) {
+  sec = Math.max(0, Math.floor(Number(sec) || 0));
+  const units = [[Math.floor(sec / MONTH_SEC), "M"], [Math.floor(sec % MONTH_SEC / DAY_SEC), "D"], [Math.floor(sec % DAY_SEC / 3600), "H"], [Math.floor(sec % 3600 / 60), "M"], [sec % 60, "S"]];
+  const parts = [];
+  units.forEach(([value, suffix], i) => {
+    if (parts.length || value > 0 || i === units.length - 1) parts.push(`${value}${suffix}`);
+  });
+  return parts.join(" ");
+}
+function foldStamp(ms, nowMs = Date.now()) {
+  const d = new Date(ms);
+  let h = d.getHours();
+  const m = d.getMinutes();
+  const ampm = h >= 12 ? "PM" : "AM";
+  h = h % 12;
+  if (h === 0) h = 12;
+  const time = `${h}:${String(m).padStart(2, "0")} ${ampm}`;
+  const today = new Date(nowMs);
+  const sameDay = d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth() && d.getDate() === today.getDate();
+  if (sameDay) return time;
+  if (ms - nowMs > 6 * DAY_SEC * 1e3) return `${d.toLocaleDateString(void 0, {
+    month: "short",
+    day: "numeric"
+  })} ${time}`;
+  return `${d.toLocaleDateString(void 0, {
+    weekday: "short"
+  })} ${time}`;
+}
+
 // src/floating_island.js
 var ISLAND_TITLE = "Floating / Mystery Island";
 var CURRENCY = "Love Charm";
@@ -29230,7 +29262,7 @@ function farmPanelComputeFloatingIslandCard(json, now) {
 function fiStatusFoldHtml(row3) {
   if (!row3.targetAt) return `<div class="guro-status-fold"><span class="guro-status-label">NO ISLAND SCHEDULED</span></div>`;
   const label = row3.isLive ? "ENDS IN" : "ARRIVING IN";
-  return `<div class="guro-status-fold"><span class="guro-status-label">${label}</span><span class="guro-status-stack"><span class="guro-status-value fi-countdown" data-fi-at="${row3.targetAt}">${floatingIslandClock(row3.remainingSec)}</span><span class="guro-status-clock">${escapeHtml(hiveClockText(row3.targetAt))}</span></span></div>`;
+  return `<div class="guro-status-fold"><span class="guro-status-label">${label}</span><span class="guro-status-stack"><span class="guro-status-value fi-countdown" data-fi-at="${row3.targetAt}">${foldClock(row3.remainingSec)}</span><span class="guro-status-clock">${escapeHtml(hiveClockText(row3.targetAt))}</span></span></div>`;
 }
 function fiEntryHtml(row3, entry) {
   const label = entry.isLive ? "LIVE ISLAND" : "SCHEDULED ISLAND";
@@ -31523,7 +31555,7 @@ function farmPanelComputeCaveMerchantCard(json, now) {
 function cmStatusFoldHtml(row3) {
   if (!row3.targetAt) return `<div class="guro-status-fold"><span class="guro-status-label">SYNC TO CHECK NEXT VISIT</span></div>`;
   const label = row3.phase === "open" ? "LEAVES IN" : row3.phase === "arriving" ? "ARRIVES IN" : "RETURNS IN";
-  return `<div class="guro-status-fold"><span class="guro-status-label">${label}</span><span class="guro-status-stack"><span class="guro-status-value cm-countdown" data-cm-at="${row3.targetAt}">${caveMerchantClock(row3.remainingSec)}</span><span class="guro-status-clock">${escapeHtml(hiveClockText(row3.targetAt))}</span></span></div>`;
+  return `<div class="guro-status-fold"><span class="guro-status-label">${label}</span><span class="guro-status-stack"><span class="guro-status-value cm-countdown" data-cm-at="${row3.targetAt}">${foldClock(row3.remainingSec)}</span><span class="guro-status-clock">${escapeHtml(hiveClockText(row3.targetAt))}</span></span></div>`;
 }
 function cmInfoHtml(row3) {
   const line = (label, val) => `<div class="dig-total-row"><span class="dig-total-label">${label}</span><span class="dig-total-val">${val}</span></div>`;
@@ -31740,25 +31772,30 @@ function farmPanelComputeMushroomCards(json, econFn, now) {
       const count = onLand.filter((m) => m.name === name).length;
       const intervalHours = mRespawnHours(name, g);
       const lastAt = mNum(isMagic ? state2.magicSpawnedAt : state2.spawnedAt);
-      const nextAt = lastAt ? lastAt + intervalHours * HOUR_MS2 : 0;
+      const intervalMs = intervalHours * HOUR_MS2;
+      const elapsedSpawns = lastAt ? Math.max(0, Math.floor((nowMs - lastAt) / intervalMs)) : 0;
+      const pending = Math.min(elapsedSpawns, Math.max(0, cap - count));
+      const shownCount = count + pending;
+      const nextAt = lastAt ? lastAt + (elapsedSpawns + 1) * intervalMs : 0;
       const remainingSec = nextAt ? Math.max(0, (nextAt - nowMs) / 1e3) : null;
       const yieldInfo = computeMushroomYield(g, name, nowMs);
-      const totalYield = mRound(yieldInfo.amount * count);
-      const econ = econFn ? econFn(name, count, totalYield) : null;
+      const totalYield = mRound(yieldInfo.amount * shownCount);
+      const econ = econFn ? econFn(name, shownCount, totalYield) : null;
       const pickEcon = econFn ? econFn(name, 1, yieldInfo.amount) : null;
       return {
         isMushroomCard: true,
         name,
         profit: econ ? econ.profit : 0,
-        isReady: count > 0,
-        count,
-        readyCount: count,
+        isReady: shownCount > 0,
+        count: shownCount,
+        syncedCount: count,
+        pending,
+        readyCount: shownCount,
         cap,
         intervalHours,
         lastAt,
         nextAt,
         remainingSec,
-        due: !!nextAt && nextAt <= nowMs,
         perPick: yieldInfo.amount,
         boosts: yieldInfo.boosts,
         totalYield,
@@ -31790,9 +31827,10 @@ function mInfoHtml(row3) {
   const line = (label, val) => `<div class="dig-total-row"><span class="dig-total-label">${label}</span><span class="dig-total-val">${val}</span></div>`;
   const lines = [];
   lines.push(line("On your farm", `${row3.count} / ${row3.cap}`));
+  if (row3.pending > 0) lines.push(line("Spawned since last sync", `+${row3.pending} (estimate)`));
   lines.push(line("Respawn time", `Every ${row3.intervalHours}h`));
   if (row3.lastAt) lines.push(line("Last spawn", escapeHtml(hiveClockText(row3.lastAt))));
-  if (row3.nextAt) lines.push(line(row3.due ? "Spawn was due" : "Next spawn", escapeHtml(hiveClockText(row3.nextAt))));
+  if (row3.nextAt) lines.push(line("Next spawn", escapeHtml(hiveClockText(row3.nextAt))));
   if (row3.count >= row3.cap) lines.push(line("Farm full", "Pick some to make room"));
   return `<div class="dig-totals">${lines.join("")}</div>`;
 }
@@ -31805,22 +31843,21 @@ function farmPanelRenderMushroomCard(row3, expanded, ctx) {
   const gross = hasReady ? row3.grossRevenue : row3.pickGross;
   const fee = hasReady ? row3.feeAmount : row3.pickFee;
   const valueHtml = row3.price > 0 && ctx && ctx.valueBlockHtml ? ctx.valueBlockHtml(gross, fee) : "";
-  const badgeHtml = row3.due && !hasReady ? `<span class="harvest-badge is-growing">\u23F3 Spawn due</span>` : "";
   const stateBadge = ctx && ctx.statusBadgeHtml ? ctx.statusBadgeHtml(row3) : "";
   const foldHtml = ctx && ctx.statusFoldHtml ? ctx.statusFoldHtml(row3) : "";
   const boostBadge = row3.boosts.length ? `<span class="harvest-badge is-ready">\u26A1 ${row3.boosts.length} boost${row3.boosts.length === 1 ? "" : "s"}</span>` : "";
   const net = gross - fee;
   const priceRow = row3.price > 0 ? `<div class="animal-detail-grid"><div class="animal-detail-stat"><span class="label">Market Price/Unit</span><span class="value">${fmt(row3.price)} ${ctx && ctx.flowerIcon || ""}</span></div><div class="animal-detail-stat"><span class="label">Market Value</span><span class="value">${fmt(gross)} ${ctx && ctx.flowerIcon || ""}</span></div><div class="animal-detail-stat"><span class="label">Tax</span><span class="value">${fee > 0 ? `-${fmt(fee)}` : "0"} ${ctx && ctx.flowerIcon || ""}</span></div></div><div class="animal-net-row2"><span class="label">Net</span><span class="value is-profit">${fmt(net)} ${ctx && ctx.flowerIcon || ""}</span></div>` : "";
   return `
-  <div class="card animal-merged-card is-profit${expanded ? " expanded" : ""}" data-search="${escapeHtml(row3.name.toLowerCase())}" data-fp-category="crops">
+  <div class="card animal-merged-card is-profit${expanded ? " expanded" : ""}" data-search="${escapeHtml(row3.name.toLowerCase())}" data-fp-category="pete">
     <div class="card-toggle">
       <div class="card-name-row">
         <span class="card-icon">${mIconHtml(row3.name, 22)}</span>
         <div>
-          <div class="card-name">${escapeHtml(row3.name)}</div>
+          <div class="card-name">${escapeHtml(row3.name)}<span class="mushroom-count-pill">${row3.count}/${row3.cap}</span></div>
           <div class="card-type-row">
             <span class="card-type">Respawns every ${row3.intervalHours}h ${yieldNote}</span>
-            ${badgeHtml}${boostBadge}
+            ${boostBadge}
           </div>
           <div class="animal-fold-row">${chipHtml}</div>
           ${valueHtml}
@@ -31836,6 +31873,85 @@ function farmPanelRenderMushroomCard(row3, expanded, ctx) {
       ${mInfoHtml(row3)}
       ${priceRow}
       ${mBoostRowsHtml(row3)}
+    </div>
+  </div>`;
+}
+
+// src/skill_reset.js
+var DAY_MS2 = 864e5;
+var FREE_RESET_DAYS = 180;
+var BASE_GEM_COST = 200;
+var SKILL_RESET_NAME = "Skill Reset";
+var SKILL_RESET_SEARCH_KEY = "skill-reset";
+function stamp(ms) {
+  const d = new Date(ms);
+  const date = d.toLocaleDateString(void 0, {
+    month: "short",
+    day: "numeric",
+    year: "numeric"
+  });
+  const time = d.toLocaleTimeString(void 0, {
+    hour: "numeric",
+    minute: "2-digit"
+  });
+  return `${date}, ${time}`;
+}
+function farmPanelComputeSkillResetCard(json, now) {
+  try {
+    const nowMs = now || Date.now();
+    const g = farmSyncExtractGameState(json);
+    const bumpkin = g && g.bumpkin && typeof g.bumpkin === "object" ? g.bumpkin : null;
+    if (!bumpkin) return null;
+    const skills = bumpkin.skills && typeof bumpkin.skills === "object" ? bumpkin.skills : {};
+    if (!Object.keys(skills).length) return null;
+    const rawLast = Number(bumpkin.previousFreeSkillResetAt);
+    const lastAt = isFinite(rawLast) && rawLast > 0 ? rawLast : 0;
+    const readyAt = lastAt + FREE_RESET_DAYS * DAY_MS2;
+    const isReady = readyAt <= nowMs;
+    const rawPaid = Number(bumpkin.paidSkillResets);
+    const paidResets = isFinite(rawPaid) && rawPaid > 0 ? Math.floor(rawPaid) : 0;
+    return {
+      isSkillResetCard: true,
+      name: SKILL_RESET_NAME,
+      searchKey: SKILL_RESET_SEARCH_KEY,
+      profit: 0,
+      isReady,
+      lastAt,
+      readyAt,
+      remainingSec: isReady ? 0 : (readyAt - nowMs) / 1e3,
+      paidResets,
+      gemCost: BASE_GEM_COST * Math.pow(2, paidResets),
+      skillCount: Object.keys(skills).length
+    };
+  } catch (e) {
+    return null;
+  }
+}
+function farmPanelRenderSkillResetCard(row3, expanded, statusFoldHtml) {
+  const badgeHtml = row3.isReady ? `<span class="harvest-badge is-ready">\u2705 Free reset ready</span>` : `<span class="harvest-badge is-growing">\u23F3 Cooldown</span>`;
+  const line = (label, val) => `<div class="dig-total-row"><span class="dig-total-label">${label}</span><span class="dig-total-val">${val}</span></div>`;
+  const lastLine = line("Last Free Reset", row3.lastAt ? escapeHtml(stamp(row3.lastAt)) : "Never");
+  const nextLine = line(row3.isReady ? "Available Since" : "Next Free Reset", row3.lastAt || !row3.isReady ? escapeHtml(stamp(row3.readyAt)) : "Now");
+  return `
+  <div class="card animal-merged-card${row3.isReady ? " is-profit" : ""}${expanded ? " expanded" : ""}" data-search="${row3.searchKey}" data-fp-category="pete">
+    <div class="card-toggle">
+      <div class="card-name-row">
+        <span class="card-icon">${getIcon("Green Thumb")}</span>
+        <div>
+          <div class="card-name">${escapeHtml(row3.name)}</div>
+          <div class="card-type-row">
+            <span class="card-type">Bumpkin Skills \xB7 ${row3.skillCount} learned</span>
+            ${badgeHtml}
+          </div>
+        </div>
+      </div>
+      <div class="card-collapsed-profit">
+        <span class="chev">\u25BE</span>
+      </div>
+      ${statusFoldHtml}
+    </div>
+    <div class="card-details">
+      <div class="dig-totals">${line("Free Reset Cooldown", `${FREE_RESET_DAYS} days`)}${lastLine}${nextLine}${line("Paid Resets Used", String(row3.paidResets))}${line("Next Paid Reset", `${row3.gemCost} Gems`)}</div>
     </div>
   </div>`;
 }
@@ -31997,13 +32113,6 @@ function fiNumber2(v) {
   const n = Number(v && typeof v === "object" && v.toString ? v.toString() : v);
   return Number.isFinite(n) ? n : 0;
 }
-function fishingClock(sec) {
-  sec = Math.max(0, Math.floor(sec));
-  const h = Math.floor(sec / 3600);
-  const m = Math.floor(sec % 3600 / 60);
-  const s = sec % 60;
-  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-}
 function pairText(coins) {
   return `${fishDigFmt(coins)}${COIN_ICON}<span class="fh-dot">\xB7</span>${fishDigFmt(coinsToFlower(coins))}${FLOWER_ICON}`;
 }
@@ -32123,7 +32232,7 @@ function farmPanelComputeFishingCard(json, farmId, now) {
   }
 }
 function fishingStatusFoldHtml(row3) {
-  return `<div class="guro-status-fold"><span class="guro-status-label">RESETS IN</span><span class="guro-status-stack"><span class="guro-status-value fi-countdown" data-fi-at="${row3.targetAt}">${fishingClock(row3.remainingSec)}</span><span class="guro-status-clock">${escapeHtml(hiveClockText(row3.targetAt))}</span></span></div>`;
+  return `<div class="guro-status-fold"><span class="guro-status-label">RESETS IN</span><span class="guro-status-stack"><span class="guro-status-value fi-countdown" data-fi-at="${row3.targetAt}">${foldClock(row3.remainingSec)}</span><span class="guro-status-clock">${escapeHtml(hiveClockText(row3.targetAt))}</span></span></div>`;
 }
 function fishYieldBoostText(b) {
   if (b.randomFishEvery) return `+1 random fish every ${b.randomFishEvery}th reel`;
@@ -32388,7 +32497,9 @@ function farmPanelLoadHiddenCards() {
     const raw = JSON.parse(localStorage.getItem(FARM_PANEL_HIDDEN_CARDS_KEY) || "[]");
     const legacy = {
       "floating:floating": "pete:floating",
-      "fishing:fishing": "pete:fishing"
+      "fishing:fishing": "pete:fishing",
+      "crops:Wild Mushroom": "pete:Wild Mushroom",
+      "crops:Magic Mushroom": "pete:Magic Mushroom"
     };
     return new Set(Array.isArray(raw) ? raw.filter((k) => typeof k === "string").map((k) => legacy[k] || k) : []);
   } catch (e) {
@@ -32407,14 +32518,6 @@ function farmPanelCardCatalog() {
       id: "Crop Machine",
       label: "Crop Machine",
       icon: getIcon("Crop Machine")
-    }, {
-      id: "Wild Mushroom",
-      label: "Wild Mushroom",
-      icon: getIcon("Wild Mushroom")
-    }, {
-      id: "Magic Mushroom",
-      label: "Magic Mushroom",
-      icon: getIcon("Magic Mushroom")
     }]);
     if (id === "fruits") return Object.keys(BASE_FRUITS).map((n) => ({
       id: n,
@@ -32472,6 +32575,18 @@ function farmPanelCardCatalog() {
       id: "caveMerchant",
       label: "Cave Merchant",
       icon: caveMerchantMiniIconHtml(16)
+    }, {
+      id: "Wild Mushroom",
+      label: "Wild Mushroom",
+      icon: getIcon("Wild Mushroom")
+    }, {
+      id: "Magic Mushroom",
+      label: "Magic Mushroom",
+      icon: getIcon("Magic Mushroom")
+    }, {
+      id: SKILL_RESET_NAME,
+      label: SKILL_RESET_NAME,
+      icon: getIcon("Green Thumb")
     }].concat(POWER_SKILL_DEFS.map((d) => ({
       id: d.name,
       label: d.name,
@@ -36191,7 +36306,7 @@ function fpLimitedScopeOfRow(row3) {
   if (!row3) return "";
   if (row3.isCropMachineCard) return "cropmachine";
   if (row3.isAnimalMerged) return String(row3.typeKey || "").toLowerCase();
-  if (row3.isComposterCard || row3.isHoneyCard || row3.isCookingCard || row3.isMycoCard || row3.isMushroomCard || row3.isPeteQuestCard || row3.isFloatingIslandCard || row3.isFishingCard || row3.isCaveMerchantCard || row3.isPowerSkillCard) return "";
+  if (row3.isComposterCard || row3.isHoneyCard || row3.isCookingCard || row3.isMycoCard || row3.isMushroomCard || row3.isPeteQuestCard || row3.isFloatingIslandCard || row3.isFishingCard || row3.isCaveMerchantCard || row3.isPowerSkillCard || row3.isSkillResetCard) return "";
   const name = row3.name;
   if (name === "Wood") return "wood";
   if (name === "Oil") return "oil";
@@ -37478,6 +37593,8 @@ function farmPanelComputeInProgressOnce(json) {
   const caveMerchantCard = farmPanelComputeCaveMerchantCard(json);
   if (caveMerchantCard) allCards.push(caveMerchantCard);
   farmPanelComputePowerSkillCards(json).forEach((card2) => allCards.push(card2));
+  const skillResetCard = farmPanelComputeSkillResetCard(json);
+  if (skillResetCard) allCards.push(skillResetCard);
   return allCards;
 }
 var PETE_QUEST_LINK = "https://github.com/01101010110/Pumpkin-Pete-Quests/blob/main/Quests.md";
@@ -38206,7 +38323,8 @@ function farmPanelRenderNodeYieldBoostList(row3, summary, produceIcon) {
   return `<div class="section-badge is-boost-label">\u26A1 Applied Boost</div>${sectionsHtml}`;
 }
 function farmPanelCardCategory(row3) {
-  if (row3.isCropMachineCard || row3.isMushroomCard) return "crops";
+  if (row3.isCropMachineCard) return "crops";
+  if (row3.isMushroomCard || row3.isSkillResetCard) return "pete";
   if (row3.isMycoCard) return "myco";
   if (row3.isPeteQuestCard) return "pete";
   if (row3.isFloatingIslandCard || row3.isFishingCard || row3.isCaveMerchantCard || row3.isPowerSkillCard) return "pete";
@@ -38222,7 +38340,7 @@ function farmPanelCardCategory(row3) {
 }
 function farmPanelRowIsReady(row3) {
   if (!row3) return false;
-  if (row3.isPeteQuestCard || row3.isFloatingIslandCard || row3.isFishingCard || row3.isCaveMerchantCard || row3.isPowerSkillCard) return !!row3.isReady;
+  if (row3.isPeteQuestCard || row3.isFloatingIslandCard || row3.isFishingCard || row3.isCaveMerchantCard || row3.isPowerSkillCard || row3.isSkillResetCard) return !!row3.isReady;
   return (row3.readyCount || 0) > 0;
 }
 function guroCountdownText(sec) {
@@ -38230,8 +38348,8 @@ function guroCountdownText(sec) {
 }
 function guroStatusFoldHtml(word, sec) {
   if (sec == null) return "";
-  const clockHtml = sec > 0 ? `<span class="guro-status-clock">${hiveClockText(Date.now() + sec * 1e3)}</span>` : "";
-  return `<div class="guro-status-fold"><span class="guro-status-label">${word} IN</span><span class="guro-status-stack"><span class="guro-status-value farm-countdown" data-base="${sec}">${guroCountdownText(sec)}</span>${clockHtml}</span></div>`;
+  const clockHtml = sec > 0 ? `<span class="guro-status-clock">${foldStamp(Date.now() + sec * 1e3)}</span>` : "";
+  return `<div class="guro-status-fold"><span class="guro-status-label">${word} IN</span><span class="guro-status-stack"><span class="guro-status-value farm-countdown" data-base="${sec}">${foldClock(sec)}</span>${clockHtml}</span></div>`;
 }
 function guroSignedAmount(v, fmtFn) {
   return `${v < 0 ? "" : "+"}${fmtFn(v)}`;
@@ -39060,7 +39178,6 @@ function farmPanelRenderInProgressRow(row3) {
     statusBadgeHtml: (r) => farmPanelStatusBadgeHtml(r.count, 0, "Growing"),
     statusFoldHtml: (r) => {
       if (r.remainingSec == null) return `<div class="guro-status-fold"><span class="guro-status-label">SYNC TO CHECK RESPAWN</span></div>`;
-      if (r.remainingSec <= 0) return `<div class="guro-status-fold"><span class="guro-status-label">SPAWN DUE \xB7 SYNC TO REFRESH</span></div>`;
       return guroStatusFoldHtml(r.count > 0 ? "Next spawn" : "Ready", r.remainingSec);
     }
   });
@@ -39069,6 +39186,7 @@ function farmPanelRenderInProgressRow(row3) {
   if (row3.isFloatingIslandCard) return farmPanelRenderFloatingIslandCard(row3, farmPanelExpandedNames.has("floating-island"));
   if (row3.isFishingCard) return farmPanelRenderFishingCard(row3, farmPanelExpandedNames.has("fishing"));
   if (row3.isCaveMerchantCard) return farmPanelRenderCaveMerchantCard(row3, farmPanelExpandedNames.has("cave-merchant"));
+  if (row3.isSkillResetCard) return farmPanelRenderSkillResetCard(row3, farmPanelExpandedNames.has(row3.searchKey), row3.isReady ? "" : guroStatusFoldHtml("Ready", row3.remainingSec));
   if (row3.isPowerSkillCard) return farmPanelRenderPowerSkillCard(row3, farmPanelExpandedNames.has(row3.searchKey), row3.isReady ? "" : guroStatusFoldHtml("Ready", row3.remainingSec));
   const baseStatus = row3.readyCount > 0 ? row3.readyCount === row3.count ? "\u2705 All ready" : `\u2705 ${row3.readyCount} ready \xB7 \u23F3 ${row3.count - row3.readyCount} growing` : "\u23F3 Growing";
   const showCountdown = row3.soonestSec != null && row3.readyCount < row3.count;
@@ -39273,7 +39391,7 @@ function farmPanelTickCountdowns() {
         anyFinished = true;
         return;
       }
-      el.textContent = caveMerchantClock(merchantRemaining);
+      el.textContent = el.classList.contains("guro-status-value") ? foldClock(merchantRemaining) : caveMerchantClock(merchantRemaining);
       return;
     }
     if (el.hasAttribute("data-fi-at")) {
@@ -39282,7 +39400,7 @@ function farmPanelTickCountdowns() {
         anyFinished = true;
         return;
       }
-      el.textContent = floatingIslandClock(islandRemaining);
+      el.textContent = el.classList.contains("guro-status-value") ? foldClock(islandRemaining) : floatingIslandClock(islandRemaining);
       return;
     }
     if (el.hasAttribute("data-ready-at")) {
@@ -39300,7 +39418,7 @@ function farmPanelTickCountdowns() {
       anyFinished = true;
       return;
     }
-    el.textContent = guroCountdownText(remaining);
+    el.textContent = el.classList.contains("guro-status-value") ? foldClock(remaining) : guroCountdownText(remaining);
   });
   if (anyFinished) renderFarmPanelTabContent();
 }

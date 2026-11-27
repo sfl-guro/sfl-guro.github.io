@@ -6,6 +6,8 @@ import { GOBLIN_MERCHANT_ICON } from "./goblin_merchant_icon.js";
 
 import { merchantOfferCardsHtml } from "./cave_merchant_calc.js";
 
+import { foldClock } from "./fold_clock.js";
+
 function cmField(g, key) {
   if (!g) return null;
   if (g[key] != null) return g[key];
@@ -85,7 +87,7 @@ export function farmPanelComputeCaveMerchantCard(json, now) {
 function cmStatusFoldHtml(row) {
   if (!row.targetAt) return `<div class="guro-status-fold"><span class="guro-status-label">SYNC TO CHECK NEXT VISIT</span></div>`;
   const label = row.phase === "open" ? "LEAVES IN" : row.phase === "arriving" ? "ARRIVES IN" : "RETURNS IN";
-  return `<div class="guro-status-fold"><span class="guro-status-label">${label}</span><span class="guro-status-stack"><span class="guro-status-value cm-countdown" data-cm-at="${row.targetAt}">${caveMerchantClock(row.remainingSec)}</span><span class="guro-status-clock">${escapeHtml(hiveClockText(row.targetAt))}</span></span></div>`;
+  return `<div class="guro-status-fold"><span class="guro-status-label">${label}</span><span class="guro-status-stack"><span class="guro-status-value cm-countdown" data-cm-at="${row.targetAt}">${foldClock(row.remainingSec)}</span><span class="guro-status-clock">${escapeHtml(hiveClockText(row.targetAt))}</span></span></div>`;
 }
 
 function cmInfoHtml(row) {

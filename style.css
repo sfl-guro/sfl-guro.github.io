@@ -16509,3 +16509,8 @@ html body.app-dark:not(.sfl-theme) .fp-ext-switch.is-on{ background-color:#1c1e2
   html[data-fs] .calc-ing-main{ flex:1 1 110px; }
   html[data-fs] .pf-row-name{ white-space:normal; overflow-wrap:anywhere; text-overflow:clip; }
 }
+
+html body .mushroom-count-pill{ display:inline-block; flex:0 0 auto; margin-left:6px; padding:1px 5px; font-family:var(--pixel-font); font-size:calc(9px * var(--fs-desk,1)); font-weight:400; line-height:1.2; letter-spacing:0; white-space:nowrap; vertical-align:middle; background:var(--sfl-label-bg, rgba(0,0,0,.14)); color:var(--sfl-label-text, var(--ink)); border-radius:0; }
+html body .guro-grow-content .guro-status-fold{ flex-wrap:nowrap; min-width:0; }
+html body .guro-grow-content .guro-status-stack{ flex:0 1 auto; min-width:0; max-width:100%; }
+html body .guro-grow-content .guro-status-value{ display:inline-block; box-sizing:border-box; max-width:100%; white-space:nowrap; word-spacing:-.4em; letter-spacing:0; padding:3px 4px; font-size:calc(9.5px * var(--fs-desk,1)); overflow:hidden; }
