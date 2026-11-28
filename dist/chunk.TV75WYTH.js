@@ -13,7 +13,7 @@ import {
   prices_exports,
   setAppDarkMode,
   ui_exports
-} from "./chunk.WISGHUTM.js";
+} from "./chunk.V7SGVLOO.js";
 import {
   KEY_ICON_DATA,
   NAV_ICON_DATA
@@ -43,13 +43,13 @@ var PAGES = [{
   path: "/digging",
   label: "Desert Digging",
   root: "pageDigging",
-  load: () => import("./digging.Z66W7JZC.js")
+  load: () => import("./digging.JJF2HHLG.js")
 }, {
   id: "cavesolver",
   path: "/cave-solver",
   label: "Cave Digging",
   root: "pageCaveSolver",
-  load: () => import("./cavesolver.UAZMMJEH.js")
+  load: () => import("./cavesolver.NZ5PCJDS.js")
 }, {
   id: "potionroom",
   path: "/potionroom",
@@ -73,7 +73,7 @@ var PAGES = [{
   path: "/settings",
   label: "Settings",
   root: "pageSettings",
-  load: () => import("./settings.MJE2HVB6.js")
+  load: () => import("./settings.7IDIIJQM.js")
 }, {
   id: "nodes",
   path: "/nodes",
@@ -122,6 +122,12 @@ var PAGES = [{
   label: "Auction Leaderboard",
   root: "auctionTrackerPanel",
   load: () => import("./auctionleaderboard.7IXNYVAW.js")
+}, {
+  id: "auctionresult",
+  path: "/auctionresult",
+  label: "Auction Result",
+  root: "auctionResultPanel",
+  load: () => import("./auctionresult.ROCHRY2U.js")
 }, {
   id: "leaderboard",
   path: "/leaderboard",
@@ -175,13 +181,13 @@ var PAGES = [{
   path: "/experience-calculator",
   label: "Experience Calculator",
   root: "cookingPanel",
-  load: () => import("./experiencecalc.EKD3DB3V.js")
+  load: () => import("./experiencecalc.WZRLYCYI.js")
 }, {
   id: "beginnerguide",
   path: "/beginner-guide",
   label: "Beginner Guide",
   root: "beginnerPanel",
-  load: () => import("./beginnerguide.LCDV6W4L.js")
+  load: () => import("./beginnerguide.6QBPT6DC.js")
 }, {
   id: "fishing",
   path: "/fishing",
@@ -199,7 +205,7 @@ var PAGES = [{
   path: "/resource-calculators",
   label: "Resource Calculators",
   root: "pageResourceCalc",
-  load: () => import("./resourcecalc.2MGMDT2H.js")
+  load: () => import("./resourcecalc.LL6PYXQ5.js")
 }, {
   id: "sflbubbles",
   path: "/sflbubbleschart",
@@ -217,13 +223,13 @@ var PAGES = [{
   path: "/userguide",
   label: "User Guide",
   root: "pageUserGuide",
-  load: () => import("./userguide.CTEQIVEX.js")
+  load: () => import("./userguide.5KCSSTL6.js")
 }, {
   id: "profile",
   path: "/profile",
   label: "Profile",
   root: "pageProfile",
-  load: () => import("./profile.QU36XWYV.js")
+  load: () => import("./profile.FPSRJDQY.js")
 }];
 var DEFAULT_PAGE_ID = "growing";
 function pageById(id) {
@@ -269,6 +275,7 @@ var PAGE_TITLES = {
   flowercombo: ["FLOWER COMBINATION", "Seed and cross-pollination combos with market price cost"],
   bumpkinlevel: ["BUMPKIN LEVEL", "Level, experience and skill points for every level"],
   auctionleaderboard: ["AUCTION LEADERBOARD", "Chapter race rankings"],
+  auctionresult: ["AUCTION RESULT", "Pending auctions, winners and chapters"],
   leaderboard: ["LEADER BOARD", "Farm rankings"],
   craftingbox: ["CRAFTING BOX", "Crafting box recipes and costs"],
   workbench: ["WORKBENCH RECIPE", "Workbench recipes and costs"],
@@ -322,6 +329,8 @@ function pageIconHtml(id) {
     case "npcgift":
       return imgHtml(KEY_ICON_DATA["Treasure Key"]);
     case "auctionleaderboard":
+      return imgHtml(NAV_ICON_AUCTIONLEADERBOARD);
+    case "auctionresult":
       return imgHtml(NAV_ICON_AUCTIONLEADERBOARD);
     case "leaderboard":
       return imgHtml(NAV_ICON_LEADERBOARD);
@@ -390,7 +399,7 @@ var NAV_GROUPS = [{
   items: ["nodes", "boost", "skilltree", "settings"]
 }, {
   label: "Information",
-  items: ["userguide", "marketplace", "basecoincost", "flowercombo", "bumpkinlevel", "auctionleaderboard", "leaderboard", "craftingbox", "workbench", "seasons", "chapterfish"]
+  items: ["userguide", "marketplace", "basecoincost", "flowercombo", "bumpkinlevel", "auctionleaderboard", "auctionresult", "leaderboard", "craftingbox", "workbench", "seasons", "chapterfish"]
 }, {
   label: "Themes",
   items: ["theme:sfl", "theme:dark"]
@@ -540,7 +549,7 @@ async function showPage(id) {
   currentModule = mod;
   setActivePageInNav(id);
   setPageTitle(id);
-  document.body.classList.toggle("guro-own-sync", id === "digging" || id === "cavesolver" || id === "potionroom" || id === "auctionleaderboard");
+  document.body.classList.toggle("guro-own-sync", id === "digging" || id === "cavesolver" || id === "potionroom" || id === "auctionleaderboard" || id === "auctionresult");
   document.body.classList.toggle("guro-show-profile", id === "profile");
   document.body.classList.toggle("guro-show-rate", id === "growing" || id === "coinconverter");
   document.title = page.label + " \xB7 SFL GURO";
