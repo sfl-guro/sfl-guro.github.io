@@ -89,6 +89,12 @@ export const PAGES = [ {
   root: "auctionTrackerPanel",
   load: () => import("./auctionleaderboard.js")
 }, {
+  id: "auctionresult",
+  path: "/auctionresult",
+  label: "Auction Result",
+  root: "auctionResultPanel",
+  load: () => import("./auctionresult.js")
+}, {
   id: "leaderboard",
   path: "/leaderboard",
   label: "Leader Board",

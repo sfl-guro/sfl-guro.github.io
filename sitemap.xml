@@ -86,6 +86,11 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://sfl-guro.github.io/auctionresult</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://sfl-guro.github.io/leaderboard</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>

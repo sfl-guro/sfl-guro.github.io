@@ -379,6 +379,19 @@ export const USER_GUIDES = [
     ]
   },
   {
+    id: "auctionresult",
+    label: "Auction Result",
+    title: "Auction Result",
+    intro: "Shows the pending auctions, the winners of the finished auctions and every chapter.",
+    steps: [
+      "The three buttons at the top switch between Pending Auction, Auction Result and Chapters.",
+      "Pending Auction lists the live and upcoming auctions of the chosen chapter with their supply, bid and time left.",
+      "Auction Result lists the finished auctions. Tap Show winners to see each winner's name, Farm ID, tickets, EXP and bid.",
+      "The Sort buttons put the FLOWER, Gems or Ticket auctions first. Schedule keeps the mixed order.",
+      "Chapters lists every chapter. The current chapter is picked by default, and tapping another one shows its auctions."
+    ]
+  },
+  {
     id: "auctionleaderboard",
     label: "Auction Board",
     title: "Auction Leaderboard",

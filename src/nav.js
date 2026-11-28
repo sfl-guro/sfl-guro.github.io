@@ -42,6 +42,7 @@ const PAGE_TITLES = {
   flowercombo: [ "FLOWER COMBINATION", "Seed and cross-pollination combos with market price cost" ],
   bumpkinlevel: [ "BUMPKIN LEVEL", "Level, experience and skill points for every level" ],
   auctionleaderboard: [ "AUCTION LEADERBOARD", "Chapter race rankings" ],
+  auctionresult: [ "AUCTION RESULT", "Pending auctions, winners and chapters" ],
   leaderboard: [ "LEADER BOARD", "Farm rankings" ],
   craftingbox: [ "CRAFTING BOX", "Crafting box recipes and costs" ],
   workbench: [ "WORKBENCH RECIPE", "Workbench recipes and costs" ],
@@ -110,6 +111,8 @@ export function pageIconHtml(id) {
     return imgHtml(KEY_ICON_DATA["Treasure Key"]);
 
    case "auctionleaderboard":
+     return imgHtml(NAV_ICON_AUCTIONLEADERBOARD);
+   case "auctionresult":
      return imgHtml(NAV_ICON_AUCTIONLEADERBOARD);
    case "leaderboard":
      return imgHtml(NAV_ICON_LEADERBOARD);
@@ -187,7 +190,7 @@ const NAV_GROUPS = [ {
   items: [ "nodes", "boost", "skilltree", "settings" ]
 }, {
   label: "Information",
-  items: [ "userguide", "marketplace", "basecoincost", "flowercombo", "bumpkinlevel", "auctionleaderboard", "leaderboard", "craftingbox", "workbench", "seasons", "chapterfish" ]
+  items: [ "userguide", "marketplace", "basecoincost", "flowercombo", "bumpkinlevel", "auctionleaderboard", "auctionresult", "leaderboard", "craftingbox", "workbench", "seasons", "chapterfish" ]
 }, {
   label: "Themes",
   items: [ "theme:sfl", "theme:dark" ]

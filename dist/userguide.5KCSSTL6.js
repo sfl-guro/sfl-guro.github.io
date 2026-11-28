@@ -1,8 +1,8 @@
 import {
   navigateTo
-} from "./chunk.E7JXJSFK.js";
+} from "./chunk.TV75WYTH.js";
 import "./chunk.F7REBWYF.js";
-import "./chunk.WISGHUTM.js";
+import "./chunk.V7SGVLOO.js";
 import "./chunk.XKJMJZUJ.js";
 import "./chunk.LPEVZJ4B.js";
 import "./chunk.D3PHX6VZ.js";
@@ -389,6 +389,19 @@ var USER_GUIDES = [
       "The tabs choose the range. Level 1-150 is the normal levels, and A1 to A10 are the ascension levels.",
       "The A1 1-50 style tabs open the ascension levels of that stage.",
       "The table shows the EXP needed, the skill points gained and the total EXP for each level in the tab, and the last row adds the totals."
+    ]
+  },
+  {
+    id: "auctionresult",
+    label: "Auction Result",
+    title: "Auction Result",
+    intro: "Shows the pending auctions, the winners of the finished auctions and every chapter.",
+    steps: [
+      "The three buttons at the top switch between Pending Auction, Auction Result and Chapters.",
+      "Pending Auction lists the live and upcoming auctions of the chosen chapter with their supply, bid and time left.",
+      "Auction Result lists the finished auctions. Tap Show winners to see each winner's name, Farm ID, tickets, EXP and bid.",
+      "The Sort buttons put the FLOWER, Gems or Ticket auctions first. Schedule keeps the mixed order.",
+      "Chapters lists every chapter. The current chapter is picked by default, and tapping another one shows its auctions."
     ]
   },
   {

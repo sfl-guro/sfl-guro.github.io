@@ -82170,6 +82170,8 @@ craftedToolsInit({
 });
 
 export {
+  GAME_ICON_DATA,
+  foldClock,
   renderBeginnerPanel,
   renderSeasonToggle,
   renderAscensionBar,
@@ -82213,6 +82215,7 @@ export {
   getGreenhouseSeedCoins,
   getPigSlopOptions,
   resolvePigSlopIngredient,
+  SFL_COMMUNITY_PROXY_BASE,
   cookingCostMode,
   setCookingCostMode,
   getPetResourceMarket,

@@ -550,6 +550,7 @@ body.app-dark .gunter-mid-stat.is-total-stat .gunter-mid-stat-value{ color:#d8dc
     animation:none !important;
   }
   #auctionTrackerPanel.main-tab-modal.open{ z-index:1710; }
+  #auctionResultPanel.main-tab-modal.open{ z-index:1710; }
   .main-tab-modal .library-toggle{ position:relative; padding-right:160px; flex-shrink:0; }
   .main-tab-modal-close{ display:none; }
   .main-tab-modal.open .main-tab-modal-close{
@@ -10139,7 +10140,8 @@ body.sfl-theme #mapPanel .cb-item-cost{
 .global-mini-sync:active{ transform:translate(2px,2px); box-shadow:0 0 0 rgba(0,0,0,.4); }
 .global-mini-sync.is-syncing{ animation:digMiniSyncSpin .7s linear infinite; }
 
-body.sfl-theme #auctionTrackerPanel{
+body.sfl-theme #auctionTrackerPanel,
+body.sfl-theme #auctionResultPanel{
   background-color:var(--sfl-outer) !important;
   border-color:var(--sfl-border) !important;
 }
@@ -14175,12 +14177,14 @@ html body.app-dark .potion-store-row:nth-child(even){ background:#2c2e36 !import
 
 @media (max-width:1023px){
   html body #auctionTrackerPanel.guro-native.guro-native,
+  html body #auctionResultPanel.guro-native.guro-native,
   html body #leaderboardPanel.guro-native.guro-native,
   html body #craftingBoxPanel.guro-native.guro-native,
   html body #seasonsPanel.guro-native.guro-native,
   html body #workbenchPanel.guro-native.guro-native,
   html body #mapPanel.guro-native.guro-native,
   html body #auctionTrackerPanel .library-body,
+  html body #auctionResultPanel .library-body,
   html body #leaderboardPanel .library-body,
   html body #craftingBoxPanel .library-body,
   html body #seasonsPanel .library-body,
@@ -16522,3 +16526,77 @@ html body .guro-profile-info{ gap:1px; }
 html body .guro-profile-farmid, html body .guro-profile-line{ line-height:1.15; margin:0; padding:0; min-height:0; }
 html body .guro-profile-farmid{ margin-top:4px; }
 html body .guro-profile > .guro-profile-status, html body #farmPanelStatus{ display:none !important; }
+
+#auctionResultPanel .at-row{ border:0; box-shadow:none; }
+#auctionResultPanel .ar-switch{ display:flex; gap:6px; justify-content:center; flex-wrap:nowrap; margin:0 0 10px; }
+#auctionResultPanel .ar-chip{
+  font-family:inherit; font-size:calc(9.6px * var(--fs-desk,1)); font-weight:700; line-height:1.15; color:var(--ink);
+  padding:6px 4px; min-height:calc(32px * var(--fs-inh,1)); min-width:0; background-color:var(--parchment,#fff);
+  cursor:pointer; touch-action:manipulation; display:inline-flex; align-items:center; justify-content:center; gap:4px; text-align:center; box-sizing:border-box;
+}
+#auctionResultPanel .ar-chip.active{ background-color:var(--sun-deep,#c98a3a); color:#fff; }
+#auctionResultPanel .ar-chip:disabled{ opacity:.55; cursor:not-allowed; }
+#auctionResultPanel .ar-fixed{ flex:0 0 min(calc(112px * var(--fs-inh,1)), calc((100% - 12px) / 3)); width:min(calc(112px * var(--fs-inh,1)), calc((100% - 12px) / 3)); }
+#auctionResultPanel .ar-small{ flex:1 1 0; max-width:calc(130px * var(--fs-inh,1)); }
+#auctionResultPanel .ar-chapline{ display:flex; align-items:center; gap:6px; font-family:var(--pixel-font); font-size:calc(11px * var(--fs-desk,1)); font-weight:700; text-transform:uppercase; margin:0 0 8px; }
+#auctionResultPanel .ar-sortrow{ display:flex; flex-wrap:wrap; align-items:center; gap:4px; margin:0 0 8px; }
+#auctionResultPanel .ar-sortrow .at-section-label{ margin:0 4px 0 0; }
+#auctionResultPanel .ar-list{ display:flex; flex-direction:column; gap:8px; }
+#auctionResultPanel .ar-card{ display:block; padding:8px; min-width:0; }
+#auctionResultPanel .ar-head{ display:flex; align-items:center; gap:8px; min-width:0; flex-wrap:wrap; }
+#auctionResultPanel .ar-icon{ display:inline-flex; align-items:center; justify-content:center; flex:0 0 auto; min-width:calc(28px * var(--fs-inh,1)); }
+#auctionResultPanel .ar-title{ flex:1 1 calc(110px * var(--fs-inh,1)); min-width:0; }
+#auctionResultPanel .ar-name{ font-size:calc(11.4px * var(--fs-desk,1)); font-weight:800; overflow-wrap:anywhere; }
+#auctionResultPanel .ar-sub{ display:flex; flex-wrap:wrap; gap:2px 8px; font-size:calc(9px * var(--fs-desk,1)); opacity:.8; }
+#auctionResultPanel .ar-supply{ font-weight:800; opacity:1; }
+#auctionResultPanel .ar-cur{ display:inline-flex; align-items:center; gap:3px; padding:3px 6px; font-size:calc(9px * var(--fs-desk,1)); font-weight:800; background:var(--sfl-label-bg, rgba(0,0,0,.14)); color:var(--sfl-label-text, var(--ink)); }
+#auctionResultPanel .ar-meta{ display:flex; flex-direction:column; gap:3px; margin-top:6px; font-size:calc(9.6px * var(--fs-desk,1)); }
+#auctionResultPanel .ar-bid{ display:flex; flex-wrap:wrap; align-items:center; gap:4px; }
+#auctionResultPanel .ar-bid b, #auctionResultPanel .ar-win-stats b{ font-weight:800; opacity:.7; margin-right:3px; }
+#auctionResultPanel .ar-time{ opacity:.85; }
+#auctionResultPanel .ar-time.is-live{ color:var(--profit,#2f7a2f); font-weight:800; opacity:1; }
+#auctionResultPanel .ar-open{ margin-top:8px; width:100%; }
+#auctionResultPanel .ar-actions{ display:flex; justify-content:center; margin-top:8px; }
+#auctionResultPanel .ar-actions .ar-chip{ padding:6px 14px; }
+#auctionResultPanel .ar-winbox{ margin-top:8px; }
+#auctionResultPanel .ar-win-head{ font-size:calc(9px * var(--fs-desk,1)); font-weight:800; text-transform:uppercase; letter-spacing:.3px; opacity:.8; margin:0 0 6px; }
+#auctionResultPanel .ar-wins{ display:flex; flex-direction:column; gap:6px; }
+#auctionResultPanel .ar-win{ padding:6px 8px; background-color:var(--parchment,#fff); min-width:0; }
+#auctionResultPanel .ar-win-top{ display:flex; align-items:center; gap:6px; min-width:0; margin-bottom:3px; }
+#auctionResultPanel .ar-win-rank{ font-family:var(--pixel-font); font-size:calc(10.2px * var(--fs-desk,1)); font-weight:700; flex:0 0 auto; }
+#auctionResultPanel .ar-win-name{ flex:1 1 0; min-width:0; font-size:calc(11px * var(--fs-desk,1)); font-weight:700; overflow-wrap:anywhere; }
+#auctionResultPanel .ar-win-stats{ display:flex; flex-wrap:wrap; gap:2px 10px; font-size:calc(9px * var(--fs-desk,1)); }
+#auctionResultPanel .ar-win-stats span{ display:inline-flex; align-items:center; gap:2px; min-width:0; }
+#auctionResultPanel .ar-chaps{ display:flex; flex-direction:column; gap:6px; }
+#auctionResultPanel .ar-chap{
+  display:flex; align-items:center; gap:8px; text-align:left; font-family:inherit; color:var(--ink); min-width:0; padding:6px 8px;
+  background-color:var(--parchment,#fff); cursor:pointer; touch-action:manipulation; box-sizing:border-box; width:100%;
+}
+#auctionResultPanel .ar-chap.active{ background-color:var(--sun-deep,#c98a3a); color:#fff; }
+#auctionResultPanel .ar-chap-text{ display:flex; flex-direction:column; gap:2px; min-width:0; flex:1 1 0; }
+#auctionResultPanel .ar-badge{ font-style:normal; font-size:calc(8px * var(--fs-desk,1)); font-weight:800; padding:1px 4px; margin-left:4px; background:var(--sfl-label-bg, rgba(0,0,0,.14)); color:var(--sfl-label-text, var(--ink)); }
+html body.sfl-theme #auctionResultPanel .ar-chip,
+html body.sfl-theme #auctionResultPanel .ar-chap,
+html body.sfl-theme #auctionResultPanel .ar-win{
+  background-color:var(--sfl-inner) !important; color:var(--sfl-text) !important;
+}
+html body.sfl-theme #auctionResultPanel .ar-chip,
+html body.sfl-theme #auctionResultPanel .ar-chap{
+  border-width:var(--sfl-btn-border-w) !important; border-image:var(--sfl-btn-image) 3 3 4 3 fill !important; border-radius:var(--sfl-btn-radius) !important;
+  box-shadow:none !important; text-shadow:none !important;
+}
+html body.sfl-theme #auctionResultPanel .ar-chip.active,
+html body.sfl-theme #auctionResultPanel .ar-chap.active{
+  background-color:var(--sfl-outer) !important; color:var(--sfl-text) !important; border-image:var(--sfl-btn-pressed-image) 3 3 4 3 fill !important;
+}
+html body.sfl-theme #auctionResultPanel .ar-win{ background-color:var(--sfl-outer) !important; }
+html body.sfl-theme #auctionResultPanel .ar-list.ar-pending > .at-row{ background-color:var(--sfl-outer) !important; }
+@media (min-width:1024px){
+  #auctionResultPanel .ar-list{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); align-items:start; gap:10px; }
+  #auctionResultPanel .ar-list > .at-empty{ grid-column:1 / -1; }
+  #auctionResultPanel .ar-open{ width:auto; min-width:0; padding:6px 18px; }
+  #auctionResultPanel .ar-win-stats{ gap:2px 10px; justify-content:space-between; }
+  #auctionResultPanel .ar-win-stats span{ flex:0 1 auto; }
+  #auctionResultPanel .ar-list.ar-pending{ grid-template-columns:repeat(3,minmax(0,1fr)); }
+  #auctionResultPanel .ar-chaps{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }
+}
